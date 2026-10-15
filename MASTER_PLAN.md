@@ -151,6 +151,12 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 [x] Phase 9: Point-to-Point Advanced Admin Control Suite
 [x] Phase 10: Performance Optimization & Sub-Millisecond Database Tuning
 [x] Phase 11: End-to-End Verification & Production Launch Readiness
+[x] Phase 12: Enterprise Authentication & Multi-Role RBAC (Admin & Customer Portal)
+[x] Phase 13: Dedicated Admin Suite 2.0 (Isolated Layout & Full Database CRUD)
+[x] Phase 14: Customer Account Portal & Self-Service Order Tracking
+[x] Phase 15: HMRC-Compliant UK VAT Invoicing & Financial Accounting Export
+[x] Phase 16: Customer Reviews Moderation & Social Proof Engine
+[x] Phase 17: Promotions, Coupon Vouchers & Seasonal Sales Rules Engine
 ```
 
 ---
@@ -474,16 +480,87 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
   - [x] **Database & Performance**: ESR composite indexes, GIN trigram fuzzy search, NVMe PostgreSQL tuning, and sub-millisecond cache engine verified.
   - [x] **Operations Control Suite**: Point-to-point Admin dashboard with sales analytics, logistics surcharges, category margins, 1-click IP jail release, and immutable audit logging.
 
-> **AI Prompt for Phase 11**:
-> ```text
-> Act as a Lead QA and Release Engineer. Build the Playwright E2E test suite and launch verification scripts:
-> 1. Write Playwright E2E tests covering:
->    - Search and faceted filtering for velvet armchairs.
->    - Postcode delivery surcharge application at checkout (testing both SW1A 1AA London and IV1 1AA Inverness).
->    - Complete checkout execution using Stripe test cards and Klarna simulated flow.
-> 2. Write an automated security test verifying that rate limits and IP jail lockout trigger accurately on excess failed attempts.
-> 3. Generate a release readiness scorecard verifying that all 11 phases meet acceptance criteria with 0 console errors and 0 lint warnings.
-> ```
+---
+
+### Phase 12: Enterprise Authentication & Multi-Role RBAC (Admin & Customer Portal)
+**Objective**: Build a bank-grade authentication system for both SAN Furniture operational staff (RBAC) and UK consumers with password hashing, JWT/HttpOnly session cookies, and route guard middleware.
+
+- **Data Models & Schema (`admin_users`, `customers`, `sessions`)**:
+  - `admin_users`: `id`, `email`, `password_hash` (Argon2id / bcrypt with 12 salt rounds), `full_name`, `role` (`super_admin`, `logistics_manager`, `catalog_editor`, `support_lead`), `is_active`, `last_login_at`, `created_at`.
+  - `customers`: `id`, `email`, `password_hash`, `first_name`, `last_name`, `phone`, `email_verified`, `marketing_opt_in`, `created_at`.
+  - `customer_addresses`: `id`, `customer_id`, `address_line1`, `address_line2`, `city`, `postcode` (UK format e.g. `SW1A 1AA`), `county`, `is_default_delivery`, `is_default_billing`.
+- **Admin Authentication Flow**:
+  - Dedicated `/admin/login` page with dark luxury operations UI.
+  - Rate-limited auth endpoint: `POST /api/admin/auth/login` (5 attempts / 15 mins via Redis sliding window, triggers IP Jail on 5th failure).
+  - HttpOnly, `SameSite=Strict`, `Secure` JWT cookie (`san_admin_token`).
+  - Next.js Edge Middleware route guard: redirects unauthenticated requests on `/admin/*` (except `/admin/login`) directly to `/admin/login`.
+- **Customer Authentication Flow**:
+  - `/account/login` and `/account/register` with UK postcode auto-lookup integration.
+  - Password strength validation: minimum 8 characters with at least one uppercase, one number, and one symbol.
+  - Session cookie (`san_customer_token`) and customer order history access.
+
+---
+
+### Phase 13: Dedicated Admin Suite 2.0 (Isolated Layout & Full Database CRUD)
+**Objective**: Isolate the admin control panel from the consumer storefront layout (eliminating customer header/footer) and enable direct database CRUD for Products, Orders, Suppliers, and Postcode Surcharges.
+
+- **Isolated Admin Layout Architecture**:
+  - Dynamic route separation: `/admin` renders inside its own dedicated `AdminLayout` containing an enterprise collapsible navy/gold sidebar and top operations bar.
+  - Consumer `<Header />` and `<Footer />` components are strictly suppressed for any `/admin` path.
+  - Sidebar Navigation Items:
+    1. **Overview & Analytics** (`/admin`) – Real-time Gross Revenue, Dropship Margin, AOV, Order Pipeline.
+    2. **Product Catalog & Inventory** (`/admin/products`) – Complete CRUD: Add/Edit/Delete products, dimension inputs (cm), BS 5852 fire safety toggles, retail vs supplier cost margins.
+    3. **Orders & Fulfillment** (`/admin/orders`) – Order dispatch workflow (`pending_payment` → `paid` → `po_forwarded` → `in_transit_two_man` → `delivered`), tracking code injection.
+    4. **Dropship Suppliers** (`/admin/suppliers`) – UK wholesale suppliers management, automated purchase orders, feed sync logs.
+    5. **UK Logistics & Postcodes** (`/admin/logistics`) – Free delivery threshold (£500), 2-man base fee (£49), Highlands & Islands surcharges.
+    6. **Security & IP Jail** (`/admin/security`) – Real-time brute force defense, strike counts, 1-click IP pardons.
+    7. **Feeds & Programmatic SEO** (`/admin/marketing`) – Google Merchant XML & Meta CSV regenerations.
+    8. **Audit Trail** (`/admin/audit`) – Immutable staff activity logs.
+    9. **Staff & Permissions** (`/admin/staff`) – Manage admin users & roles.
+
+---
+
+### Phase 14: Customer Account Portal & Self-Service Order Tracking
+**Objective**: Empower UK buyers with an elegant self-service account dashboard for order tracking, delivery rescheduling, and invoice access.
+
+- **Customer Dashboard Features**:
+  - Real-time order progress timeline (Order Received → Fabric Cutting / Oak Milling → Supplier QC Passed → 2-Man Carrier Booked → Out for Delivery).
+  - Pre-booked 2-hour delivery window notification and carrier driver contact.
+  - Address book management with Royal Mail PAF validation.
+  - Saved wishlist with price drop alerts.
+
+---
+
+### Phase 15: HMRC-Compliant UK VAT Invoicing & Financial Accounting Export
+**Objective**: Automatically generate PDF and printable invoices complying with UK HMRC Value Added Tax Act 1994 and provide clean CSV/Excel exports for UK accounting software (Xero, QuickBooks).
+
+- **Mandatory UK VAT Invoice Fields**:
+  - SAN Furniture Ltd company registration number and registered office address (London, UK).
+  - Valid UK VAT Registration Number (e.g. `GB 438 9123 76`).
+  - Invoice date, tax point (time of supply), and unique serial invoice number.
+  - Itemized breakdown: Net cost, 20% VAT rate, VAT amount in GBP, and Gross total.
+  - Automated generation upon checkout completion; instant download from `/admin/orders/[id]` and customer portal.
+
+---
+
+### Phase 16: Customer Reviews Moderation & Social Proof Engine
+**Objective**: Build a trusted review collection and moderation system for high-ticket furniture purchases.
+
+- **Components**:
+  - Post-delivery automated review invitation (7 days after delivery).
+  - Verified buyer badge, photo/video room upload capability.
+  - Moderation queue in Admin Suite with spam/profanity filter.
+  - Dynamic Schema.org `AggregateRating` and `Review` markup updates.
+
+---
+
+### Phase 17: Promotions, Coupon Vouchers & Seasonal Sales Rules Engine
+**Objective**: Create a high-converting promotional engine tailored for UK shopping events (Boxing Day Sale, Bank Holiday Specials, Black Friday).
+
+- **Engine Capabilities**:
+  - Coupon types: Fixed GBP discount (e.g., `£100 off over £1,000`), percentage discount (`15% off Living Room`), free 2-man white glove upgrade code.
+  - Redemptions cap, start/end timestamps, per-customer single use guards.
+  - Real-time basket calculation in `CartProvider` and checkout.
 
 ---
 

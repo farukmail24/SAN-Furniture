@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -36,6 +33,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { StorefrontShell } from "@/components/layout/StorefrontShell";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,11 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
-        <CartProvider>
-          <Header />
-          <main className="flex-1" suppressHydrationWarning>{children}</main>
-          <Footer />
-        </CartProvider>
+        <StorefrontShell>{children}</StorefrontShell>
       </body>
     </html>
   );

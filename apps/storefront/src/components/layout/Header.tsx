@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingBag, ShieldCheck, Truck, Menu, X, ArrowRight } from "lucide-react";
+import { Search, ShoppingBag, ShieldCheck, Truck, Menu, X, ArrowRight, User } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
@@ -120,6 +120,16 @@ export function Header() {
                 ⌘K
               </kbd>
             </button>
+
+            {/* Customer Account Button */}
+            <Link
+              href="/account"
+              aria-label="Customer Account & Order Tracking"
+              className="p-2 rounded-full hover:bg-sand-200 text-navy-900 transition-colors"
+              title="UK Client Portal & Delivery Tracking"
+            >
+              <User className="w-5 h-5" />
+            </Link>
 
             {/* Shopping Basket Trigger Button */}
             <button

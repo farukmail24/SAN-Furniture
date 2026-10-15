@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // 1. Admin Route Guard: Redirect unauthenticated requests on /admin to /admin/login
+  if (pathname.startsWith("/admin") && pathname !== "/admin/login") {
+    const adminToken = request.cookies.get("san_admin_token")?.value;
+    if (!adminToken) {
+      const loginUrl = new URL("/admin/login", request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // In development, skip strict security headers so localhost CSS and HMR are never blocked
+  if (process.env.NODE_ENV === "development") {
+    return NextResponse.next();
+  }
+
   const response = NextResponse.next();
 
   // 1. Strict Content Security Policy (CSP)

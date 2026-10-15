@@ -103,33 +103,28 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="bg-sand-50 min-h-screen">
-      {/* Top Header */}
-      <div className="border-b border-sand-200 bg-sand-100/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs text-navy-500 mb-1">
-              <Link href="/" className="hover:text-navy-950">Storefront</Link>
-              <ChevronRight className="w-3.5 h-3.5" />
-              <span className="font-semibold text-navy-900">Operations Control Center</span>
-            </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-navy-950">
-              SAN Furniture Admin Suite
-            </h1>
+    <div className="space-y-6">
+      {/* Top Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-navy-500 mb-1">
+            <span>Operations Center</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="font-semibold text-navy-900">Executive Overview</span>
           </div>
+          <h1 className="font-display text-2xl font-bold text-navy-950">
+            SAN Furniture Operations &amp; Margins
+          </h1>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-forest-100 border border-forest-300 text-forest-800 text-xs font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              All Systems Operational
-            </span>
-            <Link
-              href="/catalog"
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-sand-300 bg-sand-50 text-navy-900 hover:bg-sand-200 transition-colors"
-            >
-              View Live Site
-            </Link>
-          </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/products"
+            className="text-xs font-semibold px-3.5 py-2 rounded-lg bg-brass-500 hover:bg-brass-400 text-navy-950 transition-colors flex items-center gap-2 shadow-sm font-bold"
+          >
+            <Package className="w-4 h-4" />
+            <span>Manage Products (CRUD)</span>
+          </Link>
         </div>
       </div>
 
