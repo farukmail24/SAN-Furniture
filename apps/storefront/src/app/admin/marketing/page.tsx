@@ -15,12 +15,13 @@ import {
   TrendingUp,
   Tag
 } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 export default function AdminMarketingPage() {
   const [copiedFeed, setCopiedFeed] = useState<string | null>(null);
 
-  const googleFeedUrl = "http://localhost:9000/api/feeds/google-merchant.xml";
-  const metaFeedUrl = "http://localhost:9000/api/feeds/meta-catalog.csv";
+  const googleFeedUrl = apiUrl("/api/feeds/google-merchant.xml");
+  const metaFeedUrl = apiUrl("/api/feeds/meta-catalog.csv");
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);

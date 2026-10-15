@@ -16,6 +16,7 @@ import {
   Clock,
   ArrowUpRight
 } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 interface Supplier {
   id: string;
@@ -42,7 +43,7 @@ export default function AdminSuppliersPage() {
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch("http://localhost:9000/api/admin/suppliers");
+      const res = await fetch(apiUrl("/api/admin/suppliers"));
       const data = await res.json();
       if (data.suppliers) {
         setSuppliers(data.suppliers);
@@ -62,7 +63,7 @@ export default function AdminSuppliersPage() {
     setSyncingId(supplierId);
     setToastMsg(null);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/suppliers/sync", {
+      const res = await fetch(apiUrl("/api/admin/suppliers/sync"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ supplierId }),

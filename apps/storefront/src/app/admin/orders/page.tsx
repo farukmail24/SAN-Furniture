@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface OrderItem {
   id: string;
@@ -68,7 +69,7 @@ export default function AdminOrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:9000/api/admin/orders");
+      const res = await fetch(apiUrl("/api/admin/orders"));
       const data = await res.json();
       if (data.orders) setOrders(data.orders);
     } catch (err) {
@@ -95,7 +96,7 @@ export default function AdminOrdersPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/orders/${dispatchOrder.id}/dispatch`, {
+      const res = await fetch(apiUrl(`/api/admin/orders/${dispatchOrder.id}/dispatch`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -286,7 +287,7 @@ export default function AdminOrdersPage() {
         </div>
 
         <a
-          href="http://localhost:9000/api/admin/accounting/export.csv"
+          href={apiUrl("/api/admin/accounting/export.csv")}
           download="san_furniture_accounting.csv"
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs shadow-sm transition-all"
         >

@@ -20,6 +20,7 @@ import {
   ShoppingBag
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface CustomerUser {
   id: string;
@@ -60,7 +61,7 @@ export default function CustomerAccountPage() {
     const activeEmail = currentUser?.email || "eleanor.vance@gmail.com";
 
     // Fetch live customer orders from MySQL
-    fetch(`http://localhost:9000/api/customer/orders?email=${encodeURIComponent(activeEmail)}`)
+    fetch(apiUrl(`/api/customer/orders?email=${encodeURIComponent(activeEmail)}`))
       .then((res) => res.json())
       .then((data) => {
         if (data.orders) setOrders(data.orders);
@@ -155,7 +156,7 @@ export default function CustomerAccountPage() {
                     </span>
                     {/* Phase 15: Download UK VAT Invoice */}
                     <a
-                      href={`http://localhost:9000/api/invoices/${order.id}?format=html`}
+                      href={apiUrl(`/api/invoices/${order.id}?format=html`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-200 hover:bg-sand-300 text-navy-950 text-xs font-semibold transition-colors"

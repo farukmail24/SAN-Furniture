@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface PromotionItem {
   id: string;
@@ -51,7 +52,7 @@ export default function AdminPromotionsPage() {
   const fetchPromotions = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:9000/api/admin/promotions");
+      const res = await fetch(apiUrl("/api/admin/promotions"));
       const data = await res.json();
       if (data.promotions) setPromotions(data.promotions);
     } catch (err) {
@@ -75,7 +76,7 @@ export default function AdminPromotionsPage() {
         discVal = Math.round(discVal * 100);
       }
 
-      const res = await fetch("http://localhost:9000/api/admin/promotions", {
+      const res = await fetch(apiUrl("/api/admin/promotions"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -107,7 +108,7 @@ export default function AdminPromotionsPage() {
   const handleToggleStatus = async (promo: PromotionItem) => {
     const nextState = promo.is_active ? 0 : 1;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/promotions/${promo.id}`, {
+      const res = await fetch(apiUrl(`/api/admin/promotions/${promo.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isActive: nextState }),
@@ -127,7 +128,7 @@ export default function AdminPromotionsPage() {
   const handleDeletePromotion = async (promoId: string, code: string) => {
     if (!confirm(`Are you sure you want to delete coupon "${code}"?`)) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/promotions/${promoId}`, {
+      const res = await fetch(apiUrl(`/api/admin/promotions/${promoId}`), {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");

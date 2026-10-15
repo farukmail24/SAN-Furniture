@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface ProductItem {
   id: string;
@@ -57,8 +58,8 @@ export default function AdminProductsPage() {
     try {
       setLoading(true);
       const [resProd, resCat] = await Promise.all([
-        fetch("http://localhost:9000/api/admin/products"),
-        fetch("http://localhost:9000/api/admin/categories")
+        fetch(apiUrl("/api/admin/products")),
+        fetch(apiUrl("/api/admin/categories"))
       ]);
       const dataProd = await resProd.json();
       const dataCat = await resCat.json();
@@ -82,7 +83,7 @@ export default function AdminProductsPage() {
     if (!confirm(`Are you sure you want to remove "${title}" from the live catalog?`)) return;
 
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/products/${productId}`, {
+      const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
         method: "DELETE",
       });
 
@@ -101,7 +102,7 @@ export default function AdminProductsPage() {
     if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected items?`)) return;
     try {
       for (const id of selectedIds) {
-        await fetch(`http://localhost:9000/api/admin/products/${id}`, { method: "DELETE" });
+        await fetch(apiUrl(`/api/admin/products/${id}`), { method: "DELETE" });
       }
       setSuccessMessage(`Successfully deleted ${selectedIds.length} items from database.`);
       await fetchProducts();

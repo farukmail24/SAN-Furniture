@@ -25,6 +25,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { MediaAsset } from "@/components/admin/MediaPickerModal";
+import { apiUrl } from "@/lib/api-config";
 
 export default function AdminMediaPage() {
   const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
@@ -50,7 +51,7 @@ export default function AdminMediaPage() {
   const fetchMedia = async () => {
     setLoading(true);
     try {
-      let url = "http://localhost:9000/api/admin/media";
+      let url = apiUrl("/api/admin/media");
       const params = new URLSearchParams();
       if (activeCategory !== "all") params.append("category", activeCategory);
       if (searchQuery.trim()) params.append("q", searchQuery.trim());
@@ -82,7 +83,7 @@ export default function AdminMediaPage() {
     setIsUploading(true);
 
     try {
-      const res = await fetch("http://localhost:9000/api/admin/media", {
+      const res = await fetch(apiUrl("/api/admin/media"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +117,7 @@ export default function AdminMediaPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this media asset permanently?")) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/media/${id}`, { method: "DELETE" });
+      const res = await fetch(apiUrl(`/api/admin/media/${id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
 
       if (selectedAsset?.id === id) setSelectedAsset(null);
@@ -132,7 +133,7 @@ export default function AdminMediaPage() {
     if (!confirm(`Delete ${selectedIds.length} selected items permanently?`)) return;
     try {
       for (const id of selectedIds) {
-        await fetch(`http://localhost:9000/api/admin/media/${id}`, { method: "DELETE" });
+        await fetch(apiUrl(`/api/admin/media/${id}`), { method: "DELETE" });
       }
       setSelectedIds([]);
       setBulkMode(false);

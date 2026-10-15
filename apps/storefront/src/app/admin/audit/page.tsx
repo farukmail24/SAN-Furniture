@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronRight
 } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 interface AuditLog {
   id: string;
@@ -33,7 +34,7 @@ export default function AdminAuditPage() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch("http://localhost:9000/api/admin/audit?limit=100");
+      const res = await fetch(apiUrl("/api/admin/audit?limit=100"));
       const data = await res.json();
       if (data.logs) {
         setLogs(data.logs);

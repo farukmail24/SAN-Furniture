@@ -18,6 +18,7 @@ import {
   DollarSign
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import { apiUrl } from "@/lib/api-config";
 import { formatGBP } from "@san-furniture/types";
 
 export default function AdminNewProductPage() {
@@ -48,7 +49,7 @@ export default function AdminNewProductPage() {
   const [status, setStatus] = useState("published");
 
   useEffect(() => {
-    fetch("http://localhost:9000/api/admin/categories")
+    fetch(apiUrl("/api/admin/categories"))
       .then((res) => res.json())
       .then((data) => {
         if (data.categories) setCategories(data.categories);
@@ -102,7 +103,7 @@ export default function AdminNewProductPage() {
         status,
       };
 
-      const res = await fetch("http://localhost:9000/api/admin/products", {
+      const res = await fetch(apiUrl("/api/admin/products"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

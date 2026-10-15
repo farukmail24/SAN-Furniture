@@ -17,6 +17,7 @@ import {
   ShieldAlert
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
+import { apiUrl } from "@/lib/api-config";
 
 interface AdminUserRecord {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/users");
+      const res = await fetch(apiUrl("/api/admin/users"));
       const data = await res.json();
       if (data.users) setUsers(data.users);
     } catch (err) {
@@ -65,7 +66,7 @@ export default function AdminUsersPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/users", {
+      const res = await fetch(apiUrl("/api/admin/users"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +100,7 @@ export default function AdminUsersPage() {
     if (!editingUser) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/users/${editingUser.id}`, {
+      const res = await fetch(apiUrl(`/api/admin/users/${editingUser.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -129,7 +130,7 @@ export default function AdminUsersPage() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("Are you sure you want to remove this staff member?")) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/users/${userId}`, {
+      const res = await fetch(apiUrl(`/api/admin/users/${userId}`), {
         method: "DELETE",
       });
       const data = await res.json();

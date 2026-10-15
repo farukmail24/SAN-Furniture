@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import { apiUrl } from "@/lib/api-config";
 import { formatGBP } from "@san-furniture/types";
 
 interface PageProps {
@@ -60,8 +61,8 @@ export default function AdminEditProductPage({ params }: PageProps) {
       try {
         setLoading(true);
         const [resProd, resCat] = await Promise.all([
-          fetch(`http://localhost:9000/api/admin/products/${productId}`),
-          fetch("http://localhost:9000/api/admin/categories"),
+          fetch(apiUrl(`/api/admin/products/${productId}`)),
+          fetch(apiUrl("/api/admin/categories")),
         ]);
 
         const dataProd = await resProd.json();
@@ -131,7 +132,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
         deliveryType: deliveryTier,
       };
 
-      const res = await fetch(`http://localhost:9000/api/admin/products/${productId}`, {
+      const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -154,7 +155,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
   const handleDelete = async () => {
     if (!confirm(`Are you sure you want to permanently delete "${title}"?`)) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/products/${productId}`, {
+      const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Delete failed");

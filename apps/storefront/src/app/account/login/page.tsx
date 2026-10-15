@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, ArrowRight, ShieldCheck, Sparkles, User, AlertCircle } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 export default function CustomerLoginPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function CustomerLoginPage() {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:9000/api/customer/auth/login", {
+      const res = await fetch(apiUrl("/api/customer/auth/login"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

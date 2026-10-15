@@ -51,6 +51,15 @@ const nextConfig: NextConfig = {
         ]
       }
     ];
+  },
+  async rewrites() {
+    const backendOrigin = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || "http://localhost:9000";
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendOrigin.replace(/\/+$/, "")}/api/:path*`,
+      },
+    ];
   }
 };
 

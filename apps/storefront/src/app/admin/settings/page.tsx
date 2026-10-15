@@ -24,6 +24,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import { apiUrl } from "@/lib/api-config";
 
 interface SystemSettingsMap {
   [key: string]: string;
@@ -95,7 +96,7 @@ export default function AdminSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch("http://localhost:9000/api/admin/settings");
+      const res = await fetch(apiUrl("/api/admin/settings"));
       const data = await res.json();
       if (data.settings) {
         setSettings((prev) => ({ ...prev, ...data.settings }));
@@ -122,7 +123,7 @@ export default function AdminSettingsPage() {
     setErrorMsg(null);
 
     try {
-      const res = await fetch("http://localhost:9000/api/admin/settings", {
+      const res = await fetch(apiUrl("/api/admin/settings"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings })
@@ -145,7 +146,7 @@ export default function AdminSettingsPage() {
   const handleTestEmail = async () => {
     setTestingEmail(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/settings/test-email", {
+      const res = await fetch(apiUrl("/api/admin/settings/test-email"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: settings.support_email }),
@@ -163,7 +164,7 @@ export default function AdminSettingsPage() {
   const handleTestSms = async () => {
     setTestingSms(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/settings/test-sms", {
+      const res = await fetch(apiUrl("/api/admin/settings/test-sms"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: settings.support_phone }),

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface CustomerRecord {
   id: string;
@@ -58,7 +59,7 @@ export default function AdminCustomersPage() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/customers");
+      const res = await fetch(apiUrl("/api/admin/customers"));
       const data = await res.json();
       if (data.customers) setCustomers(data.customers);
     } catch (err) {
@@ -76,7 +77,7 @@ export default function AdminCustomersPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/customers", {
+      const res = await fetch(apiUrl("/api/admin/customers"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -116,7 +117,7 @@ export default function AdminCustomersPage() {
     if (!editingCustomer) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/customers/${editingCustomer.id}`, {
+      const res = await fetch(apiUrl(`/api/admin/customers/${editingCustomer.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,7 +146,7 @@ export default function AdminCustomersPage() {
   const handleDeleteCustomer = async (id: string) => {
     if (!confirm("Are you sure you want to permanently delete this customer record?")) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/customers/${id}`, {
+      const res = await fetch(apiUrl(`/api/admin/customers/${id}`), {
         method: "DELETE",
       });
       if (res.ok) {
@@ -161,7 +162,7 @@ export default function AdminCustomersPage() {
 
   const handleBulkDelete = async (selectedIds: string[]) => {
     for (const id of selectedIds) {
-      await fetch(`http://localhost:9000/api/admin/customers/${id}`, { method: "DELETE" });
+      await fetch(apiUrl(`/api/admin/customers/${id}`), { method: "DELETE" });
     }
     setToastMsg({ type: "success", text: `Deleted ${selectedIds.length} customer records.` });
     fetchCustomers();

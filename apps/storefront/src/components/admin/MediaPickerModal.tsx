@@ -15,6 +15,7 @@ import {
   Sparkles,
   Link as LinkIcon
 } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 export interface MediaAsset {
   id: string;
@@ -65,7 +66,7 @@ export function MediaPickerModal({
   const fetchMedia = async () => {
     setLoading(true);
     try {
-      let url = "http://localhost:9000/api/admin/media";
+      let url = apiUrl("/api/admin/media");
       const params = new URLSearchParams();
       if (activeCategory !== "all") params.append("category", activeCategory);
       if (searchQuery.trim()) params.append("q", searchQuery.trim());
@@ -100,7 +101,7 @@ export function MediaPickerModal({
     setUploadError(null);
 
     try {
-      const res = await fetch("http://localhost:9000/api/admin/media", {
+      const res = await fetch(apiUrl("/api/admin/media"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,7 +133,7 @@ export function MediaPickerModal({
   const handleDeleteAsset = async (assetId: string) => {
     if (!confirm("Are you sure you want to delete this media asset permanently?")) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/media/${assetId}`, {
+      const res = await fetch(apiUrl(`/api/admin/media/${assetId}`), {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
+import { apiUrl } from "@/lib/api-config";
 
 interface CategoryRecord {
   id: string;
@@ -47,7 +48,7 @@ export default function AdminCategoriesPage() {
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/categories");
+      const res = await fetch(apiUrl("/api/admin/categories"));
       const data = await res.json();
       if (data.categories) setCategories(data.categories);
     } catch (err) {
@@ -65,7 +66,7 @@ export default function AdminCategoriesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:9000/api/admin/categories", {
+      const res = await fetch(apiUrl("/api/admin/categories"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +100,7 @@ export default function AdminCategoriesPage() {
     if (!editingCategory) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/categories/${editingCategory.id}`, {
+      const res = await fetch(apiUrl(`/api/admin/categories/${editingCategory.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -128,7 +129,7 @@ export default function AdminCategoriesPage() {
   const handleDeleteCategory = async (catId: string) => {
     if (!confirm("Are you sure you want to delete this category?")) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/categories/${catId}`, {
+      const res = await fetch(apiUrl(`/api/admin/categories/${catId}`), {
         method: "DELETE",
       });
       if (res.ok) {

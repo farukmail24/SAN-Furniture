@@ -16,6 +16,7 @@ import {
   Terminal,
   Activity
 } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 interface JailedIP {
   id: string;
@@ -38,7 +39,7 @@ export default function AdminSecurityPage() {
 
   const fetchJail = async () => {
     try {
-      const res = await fetch("http://localhost:9000/api/security/ip-jail");
+      const res = await fetch(apiUrl("/api/security/ip-jail"));
       const data = await res.json();
       if (data.jailedIps) {
         setJailedIps(data.jailedIps);
@@ -58,7 +59,7 @@ export default function AdminSecurityPage() {
     setUnblockingIp(ip);
     setToastMsg(null);
     try {
-      const res = await fetch("http://localhost:9000/api/security/unblock", {
+      const res = await fetch(apiUrl("/api/security/unblock"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip })
@@ -85,7 +86,7 @@ export default function AdminSecurityPage() {
     setAddingBan(true);
     setToastMsg(null);
     try {
-      const res = await fetch("http://localhost:9000/api/security/block", {
+      const res = await fetch(apiUrl("/api/security/block"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ip: newIp.trim(), reason: newReason.trim() || "Manual security lock" })

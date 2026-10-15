@@ -15,6 +15,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
+import { apiUrl } from "@/lib/api-config";
 
 interface ReviewItem {
   id: string;
@@ -38,7 +39,7 @@ export default function AdminReviewsPage() {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:9000/api/admin/reviews");
+      const res = await fetch(apiUrl("/api/admin/reviews"));
       const data = await res.json();
       if (data.reviews) setReviews(data.reviews);
     } catch (err) {
@@ -54,7 +55,7 @@ export default function AdminReviewsPage() {
 
   const handleUpdateStatus = async (reviewId: string, nextStatus: string) => {
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/reviews/${reviewId}/status`, {
+      const res = await fetch(apiUrl(`/api/admin/reviews/${reviewId}/status`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: nextStatus }),
@@ -74,7 +75,7 @@ export default function AdminReviewsPage() {
   const handleDeleteReview = async (reviewId: string) => {
     if (!confirm(`Are you sure you want to delete review "${reviewId}"?`)) return;
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/reviews/${reviewId}`, {
+      const res = await fetch(apiUrl(`/api/admin/reviews/${reviewId}`), {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete review");

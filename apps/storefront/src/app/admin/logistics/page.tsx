@@ -15,6 +15,7 @@ import {
   Info
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 interface PostcodeZone {
   id: string;
@@ -42,7 +43,7 @@ export default function AdminLogisticsPage() {
 
   const fetchLogistics = async () => {
     try {
-      const res = await fetch("http://localhost:9000/api/admin/logistics");
+      const res = await fetch(apiUrl("/api/admin/logistics"));
       const data = await res.json();
       if (data.zones) setZones(data.zones);
       if (data.deliveryTiers) setTiers(data.deliveryTiers);
@@ -61,7 +62,7 @@ export default function AdminLogisticsPage() {
     setSavingZoneId(zone.id);
     setToastMsg(null);
     try {
-      const res = await fetch(`http://localhost:9000/api/admin/logistics/zones/${zone.id}`, {
+      const res = await fetch(apiUrl(`/api/admin/logistics/zones/${zone.id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

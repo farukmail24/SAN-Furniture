@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, User, MapPin, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function CustomerRegisterPage() {
     setError(null);
 
     try {
-      const res = await fetch("http://localhost:9000/api/customer/auth/register", {
+      const res = await fetch(apiUrl("/api/customer/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
