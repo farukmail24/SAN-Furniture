@@ -8,9 +8,13 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run --workspace=storefront dev",
-    "dev:storefront": "npm run --workspace=storefront dev",
+    "dev": "concurrently -n \"backend,storefront\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run dev:backend\" \"npm run dev:storefront\"",
+    "start": "concurrently -n \"backend,storefront\" -c \"bgBlue.bold,bgGreen.bold\" \"npm run start:backend\" \"npm run start:storefront\"",
     "dev:backend": "npm run --workspace=backend dev",
+    "dev:storefront": "npm run --workspace=storefront dev",
+    "start:backend": "npm run --workspace=backend start",
+    "start:storefront": "npm run --workspace=storefront start",
+    "db:seed": "node scripts/generate-and-seed-mysql.mjs",
     "typecheck": "npm run --workspaces --if-present typecheck",
     "lint": "npm run --workspaces --if-present lint",
     "test": "npm run --workspaces --if-present test",
@@ -32,5 +36,9 @@
   "dependencies": {
     "react": "19.3.1",
     "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "ts-node": "^10.9.2"
   }
 }

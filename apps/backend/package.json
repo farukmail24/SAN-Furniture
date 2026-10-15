@@ -4,27 +4,29 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "medusa develop",
+    "dev": "node src/server.mjs",
     "build": "tsc",
-    "start": "medusa start",
+    "start": "node src/server.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs test/security-and-jail.test.mjs test/admin-control-suite.test.mjs test/performance-and-cache.test.mjs test/launch-verification-e2e.test.mjs"
   },
   "dependencies": {
-    "@san-furniture/types": "*",
-    "@san-furniture/config": "*",
-    "@medusajs/medusa": "^2.1.2",
-    "@medusajs/framework": "^2.1.2",
     "@medusajs/admin-sdk": "^2.1.2",
+    "@medusajs/framework": "^2.1.2",
+    "@medusajs/medusa": "^2.1.2",
+    "@san-furniture/config": "*",
+    "@san-furniture/types": "*",
     "bullmq": "^5.25.5",
+    "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
+    "mysql2": "^3.24.6",
     "pg": "^8.13.1",
-    "zod": "^3.23.8",
-    "dotenv": "^16.4.5"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
     "@types/pg": "^8.11.10",
+    "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   }
 }
