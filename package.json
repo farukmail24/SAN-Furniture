@@ -1,0 +1,25 @@
+{
+  "name": "san-furniture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ultra-premium UK dropshipping furniture platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "typecheck": "npm run --workspaces --if-present typecheck",
+    "lint": "npm run --workspaces --if-present lint",
+    "test": "npm run --workspaces --if-present test",
+    "build": "npm run --workspaces --if-present build"
+  },
+  "keywords": [
+    "furniture",
+    "dropshipping",
+    "uk-ecommerce",
+    "nextjs",
+    "medusa"
+  ],
+  "author": "SAN Furniture Engineering Team",
+  "license": "UNLICENSED"
+}
