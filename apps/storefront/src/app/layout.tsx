@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -43,9 +44,11 @@ export default function RootLayout({
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`}>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <CartProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </CartProvider>
       </body>
     </html>
   );
