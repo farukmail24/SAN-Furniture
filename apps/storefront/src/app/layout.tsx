@@ -34,6 +34,7 @@ export const metadata: Metadata = {
 };
 
 import { StorefrontShell } from "@/components/layout/StorefrontShell";
+import { ExtensionErrorGuard } from "@/components/common/ExtensionErrorGuard";
 
 export default function RootLayout({
   children,
@@ -42,7 +43,43 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function isExtensionError(e) {
+                  var file = (e && e.filename) || '';
+                  var msg = (e && e.message) || (e && e.reason && e.reason.message) || '';
+                  var stack = (e && e.error && e.error.stack) || (e && e.reason && e.reason.stack) || '';
+                  return file.indexOf('chrome-extension://') !== -1 ||
+                         file.indexOf('moz-extension://') !== -1 ||
+                         file.indexOf('safari-extension://') !== -1 ||
+                         stack.indexOf('chrome-extension://') !== -1 ||
+                         stack.indexOf('moz-extension://') !== -1 ||
+                         stack.indexOf('safari-extension://') !== -1 ||
+                         msg.indexOf('M_ID') !== -1 ||
+                         stack.indexOf('M_ID') !== -1;
+                }
+                window.addEventListener('error', function(e) {
+                  if (isExtensionError(e)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(e) {
+                  if (isExtensionError(e)) {
+                    e.stopImmediatePropagation();
+                    e.preventDefault();
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
+        <ExtensionErrorGuard />
         <StorefrontShell>{children}</StorefrontShell>
       </body>
     </html>
