@@ -12,7 +12,11 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
 
   if (isAdminRoute) {
     // Dedicated Admin Panel: Completely isolated from consumer Header & Footer
-    return <>{children}</>;
+    return (
+      <div className="w-full min-h-screen flex flex-col flex-1" suppressHydrationWarning>
+        {children}
+      </div>
+    );
   }
 
   // Consumer Storefront: Luxury Navigation, Header & Footer

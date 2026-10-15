@@ -148,7 +148,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#070D1E] flex flex-col lg:flex-row antialiased">
+    <div className="min-h-screen bg-[#F4F1EA] text-[#070D1E] flex flex-col lg:flex-row antialiased w-full" suppressHydrationWarning>
       {/* Mobile Top Bar */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0B132B] text-sand-50 border-b border-navy-800">
         <div className="flex items-center gap-2">
@@ -276,9 +276,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Operations Canvas */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      <div className="flex-1 flex flex-col min-w-0 w-full overflow-y-auto" suppressHydrationWarning>
         {/* Top Operations Header */}
-        <header className="sticky top-0 z-30 bg-sand-50/90 backdrop-blur-md border-b border-sand-200 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+        <header className="sticky top-0 z-30 bg-sand-50/90 backdrop-blur-md border-b border-sand-200 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4 w-full">
           <div className="flex items-center gap-3">
             <span className="text-xs font-medium text-navy-600">Terminal:</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
@@ -304,7 +304,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full" suppressHydrationWarning>{children}</main>
       </div>
     </div>
   );

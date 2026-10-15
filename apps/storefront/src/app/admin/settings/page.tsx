@@ -100,7 +100,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#E8E2D5]">
         <div>
@@ -231,7 +231,7 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
                   <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
                     Registered Company Name
@@ -287,20 +287,6 @@ export default function AdminSettingsPage() {
                   <p className="text-[11px] text-[#4F6D7A] mt-1">Calculated using exact UK penny arithmetic.</p>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Official Registered Office Address
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.registered_address || ""}
-                    onChange={(e) => handleChange("registered_address", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    placeholder="48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">Must match registered office on Companies House filings.</p>
-                </div>
-
                 <div>
                   <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
                     Concierge Support Email
@@ -330,6 +316,20 @@ export default function AdminSettingsPage() {
                     />
                   </div>
                 </div>
+
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
+                    Official Registered Office Address
+                  </label>
+                  <input
+                    type="text"
+                    value={settings.registered_address || ""}
+                    onChange={(e) => handleChange("registered_address", e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
+                    placeholder="48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom"
+                  />
+                  <p className="text-[11px] text-[#4F6D7A] mt-1">Must match registered office on Companies House filings.</p>
+                </div>
               </div>
             </div>
           )}
@@ -347,7 +347,7 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
                   <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
                     Free Delivery Threshold (Pennies)
@@ -485,8 +485,8 @@ export default function AdminSettingsPage() {
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <div className="p-4 border border-[#E8E2D5] rounded-lg flex items-center justify-between">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="p-5 border border-[#E8E2D5] rounded-xl flex items-center justify-between bg-slate-50/50">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-[#0B132B] text-[#C89B3C] flex items-center justify-center font-bold text-xs">
                       STRIPE
@@ -501,7 +501,7 @@ export default function AdminSettingsPage() {
                   </span>
                 </div>
 
-                <div className="p-4 border border-[#E8E2D5] rounded-lg space-y-3">
+                <div className="p-5 border border-[#E8E2D5] rounded-xl space-y-3 bg-slate-50/50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-pink-100 text-pink-700 flex items-center justify-center font-bold text-xs">
@@ -524,7 +524,7 @@ export default function AdminSettingsPage() {
                       type="text"
                       value={settings.klarna_merchant_id || ""}
                       onChange={(e) => handleChange("klarna_merchant_id", e.target.value)}
-                      className="w-full max-w-sm px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-sm text-[#0B132B]"
+                      className="w-full px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-sm text-[#0B132B]"
                     />
                   </div>
                 </div>

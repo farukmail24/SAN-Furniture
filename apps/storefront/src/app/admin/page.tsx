@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
 
       {/* Tabs Navigation */}
       <div className="border-b border-sand-200 bg-sand-100/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 sm:gap-4 overflow-x-auto scrollbar-none text-xs font-semibold">
+        <div className="w-full px-4 sm:px-6 flex items-center gap-1 sm:gap-4 overflow-x-auto scrollbar-none text-xs font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab("analytics")}
@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      <div className="w-full py-6 sm:py-8">
         
         {/* TAB 1: Sales & Margins */}
         {activeTab === "analytics" && (
@@ -317,7 +317,7 @@ export default function AdminDashboardPage() {
 
         {/* TAB 2: Logistics & Postcode Matrix */}
         {activeTab === "logistics" && (
-          <div className="max-w-3xl space-y-6 animate-fade-in">
+          <div className="w-full space-y-6 animate-fade-in">
             <div className="p-6 rounded-xl bg-sand-100/60 border border-sand-200 space-y-4">
               <div>
                 <h3 className="font-display text-lg font-bold text-navy-950">
@@ -461,7 +461,7 @@ export default function AdminDashboardPage() {
 
         {/* TAB 4: Google & Meta Feeds */}
         {activeTab === "feeds" && (
-          <div className="space-y-6 max-w-4xl animate-fade-in">
+          <div className="space-y-6 w-full animate-fade-in">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Google Merchant Feed Card */}
               <div className="p-6 rounded-xl bg-sand-100/60 border border-sand-200 space-y-3">
