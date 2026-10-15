@@ -244,12 +244,12 @@ export default function HomePage() {
 
         {/* Dynamic 4-Column Product Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8">
-          {filteredProducts.map((product) => {
+          {filteredProducts.map((product, index) => {
             const isAdded = addedProductId === product.id;
             const klarnaPerMonth = Math.round(product.pricePennies / 3);
             return (
               <div
-                key={product.id}
+                key={`${product.id}-${index}`}
                 className="group rounded-2xl bg-sand-50 border border-sand-200 overflow-hidden shadow-ambient hover:shadow-elevation transition-all flex flex-col justify-between"
               >
                 {/* Product Image & Badges */}
@@ -492,11 +492,11 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {saleProducts.slice(0, 4).map((product) => {
+          {saleProducts.slice(0, 4).map((product, index) => {
             const savings = (product.compareAtPricePennies || 0) - product.pricePennies;
             return (
               <div
-                key={product.id}
+                key={`sale-${product.id}-${index}`}
                 className="group rounded-2xl bg-sand-50 border border-sand-300 overflow-hidden shadow-ambient hover:shadow-card transition-all flex flex-col justify-between"
               >
                 <Link href={`/products/${product.handle}`} className="block relative aspect-[4/3] bg-sand-200 overflow-hidden">
@@ -572,9 +572,9 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {newArrivals.slice(0, 4).map((product) => (
+            {newArrivals.slice(0, 4).map((product, index) => (
               <Link
-                key={product.id}
+                key={`arrival-${product.id}-${index}`}
                 href={`/products/${product.handle}`}
                 className="group rounded-2xl bg-sand-50/10 border border-sand-50/15 overflow-hidden backdrop-blur-sm hover:border-brass-400 transition-all flex flex-col justify-between"
               >

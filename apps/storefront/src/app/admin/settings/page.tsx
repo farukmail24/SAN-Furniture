@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface SystemSettingsMap {
   [key: string]: string;
@@ -96,14 +97,17 @@ export default function AdminSettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(apiUrl("/api/admin/settings"));
-      const data = await res.json();
-      if (data.settings) {
-        setSettings((prev) => ({ ...prev, ...data.settings }));
-      }
+      fetchWithSwr(
+        apiUrl("/api/admin/settings"),
+        (data: any, isCached) => {
+          if (data.settings) {
+            setSettings((prev) => ({ ...prev, ...data.settings }));
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load settings:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -130,6 +134,7 @@ export default function AdminSettingsPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/settings");
         setSuccessMsg("System configuration successfully saved and persisted to database!");
         setTimeout(() => setSuccessMsg(null), 4000);
       } else {

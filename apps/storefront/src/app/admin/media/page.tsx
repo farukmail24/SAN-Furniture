@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { MediaAsset } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 export default function AdminMediaPage() {
   const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
@@ -49,7 +50,6 @@ export default function AdminMediaPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fetchMedia = async () => {
-    setLoading(true);
     try {
       let url = apiUrl("/api/admin/media");
       const params = new URLSearchParams();
@@ -57,18 +57,21 @@ export default function AdminMediaPage() {
       if (searchQuery.trim()) params.append("q", searchQuery.trim());
       if (params.toString()) url += `?${params.toString()}`;
 
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.media) {
-        setMediaList(data.media);
-        if (selectedAsset) {
-          const updated = data.media.find((m: MediaAsset) => m.id === selectedAsset.id);
-          if (updated) setSelectedAsset(updated);
+      fetchWithSwr(
+        url,
+        (data: any, isCached) => {
+          if (data.media) {
+            setMediaList(data.media);
+            if (isCached) setLoading(false);
+            if (selectedAsset) {
+              const updated = data.media.find((m: MediaAsset) => m.id === selectedAsset.id);
+              if (updated) setSelectedAsset(updated);
+            }
+          }
         }
-      }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load media:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -100,6 +103,7 @@ export default function AdminMediaPage() {
 
       if (!res.ok) throw new Error("Upload failed");
 
+      invalidateCache("/api/admin/media");
       setUploadUrl("");
       setUploadName("");
       setUploadAlt("");
@@ -120,6 +124,7 @@ export default function AdminMediaPage() {
       const res = await fetch(apiUrl(`/api/admin/media/${id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
 
+      invalidateCache("/api/admin/media");
       if (selectedAsset?.id === id) setSelectedAsset(null);
       setToastMsg({ type: "success", text: "Media asset deleted permanently." });
       await fetchMedia();

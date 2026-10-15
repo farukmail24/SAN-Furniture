@@ -20,6 +20,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface PromotionItem {
   id: string;
@@ -51,13 +52,17 @@ export default function AdminPromotionsPage() {
 
   const fetchPromotions = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(apiUrl("/api/admin/promotions"));
-      const data = await res.json();
-      if (data.promotions) setPromotions(data.promotions);
+      fetchWithSwr(
+        apiUrl("/api/admin/promotions"),
+        (data: any, isCached) => {
+          if (data.promotions) {
+            setPromotions(data.promotions);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to fetch promotions:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -92,6 +97,7 @@ export default function AdminPromotionsPage() {
 
       if (!res.ok) throw new Error("Failed to create promotion");
 
+      invalidateCache("/api/admin/promotions");
       setSuccessMessage(`Promotion "${formCode.toUpperCase()}" created successfully!`);
       setIsAddModalOpen(false);
       setFormCode("");
@@ -115,6 +121,7 @@ export default function AdminPromotionsPage() {
       });
       if (!res.ok) throw new Error("Failed to update status");
 
+      invalidateCache("/api/admin/promotions");
       setPromotions((prev) =>
         prev.map((p) => (p.id === promo.id ? { ...p, is_active: nextState } : p))
       );
@@ -133,6 +140,7 @@ export default function AdminPromotionsPage() {
       });
       if (!res.ok) throw new Error("Failed to delete");
 
+      invalidateCache("/api/admin/promotions");
       setPromotions((prev) => prev.filter((p) => p.id !== promoId));
       setSuccessMessage(`Promotion "${code}" removed from database.`);
       setTimeout(() => setSuccessMessage(null), 3000);

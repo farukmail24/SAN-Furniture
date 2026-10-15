@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr } from "@/lib/api-cache";
 
 interface CustomerUser {
   id: string;
@@ -60,12 +61,16 @@ export default function CustomerAccountPage() {
     // Default to stored user email or fallback to demo
     const activeEmail = currentUser?.email || "eleanor.vance@gmail.com";
 
-    // Fetch live customer orders from MySQL
-    fetch(apiUrl(`/api/customer/orders?email=${encodeURIComponent(activeEmail)}`))
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.orders) setOrders(data.orders);
-      })
+    // Fetch live customer orders from MySQL with instant SWR cache
+    fetchWithSwr(
+      apiUrl(`/api/customer/orders?email=${encodeURIComponent(activeEmail)}`),
+      (data: any, isCached) => {
+        if (data.orders) {
+          setOrders(data.orders);
+          if (isCached) setLoading(false);
+        }
+      }
+    )
       .catch((err) => console.error("Orders fetch error:", err))
       .finally(() => setLoading(false));
   }, [router]);

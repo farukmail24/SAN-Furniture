@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface ReviewItem {
   id: string;
@@ -38,13 +39,17 @@ export default function AdminReviewsPage() {
 
   const fetchReviews = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(apiUrl("/api/admin/reviews"));
-      const data = await res.json();
-      if (data.reviews) setReviews(data.reviews);
+      fetchWithSwr(
+        apiUrl("/api/admin/reviews"),
+        (data: any, isCached) => {
+          if (data.reviews) {
+            setReviews(data.reviews);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to fetch reviews:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -62,6 +67,7 @@ export default function AdminReviewsPage() {
       });
       if (!res.ok) throw new Error("Failed to update status");
 
+      invalidateCache("/api/admin/reviews");
       setReviews((prev) =>
         prev.map((r) => (r.id === reviewId ? { ...r, status: nextStatus } : r))
       );
@@ -80,6 +86,7 @@ export default function AdminReviewsPage() {
       });
       if (!res.ok) throw new Error("Failed to delete review");
 
+      invalidateCache("/api/admin/reviews");
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
       setSuccessMessage(`Review ${reviewId} removed from database.`);
       setTimeout(() => setSuccessMessage(null), 3000);

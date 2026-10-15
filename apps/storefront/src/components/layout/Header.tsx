@@ -74,30 +74,35 @@ export function Header() {
             </Link>
             <Link
               href="/categories/sofas"
+              prefetch={true}
               className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
             >
               Sofas
             </Link>
             <Link
               href="/categories/armchairs"
+              prefetch={true}
               className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
             >
               Armchairs
             </Link>
             <Link
               href="/categories/dining"
+              prefetch={true}
               className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
             >
               Dining
             </Link>
             <Link
               href="/categories/beds"
+              prefetch={true}
               className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
             >
               Bedroom
             </Link>
             <Link
               href="/categories/living-tables"
+              prefetch={true}
               className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
             >
               Tables
@@ -123,6 +128,7 @@ export function Header() {
             {/* Customer Account Button */}
             <Link
               href="/account"
+              prefetch={true}
               aria-label="Customer Account & Order Tracking"
               className="p-2 rounded-full hover:bg-sand-200 text-navy-900 transition-colors"
               title="UK Client Portal & Delivery Tracking"

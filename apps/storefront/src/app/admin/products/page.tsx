@@ -18,6 +18,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface ProductItem {
   id: string;
@@ -53,22 +54,27 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Fetch products & categories from backend
+  // Fetch products & categories from backend with instant SWR cache
   const fetchProducts = async () => {
     try {
-      setLoading(true);
-      const [resProd, resCat] = await Promise.all([
-        fetch(apiUrl("/api/admin/products")),
-        fetch(apiUrl("/api/admin/categories"))
-      ]);
-      const dataProd = await resProd.json();
-      const dataCat = await resCat.json();
+      fetchWithSwr(
+        apiUrl("/api/admin/products"),
+        (data: any, isCached) => {
+          if (data.products) {
+            setProducts(data.products);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
 
-      if (dataProd.products) setProducts(dataProd.products);
-      if (dataCat.categories) setCategories(dataCat.categories);
+      fetchWithSwr(
+        apiUrl("/api/admin/categories"),
+        (data: any) => {
+          if (data.categories) setCategories(data.categories);
+        }
+      );
     } catch (err) {
       console.error("Failed to fetch products:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -89,6 +95,7 @@ export default function AdminProductsPage() {
 
       if (!res.ok) throw new Error("Failed to delete");
 
+      invalidateCache("/api/admin/products");
       setSuccessMessage(`Product "${title}" deleted from database.`);
       setProducts((prev) => prev.filter((p) => p.id !== productId));
       setTimeout(() => setSuccessMessage(null), 3500);

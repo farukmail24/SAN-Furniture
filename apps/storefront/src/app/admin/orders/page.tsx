@@ -27,6 +27,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface OrderItem {
   id: string;
@@ -68,13 +69,17 @@ export default function AdminOrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
-      const res = await fetch(apiUrl("/api/admin/orders"));
-      const data = await res.json();
-      if (data.orders) setOrders(data.orders);
+      fetchWithSwr(
+        apiUrl("/api/admin/orders"),
+        (data: any, isCached) => {
+          if (data.orders) {
+            setOrders(data.orders);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
@@ -111,6 +116,7 @@ export default function AdminOrdersPage() {
 
       if (!res.ok) throw new Error("Failed to dispatch order");
 
+      invalidateCache("/api/admin/orders");
       setSuccessMessage(`Order ${dispatchOrder.id} successfully updated with ${carrier} tracking ${trackingCode}!`);
       setDispatchOrder(null);
       await fetchOrders();

@@ -33,8 +33,10 @@ export const metadata: Metadata = {
   },
 };
 
+import { Suspense } from "react";
 import { StorefrontShell } from "@/components/layout/StorefrontShell";
 import { ExtensionErrorGuard } from "@/components/common/ExtensionErrorGuard";
+import { TopProgressBar } from "@/components/common/TopProgressBar";
 
 export default function RootLayout({
   children,
@@ -79,6 +81,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         <ExtensionErrorGuard />
         <StorefrontShell>{children}</StorefrontShell>
       </body>

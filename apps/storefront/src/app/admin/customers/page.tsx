@@ -21,6 +21,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface CustomerRecord {
   id: string;
@@ -57,14 +58,18 @@ export default function AdminCustomersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCustomers = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/customers"));
-      const data = await res.json();
-      if (data.customers) setCustomers(data.customers);
+      fetchWithSwr(
+        apiUrl("/api/admin/customers"),
+        (data: any, isCached) => {
+          if (data.customers) {
+            setCustomers(data.customers);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load customers:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -92,6 +97,7 @@ export default function AdminCustomersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/customers");
         setToastMsg({ type: "success", text: "Customer profile successfully created in CRM!" });
         setIsAddModalOpen(false);
         // Reset form
@@ -129,6 +135,7 @@ export default function AdminCustomersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/customers");
         setToastMsg({ type: "success", text: "Customer updated successfully!" });
         setEditingCustomer(null);
         fetchCustomers();
@@ -150,6 +157,7 @@ export default function AdminCustomersPage() {
         method: "DELETE",
       });
       if (res.ok) {
+        invalidateCache("/api/admin/customers");
         setToastMsg({ type: "success", text: "Customer removed from CRM." });
         fetchCustomers();
       }

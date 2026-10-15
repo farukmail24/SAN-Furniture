@@ -391,7 +391,7 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
     }
   },
   {
-    id: "prod_bed_001",
+    id: "prod_bed_003",
     title: "The Westminster Fluted Ottoman Storage Bed in Charcoal Velvet",
     handle: "westminster-fluted-ottoman-storage-bed-charcoal-velvet",
     subtitle: "Kingsize gas-lift hydraulic ottoman with hand-fluted architectural headboard",

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface AdminUserRecord {
   id: string;
@@ -46,14 +47,18 @@ export default function AdminUsersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchUsers = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/users"));
-      const data = await res.json();
-      if (data.users) setUsers(data.users);
+      fetchWithSwr(
+        apiUrl("/api/admin/users"),
+        (data: any, isCached) => {
+          if (data.users) {
+            setUsers(data.users);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load staff users:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -78,6 +83,7 @@ export default function AdminUsersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/users");
         setToastMsg({ type: "success", text: `Staff user "${formName}" created successfully!` });
         setIsAddModalOpen(false);
         setFormName("");
@@ -112,6 +118,7 @@ export default function AdminUsersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/users");
         setToastMsg({ type: "success", text: "Staff user updated successfully!" });
         setEditingUser(null);
         setFormPassword("");
@@ -135,6 +142,7 @@ export default function AdminUsersPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/users");
         setToastMsg({ type: "success", text: "Staff user removed." });
         fetchUsers();
       } else {

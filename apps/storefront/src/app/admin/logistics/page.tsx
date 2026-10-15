@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface PostcodeZone {
   id: string;
@@ -43,13 +44,16 @@ export default function AdminLogisticsPage() {
 
   const fetchLogistics = async () => {
     try {
-      const res = await fetch(apiUrl("/api/admin/logistics"));
-      const data = await res.json();
-      if (data.zones) setZones(data.zones);
-      if (data.deliveryTiers) setTiers(data.deliveryTiers);
+      fetchWithSwr(
+        apiUrl("/api/admin/logistics"),
+        (data: any, isCached) => {
+          if (data.zones) setZones(data.zones);
+          if (data.deliveryTiers) setTiers(data.deliveryTiers);
+          if (isCached) setLoading(false);
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load logistics:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -73,6 +77,7 @@ export default function AdminLogisticsPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        invalidateCache("/api/admin/logistics");
         setToastMsg({ type: "success", text: `${zone.zone_name} rules successfully saved!` });
       } else {
         setToastMsg({ type: "error", text: data.error || "Failed to save zone rules." });

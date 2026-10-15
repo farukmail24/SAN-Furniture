@@ -16,6 +16,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface CategoryRecord {
   id: string;
@@ -46,14 +47,18 @@ export default function AdminCategoriesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchCategories = async () => {
-    setLoading(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/categories"));
-      const data = await res.json();
-      if (data.categories) setCategories(data.categories);
+      fetchWithSwr(
+        apiUrl("/api/admin/categories"),
+        (data: any, isCached) => {
+          if (data.categories) {
+            setCategories(data.categories);
+            if (isCached) setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load categories:", err);
-    } finally {
       setLoading(false);
     }
   };
@@ -133,6 +138,7 @@ export default function AdminCategoriesPage() {
         method: "DELETE",
       });
       if (res.ok) {
+        invalidateCache("/api/admin/categories");
         setToastMsg({ type: "success", text: "Category deleted." });
         fetchCategories();
       }
