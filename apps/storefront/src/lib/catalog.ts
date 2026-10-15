@@ -389,6 +389,229 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [
       },
       lead_time_days: 3
     }
+  },
+  {
+    id: "prod_bed_001",
+    title: "The Westminster Fluted Ottoman Storage Bed in Charcoal Velvet",
+    handle: "westminster-fluted-ottoman-storage-bed-charcoal-velvet",
+    subtitle: "Kingsize gas-lift hydraulic ottoman with hand-fluted architectural headboard",
+    description: "Combines grand hotel proportions with seamless hidden underbed storage. Premium German hydraulic gas struts lift effortlessly with the mattress in place. Wrapped in stain-guarded British velvet with a solid sprung slatted base.",
+    categoryId: "cat_beds",
+    status: "published",
+    pricePennies: 119900,
+    compareAtPricePennies: 139900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456051",
+    thumbnailUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=85",
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 162.0,
+      height_cm: 135.0,
+      depth_cm: 215.0,
+      weight_kg: 88.0,
+      material: "velvet",
+      frame_material: "solid_oak",
+      color: "Charcoal Slate",
+      assembly_required: true,
+      assembly_time_mins: 45,
+      doorway_clearance_min_cm: 72.0,
+      delivery_tier: "two_man_white_glove",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Part 1: 1979",
+        certificate_ref: "BS-LON-2026-051",
+        label_attached: true
+      },
+      lead_time_days: 7
+    }
+  },
+  {
+    id: "prod_bed_002",
+    title: "The Cotswold Solid Oak Spindle Bedstead",
+    handle: "cotswold-solid-oak-spindle-bedstead",
+    subtitle: "Artisan tapered spindles and solid European white oak construction",
+    description: "Inspired by mid-century Scandinavian and traditional English Shaker craft. Hand-sanded European oak finished in a raw matte protective lacquer that celebrates the natural grain, knots, and medullary rays.",
+    categoryId: "cat_beds",
+    status: "published",
+    pricePennies: 94900,
+    compareAtPricePennies: 109900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456052",
+    thumbnailUrl: "https://images.unsplash.com/photo-1540518614846-7ede433c4b49?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1540518614846-7ede433c4b49?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 158.0,
+      height_cm: 110.0,
+      depth_cm: 212.0,
+      weight_kg: 56.0,
+      material: "none",
+      frame_material: "solid_oak",
+      color: "Natural White Oak",
+      assembly_required: true,
+      assembly_time_mins: 30,
+      doorway_clearance_min_cm: 68.0,
+      delivery_tier: "two_man_white_glove",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Exempt (Solid Timber)",
+        certificate_ref: "WOOD-EXEMPT-052",
+        label_attached: false
+      },
+      lead_time_days: 7
+    }
+  },
+  {
+    id: "prod_chair_003",
+    title: "The Oxford Saddle Leather Cantilever Lounge Chair",
+    handle: "oxford-saddle-leather-cantilever-lounge-chair",
+    subtitle: "Hand-stitched cognac aniline leather with floating tubular steel frame",
+    description: "An architectural icon designed for quiet reading spaces and modern studies. Vegetable-tanned aniline leather acquires an authentic rich patina over years of use, slung across a precision-bent blackened cantilever frame.",
+    categoryId: "cat_armchairs",
+    status: "published",
+    pricePennies: 62900,
+    compareAtPricePennies: 72900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456053",
+    thumbnailUrl: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 72.0,
+      height_cm: 80.0,
+      depth_cm: 84.0,
+      seat_height_cm: 42.0,
+      weight_kg: 19.0,
+      material: "top_grain_leather",
+      frame_material: "powder_coated_steel",
+      color: "Cognac Tan",
+      assembly_required: false,
+      doorway_clearance_min_cm: 65.0,
+      delivery_tier: "standard_parcel",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Part 1: 1979",
+        certificate_ref: "BS-LON-2026-053",
+        label_attached: true
+      },
+      lead_time_days: 3
+    }
+  },
+  {
+    id: "prod_table_002",
+    title: "The Edinburgh Calacatta Marble & Brass Console Table",
+    handle: "edinburgh-calacatta-marble-brass-console-table",
+    subtitle: "Subtle honed Italian Calacatta Viola marble with brushed brass stiletto legs",
+    description: "Designed for grand entrance hallways and behind floating sofas. Hand-selected 20mm Italian marble slab with rounded bullnose edges resting on an architectural solid brass framework.",
+    categoryId: "cat_living",
+    status: "published",
+    pricePennies: 79900,
+    compareAtPricePennies: 89900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456054",
+    thumbnailUrl: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 120.0,
+      height_cm: 82.0,
+      depth_cm: 36.0,
+      weight_kg: 38.0,
+      material: "none",
+      frame_material: "brushed_brass",
+      color: "Calacatta Viola & Gold Brass",
+      assembly_required: true,
+      assembly_time_mins: 15,
+      delivery_tier: "pallet",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Exempt (Stone & Brass)",
+        certificate_ref: "STONE-EXEMPT-054",
+        label_attached: false
+      },
+      lead_time_days: 5
+    }
+  },
+  {
+    id: "prod_dining_003",
+    title: "The Cambridge Cane Back Oak Dining Chairs (Set of 2)",
+    handle: "cambridge-cane-back-oak-dining-chairs-pair",
+    subtitle: "French hand-woven rattan cane backrest with natural oatmeal linen seat",
+    description: "A celebration of tactile heritage materials. Double-layered natural cane weave provides breathable comfort, paired with a solid American white oak frame and high-density foam seat pad.",
+    categoryId: "cat_dining",
+    status: "published",
+    pricePennies: 38900,
+    compareAtPricePennies: 44900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456055",
+    thumbnailUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 52.0,
+      height_cm: 86.0,
+      depth_cm: 56.0,
+      seat_height_cm: 48.0,
+      weight_kg: 14.0,
+      material: "linen_blend",
+      frame_material: "solid_oak",
+      color: "Natural Oak & Oatmeal",
+      assembly_required: false,
+      delivery_tier: "standard_parcel",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Part 1: 1979",
+        certificate_ref: "BS-LON-2026-055",
+        label_attached: true
+      },
+      lead_time_days: 3
+    }
+  },
+  {
+    id: "prod_sofa_004",
+    title: "The Hampstead 4-Seater Modular Sofa in Taupe Chenille",
+    handle: "hampstead-4-seater-modular-sofa-taupe-chenille",
+    subtitle: "Extra-deep 105cm lounging depth with tactile textured Italian chenille",
+    description: "Our deepest, most indulgent family sofa. Low-slung contemporary proportions, feather-fiber duvet wrap over pocket spring core, and invisible modular interlocking brackets allowing flexible configurations.",
+    categoryId: "cat_sofas",
+    status: "published",
+    pricePennies: 189900,
+    compareAtPricePennies: 219900,
+    vatRatePercent: 20.0,
+    gtinBarcode: "5060123456056",
+    thumbnailUrl: "https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=85",
+    images: [
+      "https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=85"
+    ],
+    specs: {
+      width_cm: 310.0,
+      height_cm: 85.0,
+      depth_cm: 105.0,
+      seat_height_cm: 44.0,
+      seat_depth_cm: 72.0,
+      weight_kg: 98.0,
+      material: "chenille",
+      frame_material: "engineered_hardwood",
+      color: "Warm Taupe",
+      assembly_required: true,
+      assembly_time_mins: 20,
+      doorway_clearance_min_cm: 75.0,
+      delivery_tier: "two_man_white_glove",
+      fire_safety: {
+        compliant: true,
+        standard: "BS 5852: Part 1: 1979",
+        certificate_ref: "BS-LON-2026-056",
+        label_attached: true
+      },
+      lead_time_days: 10
+    }
   }
 ];
 
