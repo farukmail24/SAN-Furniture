@@ -21,7 +21,15 @@ import {
   MessageSquare,
   Send,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  FolderGit2,
+  HardDrive,
+  Copy,
+  Check,
+  Terminal,
+  ArrowRight,
+  Loader2,
+  Link2
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
@@ -88,12 +96,79 @@ export default function AdminSettingsPage() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    "branding" | "legal" | "email" | "sms" | "logistics" | "dropship" | "payments" | "security"
+    "branding" | "legal" | "email" | "sms" | "logistics" | "dropship" | "payments" | "security" | "storage"
   >("branding");
+
+  // Storage Symlink State
+  const [storageStatus, setStorageStatus] = useState<any>(null);
+  const [loadingStorage, setLoadingStorage] = useState(false);
+  const [creatingStorageLink, setCreatingStorageLink] = useState(false);
+  const [testingStorageLink, setTestingStorageLink] = useState(false);
+  const [storageTestResult, setStorageTestResult] = useState<any>(null);
+  const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
   // Media picker target
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [activeLogoTarget, setActiveLogoTarget] = useState<"light" | "dark" | "favicon">("light");
+
+  const fetchStorageStatus = async () => {
+    setLoadingStorage(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/system/storage-link"));
+      const data = await res.json();
+      setStorageStatus(data);
+    } catch (err) {
+      console.error("Storage status error:", err);
+    } finally {
+      setLoadingStorage(false);
+    }
+  };
+
+  const handleCreateStorageLink = async () => {
+    setCreatingStorageLink(true);
+    setStorageTestResult(null);
+    try {
+      const res = await fetch(apiUrl("/api/admin/system/storage-link"), { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg(data.message || "Storage symlink successfully created!");
+        setTimeout(() => setSuccessMsg(null), 4000);
+        await fetchStorageStatus();
+      } else {
+        setErrorMsg(data.error || "Failed to create storage symlink");
+      }
+    } catch (err: any) {
+      setErrorMsg("Error: " + err.message);
+    } finally {
+      setCreatingStorageLink(false);
+    }
+  };
+
+  const handleTestStorageLink = async () => {
+    setTestingStorageLink(true);
+    setStorageTestResult(null);
+    try {
+      const res = await fetch(apiUrl("/api/admin/system/storage-link/test"), { method: "POST" });
+      const data = await res.json();
+      setStorageTestResult(data);
+      if (res.ok) {
+        setSuccessMsg(data.message || "Self-test passed! Public HTTP access confirmed.");
+        setTimeout(() => setSuccessMsg(null), 4000);
+      } else {
+        setErrorMsg(data.error || "Storage test failed");
+      }
+    } catch (err: any) {
+      setErrorMsg("Test error: " + err.message);
+    } finally {
+      setTestingStorageLink(false);
+    }
+  };
+
+  const handleCopyCommand = (cmd: string, key: string) => {
+    navigator.clipboard.writeText(cmd);
+    setCopiedCmd(key);
+    setTimeout(() => setCopiedCmd(null), 2000);
+  };
 
   const fetchSettings = async () => {
     try {
@@ -115,6 +190,12 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "storage") {
+      fetchStorageStatus();
+    }
+  }, [activeTab]);
 
   const handleChange = (key: string, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -340,6 +421,19 @@ export default function AdminSettingsPage() {
         >
           <Lock className="w-4 h-4" />
           <span>Security &amp; IP Lockout</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("storage")}
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === "storage"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
+          }`}
+        >
+          <FolderGit2 className="w-4 h-4 text-brass-400" />
+          <span>Storage Symlink &amp; Shortcuts</span>
         </button>
       </div>
 
@@ -927,16 +1021,259 @@ export default function AdminSettingsPage() {
           </div>
         )}
 
-        {/* Save Button */}
-        <div className="pt-4 border-t border-sand-200 flex items-center justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-navy-950 font-bold text-xs tracking-wide shadow-md shadow-brass-500/20 transition-all disabled:opacity-50"
-          >
-            {saving ? "Saving Configuration..." : "Save Configuration to MySQL"}
-          </button>
-        </div>
+        {/* TAB 9: STORAGE SYMLINK & SHORTCUTS */}
+        {activeTab === "storage" && (
+          <div className="space-y-6">
+            {/* Header Showcase Card */}
+            <div className="bg-gradient-to-br from-navy-950 via-[#0B132B] to-[#1C2541] rounded-2xl p-6 sm:p-8 text-sand-50 shadow-xl border border-navy-800">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brass-500/20 text-brass-300 border border-brass-500/30 text-xs font-semibold uppercase tracking-wider mb-3">
+                    <FolderGit2 className="w-3.5 h-3.5 text-brass-400" />
+                    Storage &amp; Server Infrastructure
+                  </div>
+                  <h2 className="font-display text-2xl font-bold text-sand-50">
+                    Storage Symlink &amp; Directory Shortcut Manager
+                  </h2>
+                  <p className="text-sand-300 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+                    Create and manage symbolic links to map persistent backend storage (<code className="text-brass-300 font-mono">storage/uploads</code>) to the public web root (<code className="text-brass-300 font-mono">apps/storefront/public/storage</code>). Essential for zero-downtime uploads, cPanel, Nginx, and cloud CDN hosting.
+                  </p>
+                </div>
+
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 ${
+                    storageStatus?.isLinked
+                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300 shadow-lg shadow-emerald-950/40"
+                      : "bg-amber-500/20 border-amber-500/40 text-amber-300 shadow-lg shadow-amber-950/40"
+                  }`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${storageStatus?.isLinked ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                    <span>{storageStatus?.isLinked ? "Symlink Operational (Active)" : "Symlink Not Linked"}</span>
+                  </div>
+                  <span className="text-[11px] text-sand-400 font-mono">
+                    OS: {storageStatus?.platform === "win32" ? "Windows (NTFS Junction)" : "Linux / Unix (POSIX Symlink)"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Metrics & Path Mapping */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-5 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs text-navy-600 font-medium">
+                  <span>Source Storage Folder</span>
+                  <HardDrive className="w-4 h-4 text-brass-600" />
+                </div>
+                <div className="text-xs font-mono font-bold text-navy-950 break-all bg-sand-100 p-2.5 rounded-lg border border-sand-200">
+                  {storageStatus?.targetDir || "storage/uploads"}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Target directory is writable</span>
+                </div>
+              </div>
+
+              <div className="p-5 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs text-navy-600 font-medium">
+                  <span>Public Symlink Shortcut</span>
+                  <Link2 className="w-4 h-4 text-brass-600" />
+                </div>
+                <div className="text-xs font-mono font-bold text-navy-950 break-all bg-sand-100 p-2.5 rounded-lg border border-sand-200">
+                  {storageStatus?.publicLink || "apps/storefront/public/storage"}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-navy-700">
+                  <Globe className="w-3.5 h-3.5 text-brass-600" />
+                  <span>Web accessible via <code className="font-mono text-navy-950 font-bold">/storage/*</code></span>
+                </div>
+              </div>
+
+              <div className="p-5 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-xs text-navy-600 font-medium">
+                  <span>Storage Stats</span>
+                  <RefreshCw className="w-4 h-4 text-brass-600" />
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center pt-1">
+                  <div className="bg-sand-100 p-2 rounded-lg border border-sand-200">
+                    <span className="text-[10px] uppercase tracking-wider text-navy-500 font-bold block">Total Files</span>
+                    <span className="text-sm font-bold text-navy-950 font-mono">{storageStatus?.fileCount ?? 0}</span>
+                  </div>
+                  <div className="bg-sand-100 p-2 rounded-lg border border-sand-200">
+                    <span className="text-[10px] uppercase tracking-wider text-navy-500 font-bold block">Disk Usage</span>
+                    <span className="text-sm font-bold text-navy-950 font-mono">
+                      {((storageStatus?.totalSizeBytes || 0) / 1024).toFixed(1)} KB
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons & Self-Test */}
+            <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-navy-950 flex items-center gap-2">
+                <Zap className="w-4 h-4 text-brass-600" />
+                <span>1-Click Symlink Automation</span>
+              </h3>
+              <p className="text-xs text-navy-600">
+                Execute automated creation, validation, or repair of the storage shortcut directory directly on the host server.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={creatingStorageLink}
+                  onClick={handleCreateStorageLink}
+                  className="px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
+                >
+                  {creatingStorageLink ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-brass-400" />
+                  ) : (
+                    <FolderGit2 className="w-4 h-4 text-brass-400" />
+                  )}
+                  <span>{storageStatus?.isLinked ? "Repair / Re-link Storage Symlink" : "Generate Storage Symlink"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={testingStorageLink}
+                  onClick={handleTestStorageLink}
+                  className="px-5 py-2.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-navy-950 font-bold text-xs flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
+                >
+                  {testingStorageLink ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-navy-950" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-navy-950" />
+                  )}
+                  <span>Run Read/Write Self-Test</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={loadingStorage}
+                  onClick={fetchStorageStatus}
+                  className="px-4 py-2.5 rounded-xl bg-sand-200 hover:bg-sand-300 text-navy-900 font-bold text-xs flex items-center gap-1.5 transition-all"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingStorage ? "animate-spin" : ""}`} />
+                  <span>Refresh Status</span>
+                </button>
+              </div>
+
+              {storageTestResult && (
+                <div className={`p-4 rounded-xl border text-xs flex items-start gap-3 mt-4 ${
+                  storageTestResult.verified
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+                    : "bg-red-50 border-red-200 text-red-900"
+                }`}>
+                  {storageTestResult.verified ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <p className="font-bold">{storageTestResult.message || (storageTestResult.verified ? "Storage link verified successfully" : "Verification failed")}</p>
+                    <p className="text-[11px] mt-0.5 opacity-90">
+                      {storageTestResult.verified
+                        ? "Test file was written to storage/uploads and successfully read through apps/storefront/public/storage."
+                        : storageTestResult.error}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Manual Server & cPanel Commands Card */}
+            <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-navy-950 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-brass-600" />
+                  <span>Terminal &amp; cPanel Deployment Commands</span>
+                </h3>
+                <span className="text-[10px] font-semibold text-sand-500 uppercase tracking-wider">
+                  Copy &amp; Paste Ready
+                </span>
+              </div>
+              <p className="text-xs text-navy-600 leading-relaxed">
+                If deploying on cPanel, Linux VPS, or Apache/Nginx, you can also create the storage shortcut via SSH terminal, cron job, or Windows Command Prompt.
+              </p>
+
+              <div className="space-y-3 pt-2">
+                {/* Linux / cPanel */}
+                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      Linux / cPanel / Ubuntu SSH Terminal:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCommand(storageStatus?.commands?.linux || "ln -s $(pwd)/storage/uploads $(pwd)/apps/storefront/public/storage", "linux")}
+                      className="px-2.5 py-1 rounded bg-navy-800 hover:bg-navy-700 text-[11px] font-semibold text-sand-200 flex items-center gap-1 transition-colors"
+                    >
+                      {copiedCmd === "linux" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedCmd === "linux" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="text-xs font-mono text-sand-200 overflow-x-auto whitespace-pre-wrap select-all">
+                    {storageStatus?.commands?.linux || "ln -s $(pwd)/storage/uploads $(pwd)/apps/storefront/public/storage"}
+                  </pre>
+                </div>
+
+                {/* Windows CMD */}
+                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-400" />
+                      Windows Command Prompt (XAMPP / Local):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCommand(storageStatus?.commands?.windows_cmd || `mklink /D "apps\\storefront\\public\\storage" "storage\\uploads"`, "win")}
+                      className="px-2.5 py-1 rounded bg-navy-800 hover:bg-navy-700 text-[11px] font-semibold text-sand-200 flex items-center gap-1 transition-colors"
+                    >
+                      {copiedCmd === "win" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedCmd === "win" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="text-xs font-mono text-sand-200 overflow-x-auto whitespace-pre-wrap select-all">
+                    {storageStatus?.commands?.windows_cmd || `mklink /D "apps\\storefront\\public\\storage" "storage\\uploads"`}
+                  </pre>
+                </div>
+
+                {/* Laravel Artisan Style */}
+                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-400" />
+                      Laravel / Fullstack Equivalent:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCommand("php artisan storage:link", "artisan")}
+                      className="px-2.5 py-1 rounded bg-navy-800 hover:bg-navy-700 text-[11px] font-semibold text-sand-200 flex items-center gap-1 transition-colors"
+                    >
+                      {copiedCmd === "artisan" ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedCmd === "artisan" ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  <pre className="text-xs font-mono text-sand-200 overflow-x-auto whitespace-pre-wrap select-all">
+                    php artisan storage:link
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save Button (for settings tabs) */}
+        {activeTab !== "storage" && (
+          <div className="pt-4 border-t border-sand-200 flex items-center justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-navy-950 font-bold text-xs tracking-wide shadow-md shadow-brass-500/20 transition-all disabled:opacity-50"
+            >
+              {saving ? "Saving Configuration..." : "Save Configuration to MySQL"}
+            </button>
+          </div>
+        )}
       </form>
 
       {/* WordPress Media Picker Modal for Logos & Favicon */}

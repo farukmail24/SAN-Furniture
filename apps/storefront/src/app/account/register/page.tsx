@@ -48,6 +48,7 @@ export default function CustomerRegisterPage() {
       localStorage.setItem("san_customer_token", data.token);
       localStorage.setItem("san_customer_user", JSON.stringify(data.customer));
       document.cookie = `san_customer_token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+      window.dispatchEvent(new Event("storage"));
 
       router.push("/account");
     } catch (err: any) {

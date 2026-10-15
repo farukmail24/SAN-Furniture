@@ -5,8 +5,15 @@
  */
 import http from "node:http";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
 import { formatGBP, calculateNetAndVat, classifyUKPostcode } from "@san-furniture/types";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = path.resolve(__dirname, "../../..");
 
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
@@ -1777,6 +1784,157 @@ const server = http.createServer(async (req, res) => {
       );
 
       return sendJson(res, 200, { success: true, message: `Review ${revId} deleted` });
+    }
+
+    // 23. Admin Storage Symlink & Server Shortcuts Manager
+    if (pathname === "/api/admin/system/storage-link" && method === "GET") {
+      const targetDir = path.join(ROOT_DIR, "storage", "uploads");
+      const publicLink = path.join(ROOT_DIR, "apps", "storefront", "public", "storage");
+
+      const targetExists = fs.existsSync(targetDir);
+      let linkExists = false;
+      let isSymlink = false;
+      let isLinked = false;
+      let fileCount = 0;
+      let totalSizeBytes = 0;
+
+      try {
+        if (fs.existsSync(publicLink)) {
+          linkExists = true;
+          const lstat = fs.lstatSync(publicLink);
+          isSymlink = lstat.isSymbolicLink();
+          isLinked = true;
+        }
+      } catch (e) {
+        linkExists = false;
+      }
+
+      if (targetExists) {
+        try {
+          const files = fs.readdirSync(targetDir);
+          fileCount = files.length;
+          for (const f of files) {
+            try {
+              const st = fs.statSync(path.join(targetDir, f));
+              totalSizeBytes += st.size;
+            } catch {}
+          }
+        } catch {}
+      }
+
+      return sendJson(res, 200, {
+        targetDir,
+        publicLink,
+        targetExists,
+        linkExists,
+        isSymlink,
+        isLinked,
+        fileCount,
+        totalSizeBytes,
+        platform: process.platform,
+        commands: {
+          linux: `ln -s $(pwd)/storage/uploads $(pwd)/apps/storefront/public/storage`,
+          windows_cmd: `mklink /D "apps\\storefront\\public\\storage" "storage\\uploads"`,
+          windows_ps: `New-Item -ItemType SymbolicLink -Path "apps\\storefront\\public\\storage" -Target "storage\\uploads"`,
+          laravel_artisan: `php artisan storage:link`,
+        },
+      });
+    }
+
+    if (pathname === "/api/admin/system/storage-link" && method === "POST") {
+      const targetDir = path.join(ROOT_DIR, "storage", "uploads");
+      const publicLink = path.join(ROOT_DIR, "apps", "storefront", "public", "storage");
+
+      try {
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        let linkCreated = false;
+        if (fs.existsSync(publicLink)) {
+          const lstat = fs.lstatSync(publicLink);
+          if (lstat.isSymbolicLink()) {
+            linkCreated = true;
+          } else {
+            linkCreated = true;
+          }
+        } else {
+          const linkType = process.platform === "win32" ? "junction" : "dir";
+          fs.symlinkSync(targetDir, publicLink, linkType);
+          linkCreated = true;
+        }
+
+        const gitkeepPath = path.join(targetDir, ".gitkeep");
+        if (!fs.existsSync(gitkeepPath)) {
+          fs.writeFileSync(gitkeepPath, "");
+        }
+
+        await pool.query(
+          "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+          [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "CREATE_STORAGE_SYMLINK", "system_storage", JSON.stringify({ targetDir, publicLink }), req.socket.remoteAddress]
+        );
+
+        return sendJson(res, 200, {
+          success: true,
+          message: "Storage symlink successfully established! Media files in storage/uploads are now directly accessible through /storage.",
+          targetDir,
+          publicLink,
+        });
+      } catch (err) {
+        console.error("Storage symlink creation error:", err);
+        return sendJson(res, 500, {
+          error: "Failed to create storage symlink: " + err.message,
+          suggestion: process.platform === "win32"
+            ? `Run: mklink /D "apps\\storefront\\public\\storage" "storage\\uploads"`
+            : `Run: ln -s $(pwd)/storage/uploads $(pwd)/apps/storefront/public/storage`,
+        });
+      }
+    }
+
+    if (pathname === "/api/admin/system/storage-link/test" && method === "POST") {
+      const targetDir = path.join(ROOT_DIR, "storage", "uploads");
+      const publicLink = path.join(ROOT_DIR, "apps", "storefront", "public", "storage");
+
+      try {
+        if (!fs.existsSync(targetDir)) {
+          fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        const testFileName = `test_${Date.now()}.json`;
+        const testPayload = JSON.stringify({ verifiedAt: new Date().toISOString(), status: "operational" });
+        const targetFilePath = path.join(targetDir, testFileName);
+        const linkFilePath = path.join(publicLink, testFileName);
+
+        fs.writeFileSync(targetFilePath, testPayload, "utf8");
+
+        let readSuccess = false;
+        if (fs.existsSync(linkFilePath)) {
+          const content = fs.readFileSync(linkFilePath, "utf8");
+          if (content === testPayload) {
+            readSuccess = true;
+          }
+        }
+
+        try {
+          fs.unlinkSync(targetFilePath);
+        } catch {}
+
+        if (readSuccess) {
+          return sendJson(res, 200, {
+            success: true,
+            verified: true,
+            message: "Self-test passed! Data written to storage was successfully verified through the public shortcut link.",
+          });
+        } else {
+          return sendJson(res, 400, {
+            success: false,
+            verified: false,
+            error: "Symlink exists, but files in storage/uploads are not mirrored to apps/storefront/public/storage.",
+          });
+        }
+      } catch (err) {
+        return sendJson(res, 500, { error: "Test execution failed: " + err.message });
+      }
     }
 
     // 404 Catch-All

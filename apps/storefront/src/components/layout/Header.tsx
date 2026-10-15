@@ -13,9 +13,26 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [customer, setCustomer] = useState<{ firstName?: string; email?: string } | null>(null);
 
   React.useEffect(() => {
     setMounted(true);
+    const syncCustomerAuth = () => {
+      try {
+        const stored = localStorage.getItem("san_customer_user");
+        const token = localStorage.getItem("san_customer_token");
+        if (stored && token) {
+          setCustomer(JSON.parse(stored));
+        } else {
+          setCustomer(null);
+        }
+      } catch {
+        setCustomer(null);
+      }
+    };
+    syncCustomerAuth();
+    window.addEventListener("storage", syncCustomerAuth);
+    return () => window.removeEventListener("storage", syncCustomerAuth);
   }, []);
 
   return (
@@ -125,15 +142,25 @@ export function Header() {
               </kbd>
             </button>
 
-            {/* Customer Account Button */}
+            {/* Customer Account Button (Direct to login if guest, direct to account portal if client) */}
             <Link
-              href="/account"
+              href={mounted && customer ? "/account" : "/account/login"}
               prefetch={true}
-              aria-label="Customer Account & Order Tracking"
-              className="p-2 rounded-full hover:bg-sand-200 text-navy-900 transition-colors"
-              title="UK Client Portal & Delivery Tracking"
+              aria-label={customer ? `Client Portal (${customer.firstName || "Account"})` : "Sign In to Client Portal"}
+              className="p-2 rounded-full hover:bg-sand-200 text-navy-900 transition-colors flex items-center gap-1.5"
+              title={customer ? `SAN Client Portal (${customer.firstName || "Account"})` : "Sign In / Register"}
             >
-              <User className="w-5 h-5" />
+              <div className="relative">
+                <User className="w-5 h-5" />
+                {mounted && customer && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-sand-50" />
+                )}
+              </div>
+              {mounted && customer?.firstName && (
+                <span className="hidden lg:inline text-xs font-semibold text-navy-900 max-w-[80px] truncate">
+                  {customer.firstName}
+                </span>
+              )}
             </Link>
 
             {/* Shopping Basket Trigger Button */}

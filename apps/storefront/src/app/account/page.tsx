@@ -17,7 +17,8 @@ import {
   ExternalLink,
   ShieldCheck,
   User,
-  ShoppingBag
+  ShoppingBag,
+  Loader2
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
@@ -36,6 +37,7 @@ export default function CustomerAccountPage() {
   const [customer, setCustomer] = useState<CustomerUser | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
     // Check customer session
@@ -46,24 +48,23 @@ export default function CustomerAccountPage() {
     if (stored) {
       try {
         currentUser = JSON.parse(stored);
-        setCustomer(currentUser);
       } catch {
         currentUser = null;
       }
     }
 
-    if (!currentUser && !token) {
-      // If not logged in, redirect to login
-      router.push("/account/login");
+    if (!currentUser || !token) {
+      // If not logged in, redirect immediately to login without rendering portal
+      router.replace("/account/login");
       return;
     }
 
-    // Default to stored user email or fallback to demo
-    const activeEmail = currentUser?.email || "eleanor.vance@gmail.com";
+    setCustomer(currentUser);
+    setIsAuthorized(true);
 
-    // Fetch live customer orders from MySQL with instant SWR cache
+    // Fetch live customer orders from MySQL for authentic user
     fetchWithSwr(
-      apiUrl(`/api/customer/orders?email=${encodeURIComponent(activeEmail)}`),
+      apiUrl(`/api/customer/orders?email=${encodeURIComponent(currentUser.email)}`),
       (data: any, isCached) => {
         if (data.orders) {
           setOrders(data.orders);
@@ -79,8 +80,19 @@ export default function CustomerAccountPage() {
     localStorage.removeItem("san_customer_token");
     localStorage.removeItem("san_customer_user");
     document.cookie = "san_customer_token=; Max-Age=0; path=/;";
-    router.push("/account/login");
+    window.dispatchEvent(new Event("storage"));
+    router.replace("/account/login");
   };
+
+  if (!isAuthorized || !customer) {
+    return (
+      <div className="min-h-[75vh] bg-sand-50 flex flex-col items-center justify-center p-6 text-center antialiased">
+        <Loader2 className="w-8 h-8 text-brass-600 animate-spin mb-3" />
+        <h2 className="text-sm font-bold text-navy-950">Accessing SAN Client Portal...</h2>
+        <p className="text-xs text-navy-500 mt-1">Verifying encrypted UK session</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-sand-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 antialiased">
@@ -89,7 +101,7 @@ export default function CustomerAccountPage() {
         <div className="bg-sand-100/70 border border-sand-300 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-navy-950 text-brass-400 font-display font-bold text-xl flex items-center justify-center shadow-md">
-              {customer?.firstName ? customer.firstName.charAt(0) : "C"}
+              {customer.firstName ? customer.firstName.charAt(0) : "C"}
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -97,14 +109,14 @@ export default function CustomerAccountPage() {
                   Verified UK Client
                 </span>
                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                   White Glove Priority
                 </span>
               </div>
               <h1 className="font-display text-2xl font-bold text-navy-950 mt-0.5">
-                Welcome back, {customer?.firstName || "Valued Client"} {customer?.lastName || ""}
+                Welcome back, {customer.firstName} {customer.lastName || ""}
               </h1>
-              <p className="text-xs text-navy-600">{customer?.email || "eleanor.vance@gmail.com"}</p>
+              <p className="text-xs text-navy-600">{customer.email}</p>
             </div>
           </div>
 

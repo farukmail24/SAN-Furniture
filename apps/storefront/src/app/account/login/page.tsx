@@ -13,6 +13,14 @@ export default function CustomerLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    const token = localStorage.getItem("san_customer_token");
+    const user = localStorage.getItem("san_customer_user");
+    if (token && user) {
+      router.replace("/account");
+    }
+  }, [router]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -33,6 +41,7 @@ export default function CustomerLoginPage() {
       localStorage.setItem("san_customer_token", data.token);
       localStorage.setItem("san_customer_user", JSON.stringify(data.customer));
       document.cookie = `san_customer_token=${data.token}; path=/; max-age=604800; SameSite=Lax`;
+      window.dispatchEvent(new Event("storage"));
 
       router.push("/account");
     } catch (err: any) {
