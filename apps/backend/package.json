@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "medusa start",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs"
+    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs"
   },
   "dependencies": {
     "@san-furniture/types": "*",
