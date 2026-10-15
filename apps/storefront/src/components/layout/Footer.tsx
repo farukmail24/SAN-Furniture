@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="bg-navy-950 text-sand-100 border-t border-navy-800">
       {/* 4 Pillars of UK Customer Confidence */}
       <div className="border-b border-navy-800 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-navy-900 rounded-xl text-brass-500 border border-navy-800">
               <Truck className="w-6 h-6" />
@@ -58,7 +58,7 @@ export function Footer() {
       </div>
 
       {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2">
           <Link href="/" className="inline-block">
             <span className="font-display text-2xl font-bold tracking-tight text-sand-50">
@@ -108,7 +108,7 @@ export function Footer() {
 
       {/* Mandatory UK Companies Act and Tax Disclosures */}
       <div className="border-t border-navy-900 bg-navy-950/80 py-6 text-[11px] text-sand-400">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
             <p>
               © {new Date().getFullYear()} SAN Furniture Ltd. Registered in England & Wales (Company No. 15998234).

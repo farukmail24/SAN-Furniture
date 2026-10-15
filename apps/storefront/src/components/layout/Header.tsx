@@ -22,8 +22,8 @@ export function Header() {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-sand-200 bg-sand-50/95 backdrop-blur-md">
         {/* Top Value Proposition & Legal Bar */}
-        <div className="bg-navy-950 text-sand-50 text-xs py-2 px-4">
-          <div className="max-w-7xl mx-auto flex items-center justify-between text-[11px] sm:text-xs">
+        <div className="bg-navy-950 text-sand-50 text-xs py-2 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1680px] mx-auto flex items-center justify-between text-[11px] sm:text-xs">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1.5 text-sage-600 font-medium">
                 <Truck className="w-3.5 h-3.5" />
@@ -44,7 +44,7 @@ export function Header() {
         </div>
 
         {/* Main Navigation Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           {/* Mobile menu trigger */}
           <button
             type="button"
