@@ -8,10 +8,17 @@
     "apps/*"
   ],
   "scripts": {
+    "dev": "npm run --workspace=storefront dev",
+    "dev:storefront": "npm run --workspace=storefront dev",
+    "dev:backend": "npm run --workspace=backend dev",
     "typecheck": "npm run --workspaces --if-present typecheck",
     "lint": "npm run --workspaces --if-present lint",
     "test": "npm run --workspaces --if-present test",
     "build": "npm run --workspaces --if-present build"
+  },
+  "overrides": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "keywords": [
     "furniture",
@@ -21,5 +28,9 @@
     "medusa"
   ],
   "author": "SAN Furniture Engineering Team",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
 }

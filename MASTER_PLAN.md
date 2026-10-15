@@ -140,7 +140,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 
 ```
 [x] Phase 0: Project Foundation & UK Specifications (Setup & Rules)
-[ ] Phase 1: Monorepo Skeleton & Docker Infrastructure
+[x] Phase 1: Monorepo Skeleton & Docker Infrastructure
 [ ] Phase 2: Furniture Data Models, Postgres Schema & ESR Indexing
 [ ] Phase 3: Dropshipping & Automated Supplier Sync Engine
 [ ] Phase 4: Modern High-Conversion Storefront UI (Next.js 15)

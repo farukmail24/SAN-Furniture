@@ -1,0 +1,14 @@
+{
+  "name": "@san-furniture/config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    "./tailwind": {
+      "types": "./tailwind/tokens.d.ts",
+      "default": "./tailwind/tokens.js"
+    },
+    "./typescript/base.json": "./typescript/base.json"
+  }
+}

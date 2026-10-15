@@ -1,0 +1,45 @@
+import type { Config } from "tailwindcss";
+import brandTokens from "@san-furniture/config/tailwind";
+
+const config: Config = {
+  darkMode: ["class"],
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
+        card: "var(--card)",
+        "card-foreground": "var(--card-foreground)",
+        primary: "var(--primary)",
+        "primary-foreground": "var(--primary-foreground)",
+        secondary: "var(--secondary)",
+        "secondary-foreground": "var(--secondary-foreground)",
+        muted: "var(--muted)",
+        "muted-foreground": "var(--muted-foreground)",
+        accent: "var(--accent)",
+        "accent-foreground": "var(--accent-foreground)",
+        navy: brandTokens.colors.navy,
+        sand: brandTokens.colors.sand,
+        brass: brandTokens.colors.brass,
+        sage: brandTokens.colors.sage,
+      },
+      fontFamily: {
+        display: brandTokens.fontFamily.display,
+        sans: brandTokens.fontFamily.sans,
+      },
+      borderRadius: brandTokens.borderRadius,
+      boxShadow: brandTokens.boxShadow,
+    },
+  },
+  plugins: [],
+};
+
+export default config;
