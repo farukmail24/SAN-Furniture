@@ -42,11 +42,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950">
+    <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
         <CartProvider>
           <Header />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1" suppressHydrationWarning>{children}</main>
           <Footer />
         </CartProvider>
       </body>

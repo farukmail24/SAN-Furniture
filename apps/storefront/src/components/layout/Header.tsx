@@ -12,6 +12,11 @@ export function Header() {
   const { totalCount, openCart } = useCart();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <>
@@ -124,7 +129,7 @@ export function Header() {
               className="relative p-2.5 rounded-full bg-navy-950 text-sand-50 hover:bg-brass-600 transition-colors active:scale-95"
             >
               <ShoppingBag className="w-5 h-5" />
-              {totalCount > 0 && (
+              {mounted && totalCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-brass-500 text-navy-950 text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-scale-in">
                   {totalCount}
                 </span>
