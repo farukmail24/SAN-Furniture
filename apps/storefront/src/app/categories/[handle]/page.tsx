@@ -68,7 +68,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     <div className="bg-sand-50 min-h-screen">
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="border-b border-sand-200 bg-sand-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center text-xs text-navy-600 gap-1.5">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3 flex items-center text-xs text-navy-600 gap-1.5">
           <Link href="/" className="hover:text-navy-950 transition-colors">
             Home
           </Link>
@@ -90,7 +90,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             className="w-full h-full object-cover filter brightness-75"
           />
         </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="relative z-10 max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-12 sm:py-16">
           <div className="max-w-2xl">
             <span className="text-[11px] font-bold uppercase tracking-widest text-brass-400 block mb-2">
               Curated UK Collection
@@ -119,7 +119,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       </div>
 
       {/* Main Filtered Product Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
           category={category}
           initialProducts={products}

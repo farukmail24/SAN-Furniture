@@ -31,8 +31,13 @@ export function Header() {
       }
     };
     syncCustomerAuth();
+    const handleOpenSearch = () => setIsSearchOpen(true);
     window.addEventListener("storage", syncCustomerAuth);
-    return () => window.removeEventListener("storage", syncCustomerAuth);
+    window.addEventListener("open-search-modal", handleOpenSearch);
+    return () => {
+      window.removeEventListener("storage", syncCustomerAuth);
+      window.removeEventListener("open-search-modal", handleOpenSearch);
+    };
   }, []);
 
   return (

@@ -147,7 +147,7 @@ export default async function ProgrammaticCollectionPage({
 
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="border-b border-sand-200 bg-sand-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center text-xs text-navy-600 gap-1.5 flex-wrap">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3 flex items-center text-xs text-navy-600 gap-1.5 flex-wrap">
           <Link href="/" className="hover:text-navy-950 transition-colors">
             Home
           </Link>
@@ -162,7 +162,7 @@ export default async function ProgrammaticCollectionPage({
 
       {/* Editorial Collection Hero Banner */}
       <div className="border-b border-sand-200 bg-sand-100/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-10 sm:py-14">
           <div className="max-w-3xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sand-200/80 text-navy-800 text-[11px] font-semibold tracking-wider uppercase mb-3">
               <Sparkles className="w-3.5 h-3.5 text-brass-600" />
@@ -191,7 +191,7 @@ export default async function ProgrammaticCollectionPage({
       </div>
 
       {/* Main Filtered Product Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
           initialProducts={matchingProducts}
           allCategories={CATALOG_CATEGORIES}
@@ -200,7 +200,7 @@ export default async function ProgrammaticCollectionPage({
 
       {/* Material Care Guide & Editorial Section */}
       <div className="border-t border-sand-200 bg-sand-100/50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
             {/* Care advice */}
             <div className="p-6 rounded-xl bg-sand-50 border border-sand-200 space-y-3">

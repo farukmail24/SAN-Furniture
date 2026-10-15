@@ -4,6 +4,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { MobileAppDock } from "./MobileAppDock";
 import { CartProvider } from "@/lib/cart-context";
 
 export function StorefrontShell({ children }: { children: React.ReactNode }) {
@@ -19,14 +20,15 @@ export function StorefrontShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Consumer Storefront: Luxury Navigation, Header & Footer
+  // Consumer Storefront: Luxury Navigation, Header, Mobile App Dock & Footer
   return (
     <CartProvider>
       <Header />
-      <main className="flex-1" suppressHydrationWarning>
+      <main className="flex-1 pb-20 lg:pb-0" suppressHydrationWarning>
         {children}
       </main>
       <Footer />
+      <MobileAppDock />
     </CartProvider>
   );
 }

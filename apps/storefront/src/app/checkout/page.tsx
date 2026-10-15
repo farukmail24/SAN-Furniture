@@ -238,7 +238,7 @@ export default function CheckoutPage() {
     <div className="bg-sand-50 min-h-screen">
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="border-b border-sand-200 bg-sand-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center text-xs text-navy-600 gap-1.5">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3 flex items-center text-xs text-navy-600 gap-1.5">
           <Link href="/" className="hover:text-navy-950">Home</Link>
           <ChevronRight className="w-3.5 h-3.5 text-sand-400" />
           <Link href="/catalog" className="hover:text-navy-950">Catalog</Link>
@@ -248,7 +248,7 @@ export default function CheckoutPage() {
       </nav>
 
       {/* Main Checkout Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-10 sm:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
           
           {/* Left Form: Express Checkout, Delivery Address & Payment (7 cols) */}

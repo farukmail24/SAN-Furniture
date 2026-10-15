@@ -227,9 +227,9 @@ export function ProductActions({ product }: ProductActionsProps) {
         </div>
       </div>
 
-      {/* Sticky Mobile Bottom CTA Bar */}
+      {/* Sticky Mobile Floating Island CTA Bar (Positioned above MobileAppDock) */}
       {showStickyBar && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-sand-50/95 backdrop-blur-md border-t border-sand-300 p-3 sm:hidden shadow-2xl animate-fade-in flex items-center justify-between gap-3">
+        <div className="fixed bottom-[68px] inset-x-3 z-30 bg-sand-50/95 backdrop-blur-xl border border-sand-300/90 p-2.5 rounded-2xl sm:hidden shadow-[0_8px_30px_rgb(0,0,0,0.14)] animate-slide-up flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-md overflow-hidden bg-sand-200 flex-shrink-0 border border-sand-300">
               <img

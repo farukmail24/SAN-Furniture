@@ -95,8 +95,8 @@ export default function CustomerAccountPage() {
   }
 
   return (
-    <div className="bg-sand-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 antialiased">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="bg-sand-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8 xl:px-12 antialiased">
+      <div className="max-w-[1680px] mx-auto space-y-8">
         {/* Top Header Card */}
         <div className="bg-sand-100/70 border border-sand-300 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 shadow-sm">
           <div className="flex items-center gap-4">

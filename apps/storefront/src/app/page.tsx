@@ -233,8 +233,8 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Category Pills Tab Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none border-b border-sand-200">
+        {/* Category Pills Tab Bar with Touch Momentum Scrolling */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none border-b border-sand-200 -mx-4 px-4 sm:mx-0 sm:px-0">
           {categoriesWithCounts.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -242,7 +242,7 @@ export default function HomePage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 type="button"
-                className={`px-5 py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
+                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 ${
                   isActive
                     ? "bg-navy-950 text-sand-50 shadow-sm"
                     : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-300"
@@ -261,15 +261,15 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* Dynamic 4-Column Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8">
+        {/* Dynamic 2-Column Mobile App Grid (Expands to 4-Col Desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 xl:gap-8">
           {filteredProducts.map((product, index) => {
             const isAdded = addedProductId === product.id;
             const klarnaPerMonth = Math.round(product.pricePennies / 3);
             return (
               <div
                 key={`${product.id}-${index}`}
-                className="group rounded-2xl bg-sand-50 border border-sand-200 overflow-hidden shadow-ambient hover:shadow-elevation transition-all flex flex-col justify-between"
+                className="group rounded-xl sm:rounded-2xl bg-sand-50 border border-sand-200 overflow-hidden shadow-ambient hover:shadow-elevation transition-all flex flex-col justify-between"
               >
                 {/* Product Image & Badges */}
                 <div className="relative aspect-[4/3] bg-sand-200 overflow-hidden">
@@ -283,19 +283,19 @@ export default function HomePage() {
                   </Link>
 
                   {/* Delivery Tier Badge */}
-                  <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded-md bg-navy-950 text-sand-50 shadow-sm">
-                    {product.specs.delivery_tier === "two_man_white_glove" ? "2-Man White Glove" : "Standard Parcel"}
+                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 text-sand-50 shadow-sm">
+                    {product.specs.delivery_tier === "two_man_white_glove" ? "2-Man" : "Parcel"}
                   </span>
 
                   {/* Compare at price discount pill */}
                   {product.compareAtPricePennies && (
-                    <span className="absolute top-3 right-3 z-10 px-2 py-0.5 text-[10px] font-bold rounded-md bg-terracotta-500 text-sand-50 shadow-sm">
+                    <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded bg-terracotta-500 text-sand-50 shadow-sm">
                       SAVE {formatGBP(product.compareAtPricePennies - product.pricePennies)}
                     </span>
                   )}
 
-                  {/* Quick Action Floating Overlay */}
-                  <div className="absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                  {/* Desktop Quick Action Floating Overlay */}
+                  <div className="hidden sm:flex absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 gap-2">
                     <button
                       type="button"
                       onClick={(e) => handleQuickAdd(product, e)}
@@ -307,7 +307,7 @@ export default function HomePage() {
                     >
                       {isAdded ? (
                         <>
-                          <Check className="w-3.5 h-3.5" /> Added to Basket!
+                          <Check className="w-3.5 h-3.5" /> Added!
                         </>
                       ) : (
                         <>
@@ -326,42 +326,56 @@ export default function HomePage() {
                 </div>
 
                 {/* Product Metadata & Info */}
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <div className="flex items-center justify-between text-[11px] text-navy-500 mb-1">
-                      <span className="capitalize font-medium">{product.specs.color}</span>
-                      <span>{product.specs.width_cm} × {product.specs.depth_cm} cm</span>
+                    <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-navy-500 mb-1">
+                      <span className="capitalize font-medium truncate max-w-[80px] sm:max-w-none">{product.specs.color}</span>
+                      <span className="hidden sm:inline">{product.specs.width_cm} × {product.specs.depth_cm} cm</span>
                     </div>
 
                     <Link href={`/products/${product.handle}`}>
-                      <h3 className="font-display font-bold text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1 leading-snug">
+                      <h3 className="font-display font-bold text-xs sm:text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1 leading-snug">
                         {product.title}
                       </h3>
                     </Link>
 
-                    <p className="text-xs text-navy-600 mt-1 line-clamp-2 leading-relaxed">
+                    <p className="hidden sm:block text-xs text-navy-600 mt-1 line-clamp-2 leading-relaxed">
                       {product.subtitle}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-sand-200 flex items-end justify-between">
+                  <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-sand-200 flex items-center justify-between">
                     <div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-display font-bold text-lg text-navy-950">
+                      <div className="flex items-baseline gap-1.5 sm:gap-2">
+                        <span className="font-display font-bold text-sm sm:text-lg text-navy-950">
                           {formatGBP(product.pricePennies)}
                         </span>
                         {product.compareAtPricePennies && (
-                          <span className="text-xs text-navy-400 line-through">
+                          <span className="text-[10px] sm:text-xs text-navy-400 line-through">
                             {formatGBP(product.compareAtPricePennies)}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-navy-500 mt-0.5">
+                      <p className="hidden sm:block text-[10px] text-navy-500 mt-0.5">
                         Or 3x {formatGBP(klarnaPerMonth)} with Klarna
                       </p>
                     </div>
 
-                    <span className="text-[11px] text-sage-700 font-semibold flex items-center gap-1">
+                    {/* Mobile Touch Quick Add Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => handleQuickAdd(product, e)}
+                      aria-label={`Add ${product.title} to basket`}
+                      className={`sm:hidden p-2 rounded-lg transition-all active:scale-90 shadow-sm ${
+                        isAdded
+                          ? "bg-sage-700 text-sand-50"
+                          : "bg-navy-950 text-sand-50 hover:bg-brass-600"
+                      }`}
+                    >
+                      {isAdded ? <Check className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5" />}
+                    </button>
+
+                    <span className="hidden sm:flex text-[11px] text-sage-700 font-semibold items-center gap-1">
                       <Check className="w-3 h-3" /> In Stock
                     </span>
                   </div>
@@ -510,16 +524,16 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {saleProducts.slice(0, 4).map((product, index) => {
             const savings = (product.compareAtPricePennies || 0) - product.pricePennies;
             return (
               <div
                 key={`sale-${product.id}-${index}`}
-                className="group rounded-2xl bg-sand-50 border border-sand-300 overflow-hidden shadow-ambient hover:shadow-card transition-all flex flex-col justify-between"
+                className="group rounded-xl sm:rounded-2xl bg-sand-50 border border-sand-300 overflow-hidden shadow-ambient hover:shadow-card transition-all flex flex-col justify-between"
               >
                 <Link href={`/products/${product.handle}`} className="block relative aspect-[4/3] bg-sand-200 overflow-hidden">
-                  <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-bold rounded bg-terracotta-500 text-sand-50 shadow-sm">
+                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded bg-terracotta-500 text-sand-50 shadow-sm">
                     SAVE {formatGBP(savings)}
                   </span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -530,37 +544,40 @@ export default function HomePage() {
                   />
                 </Link>
 
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] font-semibold text-terracotta-600 uppercase tracking-wide">
-                      Only 4 units left in UK stock
+                    <span className="text-[10px] sm:text-[11px] font-semibold text-terracotta-600 uppercase tracking-wide block truncate">
+                      Low UK stock
                     </span>
                     <Link href={`/products/${product.handle}`}>
-                      <h3 className="font-display font-bold text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1 mt-1">
+                      <h3 className="font-display font-bold text-xs sm:text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1 mt-0.5 sm:mt-1">
                         {product.title}
                       </h3>
                     </Link>
-                    <p className="text-xs text-navy-600 mt-1 line-clamp-1">
+                    <p className="hidden sm:block text-xs text-navy-600 mt-1 line-clamp-1">
                       {product.subtitle}
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-sand-200 flex items-center justify-between">
+                  <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-sand-200 flex items-center justify-between">
                     <div>
-                      <span className="font-display font-bold text-lg text-navy-950">
+                      <span className="font-display font-bold text-sm sm:text-lg text-navy-950 block">
                         {formatGBP(product.pricePennies)}
                       </span>
-                      <span className="text-xs text-navy-400 line-through ml-2">
-                        {formatGBP(product.compareAtPricePennies || 0)}
-                      </span>
+                      {product.compareAtPricePennies && (
+                        <span className="text-[10px] sm:text-xs text-navy-400 line-through">
+                          {formatGBP(product.compareAtPricePennies || 0)}
+                        </span>
+                      )}
                     </div>
 
                     <button
                       type="button"
                       onClick={(e) => handleQuickAdd(product, e)}
-                      className="px-3.5 py-2 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-all flex items-center gap-1 active:scale-95"
+                      aria-label={`Add ${product.title} to basket`}
+                      className="p-2 sm:px-3.5 sm:py-2 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-all flex items-center gap-1 active:scale-90"
                     >
-                      <ShoppingBag className="w-3.5 h-3.5" /> Add
+                      <ShoppingBag className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Add</span>
                     </button>
                   </div>
                 </div>
@@ -572,13 +589,13 @@ export default function HomePage() {
 
       {/* 5. NEW ARRIVALS SPOTLIGHT (BEDS, CONSOLES, DINING) */}
       <section className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-        <div className="rounded-3xl bg-navy-950 text-sand-50 p-8 sm:p-12 lg:p-16 relative overflow-hidden shadow-elevation">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+        <div className="rounded-3xl bg-navy-950 text-sand-50 p-6 sm:p-12 lg:p-16 relative overflow-hidden shadow-elevation">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 sm:mb-10">
             <div>
               <span className="text-xs uppercase tracking-widest text-brass-400 font-semibold">
                 Just Arrived in Showroom
               </span>
-              <h2 className="text-3xl sm:text-4xl font-display font-bold text-sand-50 mt-1">
+              <h2 className="text-2xl sm:text-4xl font-display font-bold text-sand-50 mt-1">
                 New Bedroom & Occasional Additions
               </h2>
             </div>
@@ -590,15 +607,15 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {newArrivals.slice(0, 4).map((product, index) => (
               <Link
                 key={`arrival-${product.id}-${index}`}
                 href={`/products/${product.handle}`}
-                className="group rounded-2xl bg-sand-50/10 border border-sand-50/15 overflow-hidden backdrop-blur-sm hover:border-brass-400 transition-all flex flex-col justify-between"
+                className="group rounded-xl sm:rounded-2xl bg-sand-50/10 border border-sand-50/15 overflow-hidden backdrop-blur-sm hover:border-brass-400 transition-all flex flex-col justify-between"
               >
                 <div className="relative aspect-[4/3] bg-navy-900 overflow-hidden">
-                  <span className="absolute top-3 left-3 z-10 px-2 py-0.5 text-[10px] font-bold rounded bg-brass-500 text-navy-950 shadow-sm">
+                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded bg-brass-500 text-navy-950 shadow-sm">
                     NEW 2026
                   </span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -609,21 +626,21 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div className="p-5 flex-1 flex flex-col justify-between">
+                <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <span className="text-[11px] text-brass-300 font-medium">
+                    <span className="text-[10px] sm:text-[11px] text-brass-300 font-medium block truncate">
                       {product.specs.material !== "none" ? product.specs.material : product.specs.frame_material}
                     </span>
-                    <h3 className="font-display font-bold text-base text-sand-50 group-hover:text-brass-300 transition-colors line-clamp-1 mt-0.5">
+                    <h3 className="font-display font-bold text-xs sm:text-base text-sand-50 group-hover:text-brass-300 transition-colors line-clamp-1 mt-0.5">
                       {product.title}
                     </h3>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-sand-50/15 flex items-center justify-between">
-                    <span className="font-display font-bold text-base text-sand-50">
+                  <div className="mt-2 sm:mt-4 pt-2 sm:pt-3 border-t border-sand-50/15 flex items-center justify-between">
+                    <span className="font-display font-bold text-sm sm:text-base text-sand-50">
                       {formatGBP(product.pricePennies)}
                     </span>
-                    <span className="text-xs text-brass-300 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
+                    <span className="text-[11px] sm:text-xs text-brass-300 font-semibold group-hover:translate-x-1 transition-transform inline-flex items-center gap-1">
                       Details →
                     </span>
                   </div>

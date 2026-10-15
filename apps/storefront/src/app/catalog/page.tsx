@@ -25,7 +25,7 @@ export default async function CatalogPage() {
     <div className="bg-sand-50 min-h-screen">
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="border-b border-sand-200 bg-sand-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center text-xs text-navy-600 gap-1.5">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3 flex items-center text-xs text-navy-600 gap-1.5">
           <Link href="/" className="hover:text-navy-950 transition-colors">
             Home
           </Link>
@@ -36,8 +36,8 @@ export default async function CatalogPage() {
 
       {/* Hero Header */}
       <div className="border-b border-sand-200 bg-sand-100/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="max-w-3xl">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-10 sm:py-14">
+          <div className="max-w-4xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sand-200/80 text-navy-800 text-[11px] font-semibold tracking-wider uppercase mb-3">
               <Sparkles className="w-3.5 h-3.5 text-brass-600" />
               British Design Portfolio
@@ -53,7 +53,7 @@ export default async function CatalogPage() {
       </div>
 
       {/* Main Filtered Product Catalog */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
           initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}

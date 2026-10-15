@@ -83,7 +83,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
   const hasActiveFilters = selectedMaterials.length > 0 || selectedDeliveryTiers.length > 0 || priceRange !== "all";
 
   return (
-    <div className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="py-6 sm:py-8 max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
       {/* Category Header Banner */}
       <div className="mb-10 pb-8 border-b border-sand-200">
         <div className="flex items-center gap-2 text-xs text-navy-500 mb-3">
@@ -355,15 +355,15 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               </button>
             </div>
           ) : (
-            /* Product Cards Grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            /* Product Cards Grid (App-style 2-column on mobile, responsive multi-column on desktop) */
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
               {filteredProducts.map((product) => {
                 const klarnaMonthly = Math.round(product.pricePennies / 3);
 
                 return (
                   <article
                     key={product.id}
-                    className="group flex flex-col rounded-xl overflow-hidden bg-sand-100 border border-sand-200 hover:border-sand-300 transition-all shadow-ambient hover:shadow-card"
+                    className="group flex flex-col rounded-2xl overflow-hidden bg-sand-100/80 border border-sand-200/90 hover:border-sand-300 transition-all shadow-sm hover:shadow-card active:scale-[0.99]"
                   >
                     {/* Product Image */}
                     <Link
@@ -378,56 +378,58 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                         loading="lazy"
                       />
                       {/* Delivery Badge */}
-                      <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950 text-sand-50 flex items-center gap-1 shadow-ambient">
-                        <Truck className="w-3 h-3 text-brass-400" />
-                        {product.specs.delivery_tier === "two_man_white_glove" ? "White Glove" : "UK Courier"}
+                      <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1 shadow-ambient">
+                        <Truck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-brass-400" />
+                        <span className="truncate max-w-[70px] sm:max-w-none">
+                          {product.specs.delivery_tier === "two_man_white_glove" ? "White Glove" : "UK Courier"}
+                        </span>
                       </span>
                     </Link>
 
                     {/* Content */}
-                    <div className="p-5 flex-1 flex flex-col justify-between">
+                    <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center justify-between text-[11px] text-navy-500 mb-1">
-                          <span className="capitalize">{product.specs.material.replace("_", " ")}</span>
-                          <span>{product.specs.width_cm}W × {product.specs.depth_cm}D cm</span>
+                        <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-navy-500 mb-1">
+                          <span className="capitalize truncate max-w-[80px] sm:max-w-none">{product.specs.material.replace("_", " ")}</span>
+                          <span className="shrink-0">{product.specs.width_cm}cm W</span>
                         </div>
 
-                        <h3 className="font-display font-bold text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1">
+                        <h3 className="font-display font-bold text-xs sm:text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1">
                           <Link href={`/products/${product.handle}`}>
                             {product.title}
                           </Link>
                         </h3>
 
-                        <p className="text-xs text-navy-600 mt-1 line-clamp-2">
+                        <p className="text-[11px] sm:text-xs text-navy-600 mt-1 line-clamp-2 hidden sm:block">
                           {product.subtitle}
                         </p>
                       </div>
 
                       {/* Pricing and Klarna */}
-                      <div className="mt-4 pt-4 border-t border-sand-200 space-y-2">
-                        <div className="flex items-baseline justify-between">
-                          <span className="font-display font-bold text-lg text-navy-950">
+                      <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-sand-200/80 space-y-1.5 sm:space-y-2">
+                        <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                          <span className="font-display font-bold text-sm sm:text-lg text-navy-950">
                             {formatGBP(product.pricePennies)}
                           </span>
                           {product.compareAtPricePennies && (
-                            <span className="text-xs line-through text-navy-400 font-medium">
+                            <span className="text-[10px] sm:text-xs line-through text-navy-400 font-medium">
                               {formatGBP(product.compareAtPricePennies)}
                             </span>
                           )}
                         </div>
 
                         {/* Klarna / Clearpay installment banner */}
-                        <div className="text-[11px] text-navy-700 bg-sand-50 p-1.5 rounded border border-sand-200 flex items-center justify-between">
-                          <span>or 3 × <strong>{formatGBP(klarnaMonthly)}</strong></span>
-                          <span className="font-bold text-pink-600 text-[10px]">Klarna.</span>
+                        <div className="text-[9px] sm:text-[11px] text-navy-700 bg-sand-50 p-1 sm:p-1.5 rounded border border-sand-200/80 flex items-center justify-between">
+                          <span className="truncate">3 × <strong>{formatGBP(klarnaMonthly)}</strong></span>
+                          <span className="font-bold text-pink-600 text-[9px] sm:text-[10px] shrink-0 ml-1">Klarna</span>
                         </div>
 
                         {/* CTA Link */}
                         <Link
                           href={`/products/${product.handle}`}
-                          className="mt-2 block w-full text-center py-2 rounded bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-navy-900 transition-colors"
+                          className="mt-2 block w-full text-center py-1.5 sm:py-2 rounded-lg bg-navy-950 hover:bg-navy-900 active:scale-95 text-sand-50 text-[11px] sm:text-xs font-semibold transition-all shadow-sm"
                         >
-                          View Piece & Dimensions
+                          View Piece
                         </Link>
                       </div>
                     </div>

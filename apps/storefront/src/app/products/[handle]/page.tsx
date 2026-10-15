@@ -146,7 +146,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
       {/* Breadcrumb Navigation */}
       <nav aria-label="Breadcrumb" className="border-b border-sand-200 bg-sand-100/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center text-xs text-navy-600 gap-1.5 flex-wrap">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-3 flex items-center text-xs text-navy-600 gap-1.5 flex-wrap">
           <Link href="/" className="hover:text-navy-950 transition-colors">
             Home
           </Link>
@@ -173,7 +173,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       </nav>
 
       {/* Main Product Hero Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left Column: Image Gallery (7 cols on lg) */}
           <div className="lg:col-span-7">
@@ -339,7 +339,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {relatedProducts.map((item) => (
                 <Link
                   key={item.id}
