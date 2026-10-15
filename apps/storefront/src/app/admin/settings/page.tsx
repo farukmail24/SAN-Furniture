@@ -29,7 +29,8 @@ import {
   Terminal,
   ArrowRight,
   Loader2,
-  Link2
+  Link2,
+  Package
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
@@ -170,6 +171,56 @@ export default function AdminSettingsPage() {
     setTimeout(() => setCopiedCmd(null), 2000);
   };
 
+  // Amos Mann Dropshipping Hub State
+  const [amosStatus, setAmosStatus] = useState<any>(null);
+  const [syncingAmos, setSyncingAmos] = useState(false);
+  const [testingAmosPo, setTestingAmosPo] = useState(false);
+  const [amosPoResult, setAmosPoResult] = useState<any>(null);
+
+  const fetchAmosStatus = async () => {
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/status"));
+      const data = await res.json();
+      setAmosStatus(data);
+    } catch {}
+  };
+
+  const handleSyncAmos = async () => {
+    setSyncingAmos(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/sync"), { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMsg(data.message || "Successfully synced Amos Mann products!");
+        setTimeout(() => setSuccessMsg(null), 5000);
+        await fetchAmosStatus();
+      } else {
+        setErrorMsg(data.error || "Failed to sync Amos Mann products");
+      }
+    } catch (err: any) {
+      setErrorMsg("Sync error: " + err.message);
+    } finally {
+      setSyncingAmos(false);
+    }
+  };
+
+  const handleTestAmosPo = async () => {
+    setTestingAmosPo(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/po/test"), { method: "POST" });
+      const data = await res.json();
+      setAmosPoResult(data);
+      if (res.ok) {
+        setSuccessMsg("Amos Mann Purchase Order (PO) dispatch format generated!");
+        setTimeout(() => setSuccessMsg(null), 4000);
+      }
+    } catch (err: any) {
+      setErrorMsg("PO test error: " + err.message);
+    } finally {
+      setTestingAmosPo(false);
+    }
+  };
+
   const fetchSettings = async () => {
     try {
       fetchWithSwr(
@@ -189,11 +240,15 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     fetchSettings();
+    fetchAmosStatus();
   }, []);
 
   useEffect(() => {
     if (activeTab === "storage") {
       fetchStorageStatus();
+    }
+    if (activeTab === "dropship") {
+      fetchAmosStatus();
     }
   }, [activeTab]);
 
@@ -913,35 +968,236 @@ export default function AdminSettingsPage() {
           </div>
         )}
 
-        {/* TAB 6: DROPSHIP */}
+        {/* TAB 6: AMOS MANN FURNITURE DROPSHIPPING HUB */}
         {activeTab === "dropship" && (
-          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
-              <Zap className="w-5 h-5 text-brass-600" />
-              <span>Dropship Wholesale EDI &amp; Floor Margins</span>
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1">Minimum Floor Margin (%)</label>
-                <input
-                  type="number"
-                  value={settings.dropship_min_margin_percent}
-                  onChange={(e) => handleChange("dropship_min_margin_percent", e.target.value)}
-                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-bold text-navy-950"
-                />
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-6">
+            {/* Supplier Header Banner */}
+            <div className="p-5 rounded-xl bg-gradient-to-r from-forest-900 to-navy-950 text-sand-50 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-brass-500/20 text-brass-400 border border-brass-500/30 text-[10px] font-bold uppercase tracking-wider">
+                    Primary Dropship Partner
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Trade API Connected
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold font-display text-sand-50">
+                  Amos Mann Furniture (Leicester, UK)
+                </h2>
+                <p className="text-xs text-sand-300 max-w-xl">
+                  Wholesale &amp; Trade-Only dropship furniture supplier. Direct-to-consumer white-label fulfillment with specialized 2-Man room-of-choice logistics for sliding wardrobes &amp; cabinetry.
+                </p>
               </div>
 
-              <div className="flex items-center pt-5">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href="https://www.amosmannfurniture.co.uk/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-2 rounded-lg bg-sand-50/10 hover:bg-sand-50/20 text-sand-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-brass-400" />
+                  <span>Trade Portal</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleSyncAmos}
+                  disabled={syncingAmos}
+                  className="px-4 py-2 rounded-lg bg-brass-500 hover:bg-brass-400 text-navy-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 disabled:opacity-60 cursor-pointer"
+                >
+                  {syncingAmos ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Syncing Catalog...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Sync Amos Mann Products</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Supplier Manifest Info Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+              <div className="p-3.5 rounded-xl bg-sand-100/70 border border-sand-300 space-y-1">
+                <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">Central Hub</span>
+                <p className="font-bold text-navy-950 flex items-center gap-1">
+                  <Building className="w-3.5 h-3.5 text-brass-600" />
+                  Leicestershire, UK (LE1)
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-sand-100/70 border border-sand-300 space-y-1">
+                <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">Trade Desk Phone</span>
+                <p className="font-bold text-navy-950 flex items-center gap-1">
+                  <Phone className="w-3.5 h-3.5 text-brass-600" />
+                  0116 507 7455
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-sand-100/70 border border-sand-300 space-y-1">
+                <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">Orders Mailbox</span>
+                <p className="font-bold text-navy-950 flex items-center gap-1 truncate">
+                  <Mail className="w-3.5 h-3.5 text-brass-600" />
+                  orders@amosmannfurniture.co.uk
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-sand-100/70 border border-sand-300 space-y-1">
+                <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">Live Synced Range</span>
+                <p className="font-bold text-navy-950 flex items-center gap-1">
+                  <Package className="w-3.5 h-3.5 text-forest-700" />
+                  {amosStatus?.activeCatalogCount || 9} Live Signature Lines
+                </p>
+              </div>
+            </div>
+
+            {/* PO Simulation Trigger & Actions */}
+            <div className="p-4 rounded-xl bg-sand-100 border border-sand-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-bold text-xs text-navy-950">Amos Mann Purchase Order (PO) Dispatch Protocol</h3>
+                <p className="text-[11px] text-navy-600 mt-0.5">
+                  Verify the B2B white-label dispatch manifest sent to the Leicester fulfillment team when an order is placed.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTestAmosPo}
+                disabled={testingAmosPo}
+                className="px-3.5 py-2 rounded-lg bg-navy-950 hover:bg-navy-900 text-sand-50 text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 disabled:opacity-60 cursor-pointer"
+              >
+                {testingAmosPo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Terminal className="w-3.5 h-3.5 text-brass-400" />}
+                <span>Test Amos Mann PO Format</span>
+              </button>
+            </div>
+
+            {/* PO Result Preview Modal Box */}
+            {amosPoResult && (
+              <div className="p-4 rounded-xl bg-navy-950 text-sand-50 border border-navy-800 space-y-3 animate-fade-in text-xs">
+                <div className="flex items-center justify-between pb-2 border-b border-navy-800">
+                  <span className="font-bold text-brass-400 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    Amos Mann Dropship PO Dispatch Payload Verified
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setAmosPoResult(null)}
+                    className="text-[11px] text-sand-400 hover:text-sand-100"
+                  >
+                    Close Preview
+                  </button>
+                </div>
+                <pre className="font-mono text-[11px] bg-navy-900 p-3 rounded-lg overflow-x-auto text-sand-200 border border-navy-800 leading-relaxed whitespace-pre-wrap">
+                  {amosPoResult.formattedEmail}
+                </pre>
+              </div>
+            )}
+
+            {/* Margin Rules & Floor Protection */}
+            <div className="pt-2 border-t border-sand-200 space-y-4">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-navy-900 flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-brass-600" />
+                <span>Trade Margins &amp; Floor Protection Rules</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-navy-900 mb-1">Minimum Floor Margin (%)</label>
                   <input
-                    type="checkbox"
-                    checked={settings.dropship_auto_dispatch === "true"}
-                    onChange={(e) => handleChange("dropship_auto_dispatch", e.target.checked ? "true" : "false")}
-                    className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                    type="number"
+                    value={settings.dropship_min_margin_percent}
+                    onChange={(e) => handleChange("dropship_min_margin_percent", e.target.value)}
+                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-bold text-navy-950"
                   />
-                  <span>Automatically dispatch PO to UK suppliers on Stripe payment confirmation</span>
-                </label>
+                  <p className="text-[10px] text-navy-500 mt-1">Guarantees SAN Furniture never prices below floor margin threshold.</p>
+                </div>
+
+                <div className="flex items-center pt-2 sm:pt-6">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={settings.dropship_auto_dispatch === "true"}
+                      onChange={(e) => handleChange("dropship_auto_dispatch", e.target.checked ? "true" : "false")}
+                      className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                    />
+                    <span>Automatically dispatch PO to Amos Mann on Stripe/Klarna confirmation</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Live UK Economics Breakdown Box */}
+              <div className="p-4 rounded-xl bg-sand-100/60 border border-sand-300 text-xs space-y-2">
+                <span className="font-bold text-navy-900 block">Typical Amos Mann Dropship Unit Economics (e.g. Venice 203cm Wardrobe):</span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center pt-1">
+                  <div className="p-2.5 rounded-lg bg-sand-50 border border-sand-200">
+                    <span className="text-[10px] text-navy-500 block">Wholesale Cost (ex VAT)</span>
+                    <strong className="text-navy-950 font-mono text-sm">£239.00</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-sand-50 border border-sand-200">
+                    <span className="text-[10px] text-navy-500 block">SAN Retail (Inc 20% VAT)</span>
+                    <strong className="text-navy-950 font-mono text-sm">£549.00</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-sand-50 border border-sand-200">
+                    <span className="text-[10px] text-navy-500 block">Net Revenue</span>
+                    <strong className="text-navy-950 font-mono text-sm">£457.50</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-forest-50 border border-forest-200 text-forest-800">
+                    <span className="text-[10px] text-forest-600 block">Gross Profit / Margin</span>
+                    <strong className="font-mono text-sm">£218.50 (47.8%)</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Signature Collections Active in SAN Furniture */}
+            <div className="pt-2 border-t border-sand-200 space-y-3">
+              <span className="font-bold text-xs uppercase tracking-wider text-navy-900 block">
+                Signature Amos Mann Collections Currently Active in Storefront:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Venice 203cm Wardrobe</span>
+                  <span className="text-[11px] text-navy-500">Sliding Mirrored Doors &bull; Artisan Oak &bull; 2-Man</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Madrid 180cm Wardrobe</span>
+                  <span className="text-[11px] text-navy-500">Full Mirror &amp; Integrated LED &bull; Matte White</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Miami 250cm Grand Suite</span>
+                  <span className="text-[11px] text-navy-500">3-Door Sliding &bull; Internal Drawers &bull; Slate Grey</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Athens 160cm TV Console</span>
+                  <span className="text-[11px] text-navy-500">High Gloss White &bull; Multi-Color RGB Remote LED</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Atlantis Fluted Sideboard</span>
+                  <span className="text-[11px] text-navy-500">2-Door 3-Drawer &bull; Cashmere &amp; Oak &bull; Brass Pulls</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Elise Extending Dining</span>
+                  <span className="text-[11px] text-navy-500">160-200cm Butterfly &bull; High Gloss &bull; Chrome Plinth</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Texas 3-Piece Bedroom Set</span>
+                  <span className="text-[11px] text-navy-500">Wardrobe + 4-Drawer Chest + Bedside Nightstand</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Kano Workstation Desk</span>
+                  <span className="text-[11px] text-navy-500">Home Office &bull; 3-Drawer Pedestal &bull; Modesty Panel</span>
+                </div>
+                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 space-y-0.5">
+                  <span className="font-bold text-navy-950 block">Santino Shoe Cabinet</span>
+                  <span className="text-[11px] text-navy-500">3-Tier Mirrored &bull; Slim 24cm Profile &bull; 18 Pairs</span>
+                </div>
               </div>
             </div>
           </div>

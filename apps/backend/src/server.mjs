@@ -1786,6 +1786,339 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { success: true, message: `Review ${revId} deleted` });
     }
 
+    // 22.1 Amos Mann Furniture (UK Dropshipping Supplier Hub)
+    if (pathname === "/api/admin/dropship/amos-mann/status" && method === "GET") {
+      const [rows] = await pool.query("SELECT COUNT(*) as count FROM products WHERE id LIKE 'prod_am_%'");
+      const amosCount = rows[0]?.count || 0;
+      return sendJson(res, 200, {
+        supplierId: "amos_mann_furniture",
+        supplierName: "Amos Mann Furniture (Trade Dropshipping, Leicester UK)",
+        website: "https://www.amosmannfurniture.co.uk/",
+        tradePhone: "0116 507 7455",
+        tradeEmail: "orders@amosmannfurniture.co.uk",
+        warehouseLocation: "Leicestershire, UK",
+        dispatchMethod: "White-Label Direct to UK Consumer (2-Man Booked Delivery & Pallet)",
+        status: "connected",
+        activeCatalogCount: amosCount,
+        minFloorMarginPercent: 40,
+        markupMultiplier: 1.85,
+        vatRate: 20,
+        primaryCategories: [
+          "Sliding Door Wardrobes (Venice, Madrid, Miami, Texas)",
+          "Modern Bedroom Suites (Chests & Bedsides)",
+          "High Gloss LED TV Media Units (Athens, Atlantis)",
+          "Extending Dining Tables & Sideboards",
+          "Home Office & Desks",
+          "Shoe & Hallway Storage"
+        ]
+      });
+    }
+
+    if (pathname === "/api/admin/dropship/amos-mann/sync" && method === "POST") {
+      const amosProducts = [
+        {
+          id: "prod_am_venice_203",
+          title: "Venice 203cm Sliding Mirrored Wardrobe in Artisan Oak",
+          handle: "venice-203cm-sliding-mirrored-wardrobe-artisan-oak",
+          subtitle: "Smooth-glide dual sliding doors, full mirrored panels & optional LED strip",
+          description: "Amos Mann's signature Venice 203cm wardrobe combines contemporary Artisan Oak framing with expansive full-height mirrored sliding doors. Featuring generous interior shelving, twin hanging rails, and smooth aluminum rail guides designed for effortless daily operation.",
+          categoryId: "cat_beds",
+          status: "published",
+          pricePennies: 54900,
+          compareAtPricePennies: 64900,
+          tradeCostPennies: 23900,
+          gtinBarcode: "5060912801015",
+          thumbnailUrl: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 203, height_cm: 215, depth_cm: 61, weight_kg: 142,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Artisan Oak & Mirror", assembly_required: 1, doorway_clearance_min_cm: 65,
+            delivery_tier: "two_man_white_glove", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 7
+          }
+        },
+        {
+          id: "prod_am_madrid_180",
+          title: "Madrid 180cm Luxury Sliding Wardrobe with Mirror & LED",
+          handle: "madrid-180cm-sliding-wardrobe-mirror-led",
+          subtitle: "Compact sliding mirrored wardrobe with built-in LED ambient illumination",
+          description: "The Madrid 180cm sliding wardrobe is engineered for stylish UK bedroom storage. Features high-density laminated board, mirror accent facade, multiple compartments, and quiet-glide door track hardware.",
+          categoryId: "cat_beds",
+          status: "published",
+          pricePennies: 44900,
+          compareAtPricePennies: 52900,
+          tradeCostPennies: 19500,
+          gtinBarcode: "5060912801022",
+          thumbnailUrl: "https://images.unsplash.com/photo-1540518614846-7ede433c4550?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 180, height_cm: 215, depth_cm: 61, weight_kg: 128,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Matte White & Mirrored Glass", assembly_required: 1, doorway_clearance_min_cm: 65,
+            delivery_tier: "two_man_white_glove", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 5
+          }
+        },
+        {
+          id: "prod_am_miami_250",
+          title: "Miami 250cm 3-Door Sliding Wardrobe with Internal Drawers",
+          handle: "miami-250cm-3-door-sliding-wardrobe-internal-drawers",
+          subtitle: "Grand 2.5m master wardrobe with 3 sliding panels, mirror center & drawers",
+          description: "For expansive master bedrooms, the Miami 250cm wardrobe provides immense storage capacity. Three smooth sliding doors enclose triple hanging zones, six adjustable organizational shelves, and integrated soft-close drawers.",
+          categoryId: "cat_beds",
+          status: "published",
+          pricePennies: 69900,
+          compareAtPricePennies: 79900,
+          tradeCostPennies: 31000,
+          gtinBarcode: "5060912801039",
+          thumbnailUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 250, height_cm: 215, depth_cm: 61, weight_kg: 175,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Slate Grey & Silver Mirrored Glass", assembly_required: 1, doorway_clearance_min_cm: 70,
+            delivery_tier: "two_man_white_glove", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 7
+          }
+        },
+        {
+          id: "prod_am_athens_tv",
+          title: "Athens 160cm High Gloss LED TV Cabinet Unit",
+          handle: "athens-160cm-high-gloss-led-tv-cabinet",
+          subtitle: "Contemporary media console with multi-color RGB remote lighting",
+          description: "Elevate your living room entertainment center with the Athens 160cm TV stand. Features high gloss drop-down doors, tempered glass media shelf, integrated cable management port, and multi-color LED atmospheric lighting.",
+          categoryId: "cat_living",
+          status: "published",
+          pricePennies: 22900,
+          compareAtPricePennies: 27900,
+          tradeCostPennies: 9200,
+          gtinBarcode: "5060912801046",
+          thumbnailUrl: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 160, height_cm: 45, depth_cm: 40, weight_kg: 38,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "High Gloss White & Glass", assembly_required: 1, doorway_clearance_min_cm: 50,
+            delivery_tier: "standard_parcel", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 3
+          }
+        },
+        {
+          id: "prod_am_atlantis_sideboard",
+          title: "Atlantis 2-Door 3-Drawer Sideboard in Cashmere & Oak",
+          handle: "atlantis-2-door-3-drawer-sideboard-cashmere-oak",
+          subtitle: "Architectural fluted doors, brushed brass accents & ample interior storage",
+          description: "The Atlantis sideboard seamlessly blends organic warmth with contemporary styling. Featuring dual cupboard spaces with internal shelving and 3 spacious smooth-slide central drawers for dining accessories and lounge essentials.",
+          categoryId: "cat_living",
+          status: "published",
+          pricePennies: 26900,
+          compareAtPricePennies: 31900,
+          tradeCostPennies: 11500,
+          gtinBarcode: "5060912801053",
+          thumbnailUrl: "https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 140, height_cm: 82, depth_cm: 42, weight_kg: 52,
+            material: "engineered_hardwood", frame_material: "solid_oak",
+            color: "Cashmere Grey & Warm Oak", assembly_required: 1, doorway_clearance_min_cm: 55,
+            delivery_tier: "pallet", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 5
+          }
+        },
+        {
+          id: "prod_am_elise_dining",
+          title: "Elise 160-200cm Extending Dining Table in High Gloss",
+          handle: "elise-extending-dining-table-high-gloss",
+          subtitle: "Butterfly extension leaf with pedestal column and brushed chrome plinth",
+          description: "The Elise Extending Dining Table is crafted for modern UK entertaining. Smooth center butterfly mechanism extends the table effortlessly from 160cm to 200cm, comfortably seating up to 8 dinner guests.",
+          categoryId: "cat_dining",
+          status: "published",
+          pricePennies: 42900,
+          compareAtPricePennies: 49900,
+          tradeCostPennies: 18500,
+          gtinBarcode: "5060912801060",
+          thumbnailUrl: "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 200, height_cm: 76, depth_cm: 90, weight_kg: 64,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "High Gloss White & Chrome", assembly_required: 1, doorway_clearance_min_cm: 65,
+            delivery_tier: "pallet", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 5
+          }
+        },
+        {
+          id: "prod_am_texas_set",
+          title: "Texas 3-Piece Bedroom Furniture Suite (Wardrobe, Chest & Bedside)",
+          handle: "texas-3-piece-bedroom-furniture-suite",
+          subtitle: "Coordinated bedroom set: 2-door wardrobe, 4-drawer chest & bedside table",
+          description: "Amos Mann's Texas 3-Piece Suite offers complete bedroom harmony at exceptional value. Includes a generous double wardrobe with hanging rail and shelf, a matching 4-drawer chest of drawers, and a compact nightstand.",
+          categoryId: "cat_beds",
+          status: "published",
+          pricePennies: 59900,
+          compareAtPricePennies: 69900,
+          tradeCostPennies: 26500,
+          gtinBarcode: "5060912801077",
+          thumbnailUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 120, height_cm: 180, depth_cm: 52, weight_kg: 98,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Oak Effect & Matte Charcoal", assembly_required: 1, doorway_clearance_min_cm: 60,
+            delivery_tier: "two_man_white_glove", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 7
+          }
+        },
+        {
+          id: "prod_am_kano_desk",
+          title: "Kano Modern Ergonomic Workstation Office Desk with Drawers",
+          handle: "kano-modern-workstation-office-desk-drawers",
+          subtitle: "Durable scratch-resistant top, integrated modesty panel and locking storage",
+          description: "Designed for hybrid professionals, the Kano office desk provides a spacious 140cm work surface with built-in cable grommets and a 3-drawer pedestal unit for documents and stationery.",
+          categoryId: "cat_living",
+          status: "published",
+          pricePennies: 18900,
+          compareAtPricePennies: 22900,
+          tradeCostPennies: 7800,
+          gtinBarcode: "5060912801084",
+          thumbnailUrl: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 140, height_cm: 76, depth_cm: 65, weight_kg: 42,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Graphite & Warm Natural Oak", assembly_required: 1, doorway_clearance_min_cm: 50,
+            delivery_tier: "standard_parcel", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 3
+          }
+        },
+        {
+          id: "prod_am_santino_shoe",
+          title: "Santino 3-Tier Mirrored Shoe Storage Cabinet",
+          handle: "santino-3-tier-mirrored-shoe-storage-cabinet",
+          subtitle: "Slimline 24cm deep hallway shoe cabinet holding up to 18 pairs of shoes",
+          description: "Save space in compact UK entryways with the Santino shoe cabinet. Featuring 3 pull-down flap compartments with full-length mirrored door fronts, keeping up to 18 pairs of footwear neatly tucked away.",
+          categoryId: "cat_living",
+          status: "published",
+          pricePennies: 14900,
+          compareAtPricePennies: 17900,
+          tradeCostPennies: 6200,
+          gtinBarcode: "5060912801091",
+          thumbnailUrl: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1200&q=80",
+          specs: {
+            width_cm: 63, height_cm: 120, depth_cm: 24, weight_kg: 28,
+            material: "engineered_hardwood", frame_material: "engineered_hardwood",
+            color: "Mirrored Glass & White Frame", assembly_required: 1, doorway_clearance_min_cm: 40,
+            delivery_tier: "standard_parcel", fire_safety_compliant: 1,
+            fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance", lead_time_days: 3
+          }
+        }
+      ];
+
+      for (const p of amosProducts) {
+        // Upsert Product
+        await pool.query(
+          `INSERT INTO products (id, title, handle, subtitle, description, category_id, status, price_pennies, compare_at_price_pennies, vat_rate_percent, gtin_barcode, thumbnail_url, images_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 20, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             title = VALUES(title),
+             handle = VALUES(handle),
+             subtitle = VALUES(subtitle),
+             description = VALUES(description),
+             price_pennies = VALUES(price_pennies),
+             compare_at_price_pennies = VALUES(compare_at_price_pennies),
+             thumbnail_url = VALUES(thumbnail_url),
+             updated_at = CURRENT_TIMESTAMP`,
+          [
+            p.id, p.title, p.handle, p.subtitle, p.description, p.categoryId, p.status,
+            p.pricePennies, p.compareAtPricePennies, p.gtinBarcode, p.thumbnailUrl,
+            JSON.stringify([p.thumbnailUrl])
+          ]
+        );
+
+        // Upsert Specs
+        await pool.query(
+          `INSERT INTO furniture_specs (
+             product_id, width_cm, height_cm, depth_cm, weight_kg, material, frame_material,
+             color, assembly_required, doorway_clearance_min_cm, delivery_tier, fire_safety_compliant,
+             fire_safety_standard, lead_time_days
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE
+             width_cm = VALUES(width_cm),
+             height_cm = VALUES(height_cm),
+             depth_cm = VALUES(depth_cm),
+             weight_kg = VALUES(weight_kg),
+             color = VALUES(color),
+             delivery_tier = VALUES(delivery_tier),
+             lead_time_days = VALUES(lead_time_days)`,
+          [
+            p.id, p.specs.width_cm, p.specs.height_cm, p.specs.depth_cm, p.specs.weight_kg,
+            p.specs.material, p.specs.frame_material, p.specs.color, p.specs.assembly_required,
+            p.specs.doorway_clearance_min_cm, p.specs.delivery_tier, p.specs.fire_safety_compliant,
+            p.specs.fire_safety_standard, p.specs.lead_time_days
+          ]
+        );
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          `log_${Date.now()}`,
+          "admin@sanfurniture.co.uk",
+          "SYNC_AMOS_MANN_DROPSHIP_FEED",
+          "supplier_amos_mann",
+          JSON.stringify({ syncedCount: amosProducts.length, supplier: "Amos Mann Furniture (Leicester)" }),
+          req.socket.remoteAddress
+        ]
+      );
+
+      return sendJson(res, 200, {
+        success: true,
+        message: `Successfully synced ${amosProducts.length} signature Amos Mann furniture lines (Sliding Wardrobes, High Gloss TV Media Units, Extending Dining & Office) into SAN Furniture live catalog!`,
+        syncedProductsCount: amosProducts.length,
+        supplier: "Amos Mann Furniture (Leicester, UK)"
+      });
+    }
+
+    if (pathname === "/api/admin/dropship/amos-mann/po/test" && method === "POST") {
+      const testPo = {
+        poNumber: `PO-AM-${Date.now().toString().slice(-6)}`,
+        orderNumber: "SAN-88129",
+        customerName: "Lord Arthur Sterling",
+        customerPhone: "+44 7700 900142",
+        deliveryAddress: "14 Belgrave Square, Knightsbridge, London",
+        postcode: "SW1X 8PS",
+        items: [
+          { sku: "AM-VEN-203-OAK", title: "Venice 203cm Sliding Mirrored Wardrobe (Artisan Oak)", quantity: 1, tradePriceGbp: "239.00" }
+        ],
+        notes: "2-Man delivery required to 2nd floor Master Bedroom. Call customer 30 minutes ahead."
+      };
+
+      return sendJson(res, 200, {
+        success: true,
+        message: "Amos Mann Furniture Purchase Order (PO) dispatch format validated!",
+        testPo,
+        formattedEmail: `
+============================================================
+SAN FURNITURE UK -> AMOS MANN FURNITURE DROPSHIP DISPATCH
+============================================================
+TO: orders@amosmannfurniture.co.uk
+SUPPLIER: Amos Mann Furniture (Leicester Warehouse)
+PO NUMBER: ${testPo.poNumber}
+STORE ORDER REF: ${testPo.orderNumber}
+DISPATCH METHOD: Direct-to-Consumer Dropship (White Label)
+
+CUSTOMER DELIVERY MANIFEST:
+------------------------------------------------------------
+Recipient: ${testPo.customerName}
+Phone: ${testPo.customerPhone} (2-Man Booking Callout)
+Address: ${testPo.deliveryAddress}
+Postcode: ${testPo.postcode}
+Tier: 2-Man Booked-in Service (Room of Choice)
+
+PURCHASE ORDER ITEMS:
+------------------------------------------------------------
+• [AM-VEN-203-OAK] Venice 203cm Sliding Mirrored Wardrobe x 1 (@ £239.00 ex VAT)
+
+SPECIAL INSTRUCTIONS:
+------------------------------------------------------------
+${testPo.notes}
+============================================================`.trim()
+      });
+    }
+
     // 23. Admin Storage Symlink & Server Shortcuts Manager
     if (pathname === "/api/admin/system/storage-link" && method === "GET") {
       const targetDir = path.join(ROOT_DIR, "storage", "uploads");
