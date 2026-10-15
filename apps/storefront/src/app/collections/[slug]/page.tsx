@@ -10,7 +10,7 @@ import {
   CheckCircle2,
   BookOpen,
 } from "lucide-react";
-import { CATALOG_PRODUCTS, CATALOG_CATEGORIES } from "@/lib/catalog";
+import { getLiveProducts, CATALOG_CATEGORIES } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
 import {
   PROGRAMMATIC_COLLECTIONS,
@@ -42,7 +42,8 @@ export async function generateMetadata({
   }
 
   // Thin content check
-  const matchingProducts = CATALOG_PRODUCTS.filter((p) => {
+  const liveProducts = await getLiveProducts();
+  const matchingProducts = liveProducts.filter((p) => {
     const matchCat = p.categoryId.includes(collection.categoryHandle);
     const matchMat = collection.materialFilter
       ? p.specs.material === collection.materialFilter
@@ -83,7 +84,8 @@ export default async function ProgrammaticCollectionPage({
     notFound();
   }
 
-  const matchingProducts = CATALOG_PRODUCTS.filter((p) => {
+  const liveProducts = await getLiveProducts();
+  const matchingProducts = liveProducts.filter((p) => {
     const matchCat = p.categoryId.includes(collection.categoryHandle);
     const matchMat = collection.materialFilter
       ? p.specs.material === collection.materialFilter

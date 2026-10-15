@@ -1,9 +1,10 @@
 import { MetadataRoute } from "next";
-import { CATALOG_PRODUCTS, CATALOG_CATEGORIES } from "@/lib/catalog";
+import { CATALOG_CATEGORIES, getLiveProducts } from "@/lib/catalog";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://sanfurniture.co.uk";
   const now = new Date();
+  const liveProducts = await getLiveProducts();
 
   // Static Core Pages
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -42,14 +43,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Product Detail Pages
-  const productRoutes: MetadataRoute.Sitemap = CATALOG_PRODUCTS.filter(
-    (p) => p.status !== "draft"
-  ).map((product) => ({
-    url: `${baseUrl}/products/${product.handle}`,
-    lastModified: now,
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
+  const productRoutes: MetadataRoute.Sitemap = liveProducts
+    .filter((p) => p.status !== "draft")
+    .map((product) => ({
+      url: `${baseUrl}/products/${product.handle}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }));
 
   return [...staticRoutes, ...categoryRoutes, ...collectionRoutes, ...productRoutes];
 }

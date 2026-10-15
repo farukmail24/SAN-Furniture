@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
-import { CATALOG_PRODUCTS, CATALOG_CATEGORIES } from "@/lib/catalog";
+import { CATALOG_CATEGORIES, getLiveProducts } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
 
 export const metadata: Metadata = {
@@ -18,7 +18,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CatalogPage() {
+export default async function CatalogPage() {
+  const liveProducts = await getLiveProducts();
+
   return (
     <div className="bg-sand-50 min-h-screen">
       {/* Breadcrumb Navigation */}
@@ -53,7 +55,7 @@ export default function CatalogPage() {
       {/* Main Filtered Product Catalog */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <CategoryView
-          initialProducts={CATALOG_PRODUCTS}
+          initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}
         />
       </div>

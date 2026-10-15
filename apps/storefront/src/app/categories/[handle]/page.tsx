@@ -5,7 +5,7 @@ import { ChevronRight, ShieldCheck, Truck } from "lucide-react";
 import {
   CATALOG_CATEGORIES,
   getCategoryByHandle,
-  getProductsByCategory,
+  getLiveProductsByCategory,
 } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
 
@@ -62,7 +62,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     notFound();
   }
 
-  const products = getProductsByCategory(category.id);
+  const products = await getLiveProductsByCategory(category.id);
 
   return (
     <div className="bg-sand-50 min-h-screen">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CATALOG_PRODUCTS } from "@/lib/catalog";
+import { getLiveProducts } from "@/lib/catalog";
 
 function escapeCsv(field: string): string {
   if (field.includes(",") || field.includes('"') || field.includes("\n") || field.includes("\r")) {
@@ -10,6 +10,7 @@ function escapeCsv(field: string): string {
 
 export async function GET() {
   const baseUrl = "https://sanfurniture.co.uk";
+  const liveProducts = await getLiveProducts();
   const headers = [
     "id",
     "title",
@@ -27,7 +28,7 @@ export async function GET() {
     "custom_label_1",
   ];
 
-  const rows = CATALOG_PRODUCTS.filter((p) => p.status !== "draft").map((p) => {
+  const rows = liveProducts.filter((p) => p.status !== "draft").map((p) => {
     const link = `${baseUrl}/products/${p.handle}`;
     const priceGbp = `${(p.pricePennies / 100).toFixed(2)} GBP`;
     const availability = p.status === "published" ? "in stock" : "out of stock";

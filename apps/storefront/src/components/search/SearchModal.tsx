@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Search, X, ArrowRight, CornerDownLeft, Sparkles, SlidersHorizontal } from "lucide-react";
 import { CATALOG_PRODUCTS, CATALOG_CATEGORIES, type CatalogProduct } from "@/lib/catalog";
 import { formatGBP } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, getCachedData } from "@/lib/api-cache";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -15,6 +17,22 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const cachedProds = getCachedData<{ products: CatalogProduct[] }>(apiUrl("/api/products"));
+  const [productsList, setProductsList] = useState<CatalogProduct[]>(
+    () => cachedProds?.products || CATALOG_PRODUCTS
+  );
+
+  useEffect(() => {
+    fetchWithSwr<{ products: CatalogProduct[] }>(
+      apiUrl("/api/products"),
+      (data) => {
+        if (Array.isArray(data?.products) && data.products.length > 0) {
+          setProductsList(data.products);
+        }
+      }
+    ).catch(() => {});
+  }, []);
 
   // Auto-focus input when opened
   useEffect(() => {
@@ -57,7 +75,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   // Live product search filtering
   const searchResults = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return CATALOG_PRODUCTS.filter((product) => {
+    return productsList.filter((product) => {
       // Category filter
       if (selectedCategory !== "all" && product.categoryId !== selectedCategory) {
         return false;
@@ -65,14 +83,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       if (!q) return true; // Show category or top items if query is empty
 
       const matchTitle = product.title.toLowerCase().includes(q);
-      const matchSubtitle = product.subtitle.toLowerCase().includes(q);
-      const matchDesc = product.description.toLowerCase().includes(q);
-      const matchMaterial = product.specs.material.toLowerCase().includes(q);
-      const matchColor = product.specs.color.toLowerCase().includes(q);
+      const matchSubtitle = (product.subtitle || "").toLowerCase().includes(q);
+      const matchDesc = (product.description || "").toLowerCase().includes(q);
+      const matchMaterial = (product.specs?.material || "").toLowerCase().includes(q);
+      const matchColor = (product.specs?.color || "").toLowerCase().includes(q);
 
       return matchTitle || matchSubtitle || matchDesc || matchMaterial || matchColor;
     }).slice(0, 8);
-  }, [query, selectedCategory]);
+  }, [productsList, query, selectedCategory]);
 
   if (!isOpen) return null;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -19,29 +19,48 @@ import {
 import { formatGBP } from "@san-furniture/types";
 import { CATALOG_PRODUCTS, CATALOG_CATEGORIES, type CatalogProduct } from "../lib/catalog";
 import { useCart } from "../lib/cart-context";
+import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, getCachedData } from "@/lib/api-cache";
 
 export default function HomePage() {
   const { addItem } = useCart();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [addedProductId, setAddedProductId] = useState<string | null>(null);
 
+  // Dynamic live products from MySQL backend with SWR cache
+  const cachedProducts = getCachedData<{ products: CatalogProduct[] }>(apiUrl("/api/products"));
+  const [productsList, setProductsList] = useState<CatalogProduct[]>(
+    () => cachedProducts?.products || CATALOG_PRODUCTS
+  );
+
+  useEffect(() => {
+    fetchWithSwr(
+      apiUrl("/api/products"),
+      (data: any) => {
+        if (Array.isArray(data.products) && data.products.length > 0) {
+          setProductsList(data.products);
+        }
+      }
+    ).catch(() => {});
+  }, []);
+
   // Filter products by selected room/category tab
   const filteredProducts = useMemo(() => {
-    if (activeTab === "all") return CATALOG_PRODUCTS;
-    return CATALOG_PRODUCTS.filter((p) => p.categoryId === activeTab);
-  }, [activeTab]);
+    if (activeTab === "all") return productsList;
+    return productsList.filter((p) => p.categoryId === activeTab);
+  }, [activeTab, productsList]);
 
   // Special Offers & Discounted Products
   const saleProducts = useMemo(() => {
-    return CATALOG_PRODUCTS.filter(
+    return productsList.filter(
       (p) => p.compareAtPricePennies && p.compareAtPricePennies > p.pricePennies
     );
-  }, []);
+  }, [productsList]);
 
   // New Arrivals (Latest additions)
   const newArrivals = useMemo(() => {
-    return CATALOG_PRODUCTS.slice(8, 14);
-  }, []);
+    return productsList.slice(0, 6);
+  }, [productsList]);
 
   // Quick Add handler with visual confirmation
   const handleQuickAdd = (product: CatalogProduct, e: React.MouseEvent) => {
@@ -54,14 +73,14 @@ export default function HomePage() {
     }, 1800);
   };
 
-  const categoriesWithCounts = [
-    { id: "all", name: "All Furniture", count: CATALOG_PRODUCTS.length },
-    { id: "cat_sofas", name: "Sofas & Corner Lounges", count: 4 },
-    { id: "cat_armchairs", name: "Accent Armchairs", count: 3 },
-    { id: "cat_dining", name: "Dining Sets & Tables", count: 3 },
-    { id: "cat_beds", name: "Ottoman Beds & Bedsteads", count: 2 },
-    { id: "cat_living", name: "Occasional & Coffee Tables", count: 2 },
-  ];
+  const categoriesWithCounts = useMemo(() => [
+    { id: "all", name: "All Furniture", count: productsList.length },
+    { id: "cat_sofas", name: "Sofas & Corner Lounges", count: productsList.filter(p => p.categoryId === "cat_sofas").length || 4 },
+    { id: "cat_armchairs", name: "Accent Armchairs", count: productsList.filter(p => p.categoryId === "cat_armchairs").length || 3 },
+    { id: "cat_dining", name: "Dining Sets & Tables", count: productsList.filter(p => p.categoryId === "cat_dining").length || 3 },
+    { id: "cat_beds", name: "Ottoman Beds & Bedsteads", count: productsList.filter(p => p.categoryId === "cat_beds").length || 2 },
+    { id: "cat_living", name: "Occasional & Coffee Tables", count: productsList.filter(p => p.categoryId === "cat_living").length || 2 },
+  ], [productsList]);
 
   return (
     <div className="w-full space-y-16 sm:space-y-24 pb-20">
@@ -407,7 +426,7 @@ export default function HomePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleQuickAdd(CATALOG_PRODUCTS[1], e)}
+                  onClick={(e) => handleQuickAdd(productsList[1] || productsList[0], e)}
                   className="px-3 py-2 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-colors shrink-0"
                 >
                   Add
@@ -433,7 +452,7 @@ export default function HomePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleQuickAdd(CATALOG_PRODUCTS[3], e)}
+                  onClick={(e) => handleQuickAdd(productsList[3] || productsList[0], e)}
                   className="px-3 py-2 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-colors shrink-0"
                 >
                   Add
@@ -459,7 +478,7 @@ export default function HomePage() {
                 </div>
                 <button
                   type="button"
-                  onClick={(e) => handleQuickAdd(CATALOG_PRODUCTS[7], e)}
+                  onClick={(e) => handleQuickAdd(productsList[7] || productsList[0], e)}
                   className="px-3 py-2 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-colors shrink-0"
                 >
                   Add

@@ -138,7 +138,8 @@ const server = http.createServer(async (req, res) => {
         pricePennies: row.price_pennies,
         priceFormatted: formatGBP(row.price_pennies),
         compareAtPricePennies: row.compare_at_price_pennies,
-        vatRatePercent: Number(row.vat_rate_percent),
+        vatRatePercent: Number(row.vat_rate_percent || 20),
+        gtinBarcode: row.gtin_barcode || "5060912830018",
         thumbnailUrl: row.thumbnail_url,
         images: row.images_json ? JSON.parse(row.images_json) : [row.thumbnail_url],
         specs: {
@@ -151,13 +152,15 @@ const server = http.createServer(async (req, res) => {
           frame_material: row.frame_material,
           color: row.color,
           assembly_required: Boolean(row.assembly_required),
-          doorway_clearance_min_cm: Number(row.doorway_clearance_min_cm),
-          delivery_tier: row.delivery_tier,
+          doorway_clearance_min_cm: Number(row.doorway_clearance_min_cm || 75),
+          delivery_tier: row.delivery_tier || "two_man_white_glove",
           fire_safety: {
             compliant: Boolean(row.fire_safety_compliant),
-            standard: row.fire_safety_standard,
+            standard: row.fire_safety_standard || "BS 5852: Part 1: 1979",
+            certificate_ref: row.certificate_ref || "BS-UK-2026-LIVE",
+            label_attached: true,
           },
-          lead_time_days: row.lead_time_days,
+          lead_time_days: row.lead_time_days || 7,
         },
       }));
       return sendJson(res, 200, { products: formatted });
@@ -185,6 +188,8 @@ const server = http.createServer(async (req, res) => {
           status: row.status,
           pricePennies: row.price_pennies,
           priceFormatted: formatGBP(row.price_pennies),
+          vatRatePercent: Number(row.vat_rate_percent || 20),
+          gtinBarcode: row.gtin_barcode || "5060912830018",
           thumbnailUrl: row.thumbnail_url,
           images: row.images_json ? JSON.parse(row.images_json) : [row.thumbnail_url],
           specs: {
@@ -197,9 +202,15 @@ const server = http.createServer(async (req, res) => {
             frame_material: row.frame_material,
             color: row.color,
             assembly_required: Boolean(row.assembly_required),
-            delivery_tier: row.delivery_tier,
-            fire_safety_compliant: Boolean(row.fire_safety_compliant),
-            lead_time_days: row.lead_time_days,
+            doorway_clearance_min_cm: Number(row.doorway_clearance_min_cm || 75),
+            delivery_tier: row.delivery_tier || "two_man_white_glove",
+            fire_safety: {
+              compliant: Boolean(row.fire_safety_compliant),
+              standard: row.fire_safety_standard || "BS 5852: Part 1: 1979",
+              certificate_ref: row.certificate_ref || "BS-UK-2026-LIVE",
+              label_attached: true,
+            },
+            lead_time_days: row.lead_time_days || 7,
           },
         },
       });

@@ -6,6 +6,7 @@ import {
   calculateNetAndVat,
   formatGBP
 } from "@san-furniture/types";
+import { apiUrl } from "@/lib/api-config";
 
 export interface CatalogProduct {
   id: string;
@@ -624,5 +625,60 @@ export function getCategoryByHandle(handle: string): ProductCategory | undefined
 }
 
 export function getProductsByCategory(categoryId: string): CatalogProduct[] {
+  return CATALOG_PRODUCTS.filter((p) => p.categoryId === categoryId);
+}
+
+/**
+ * Live dynamic product fetchers connecting to MySQL database API
+ * Falls back to CATALOG_PRODUCTS if backend is offline during build
+ */
+export async function getLiveProducts(): Promise<CatalogProduct[]> {
+  try {
+    const res = await fetch(apiUrl("/api/products"), {
+      next: { revalidate: 15 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.products) && data.products.length > 0) {
+        return data.products;
+      }
+    }
+  } catch (err) {
+    console.warn("Could not fetch live products from database API, using fallback:", err);
+  }
+  return CATALOG_PRODUCTS;
+}
+
+export async function getLiveProductByHandle(handle: string): Promise<CatalogProduct | undefined> {
+  try {
+    const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(handle)}`), {
+      next: { revalidate: 15 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.product) {
+        return data.product;
+      }
+    }
+  } catch (err) {
+    console.warn(`Could not fetch live product "${handle}" from database API:`, err);
+  }
+  return CATALOG_PRODUCTS.find((p) => p.handle === handle);
+}
+
+export async function getLiveProductsByCategory(categoryId: string): Promise<CatalogProduct[]> {
+  try {
+    const res = await fetch(apiUrl(`/api/products?category=${encodeURIComponent(categoryId)}`), {
+      next: { revalidate: 15 },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.products) && data.products.length > 0) {
+        return data.products;
+      }
+    }
+  } catch (err) {
+    console.warn(`Could not fetch live products for category "${categoryId}":`, err);
+  }
   return CATALOG_PRODUCTS.filter((p) => p.categoryId === categoryId);
 }

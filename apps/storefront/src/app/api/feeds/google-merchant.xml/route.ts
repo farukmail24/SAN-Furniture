@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { CATALOG_PRODUCTS } from "@/lib/catalog";
+import { getLiveProducts } from "@/lib/catalog";
 
 const CATEGORY_MAP: Record<string, string> = {
   cat_sofas: "Home & Garden > Furniture > Sofas",
@@ -20,7 +20,8 @@ function escapeXml(unsafe: string): string {
 
 export async function GET() {
   const baseUrl = "https://sanfurniture.co.uk";
-  const itemsXml = CATALOG_PRODUCTS.filter((p) => p.status !== "draft")
+  const liveProducts = await getLiveProducts();
+  const itemsXml = liveProducts.filter((p) => p.status !== "draft")
     .map((p) => {
       const link = `${baseUrl}/products/${p.handle}`;
       const priceGbp = `${(p.pricePennies / 100).toFixed(2)} GBP`;

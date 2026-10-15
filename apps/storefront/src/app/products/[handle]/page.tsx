@@ -12,11 +12,10 @@ import {
   FileCheck2,
 } from "lucide-react";
 import {
-  CATALOG_PRODUCTS,
   CATALOG_CATEGORIES,
-  getProductByHandle,
-  getCategoryByHandle,
-  getProductsByCategory,
+  getLiveProductByHandle,
+  getLiveProducts,
+  getLiveProductsByCategory,
 } from "@/lib/catalog";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { DimensionsClearance } from "@/components/product/DimensionsClearance";
@@ -31,14 +30,15 @@ interface ProductPageProps {
 }
 
 export async function generateStaticParams() {
-  return CATALOG_PRODUCTS.map((product) => ({
+  const products = await getLiveProducts();
+  return products.map((product) => ({
     handle: product.handle,
   }));
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { handle } = await params;
-  const product = getProductByHandle(handle);
+  const product = await getLiveProductByHandle(handle);
 
   if (!product) {
     return {
@@ -73,14 +73,15 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
-  const product = getProductByHandle(handle);
+  const product = await getLiveProductByHandle(handle);
 
   if (!product) {
     notFound();
   }
 
   const category = CATALOG_CATEGORIES.find((c) => c.id === product.categoryId);
-  const relatedProducts = getProductsByCategory(product.categoryId)
+  const categoryProducts = await getLiveProductsByCategory(product.categoryId);
+  const relatedProducts = categoryProducts
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
 
