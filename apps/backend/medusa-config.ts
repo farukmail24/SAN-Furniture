@@ -18,5 +18,9 @@ export default defineConfig({
     },
     databaseLogging: !isProduction,
   },
-  modules: [],
+  modules: [
+    {
+      resolve: "./src/modules/furniture",
+    },
+  ],
 });
