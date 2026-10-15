@@ -17,6 +17,7 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface Supplier {
   id: string;
@@ -36,21 +37,25 @@ interface Supplier {
 }
 
 export default function AdminSuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedSuppliers = getCachedData<{ suppliers: Supplier[] }>(apiUrl("/api/admin/suppliers"));
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => cachedSuppliers?.suppliers || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedSuppliers?.suppliers?.length);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchSuppliers = async () => {
     try {
-      const res = await fetch(apiUrl("/api/admin/suppliers"));
-      const data = await res.json();
-      if (data.suppliers) {
-        setSuppliers(data.suppliers);
-      }
+      fetchWithSwr(
+        apiUrl("/api/admin/suppliers"),
+        (data: any, isCached) => {
+          if (data.suppliers) {
+            setSuppliers(data.suppliers);
+            setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to load suppliers:", err);
-    } finally {
       setLoading(false);
     }
   };

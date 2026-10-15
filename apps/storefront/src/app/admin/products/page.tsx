@@ -18,7 +18,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface ProductItem {
   id: string;
@@ -48,10 +48,13 @@ interface CategoryOption {
 }
 
 export default function AdminProductsPage() {
+  const cachedProds = getCachedData<{ products: ProductItem[] }>(apiUrl("/api/admin/products"));
+  const cachedCats = getCachedData<{ categories: CategoryOption[] }>(apiUrl("/api/admin/categories"));
+
   const [mounted, setMounted] = useState(false);
-  const [products, setProducts] = useState<ProductItem[]>([]);
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<ProductItem[]>(() => cachedProds?.products || []);
+  const [categories, setCategories] = useState<CategoryOption[]>(() => cachedCats?.categories || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedProds?.products?.length);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Fetch products & categories from backend with instant SWR cache
@@ -62,7 +65,7 @@ export default function AdminProductsPage() {
         (data: any, isCached) => {
           if (data.products) {
             setProducts(data.products);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));

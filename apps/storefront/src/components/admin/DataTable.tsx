@@ -347,13 +347,22 @@ export function DataTable<T extends Record<string, any>>({
             </thead>
 
             <tbody className="divide-y divide-[#E8E2D5]">
-              {loading ? (
-                <tr>
-                  <td colSpan={visibleColumns.length + 1} className="py-20 text-center">
-                    <RefreshCw className="w-8 h-8 animate-spin text-[#C89B3C] mx-auto mb-2" />
-                    <span className="text-xs text-[#4F6D7A]">Loading catalog records...</span>
-                  </td>
-                </tr>
+              {loading && paginatedData.length === 0 ? (
+                [...Array(6)].map((_, idx) => (
+                  <tr key={`skeleton-${idx}`} className="animate-pulse">
+                    <td className="py-3.5 px-4 w-10">
+                      <div className="w-4 h-4 bg-sand-200 rounded" />
+                    </td>
+                    {visibleColumns.map((col, cIdx) => (
+                      <td key={col.key} className="py-3.5 px-4">
+                        <div
+                          className="h-3.5 bg-sand-200/80 rounded"
+                          style={{ width: `${Math.max(35, 80 - ((cIdx % 4) * 15))}%` }}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={visibleColumns.length + 1} className="py-16 text-center text-sm text-[#4F6D7A]">

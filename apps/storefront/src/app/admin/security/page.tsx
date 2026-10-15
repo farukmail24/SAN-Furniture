@@ -17,6 +17,7 @@ import {
   Activity
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface JailedIP {
   id: string;
@@ -29,8 +30,9 @@ interface JailedIP {
 }
 
 export default function AdminSecurityPage() {
-  const [jailedIps, setJailedIps] = useState<JailedIP[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedJail = getCachedData<{ jailedIps: JailedIP[] }>(apiUrl("/api/security/ip-jail"));
+  const [jailedIps, setJailedIps] = useState<JailedIP[]>(() => cachedJail?.jailedIps || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedJail?.jailedIps?.length);
   const [unblockingIp, setUnblockingIp] = useState<string | null>(null);
   const [newIp, setNewIp] = useState("");
   const [newReason, setNewReason] = useState("");
@@ -39,14 +41,17 @@ export default function AdminSecurityPage() {
 
   const fetchJail = async () => {
     try {
-      const res = await fetch(apiUrl("/api/security/ip-jail"));
-      const data = await res.json();
-      if (data.jailedIps) {
-        setJailedIps(data.jailedIps);
-      }
+      fetchWithSwr(
+        apiUrl("/api/security/ip-jail"),
+        (data: any, isCached) => {
+          if (data.jailedIps) {
+            setJailedIps(data.jailedIps);
+            setLoading(false);
+          }
+        }
+      ).finally(() => setLoading(false));
     } catch (err) {
       console.error("Failed to fetch IP jail:", err);
-    } finally {
       setLoading(false);
     }
   };

@@ -54,9 +54,40 @@ export function ExtensionErrorGuard() {
     window.addEventListener("error", errorHandler, true);
     window.addEventListener("unhandledrejection", rejectionHandler, true);
 
+    const purgeOverlays = () => {
+      try {
+        const portals = document.querySelectorAll("nextjs-portal");
+        portals.forEach((portal) => {
+          const shadow = portal.shadowRoot;
+          if (shadow) {
+            const html = shadow.innerHTML || "";
+            const lower = html.toLowerCase();
+            if (
+              lower.includes("chrome-extension://") ||
+              lower.includes("moz-extension://") ||
+              lower.includes("safari-extension://") ||
+              lower.includes("eppicocmhmnlblhjplcgkofcliegomcon") ||
+              lower.includes("m_id") ||
+              lower.includes("200.js")
+            ) {
+              portal.remove();
+            }
+          }
+        });
+      } catch {
+        // Safe fallback
+      }
+    };
+
+    const observer = new MutationObserver(purgeOverlays);
+    observer.observe(document.body, { childList: true, subtree: true });
+    const interval = setInterval(purgeOverlays, 300);
+
     return () => {
       window.removeEventListener("error", errorHandler, true);
       window.removeEventListener("unhandledrejection", rejectionHandler, true);
+      observer.disconnect();
+      clearInterval(interval);
     };
   }, []);
 

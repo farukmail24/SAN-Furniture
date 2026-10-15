@@ -16,7 +16,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface CategoryRecord {
   id: string;
@@ -29,8 +29,9 @@ interface CategoryRecord {
 }
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<CategoryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedData = getCachedData<{ categories: CategoryRecord[] }>(apiUrl("/api/admin/categories"));
+  const [categories, setCategories] = useState<CategoryRecord[]>(() => cachedData?.categories || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedData?.categories?.length);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals state
@@ -53,7 +54,7 @@ export default function AdminCategoriesPage() {
         (data: any, isCached) => {
           if (data.categories) {
             setCategories(data.categories);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));

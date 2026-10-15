@@ -46,35 +46,65 @@ export default function RootLayout({
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
+        <script src="/extension-shield.js" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                function isExtensionError(e) {
-                  var file = (e && e.filename) || '';
-                  var msg = (e && e.message) || (e && e.reason && e.reason.message) || '';
-                  var stack = (e && e.error && e.error.stack) || (e && e.reason && e.reason.stack) || '';
-                  return file.indexOf('chrome-extension://') !== -1 ||
-                         file.indexOf('moz-extension://') !== -1 ||
-                         file.indexOf('safari-extension://') !== -1 ||
-                         stack.indexOf('chrome-extension://') !== -1 ||
-                         stack.indexOf('moz-extension://') !== -1 ||
-                         stack.indexOf('safari-extension://') !== -1 ||
-                         msg.indexOf('M_ID') !== -1 ||
-                         stack.indexOf('M_ID') !== -1;
+                if (typeof window === 'undefined') return;
+                function isIgnored(val) {
+                  if (!val) return false;
+                  var str = '';
+                  try {
+                    if (typeof val === 'string') str = val;
+                    else if (val instanceof Error) str = (val.message || '') + ' ' + (val.stack || '');
+                    else if (typeof val === 'object') {
+                      str = (val.message || '') + ' ' + (val.filename || '') + ' ' + (val.source || '') + ' ' +
+                            (val.reason && (val.reason.message || val.reason.stack || '')) + ' ' +
+                            (val.error && (val.error.message || val.error.stack || '')) + ' ' + JSON.stringify(val);
+                    }
+                  } catch (_) { str = String(val); }
+                  var lower = str.toLowerCase();
+                  return lower.indexOf('chrome-extension://') !== -1 ||
+                         lower.indexOf('moz-extension://') !== -1 ||
+                         lower.indexOf('safari-extension://') !== -1 ||
+                         lower.indexOf('eppicocmhmnlblhjplcgkofcliegomcon') !== -1 ||
+                         lower.indexOf('m_id') !== -1 ||
+                         lower.indexOf('200.js') !== -1;
                 }
-                window.addEventListener('error', function(e) {
-                  if (isExtensionError(e)) {
-                    e.stopImmediatePropagation();
-                    e.preventDefault();
+                var origAdd = window.addEventListener;
+                window.addEventListener = function(t, l, o) {
+                  if ((t === 'error' || t === 'unhandledrejection') && typeof l === 'function') {
+                    return origAdd.call(this, t, function(e) {
+                      if (isIgnored(e)) {
+                        if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+                        if (e && e.preventDefault) e.preventDefault();
+                        return;
+                      }
+                      return l.apply(this, arguments);
+                    }, o);
+                  }
+                  return origAdd.apply(this, arguments);
+                };
+                origAdd.call(window, 'error', function(e) {
+                  if (isIgnored(e)) {
+                    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                    if (e.preventDefault) e.preventDefault();
                   }
                 }, true);
-                window.addEventListener('unhandledrejection', function(e) {
-                  if (isExtensionError(e)) {
-                    e.stopImmediatePropagation();
-                    e.preventDefault();
+                origAdd.call(window, 'unhandledrejection', function(e) {
+                  if (isIgnored(e)) {
+                    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+                    if (e.preventDefault) e.preventDefault();
                   }
                 }, true);
+                var origErr = window.console.error;
+                window.console.error = function() {
+                  for (var i = 0; i < arguments.length; i++) {
+                    if (isIgnored(arguments[i])) return;
+                  }
+                  return origErr.apply(window.console, arguments);
+                };
               })();
             `,
           }}

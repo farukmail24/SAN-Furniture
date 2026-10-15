@@ -21,7 +21,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface CustomerRecord {
   id: string;
@@ -38,8 +38,9 @@ interface CustomerRecord {
 }
 
 export default function AdminCustomersPage() {
-  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedCust = getCachedData<{ customers: CustomerRecord[] }>(apiUrl("/api/admin/customers"));
+  const [customers, setCustomers] = useState<CustomerRecord[]>(() => cachedCust?.customers || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedCust?.customers?.length);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals & Drawers state
@@ -64,7 +65,7 @@ export default function AdminCustomersPage() {
         (data: any, isCached) => {
           if (data.customers) {
             setCustomers(data.customers);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));

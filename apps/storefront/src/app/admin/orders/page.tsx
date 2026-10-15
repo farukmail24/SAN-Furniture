@@ -27,7 +27,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface OrderItem {
   id: string;
@@ -50,8 +50,9 @@ interface OrderItem {
 }
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedOrders = getCachedData<{ orders: OrderItem[] }>(apiUrl("/api/admin/orders"));
+  const [orders, setOrders] = useState<OrderItem[]>(() => cachedOrders?.orders || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedOrders?.orders?.length);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Dispatch Modal State
@@ -74,7 +75,7 @@ export default function AdminOrdersPage() {
         (data: any, isCached) => {
           if (data.orders) {
             setOrders(data.orders);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));

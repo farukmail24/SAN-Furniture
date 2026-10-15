@@ -27,8 +27,10 @@ import {
   SlidersHorizontal,
   FolderTree,
   Users,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from "lucide-react";
+import { preloadAdminRoutes } from "@/lib/api-cache";
 
 interface AdminUser {
   id: string;
@@ -42,11 +44,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
 
   // If on login page, render clean full-screen login container without sidebar
   const isLoginPage = pathname === "/admin/login";
 
   useEffect(() => {
+    // Clear pending path indicator on route arrival
+    setPendingPath(null);
+
+    // Warm up admin route cache in background
+    preloadAdminRoutes();
+
     // Check local admin session
     const storedUser = localStorage.getItem("san_admin_user");
     if (storedUser) {
@@ -228,33 +237,50 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             {navLinks.map((link) => {
               const Icon = link.icon;
+              const isPending = pendingPath === link.href;
+              const isActive = link.active && !isPending;
               return (
                 <Link
                   key={link.name}
                   href={link.href}
                   prefetch={true}
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (pathname !== link.href) {
+                      setPendingPath(link.href);
+                    }
+                  }}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-                    link.active
+                    isPending
+                      ? "bg-brass-500/25 text-brass-300 border border-brass-500/40 font-semibold shadow-inner"
+                      : isActive
                       ? "bg-brass-500/15 text-brass-400 border border-brass-500/30 font-semibold"
                       : "text-sand-300 hover:bg-navy-900 hover:text-sand-50"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${link.active ? "text-brass-400" : "text-sand-400"}`} />
+                    {isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-brass-400" />
+                    ) : (
+                      <Icon className={`w-4 h-4 ${isActive ? "text-brass-400" : "text-sand-400"}`} />
+                    )}
                     <span>{link.name}</span>
                   </div>
-                  {link.badge && (
+                  {isPending ? (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-brass-500/30 text-brass-300 animate-pulse">
+                      Loading...
+                    </span>
+                  ) : link.badge ? (
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                        link.active
+                        isActive
                           ? "bg-brass-500 text-navy-950"
                           : "bg-navy-800 text-sand-300 border border-navy-700"
                       }`}
                     >
                       {link.badge}
                     </span>
-                  )}
+                  ) : null}
                 </Link>
               );
             })}

@@ -19,10 +19,11 @@ export function TopProgressBar() {
   useEffect(() => {
     if (isVisible) {
       setProgress(100);
+      document.body.style.cursor = "";
       const timer = setTimeout(() => {
         setIsVisible(false);
         setProgress(0);
-      }, 250);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [pathname, searchParams]);
@@ -60,21 +61,22 @@ export function TopProgressBar() {
         return;
       }
 
-      // Immediately show top progress bar
+      // Immediately show top progress bar and tactile cursor
       setIsVisible(true);
-      setProgress(25);
+      setProgress(35);
+      document.body.style.cursor = "progress";
 
       if (animInterval) clearInterval(animInterval);
       animInterval = setInterval(() => {
         setProgress((prev) => {
-          if (prev >= 85) {
+          if (prev >= 88) {
             if (animInterval) clearInterval(animInterval);
             return prev;
           }
-          // Ease towards 85%
-          return prev + Math.random() * 15;
+          // Ease towards 88%
+          return prev + Math.random() * 12;
         });
-      }, 120);
+      }, 100);
     };
 
     document.addEventListener("click", handleLinkClick, { capture: true });
@@ -82,6 +84,7 @@ export function TopProgressBar() {
     return () => {
       document.removeEventListener("click", handleLinkClick, { capture: true });
       if (animInterval) clearInterval(animInterval);
+      document.body.style.cursor = "";
     };
   }, [pathname]);
 
@@ -90,10 +93,10 @@ export function TopProgressBar() {
   return (
     <div
       aria-hidden="true"
-      className="fixed top-0 left-0 right-0 z-[999999] pointer-events-none h-[3px] bg-transparent"
+      className="fixed top-0 left-0 right-0 z-[999999] pointer-events-none h-[3.5px] bg-transparent"
     >
       <div
-        className="h-full bg-gradient-to-r from-brass-600 via-brass-400 to-amber-300 transition-all duration-200 ease-out shadow-[0_0_12px_rgba(200,155,60,0.85)]"
+        className="h-full bg-gradient-to-r from-brass-600 via-amber-400 to-amber-200 transition-all duration-150 ease-out shadow-[0_0_16px_rgba(200,155,60,0.95)]"
         style={{
           width: `${progress}%`,
           opacity: isVisible || progress > 0 ? 1 : 0,

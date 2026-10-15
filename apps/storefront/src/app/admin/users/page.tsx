@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface AdminUserRecord {
   id: string;
@@ -31,8 +31,9 @@ interface AdminUserRecord {
 }
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUserRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedUsers = getCachedData<{ users: AdminUserRecord[] }>(apiUrl("/api/admin/users"));
+  const [users, setUsers] = useState<AdminUserRecord[]>(() => cachedUsers?.users || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedUsers?.users?.length);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals state
@@ -53,7 +54,7 @@ export default function AdminUsersPage() {
         (data: any, isCached) => {
           if (data.users) {
             setUsers(data.users);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));

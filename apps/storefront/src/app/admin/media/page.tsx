@@ -26,11 +26,12 @@ import {
 } from "lucide-react";
 import { MediaAsset } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 export default function AdminMediaPage() {
-  const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedMedia = getCachedData<{ media: MediaAsset[] }>(apiUrl("/api/admin/media"));
+  const [mediaList, setMediaList] = useState<MediaAsset[]>(() => cachedMedia?.media || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedMedia?.media?.length);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);

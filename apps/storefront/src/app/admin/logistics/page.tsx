@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface PostcodeZone {
   id: string;
@@ -36,9 +36,10 @@ interface DeliveryTier {
 }
 
 export default function AdminLogisticsPage() {
-  const [zones, setZones] = useState<PostcodeZone[]>([]);
-  const [tiers, setTiers] = useState<DeliveryTier[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedLogistics = getCachedData<{ zones: PostcodeZone[]; tiers: DeliveryTier[] }>(apiUrl("/api/admin/logistics"));
+  const [zones, setZones] = useState<PostcodeZone[]>(() => cachedLogistics?.zones || []);
+  const [tiers, setTiers] = useState<DeliveryTier[]>(() => cachedLogistics?.tiers || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedLogistics?.zones?.length);
   const [savingZoneId, setSavingZoneId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 

@@ -79,7 +79,7 @@ export default function AdminSettingsPage() {
     ip_jail_duration_mins: "15"
   });
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);

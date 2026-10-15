@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 
 interface ReviewItem {
   id: string;
@@ -33,8 +33,9 @@ interface ReviewItem {
 }
 
 export default function AdminReviewsPage() {
-  const [reviews, setReviews] = useState<ReviewItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedRev = getCachedData<{ reviews: ReviewItem[] }>(apiUrl("/api/admin/reviews"));
+  const [reviews, setReviews] = useState<ReviewItem[]>(() => cachedRev?.reviews || []);
+  const [loading, setLoading] = useState<boolean>(() => !cachedRev?.reviews?.length);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const fetchReviews = async () => {
@@ -44,7 +45,7 @@ export default function AdminReviewsPage() {
         (data: any, isCached) => {
           if (data.reviews) {
             setReviews(data.reviews);
-            if (isCached) setLoading(false);
+            setLoading(false);
           }
         }
       ).finally(() => setLoading(false));
