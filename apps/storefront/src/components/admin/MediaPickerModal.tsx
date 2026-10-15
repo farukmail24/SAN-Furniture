@@ -8,8 +8,12 @@ import {
   Check,
   Search,
   Filter,
-  RefreshCw,
-  ExternalLink
+  Copy,
+  CheckCircle2,
+  Trash2,
+  FileImage,
+  Sparkles,
+  Link as LinkIcon
 } from "lucide-react";
 
 export interface MediaAsset {
@@ -31,6 +35,7 @@ interface MediaPickerModalProps {
   onSelect: (url: string, media?: MediaAsset) => void;
   currentUrl?: string;
   title?: string;
+  buttonLabel?: string;
 }
 
 export function MediaPickerModal({
@@ -38,17 +43,24 @@ export function MediaPickerModal({
   onClose,
   onSelect,
   currentUrl,
-  title = "Select Image from Media Library",
+  title = "Add media",
+  buttonLabel = "Insert into product",
 }: MediaPickerModalProps) {
+  const [activeTab, setActiveTab] = useState<"upload" | "library">("library");
   const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedUrl, setSelectedUrl] = useState<string>(currentUrl || "");
+  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [newImageUrl, setNewImageUrl] = useState("");
-  const [newImageAlt, setNewImageAlt] = useState("");
-  const [newImageCat, setNewImageCat] = useState("product");
-  const [isAdding, setIsAdding] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Upload Tab Form State
+  const [uploadUrl, setUploadUrl] = useState("");
+  const [uploadName, setUploadName] = useState("");
+  const [uploadAlt, setUploadAlt] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("product");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchMedia = async () => {
     setLoading(true);
@@ -61,7 +73,13 @@ export function MediaPickerModal({
 
       const res = await fetch(url);
       const data = await res.json();
-      if (data.media) setMediaList(data.media);
+      if (data.media) {
+        setMediaList(data.media);
+        if (currentUrl) {
+          const match = data.media.find((m: MediaAsset) => m.file_url === currentUrl);
+          if (match) setSelectedAsset(match);
+        }
+      }
     } catch (err) {
       console.error("Failed to load media:", err);
     } finally {
@@ -72,214 +90,431 @@ export function MediaPickerModal({
   useEffect(() => {
     if (isOpen) {
       fetchMedia();
-      setSelectedUrl(currentUrl || "");
     }
   }, [isOpen, activeCategory, searchQuery]);
 
-  if (!isOpen) return null;
-
-  const handleAddNewImage = async (e: React.FormEvent) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newImageUrl.trim()) return;
-    setIsAdding(true);
+    if (!uploadUrl.trim()) return;
+    setIsUploading(true);
+    setUploadError(null);
+
     try {
       const res = await fetch("http://localhost:9000/api/admin/media", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fileUrl: newImageUrl.trim(),
-          altText: newImageAlt.trim(),
-          category: newImageCat,
+          fileName: uploadName || uploadUrl.split("/").pop()?.split("?")[0] || "furniture-asset.jpg",
+          fileUrl: uploadUrl,
+          altText: uploadAlt || uploadName || "SAN Handcrafted Furniture",
+          category: uploadCategory,
+          mimeType: "image/jpeg",
+          widthPx: 1200,
+          heightPx: 800,
+          fileSizeBytes: 320000,
         }),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setSelectedUrl(newImageUrl.trim());
-        setNewImageUrl("");
-        setNewImageAlt("");
-        fetchMedia();
-      }
-    } catch (err) {
-      console.error(err);
+
+      if (!res.ok) throw new Error("Failed to upload media asset");
+
+      setUploadUrl("");
+      setUploadName("");
+      setUploadAlt("");
+      await fetchMedia();
+      setActiveTab("library");
+    } catch (err: any) {
+      setUploadError(err.message || "Upload failed");
     } finally {
-      setIsAdding(false);
+      setIsUploading(false);
     }
   };
 
-  const handleConfirm = () => {
-    const selectedItem = mediaList.find((m) => m.file_url === selectedUrl);
-    onSelect(selectedUrl, selectedItem);
-    onClose();
+  const handleDeleteAsset = async (assetId: string) => {
+    if (!confirm("Are you sure you want to delete this media asset permanently?")) return;
+    try {
+      const res = await fetch(`http://localhost:9000/api/admin/media/${assetId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      if (selectedAsset?.id === assetId) setSelectedAsset(null);
+      await fetchMedia();
+    } catch (err: any) {
+      alert("Error deleting: " + err.message);
+    }
   };
 
+  const handleCopyUrl = (url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-2xl border border-[#E8E2D5] shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Modal Top Header */}
-        <div className="p-5 border-b border-[#E8E2D5] flex items-center justify-between bg-[#FAF8F5]">
-          <div className="flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-[#C89B3C]" />
-            <h3 className="font-serif font-bold text-lg text-[#0B132B]">{title}</h3>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-navy-950/75 backdrop-blur-xs p-3 sm:p-6 overflow-hidden animate-fade-in">
+      <div className="bg-[#f0f0f1] border border-[#c3c4c7] rounded-lg max-w-6xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden text-navy-950 font-sans">
+        
+        {/* WordPress Style Modal Header */}
+        <div className="bg-white border-b border-[#dcdcde] px-4 py-2.5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-6">
+            <h2 className="text-base font-semibold text-[#1d2327] tracking-tight">{title}</h2>
+            <div className="flex items-center gap-1 border-b-2 border-transparent">
+              <button
+                type="button"
+                onClick={() => setActiveTab("upload")}
+                className={`px-3 py-1.5 text-xs font-semibold border-b-2 transition-all ${
+                  activeTab === "upload"
+                    ? "border-navy-950 text-navy-950"
+                    : "border-transparent text-[#646970] hover:text-[#135e96]"
+                }`}
+              >
+                Upload files
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("library")}
+                className={`px-3 py-1.5 text-xs font-semibold border-b-2 transition-all ${
+                  activeTab === "library"
+                    ? "border-navy-950 text-navy-950"
+                    : "border-transparent text-[#646970] hover:text-[#135e96]"
+                }`}
+              >
+                Media Library
+              </button>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded-lg text-[#4F6D7A] hover:text-[#0B132B] hover:bg-sand-200 transition-colors"
+            className="p-1 rounded text-[#787c82] hover:text-[#d63638] hover:bg-[#f6f7f7] transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Filters & Quick Add Bar */}
-        <div className="p-4 border-b border-[#E8E2D5] bg-white space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-[#4F6D7A] absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search media by filename or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B] focus:outline-none focus:ring-2 focus:ring-[#0B132B]"
-              />
-            </div>
+        {/* Modal Body */}
+        <div className="flex-1 flex overflow-hidden">
+          {activeTab === "upload" ? (
+            /* Upload Files Tab (WordPress Dropzone) */
+            <div className="flex-1 p-8 overflow-y-auto flex flex-col items-center justify-center bg-white">
+              <div className="max-w-xl w-full p-8 border-2 border-dashed border-[#c3c4c7] rounded-lg text-center bg-[#fafafa]">
+                <div className="w-16 h-16 rounded-full bg-sand-200/60 mx-auto flex items-center justify-center mb-4 text-brass-700">
+                  <Upload className="w-8 h-8" />
+                </div>
+                <h3 className="text-base font-bold text-[#1d2327]">Drop files anywhere to upload</h3>
+                <p className="text-xs text-[#646970] mt-1 mb-6">or import high-res photography via direct URL</p>
 
-            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-              {["all", "sofas", "armchairs", "dining", "bedroom", "swatches", "branding"].map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-1.5 rounded-lg font-medium capitalize transition-colors whitespace-nowrap ${
-                    activeCategory === cat
-                      ? "bg-[#0B132B] text-white"
-                      : "bg-[#F4F1EA] text-[#4F6D7A] hover:text-[#0B132B]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
+                {uploadError && (
+                  <div className="mb-4 p-2.5 rounded bg-red-50 border border-red-200 text-red-700 text-xs">
+                    {uploadError}
+                  </div>
+                )}
 
-          {/* Quick Add Form */}
-          <form onSubmit={handleAddNewImage} className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-[#E8E2D5]">
-            <input
-              type="url"
-              required
-              placeholder="Paste Image URL (Unsplash, CDN or local path)..."
-              value={newImageUrl}
-              onChange={(e) => setNewImageUrl(e.target.value)}
-              className="flex-1 px-3 py-1.5 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
-            />
-            <input
-              type="text"
-              placeholder="Alt text / description..."
-              value={newImageAlt}
-              onChange={(e) => setNewImageAlt(e.target.value)}
-              className="w-48 px-3 py-1.5 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
-            />
-            <select
-              value={newImageCat}
-              onChange={(e) => setNewImageCat(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
-            >
-              <option value="product">Product</option>
-              <option value="sofas">Sofas</option>
-              <option value="armchairs">Armchairs</option>
-              <option value="dining">Dining</option>
-              <option value="bedroom">Bedroom</option>
-              <option value="swatches">Swatches</option>
-              <option value="branding">Branding</option>
-            </select>
-            <button
-              type="submit"
-              disabled={isAdding || !newImageUrl.trim()}
-              className="px-4 py-1.5 bg-[#0B132B] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 shrink-0"
-            >
-              {isAdding ? "Adding..." : "+ Add to Library"}
-            </button>
-          </form>
-        </div>
+                <form onSubmit={handleUploadSubmit} className="space-y-3 text-left">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#1d2327] mb-1">
+                      Direct Image Web URL <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      value={uploadUrl}
+                      onChange={(e) => setUploadUrl(e.target.value)}
+                      placeholder="https://images.unsplash.com/photo-1555041469..."
+                      className="w-full px-3 py-2 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                    />
+                  </div>
 
-        {/* Media Grid */}
-        <div className="flex-1 p-5 overflow-y-auto">
-          {loading ? (
-            <div className="py-24 text-center">
-              <RefreshCw className="w-8 h-8 animate-spin text-[#C89B3C] mx-auto mb-2" />
-              <span className="text-xs text-[#4F6D7A]">Loading media library...</span>
-            </div>
-          ) : mediaList.length === 0 ? (
-            <div className="py-20 text-center text-sm text-[#4F6D7A]">
-              No media found. Use the input bar above to add photos.
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#1d2327] mb-1">
+                        Attachment Title
+                      </label>
+                      <input
+                        type="text"
+                        value={uploadName}
+                        onChange={(e) => setUploadName(e.target.value)}
+                        placeholder="e.g. Richmond 3-Seater Ivory"
+                        className="w-full px-3 py-2 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#1d2327] mb-1">
+                        Category
+                      </label>
+                      <select
+                        value={uploadCategory}
+                        onChange={(e) => setUploadCategory(e.target.value)}
+                        className="w-full px-3 py-2 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                      >
+                        <option value="sofas">Sofas &amp; Lounges</option>
+                        <option value="armchairs">Accent Armchairs</option>
+                        <option value="dining">Dining Furniture</option>
+                        <option value="beds">Luxury Beds</option>
+                        <option value="tables">Coffee &amp; Side Tables</option>
+                        <option value="fabric">Fabric Swatches</option>
+                        <option value="logo">Brand Logos</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#1d2327] mb-1">
+                      Alternative Text (Alt Text)
+                    </label>
+                    <input
+                      type="text"
+                      value={uploadAlt}
+                      onChange={(e) => setUploadAlt(e.target.value)}
+                      placeholder="Describe the image for SEO and screen readers"
+                      className="w-full px-3 py-2 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                    />
+                  </div>
+
+                  <div className="pt-2 text-center">
+                    <button
+                      type="submit"
+                      disabled={isUploading}
+                      className="px-5 py-2 rounded bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs transition-colors disabled:opacity-50"
+                    >
+                      {isUploading ? "Uploading to Library..." : "Select & Ingest File"}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mt-6 pt-4 border-t border-[#dcdcde] text-[11px] text-[#646970]">
+                  Maximum upload file size: 64 MB. Supported formats: JPG, WebP, PNG, SVG.
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {mediaList.map((m) => {
-                const isSelected = selectedUrl === m.file_url;
-                return (
-                  <div
-                    key={m.id}
-                    onClick={() => setSelectedUrl(m.file_url)}
-                    className={`group relative rounded-xl border-2 overflow-hidden cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-[#C89B3C] shadow-lg ring-2 ring-[#C89B3C]/30"
-                        : "border-[#E8E2D5] hover:border-navy-400"
-                    }`}
-                  >
-                    <div className="aspect-[4/3] bg-sand-100 overflow-hidden relative">
-                      <img
-                        src={m.file_url}
-                        alt={m.alt_text || m.file_name}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      />
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#C89B3C] text-white flex items-center justify-center shadow-md">
-                          <Check className="w-4 h-4 stroke-[3]" />
-                        </div>
-                      )}
+            /* Media Library Tab (WordPress Grid + Attachment Details Sidebar) */
+            <>
+              {/* Left Side: Filter Bar + Image Grid */}
+              <div className="flex-1 flex flex-col bg-white border-r border-[#dcdcde] overflow-hidden">
+                {/* Filter & Search Bar */}
+                <div className="p-3 bg-[#f6f7f7] border-b border-[#dcdcde] flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={activeCategory}
+                      onChange={(e) => setActiveCategory(e.target.value)}
+                      className="px-2.5 py-1.5 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                    >
+                      <option value="all">All media items</option>
+                      <option value="sofas">Sofas</option>
+                      <option value="armchairs">Armchairs</option>
+                      <option value="dining">Dining</option>
+                      <option value="beds">Beds</option>
+                      <option value="tables">Tables</option>
+                      <option value="fabric">Fabric Swatches</option>
+                      <option value="logo">Logos</option>
+                    </select>
+
+                    <select
+                      defaultValue="all"
+                      className="px-2.5 py-1.5 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                    >
+                      <option value="all">All dates</option>
+                      <option value="2026-10">October 2026</option>
+                      <option value="2026-09">September 2026</option>
+                    </select>
+                  </div>
+
+                  <div className="relative w-64">
+                    <Search className="w-3.5 h-3.5 text-[#646970] absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search media items..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                    />
+                  </div>
+                </div>
+
+                {/* Thumbnails Grid */}
+                <div className="flex-1 p-4 overflow-y-auto">
+                  {loading ? (
+                    <div className="p-12 text-center text-xs text-[#646970]">
+                      Loading WordPress media items...
                     </div>
-                    <div className="p-2.5 bg-white text-left">
-                      <p className="text-xs font-semibold text-[#0B132B] truncate">{m.file_name}</p>
-                      <div className="flex items-center justify-between text-[10px] text-[#4F6D7A] mt-1">
-                        <span className="capitalize">{m.category}</span>
-                        <span>{m.width_px}×{m.height_px}</span>
+                  ) : mediaList.length === 0 ? (
+                    <div className="p-12 text-center">
+                      <FileImage className="w-10 h-10 text-[#c3c4c7] mx-auto mb-2" />
+                      <p className="text-xs font-semibold text-[#1d2327]">No media files found</p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("upload")}
+                        className="mt-3 text-xs text-[#2271b1] hover:underline"
+                      >
+                        Upload your first image
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                      {mediaList.map((asset) => {
+                        const isSelected = selectedAsset?.id === asset.id;
+                        return (
+                          <div
+                            key={asset.id}
+                            onClick={() => setSelectedAsset(asset)}
+                            className={`group relative aspect-square bg-[#f0f0f1] rounded cursor-pointer overflow-hidden border-2 transition-all ${
+                              isSelected
+                                ? "border-[#2271b1] ring-2 ring-[#2271b1]/30 shadow-md"
+                                : "border-transparent hover:border-[#8c8f94]"
+                            }`}
+                          >
+                            <img
+                              src={asset.file_url}
+                              alt={asset.alt_text || asset.file_name}
+                              className="w-full h-full object-cover"
+                            />
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 w-5 h-5 bg-[#2271b1] text-white rounded flex items-center justify-center shadow-sm">
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              </div>
+                            )}
+                            <div className="absolute inset-x-0 bottom-0 bg-navy-950/80 text-white p-1 text-[9px] truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                              {asset.file_name}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Side: WordPress Attachment Details Sidebar */}
+              <div className="w-80 bg-[#f6f7f7] flex flex-col overflow-y-auto flex-shrink-0 border-l border-[#dcdcde]">
+                <div className="p-4 border-b border-[#dcdcde] bg-white">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#646970]">
+                    Attachment Details
+                  </h3>
+                </div>
+
+                {selectedAsset ? (
+                  <div className="p-4 space-y-4 text-xs">
+                    {/* Preview Thumbnail */}
+                    <div className="aspect-video bg-[#e0e0e0] rounded overflow-hidden border border-[#dcdcde]">
+                      <img
+                        src={selectedAsset.file_url}
+                        alt={selectedAsset.file_name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    {/* Metadata summary */}
+                    <div className="space-y-1 text-[#646970] text-[11px] pb-3 border-b border-[#dcdcde]">
+                      <p className="font-bold text-[#1d2327] truncate">{selectedAsset.file_name}</p>
+                      <p>{new Date(selectedAsset.created_at).toLocaleDateString("en-GB", { month: "long", day: "numeric", year: "numeric" })}</p>
+                      <p>{(selectedAsset.file_size_bytes / 1024).toFixed(0)} KB</p>
+                      <p>{selectedAsset.width_px} &times; {selectedAsset.height_px} pixels</p>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAsset(selectedAsset.id)}
+                        className="text-[#d63638] hover:underline pt-1 inline-flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete permanently</span>
+                      </button>
+                    </div>
+
+                    {/* Editable Fields */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#1d2327] mb-1">
+                          Alternative Text
+                        </label>
+                        <textarea
+                          rows={2}
+                          defaultValue={selectedAsset.alt_text}
+                          placeholder="Learn how to describe the purpose of the image"
+                          className="w-full px-2.5 py-1.5 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#1d2327] mb-1">
+                          Title
+                        </label>
+                        <input
+                          type="text"
+                          defaultValue={selectedAsset.file_name}
+                          className="w-full px-2.5 py-1.5 bg-white border border-[#8c8f94] rounded text-xs text-[#1d2327] focus:outline-none focus:border-[#2271b1]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#1d2327] mb-1">
+                          File URL
+                        </label>
+                        <div className="flex gap-1.5">
+                          <input
+                            type="text"
+                            readOnly
+                            value={selectedAsset.file_url}
+                            className="w-full px-2.5 py-1 bg-[#f0f0f1] border border-[#dcdcde] rounded text-[10px] text-[#646970] font-mono truncate select-all"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleCopyUrl(selectedAsset.file_url)}
+                            className="px-2 py-1 bg-white border border-[#8c8f94] rounded hover:bg-[#f0f0f1] text-[#1d2327] flex items-center justify-center flex-shrink-0"
+                            title="Copy URL"
+                          >
+                            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                ) : (
+                  <div className="p-8 text-center text-xs text-[#646970]">
+                    Select an item from the library to view attachment details.
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
-        {/* Modal Bottom Footer */}
-        <div className="p-4 border-t border-[#E8E2D5] bg-[#FAF8F5] flex items-center justify-between">
-          <div className="text-xs text-[#4F6D7A] truncate max-w-md">
-            {selectedUrl ? (
-              <span>Selected: <code className="text-[#0B132B] font-mono">{selectedUrl}</code></span>
+        {/* WordPress Style Footer Action Bar */}
+        <div className="bg-white border-t border-[#dcdcde] px-4 py-3 flex items-center justify-between flex-shrink-0">
+          <div className="text-xs text-[#646970]">
+            {selectedAsset ? (
+              <span className="font-semibold text-[#1d2327]">
+                Selected: <span className="text-[#2271b1]">{selectedAsset.file_name}</span>
+              </span>
             ) : (
-              <span>Click an image to select</span>
+              <span>No image selected</span>
             )}
           </div>
+
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-[#E8E2D5] hover:bg-slate-100 text-xs font-semibold text-[#4F6D7A]"
+              className="px-3 py-1.5 rounded border border-[#c3c4c7] text-[#2c3338] hover:bg-[#f6f7f7] font-semibold text-xs transition-colors"
             >
               Cancel
             </button>
             <button
               type="button"
-              disabled={!selectedUrl}
-              onClick={handleConfirm}
-              className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-40"
+              disabled={!selectedAsset}
+              onClick={() => {
+                if (selectedAsset) {
+                  onSelect(selectedAsset.file_url, selectedAsset);
+                  onClose();
+                }
+              }}
+              className="px-4 py-1.5 rounded bg-[#2271b1] hover:bg-[#135e96] text-white font-semibold text-xs shadow-xs transition-colors disabled:opacity-40 disabled:hover:bg-[#2271b1]"
             >
-              Use Selected Image
+              {buttonLabel}
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

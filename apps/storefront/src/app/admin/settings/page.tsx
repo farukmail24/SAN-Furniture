@@ -16,8 +16,14 @@ import {
   Phone,
   Mail,
   Zap,
-  Globe
+  Globe,
+  ImageIcon,
+  MessageSquare,
+  Send,
+  Sparkles,
+  ExternalLink
 } from "lucide-react";
+import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 
 interface SystemSettingsMap {
   [key: string]: string;
@@ -25,30 +31,67 @@ interface SystemSettingsMap {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettingsMap>({
+    // Branding
+    site_name: "SAN Furniture",
+    site_tagline: "Handcrafted Luxury Living • British Excellence",
+    site_logo_light: "/SanFurnitureLogo.png",
+    site_logo_dark: "/San-Furniture-Logo-Dark.png",
+    site_favicon: "/favicon.ico",
+    // Legal & Company
     company_name: "SAN Furniture UK Ltd",
     company_number: "14289123",
     vat_number: "GB 438 9123 76",
     registered_address: "48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom",
     support_email: "concierge@sanfurniture.co.uk",
     support_phone: "+44 (0) 20 7946 0912",
+    // Logistics
     free_shipping_threshold_pennies: "50000",
     standard_delivery_fee_pennies: "4900",
     white_glove_fee_pennies: "9900",
     highlands_surcharge_pennies: "4900",
+    // Dropshipping
     dropship_auto_dispatch: "true",
     dropship_min_margin_percent: "30",
+    // Email SMTP
+    smtp_provider: "smtp",
+    smtp_host: "smtp.mailgun.org",
+    smtp_port: "587",
+    smtp_encryption: "TLS",
+    smtp_user: "postmaster@sanfurniture.co.uk",
+    smtp_pass: "••••••••••••••••",
+    smtp_from_email: "orders@sanfurniture.co.uk",
+    smtp_from_name: "SAN Furniture Concierge",
+    // SMS Gateway
+    sms_provider: "twilio",
+    sms_account_sid: "AC_SAN_FURNITURE_LIVE_001",
+    sms_auth_token: "••••••••••••••••••••••••",
+    sms_sender_id: "SANFURNITURE",
+    sms_dispatch_enabled: "true",
+    sms_driver_alert_enabled: "true",
+    // Payment
     stripe_enabled: "true",
     klarna_enabled: "true",
     klarna_merchant_id: "K1482910_GB",
+    // Security
     ip_jail_max_failures: "5",
     ip_jail_duration_mins: "15"
   });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testingSms, setTestingSms] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"legal" | "logistics" | "dropship" | "payments" | "security">("legal");
+
+  // Tabs
+  const [activeTab, setActiveTab] = useState<
+    "branding" | "legal" | "email" | "sms" | "logistics" | "dropship" | "payments" | "security"
+  >("branding");
+
+  // Media picker target
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [activeLogoTarget, setActiveLogoTarget] = useState<"light" | "dark" | "favicon">("light");
 
   const fetchSettings = async () => {
     try {
@@ -99,99 +142,181 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleTestEmail = async () => {
+    setTestingEmail(true);
+    try {
+      const res = await fetch("http://localhost:9000/api/admin/settings/test-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: settings.support_email }),
+      });
+      const data = await res.json();
+      setSuccessMsg(data.message || "Test email dispatched successfully!");
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err: any) {
+      setErrorMsg("Failed to dispatch test email: " + err.message);
+    } finally {
+      setTestingEmail(false);
+    }
+  };
+
+  const handleTestSms = async () => {
+    setTestingSms(true);
+    try {
+      const res = await fetch("http://localhost:9000/api/admin/settings/test-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: settings.support_phone }),
+      });
+      const data = await res.json();
+      setSuccessMsg(data.message || "Test SMS alert dispatched successfully!");
+      setTimeout(() => setSuccessMsg(null), 4000);
+    } catch (err: any) {
+      setErrorMsg("Failed to dispatch test SMS: " + err.message);
+    } finally {
+      setTestingSms(false);
+    }
+  };
+
+  const handleMediaSelect = (url: string) => {
+    if (activeLogoTarget === "light") {
+      handleChange("site_logo_light", url);
+    } else if (activeLogoTarget === "dark") {
+      handleChange("site_logo_dark", url);
+    } else {
+      handleChange("site_favicon", url);
+    }
+    setMediaPickerOpen(false);
+  };
+
   return (
-    <div className="space-y-6 w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#E8E2D5]">
+    <div className="space-y-6 pb-12 antialiased">
+      {/* Page Title & Save Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-sand-200">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#C89B3C] mb-1">
-            <Settings className="w-4 h-4" />
-            <span>Core Architecture & Governance</span>
+          <div className="flex items-center gap-2 text-xs text-navy-500 mb-1">
+            <span className="font-semibold text-brass-700 tracking-wider uppercase text-[10px]">Core Architecture &amp; Governance</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-[#0B132B]">
-            System Configuration & Settings
+          <h1 className="font-display text-2xl font-bold text-navy-950">
+            System Configuration &amp; Settings
           </h1>
-          <p className="text-sm text-[#4F6D7A] mt-1">
-            Manage legal HMRC VAT credentials, UK delivery thresholds, dropship EDI automation, and security limits.
+          <p className="text-xs text-navy-600 mt-1">
+            Manage Branding &amp; Logos &bull; HMRC VAT Credentials &bull; Email (SMTP) &bull; SMS Gateway &bull; Dropship Automation
           </p>
         </div>
 
         <button
+          type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-md text-sm font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-navy-950 font-bold text-xs tracking-wide shadow-md shadow-brass-500/20 transition-all disabled:opacity-50"
         >
-          {saving ? (
-            <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
-          ) : (
-            <Save className="w-4 h-4 text-[#C89B3C]" />
-          )}
-          <span>{saving ? "Saving Changes..." : "Save Configuration"}</span>
+          <Save className="w-4 h-4" />
+          <span>{saving ? "Saving to Database..." : "Save All Configuration"}</span>
         </button>
       </div>
 
-      {/* Success / Error Notification */}
       {successMsg && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-md text-sm flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2.5 animate-fade-in shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
+
       {errorMsg && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-900 rounded-md text-sm flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center gap-2.5 animate-fade-in shadow-xs">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-[#E8E2D5] pb-2">
+      {/* Settings Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-sand-200 text-xs font-semibold scrollbar-none">
+        <button
+          type="button"
+          onClick={() => setActiveTab("branding")}
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === "branding"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>Branding, Logos &amp; Favicon</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("legal")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === "legal"
-              ? "bg-[#0B132B] text-white shadow-sm"
-              : "text-[#4F6D7A] hover:text-[#0B132B] hover:bg-[#E8E2D5]/50"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
           }`}
         >
           <Building className="w-4 h-4" />
-          <span>HMRC VAT & Legal Entity</span>
+          <span>HMRC VAT &amp; Legal Entity</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("email")}
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === "email"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          <span>Email (SMTP) Gateway</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("sms")}
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+            activeTab === "sms"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span>SMS &amp; 2-Man Alerts</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("logistics")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === "logistics"
-              ? "bg-[#0B132B] text-white shadow-sm"
-              : "text-[#4F6D7A] hover:text-[#0B132B] hover:bg-[#E8E2D5]/50"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
           }`}
         >
           <Truck className="w-4 h-4" />
-          <span>Delivery Rates & Surcharges</span>
+          <span>Delivery Rates &amp; Surcharges</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("dropship")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === "dropship"
-              ? "bg-[#0B132B] text-white shadow-sm"
-              : "text-[#4F6D7A] hover:text-[#0B132B] hover:bg-[#E8E2D5]/50"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
           }`}
         >
           <Zap className="w-4 h-4" />
-          <span>Dropship Automation & Margins</span>
+          <span>Dropship Automation &amp; Margins</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("payments")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === "payments"
-              ? "bg-[#0B132B] text-white shadow-sm"
-              : "text-[#4F6D7A] hover:text-[#0B132B] hover:bg-[#E8E2D5]/50"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
           }`}
         >
           <CreditCard className="w-4 h-4" />
@@ -201,401 +326,621 @@ export default function AdminSettingsPage() {
         <button
           type="button"
           onClick={() => setActiveTab("security")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-t-md text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
             activeTab === "security"
-              ? "bg-[#0B132B] text-white shadow-sm"
-              : "text-[#4F6D7A] hover:text-[#0B132B] hover:bg-[#E8E2D5]/50"
+              ? "bg-navy-950 text-brass-400 shadow-sm"
+              : "text-navy-700 hover:bg-sand-200"
           }`}
         >
           <Lock className="w-4 h-4" />
-          <span>Security & IP Lockout</span>
+          <span>Security &amp; IP Lockout</span>
         </button>
       </div>
 
-      {loading ? (
-        <div className="py-20 flex justify-center items-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-[#C89B3C]" />
-        </div>
-      ) : (
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* TAB 1: Legal & HMRC */}
-          {activeTab === "legal" && (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border border-[#E8E2D5] shadow-sm space-y-6">
+      <form onSubmit={handleSave} className="space-y-6">
+        {/* TAB 1: BRANDING & LOGOS */}
+        {activeTab === "branding" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-6">
+            <div>
+              <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+                <ImageIcon className="w-5 h-5 text-brass-600" />
+                <span>Store Identity, Logos &amp; Favicon</span>
+              </h2>
+              <p className="text-xs text-navy-600 mt-1">
+                Configure your luxury brand marks across light mode, dark mode, browser tabs, and HMRC invoices.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B] flex items-center gap-2">
-                  <Building className="w-5 h-5 text-[#C89B3C]" />
-                  UK Legal Entity & HMRC VAT Registration
-                </h2>
-                <p className="text-xs text-[#4F6D7A] mt-1">
-                  Required by UK law on every invoice, order confirmation, and legal footer.
-                </p>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Store Brand Name</label>
+                <input
+                  type="text"
+                  value={settings.site_name}
+                  onChange={(e) => handleChange("site_name", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-semibold text-navy-950 focus:outline-none focus:border-brass-500"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Registered Company Name
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.company_name || ""}
-                    onChange={(e) => handleChange("company_name", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    placeholder="SAN Furniture UK Ltd"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">Incorporated in England and Wales.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Companies House Number
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.company_number || ""}
-                    onChange={(e) => handleChange("company_number", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    placeholder="14289123"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">8-digit official registered identifier.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    HMRC VAT Registration Number
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.vat_number || ""}
-                    onChange={(e) => handleChange("vat_number", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    placeholder="GB 438 9123 76"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">Prefix with &apos;GB&apos; followed by 9 digits.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Standard VAT Rate (%)
-                  </label>
-                  <input
-                    type="text"
-                    disabled
-                    value="20.00% (UK Standard Rate)"
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] bg-[#F4F1EA] text-sm text-[#4F6D7A] cursor-not-allowed"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">Calculated using exact UK penny arithmetic.</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Concierge Support Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-[#4F6D7A] absolute left-3 top-3" />
-                    <input
-                      type="email"
-                      value={settings.support_email || ""}
-                      onChange={(e) => handleChange("support_email", e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Concierge Phone Number
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-[#4F6D7A] absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      value={settings.support_phone || ""}
-                      onChange={(e) => handleChange("support_phone", e.target.value)}
-                      className="w-full pl-9 pr-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2 lg:col-span-3">
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Official Registered Office Address
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.registered_address || ""}
-                    onChange={(e) => handleChange("registered_address", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                    placeholder="48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">Must match registered office on Companies House filings.</p>
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Brand Tagline</label>
+                <input
+                  type="text"
+                  value={settings.site_tagline}
+                  onChange={(e) => handleChange("site_tagline", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950 focus:outline-none focus:border-brass-500"
+                />
               </div>
             </div>
-          )}
 
-          {/* TAB 2: Logistics & Surcharges */}
-          {activeTab === "logistics" && (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border border-[#E8E2D5] shadow-sm space-y-6">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B] flex items-center gap-2">
-                  <Truck className="w-5 h-5 text-[#C89B3C]" />
-                  Delivery Pricing & Postcode Surcharge Rules
-                </h2>
-                <p className="text-xs text-[#4F6D7A] mt-1">
-                  Thresholds stored internally in pennies to eliminate rounding errors.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Free Delivery Threshold (Pennies)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.free_shipping_threshold_pennies || "50000"}
-                    onChange={(e) => handleChange("free_shipping_threshold_pennies", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Current: <strong>£{(parseInt(settings.free_shipping_threshold_pennies || "50000", 10) / 100).toFixed(2)}</strong>. Orders above this receive complimentary 2-man room-of-choice delivery.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Standard Pallet Delivery Fee (Pennies)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.standard_delivery_fee_pennies || "4900"}
-                    onChange={(e) => handleChange("standard_delivery_fee_pennies", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Current: <strong>£{(parseInt(settings.standard_delivery_fee_pennies || "4900", 10) / 100).toFixed(2)}</strong> (Flatpack tables, dining chairs).
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    2-Man White Glove Standard Fee (Pennies)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.white_glove_fee_pennies || "9900"}
-                    onChange={(e) => handleChange("white_glove_fee_pennies", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Current: <strong>£{(parseInt(settings.white_glove_fee_pennies || "9900", 10) / 100).toFixed(2)}</strong> (Assembled sofas, sectionals).
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Scottish Highlands Surcharge (Pennies)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.highlands_surcharge_pennies || "4900"}
-                    onChange={(e) => handleChange("highlands_surcharge_pennies", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Current: <strong>£{(parseInt(settings.highlands_surcharge_pennies || "4900", 10) / 100).toFixed(2)}</strong> for IV, KW, PH, AB, PA postcodes.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 3: Dropshipping Automation */}
-          {activeTab === "dropship" && (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border border-[#E8E2D5] shadow-sm space-y-6">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B] flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-[#C89B3C]" />
-                  UK Dropshipping Automation & Profit Margin Guard
-                </h2>
-                <p className="text-xs text-[#4F6D7A] mt-1">
-                  Control EDI transmission to Nottinghamshire & Essex wholesale suppliers.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 bg-[#F4F1EA] rounded-lg border border-[#E8E2D5]">
-                  <div>
-                    <div className="text-sm font-semibold text-[#0B132B]">
-                      Automated Purchase Order (PO) Dispatch
-                    </div>
-                    <div className="text-xs text-[#4F6D7A] mt-0.5">
-                      Automatically transmit webhook/EDI order to suppliers when customer pays.
-                    </div>
-                  </div>
+            {/* Logo Setters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {/* Light Logo */}
+              <div className="p-4 rounded-xl bg-white border border-sand-300 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-navy-950">Primary Logo (Light)</span>
                   <button
                     type="button"
-                    onClick={() =>
-                      handleChange(
-                        "dropship_auto_dispatch",
-                        settings.dropship_auto_dispatch === "true" ? "false" : "true"
-                      )
-                    }
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      settings.dropship_auto_dispatch === "true" ? "bg-emerald-600" : "bg-slate-300"
-                    }`}
+                    onClick={() => {
+                      setActiveLogoTarget("light");
+                      setMediaPickerOpen(true);
+                    }}
+                    className="text-[11px] text-brass-700 font-semibold hover:underline"
                   >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        settings.dropship_auto_dispatch === "true" ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
+                    Select from Media
                   </button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Minimum Gross Margin Floor Protection (%)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.dropship_min_margin_percent || "30"}
-                    onChange={(e) => handleChange("dropship_min_margin_percent", e.target.value)}
-                    className="w-full max-w-xs px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
+                <div className="h-20 bg-sand-100 rounded-lg flex items-center justify-center p-2 border border-sand-200">
+                  <img
+                    src={settings.site_logo_light}
+                    alt="Logo Light"
+                    className="max-h-full max-w-full object-contain"
                   />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    System prevents product price drops below <strong>{settings.dropship_min_margin_percent || 30}%</strong> profit margin over supplier wholesale cost.
-                  </p>
                 </div>
+                <input
+                  type="text"
+                  value={settings.site_logo_light}
+                  onChange={(e) => handleChange("site_logo_light", e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-sand-50 border border-sand-300 rounded text-[11px] font-mono text-navy-800"
+                />
+              </div>
+
+              {/* Dark Logo */}
+              <div className="p-4 rounded-xl bg-navy-950 border border-navy-900 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-sand-50">Dark Mode Logo</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveLogoTarget("dark");
+                      setMediaPickerOpen(true);
+                    }}
+                    className="text-[11px] text-brass-400 font-semibold hover:underline"
+                  >
+                    Select from Media
+                  </button>
+                </div>
+                <div className="h-20 bg-navy-900 rounded-lg flex items-center justify-center p-2 border border-navy-800">
+                  <img
+                    src={settings.site_logo_dark}
+                    alt="Logo Dark"
+                    className="max-h-full max-w-full object-contain"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={settings.site_logo_dark}
+                  onChange={(e) => handleChange("site_logo_dark", e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-navy-900 border border-navy-800 rounded text-[11px] font-mono text-sand-100"
+                />
+              </div>
+
+              {/* Favicon */}
+              <div className="p-4 rounded-xl bg-white border border-sand-300 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-navy-950">Site Favicon (.ico / .png)</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveLogoTarget("favicon");
+                      setMediaPickerOpen(true);
+                    }}
+                    className="text-[11px] text-brass-700 font-semibold hover:underline"
+                  >
+                    Select from Media
+                  </button>
+                </div>
+                <div className="h-20 bg-sand-100 rounded-lg flex items-center justify-center p-2 border border-sand-200">
+                  <img
+                    src={settings.site_favicon}
+                    alt="Favicon"
+                    className="w-8 h-8 object-contain"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={settings.site_favicon}
+                  onChange={(e) => handleChange("site_favicon", e.target.value)}
+                  className="w-full px-2.5 py-1.5 bg-sand-50 border border-sand-300 rounded text-[11px] font-mono text-navy-800"
+                />
               </div>
             </div>
-          )}
-
-          {/* TAB 4: Payments */}
-          {activeTab === "payments" && (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border border-[#E8E2D5] shadow-sm space-y-6">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B] flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-[#C89B3C]" />
-                  UK Payment Gateways & Merchant Accounts
-                </h2>
-                <p className="text-xs text-[#4F6D7A] mt-1">
-                  Manage active payment rails supporting GBP transactions and 3-D Secure.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="p-5 border border-[#E8E2D5] rounded-xl flex items-center justify-between bg-slate-50/50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#0B132B] text-[#C89B3C] flex items-center justify-center font-bold text-xs">
-                      STRIPE
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-[#0B132B]">Stripe UK Payments</div>
-                      <div className="text-xs text-[#4F6D7A]">Visa, Mastercard, Amex, Apple Pay, Google Pay</div>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">
-                    Active & Operational
-                  </span>
-                </div>
-
-                <div className="p-5 border border-[#E8E2D5] rounded-xl space-y-3 bg-slate-50/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-pink-100 text-pink-700 flex items-center justify-center font-bold text-xs">
-                        KLARNA
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold text-[#0B132B]">Klarna UK (Pay in 3 & Financing)</div>
-                        <div className="text-xs text-[#4F6D7A]">High conversion BNPL for luxury British upholstery</div>
-                      </div>
-                    </div>
-                    <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-medium">
-                      Active
-                    </span>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1">
-                      Klarna UK Merchant ID
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.klarna_merchant_id || ""}
-                      onChange={(e) => handleChange("klarna_merchant_id", e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-sm text-[#0B132B]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: Security */}
-          {activeTab === "security" && (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border border-[#E8E2D5] shadow-sm space-y-6">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B] flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-[#C89B3C]" />
-                  Brute-Force & IP Jail Governance
-                </h2>
-                <p className="text-xs text-[#4F6D7A] mt-1">
-                  Protects checkout and admin authentication from automated bot assaults.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Max Failed Attempts Before Lockout
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.ip_jail_max_failures || "5"}
-                    onChange={(e) => handleChange("ip_jail_max_failures", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Exceeding this count automatically registers the IP into <code>security_ip_jail</code>.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] uppercase tracking-wider mb-1.5">
-                    Lockout Duration (Minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={settings.ip_jail_duration_mins || "15"}
-                    onChange={(e) => handleChange("ip_jail_duration_mins", e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-lg border border-[#E8E2D5] focus:outline-none focus:ring-2 focus:ring-[#0B132B] text-sm text-[#0B132B]"
-                  />
-                  <p className="text-[11px] text-[#4F6D7A] mt-1">
-                    Duration the IP is blocked from checkout & auth endpoints.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Save Bar */}
-          <div className="pt-4 border-t border-[#E8E2D5] flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-md text-sm font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-            >
-              {saving ? (
-                <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
-              ) : (
-                <Save className="w-4 h-4 text-[#C89B3C]" />
-              )}
-              <span>{saving ? "Saving Changes..." : "Save All Configuration"}</span>
-            </button>
           </div>
-        </form>
-      )}
+        )}
+
+        {/* TAB 2: LEGAL & HMRC VAT */}
+        {activeTab === "legal" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+              <Building className="w-5 h-5 text-brass-600" />
+              <span>UK Legal Entity &amp; HMRC VAT Registration</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Registered Company Name</label>
+                <input
+                  type="text"
+                  value={settings.company_name}
+                  onChange={(e) => handleChange("company_name", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-semibold text-navy-950"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Companies House Number</label>
+                <input
+                  type="text"
+                  value={settings.company_number}
+                  onChange={(e) => handleChange("company_number", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">HMRC VAT Number</label>
+                <input
+                  type="text"
+                  value={settings.vat_number}
+                  onChange={(e) => handleChange("vat_number", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-navy-900 mb-1">Registered Office Address</label>
+              <input
+                type="text"
+                value={settings.registered_address}
+                onChange={(e) => handleChange("registered_address", e.target.value)}
+                className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Concierge Email</label>
+                <input
+                  type="email"
+                  value={settings.support_email}
+                  onChange={(e) => handleChange("support_email", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Concierge Phone Line</label>
+                <input
+                  type="text"
+                  value={settings.support_phone}
+                  onChange={(e) => handleChange("support_phone", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: EMAIL (SMTP) GATEWAY */}
+        {activeTab === "email" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-brass-600" />
+                  <span>Email (SMTP) Gateway Configuration</span>
+                </h2>
+                <p className="text-xs text-navy-600 mt-1">
+                  Connect your transactional email provider to send VAT invoices, order updates, and reset links.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTestEmail}
+                disabled={testingEmail}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5 text-brass-400" />
+                <span>{testingEmail ? "Sending Test Email..." : "Send Test Verification Email"}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Email Provider</label>
+                <select
+                  value={settings.smtp_provider}
+                  onChange={(e) => handleChange("smtp_provider", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                >
+                  <option value="smtp">Custom SMTP Server</option>
+                  <option value="resend">Resend API</option>
+                  <option value="sendgrid">SendGrid API</option>
+                  <option value="ses">Amazon SES</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">SMTP Host</label>
+                <input
+                  type="text"
+                  value={settings.smtp_host}
+                  onChange={(e) => handleChange("smtp_host", e.target.value)}
+                  placeholder="smtp.mailgun.org"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">SMTP Port &amp; Encryption</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={settings.smtp_port}
+                    onChange={(e) => handleChange("smtp_port", e.target.value)}
+                    placeholder="587"
+                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                  />
+                  <select
+                    value={settings.smtp_encryption}
+                    onChange={(e) => handleChange("smtp_encryption", e.target.value)}
+                    className="w-full px-2 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                  >
+                    <option value="TLS">STARTTLS</option>
+                    <option value="SSL">SSL</option>
+                    <option value="None">None</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">SMTP Username</label>
+                <input
+                  type="text"
+                  value={settings.smtp_user}
+                  onChange={(e) => handleChange("smtp_user", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">SMTP Password</label>
+                <input
+                  type="password"
+                  value={settings.smtp_pass}
+                  onChange={(e) => handleChange("smtp_pass", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">From Email Address</label>
+                <input
+                  type="email"
+                  value={settings.smtp_from_email}
+                  onChange={(e) => handleChange("smtp_from_email", e.target.value)}
+                  placeholder="orders@sanfurniture.co.uk"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Sender Name (Friendly Name)</label>
+                <input
+                  type="text"
+                  value={settings.smtp_from_name}
+                  onChange={(e) => handleChange("smtp_from_name", e.target.value)}
+                  placeholder="SAN Furniture Concierge"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 4: SMS & 2-MAN WHATSAPP GATEWAY */}
+        {activeTab === "sms" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-brass-600" />
+                  <span>SMS &amp; 2-Man Delivery Dispatch Alerts</span>
+                </h2>
+                <p className="text-xs text-navy-600 mt-1">
+                  Automate SMS alerts for 2-hour pre-booked delivery slots and driver 30-minute arrival warnings.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTestSms}
+                disabled={testingSms}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5 text-brass-400" />
+                <span>{testingSms ? "Sending Test SMS..." : "Send Test 2-Man Alert SMS"}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">SMS Provider</label>
+                <select
+                  value={settings.sms_provider}
+                  onChange={(e) => handleChange("sms_provider", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
+                >
+                  <option value="twilio">Twilio UK</option>
+                  <option value="aws_sns">AWS SNS</option>
+                  <option value="messagebird">MessageBird</option>
+                  <option value="infobip">Infobip</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Alphanumeric Sender ID</label>
+                <input
+                  type="text"
+                  maxLength={11}
+                  value={settings.sms_sender_id}
+                  onChange={(e) => handleChange("sms_sender_id", e.target.value)}
+                  placeholder="SANFURNITURE"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 uppercase"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Account SID / API Key</label>
+                <input
+                  type="text"
+                  value={settings.sms_account_sid}
+                  onChange={(e) => handleChange("sms_account_sid", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Auth Token / Secret</label>
+                <input
+                  type="password"
+                  value={settings.sms_auth_token}
+                  onChange={(e) => handleChange("sms_auth_token", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+            </div>
+
+            {/* Notification Toggles */}
+            <div className="pt-2 border-t border-sand-200 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer text-xs text-navy-900">
+                <input
+                  type="checkbox"
+                  checked={settings.sms_dispatch_enabled === "true"}
+                  onChange={(e) => handleChange("sms_dispatch_enabled", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                />
+                <span className="font-semibold">Auto-send SMS when 2-Man Carrier Manifest is Booked</span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer text-xs text-navy-900">
+                <input
+                  type="checkbox"
+                  checked={settings.sms_driver_alert_enabled === "true"}
+                  onChange={(e) => handleChange("sms_driver_alert_enabled", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                />
+                <span className="font-semibold">Send driver 30-minute arrival callout SMS on day of delivery</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: LOGISTICS */}
+        {activeTab === "logistics" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+              <Truck className="w-5 h-5 text-brass-600" />
+              <span>UK Mainland Delivery &amp; Regional Surcharges</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Free Delivery Threshold (Pennies)</label>
+                <input
+                  type="number"
+                  value={settings.free_shipping_threshold_pennies}
+                  onChange={(e) => handleChange("free_shipping_threshold_pennies", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+                <p className="text-[10px] text-navy-500 mt-1">50000 = £500.00 spend threshold</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Standard Parcel Rate (Pennies)</label>
+                <input
+                  type="number"
+                  value={settings.standard_delivery_fee_pennies}
+                  onChange={(e) => handleChange("standard_delivery_fee_pennies", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">White Glove Room Fee (Pennies)</label>
+                <input
+                  type="number"
+                  value={settings.white_glove_fee_pennies}
+                  onChange={(e) => handleChange("white_glove_fee_pennies", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Highlands Surcharge (Pennies)</label>
+                <input
+                  type="number"
+                  value={settings.highlands_surcharge_pennies}
+                  onChange={(e) => handleChange("highlands_surcharge_pennies", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: DROPSHIP */}
+        {activeTab === "dropship" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-brass-600" />
+              <span>Dropship Wholesale EDI &amp; Floor Margins</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Minimum Floor Margin (%)</label>
+                <input
+                  type="number"
+                  value={settings.dropship_min_margin_percent}
+                  onChange={(e) => handleChange("dropship_min_margin_percent", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-bold text-navy-950"
+                />
+              </div>
+
+              <div className="flex items-center pt-5">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={settings.dropship_auto_dispatch === "true"}
+                    onChange={(e) => handleChange("dropship_auto_dispatch", e.target.checked ? "true" : "false")}
+                    className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                  />
+                  <span>Automatically dispatch PO to UK suppliers on Stripe payment confirmation</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: PAYMENTS */}
+        {activeTab === "payments" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-brass-600" />
+              <span>Payment Gateway Integrations</span>
+            </h2>
+
+            <div className="space-y-4">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={settings.stripe_enabled === "true"}
+                  onChange={(e) => handleChange("stripe_enabled", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                />
+                <span>Enable Stripe (UK Credit/Debit Cards, Apple Pay, Google Pay)</span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={settings.klarna_enabled === "true"}
+                  onChange={(e) => handleChange("klarna_enabled", e.target.checked ? "true" : "false")}
+                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                />
+                <span>Enable Klarna Pay in 3 &amp; Financing</span>
+              </label>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Klarna Merchant ID</label>
+                <input
+                  type="text"
+                  value={settings.klarna_merchant_id}
+                  onChange={(e) => handleChange("klarna_merchant_id", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 8: SECURITY */}
+        {activeTab === "security" && (
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
+            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-brass-600" />
+              <span>Security, Rate Limiting &amp; IP Jail Rules</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Max Failed Attempts Before Lockout</label>
+                <input
+                  type="number"
+                  value={settings.ip_jail_max_failures}
+                  onChange={(e) => handleChange("ip_jail_max_failures", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">Lockout Duration (Minutes)</label>
+                <input
+                  type="number"
+                  value={settings.ip_jail_duration_mins}
+                  onChange={(e) => handleChange("ip_jail_duration_mins", e.target.value)}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save Button */}
+        <div className="pt-4 border-t border-sand-200 flex items-center justify-end">
+          <button
+            type="submit"
+            disabled={saving}
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-navy-950 font-bold text-xs tracking-wide shadow-md shadow-brass-500/20 transition-all disabled:opacity-50"
+          >
+            {saving ? "Saving Configuration..." : "Save Configuration to MySQL"}
+          </button>
+        </div>
+      </form>
+
+      {/* WordPress Media Picker Modal for Logos & Favicon */}
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={handleMediaSelect}
+        title="Select Brand Asset from WordPress Media Library"
+        buttonLabel="Use as Brand Asset"
+      />
     </div>
   );
 }

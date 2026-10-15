@@ -38,32 +38,36 @@ export default function CustomerAccountPage() {
   useEffect(() => {
     // Check customer session
     const stored = localStorage.getItem("san_customer_user");
+    const token = localStorage.getItem("san_customer_token");
+
+    let currentUser: CustomerUser | null = null;
     if (stored) {
       try {
-        setCustomer(JSON.parse(stored));
+        currentUser = JSON.parse(stored);
+        setCustomer(currentUser);
       } catch {
-        setCustomer(null);
+        currentUser = null;
       }
-    } else {
-      // Demo default
-      setCustomer({
-        id: "cust_01",
-        email: "eleanor.vance@gmail.com",
-        firstName: "Eleanor",
-        lastName: "Vance",
-        phone: "+44 7700 900123"
-      });
     }
 
-    // Fetch orders
-    fetch("http://localhost:9000/api/customer/orders?email=eleanor.vance@gmail.com")
+    if (!currentUser && !token) {
+      // If not logged in, redirect to login
+      router.push("/account/login");
+      return;
+    }
+
+    // Default to stored user email or fallback to demo
+    const activeEmail = currentUser?.email || "eleanor.vance@gmail.com";
+
+    // Fetch live customer orders from MySQL
+    fetch(`http://localhost:9000/api/customer/orders?email=${encodeURIComponent(activeEmail)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.orders) setOrders(data.orders);
       })
       .catch((err) => console.error("Orders fetch error:", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("san_customer_token");
