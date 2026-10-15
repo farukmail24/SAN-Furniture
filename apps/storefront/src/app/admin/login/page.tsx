@@ -59,9 +59,11 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Brand Crest Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brass-400 via-brass-500 to-brass-600 text-navy-950 font-black text-xl shadow-xl shadow-brass-500/10 mb-4 border border-brass-400/40">
-            SAN
-          </div>
+          <img
+            src="/San-Furniture-Logo-Dark.png"
+            alt="SAN Furniture UK"
+            className="h-12 sm:h-14 w-auto mx-auto object-contain mb-4"
+          />
           <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-sand-50">
             Operations Gateway
           </h1>

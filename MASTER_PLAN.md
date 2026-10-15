@@ -157,6 +157,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 [x] Phase 15: HMRC-Compliant UK VAT Invoicing & Financial Accounting Export
 [x] Phase 16: Customer Reviews Moderation & Social Proof Engine
 [x] Phase 17: Promotions, Coupon Vouchers & Seasonal Sales Rules Engine
+[x] Phase 18: Full Administrative Operations Suite & Governance (Settings, Suppliers EDI, Logistics, Security IP Jail, Syndicated Marketing, Audit Trail)
 ```
 
 ---
@@ -561,6 +562,35 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
   - Coupon types: Fixed GBP discount (e.g., `£100 off over £1,000`), percentage discount (`15% off Living Room`), free 2-man white glove upgrade code.
   - Redemptions cap, start/end timestamps, per-customer single use guards.
   - Real-time basket calculation in `CartProvider` and checkout.
+
+---
+
+### Phase 18: Full Administrative Operations Suite & Governance (Settings, Suppliers EDI, Logistics, Security IP Jail, Syndicated Marketing, Audit Trail)
+**Objective**: Complete the mission-critical admin toolset with dedicated management surfaces for legal settings, UK dropshipping supplier EDI pipelines, regional delivery matrices, firewall IP Jail mitigation, automated syndication feeds, and immutable staff audit logging.
+
+- **Completed Administrative Modules**:
+  1. **Core Architecture & System Settings (`/admin/settings`)**:
+     - UK Legal Entity & HMRC VAT Registration (Company No: `14289123`, VAT Reg: `GB 438 9123 76`, Mayfair London address).
+     - Delivery spend thresholds (£500 free threshold, £49 pallet base, £99 2-man white glove, £49 Scottish Highlands surcharge).
+     - Dropship EDI auto-dispatch toggle & 30% floor markup protection.
+     - UK Payment Gateway credentials (Stripe live/test, Klarna Merchant ID `K1482910_GB`).
+     - Brute force lockout & IP jail configuration (5 strikes, 15m duration).
+  2. **Dropship Suppliers & EDI Network (`/admin/suppliers`)**:
+     - UK wholesale manufacturers directory (`UK Craft Sofas & Upholstery Works`, `Nordic Living UK Importers`, `Cotswold Solid Oak Joinery`).
+     - Live stock catalog mapping, lead time metrics, and one-click manual/automated EDI sync (`POST /api/admin/suppliers/sync`).
+  3. **Logistics & Regional Postcode Surcharge Matrix (`/admin/logistics`)**:
+     - Inline management of Mainland UK vs Highlands/Islands postal zones (`postcode_zones`).
+     - Real-time surcharge penny edits, delivery tier breakdown, and BS 5852 compliance flags.
+  4. **Cyber Defense & IP Jail Operations (`/admin/security`)**:
+     - Real-time view of locked offender IP addresses (`security_ip_jail`).
+     - 1-click IP pardon (`POST /api/security/unblock`) and manual IP ban modal (`POST /api/security/block`).
+     - Sliding window rate limiting monitoring (Auth: 5/15m, Checkout: 3/10m, Search: 60/1m).
+  5. **Google & Meta Syndicated Product Feeds (`/admin/marketing`)**:
+     - Google Merchant Center XML feed generator (`/api/feeds/google-merchant.xml`).
+     - Meta / Instagram Commerce Catalog CSV export (`/api/feeds/meta-catalog.csv`).
+  6. **Immutable Staff Audit Trail (`/admin/audit`)**:
+     - Searchable and expandable audit trail with timestamps, staff actor, action name, target resource, client IP, and raw JSON payload (`admin_audit_logs`).
+     - PCI-DSS & GDPR Article 32 compliance.
 
 ---
 

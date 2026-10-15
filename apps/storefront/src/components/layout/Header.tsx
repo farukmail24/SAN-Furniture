@@ -56,13 +56,12 @@ export function Header() {
           </button>
 
           {/* Brand Logo */}
-          <Link href="/" className="flex flex-col items-start group">
-            <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-navy-950 group-hover:text-brass-600 transition-colors">
-              SAN <span className="font-light text-navy-700">FURNITURE</span>
-            </span>
-            <span className="text-[10px] tracking-widest text-navy-600 uppercase font-medium">
-              Crafted for British Living
-            </span>
+          <Link href="/" className="flex items-center group py-1">
+            <img
+              src="/SanFurnitureLogo.png"
+              alt="SAN Furniture - Crafted for British Living"
+              className="h-11 sm:h-13 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+            />
           </Link>
 
           {/* Primary Desktop Category Links */}
@@ -157,10 +156,12 @@ export function Header() {
             />
             <div className="fixed inset-y-0 left-0 w-4/5 max-w-sm bg-sand-50 p-6 flex flex-col justify-between shadow-2xl">
               <div>
-                <div className="flex items-center justify-between pb-6 border-b border-sand-200">
-                  <span className="font-display text-xl font-bold text-navy-950">
-                    SAN <span className="font-light text-navy-700">FURNITURE</span>
-                  </span>
+                <div className="flex items-center justify-between pb-4 border-b border-sand-200">
+                  <img
+                    src="/SanFurnitureLogo.png"
+                    alt="SAN Furniture"
+                    className="h-9 w-auto object-contain"
+                  />
                   <button
                     type="button"
                     onClick={() => setIsMobileMenuOpen(false)}

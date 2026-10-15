@@ -21,7 +21,10 @@ import {
   Lock,
   UserCheck,
   MessageSquare,
-  Tag
+  Tag,
+  Settings,
+  Building2,
+  SlidersHorizontal
 } from "lucide-react";
 
 interface AdminUser {
@@ -86,11 +89,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       badge: "CRUD"
     },
     {
-      name: "Customer Orders & Dispatch",
+      name: "Customer Orders & POs",
       href: "/admin/orders",
       icon: ShoppingBag,
       active: pathname.startsWith("/admin/orders"),
       badge: "HMRC VAT"
+    },
+    {
+      name: "Dropship Suppliers",
+      href: "/admin/suppliers",
+      icon: Building2,
+      active: pathname.startsWith("/admin/suppliers")
+    },
+    {
+      name: "UK Logistics & Postcodes",
+      href: "/admin/logistics",
+      icon: SlidersHorizontal,
+      active: pathname.startsWith("/admin/logistics")
+    },
+    {
+      name: "Security & IP Jail",
+      href: "/admin/security",
+      icon: ShieldAlert,
+      active: pathname.startsWith("/admin/security"),
+      badge: "2 Jailed"
+    },
+    {
+      name: "Google & Meta Feeds",
+      href: "/admin/marketing",
+      icon: Rss,
+      active: pathname.startsWith("/admin/marketing")
     },
     {
       name: "Customer Reviews",
@@ -105,23 +133,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       active: pathname.startsWith("/admin/promotions")
     },
     {
-      name: "UK Logistics & Surcharges",
-      href: "/admin",
-      icon: Truck,
-      active: false
+      name: "Audit Trail & Logs",
+      href: "/admin/audit",
+      icon: History,
+      active: pathname.startsWith("/admin/audit")
     },
     {
-      name: "Security & IP Jail",
-      href: "/admin",
-      icon: ShieldAlert,
-      active: false,
-      badge: "2 Jailed"
-    },
-    {
-      name: "Google & Meta Feeds",
-      href: "/admin",
-      icon: Rss,
-      active: false
+      name: "System Settings",
+      href: "/admin/settings",
+      icon: Settings,
+      active: pathname.startsWith("/admin/settings"),
+      badge: "Core"
     }
   ];
 
@@ -130,12 +152,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Mobile Top Bar */}
       <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0B132B] text-sand-50 border-b border-navy-800">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded bg-brass-500 text-navy-950 font-black flex items-center justify-center text-xs tracking-wider">
-            SAN
-          </div>
-          <span className="font-display font-bold text-sm tracking-tight text-sand-50">
-            Operations Suite
-          </span>
+          <img
+            src="/San-Furniture-Logo-Dark.png"
+            alt="SAN Furniture Operations"
+            className="h-7 w-auto object-contain"
+          />
         </div>
         <button
           type="button"
@@ -154,22 +175,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       >
         <div>
           {/* Brand Header */}
-          <div className="p-6 border-b border-navy-800/80">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brass-400 to-brass-600 text-navy-950 font-black flex items-center justify-center text-sm shadow-md">
-                SAN
-              </div>
-              <div>
-                <h2 className="font-display font-bold text-sm text-sand-50 tracking-wider">
-                  SAN FURNITURE
-                </h2>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-[10px] font-semibold text-brass-400 uppercase tracking-widest">
-                    Operations Portal
-                  </span>
-                </div>
-              </div>
+          <div className="p-5 border-b border-navy-800/80">
+            <Link href="/admin" className="block">
+              <img
+                src="/San-Furniture-Logo-Dark.png"
+                alt="SAN Furniture Operations"
+                className="h-10 w-auto object-contain"
+              />
+            </Link>
+            <div className="flex items-center gap-1.5 mt-2 px-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-brass-400 uppercase tracking-widest">
+                Operations Suite v2.4
+              </span>
             </div>
           </div>
 

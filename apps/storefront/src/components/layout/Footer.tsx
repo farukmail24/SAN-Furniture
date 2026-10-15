@@ -61,9 +61,11 @@ export function Footer() {
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2">
           <Link href="/" className="inline-block">
-            <span className="font-display text-2xl font-bold tracking-tight text-sand-50">
-              SAN <span className="font-light text-sand-300">FURNITURE</span>
-            </span>
+            <img
+              src="/San-Furniture-Logo-Dark.png"
+              alt="SAN Furniture UK"
+              className="h-10 sm:h-12 w-auto object-contain"
+            />
           </Link>
           <p className="text-sand-300 text-xs mt-3 max-w-sm leading-relaxed">
             Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes.
