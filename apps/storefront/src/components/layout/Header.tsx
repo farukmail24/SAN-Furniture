@@ -60,7 +60,7 @@ export function Header() {
             <img
               src="/SanFurnitureLogo.png"
               alt="SAN Furniture - Crafted for British Living"
-              className="h-11 sm:h-13 w-auto object-contain transition-transform group-hover:scale-[1.02]"
+              className="h-16 sm:h-13 w-auto object-contain transition-transform group-hover:scale-[1.02]"
             />
           </Link>
 

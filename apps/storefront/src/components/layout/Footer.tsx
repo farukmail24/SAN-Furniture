@@ -64,7 +64,7 @@ export function Footer() {
             <img
               src="/San-Furniture-Logo-Dark.png"
               alt="SAN Furniture UK"
-              className="h-10 sm:h-12 w-auto object-contain"
+              className="h-14 sm:h-16 w-auto object-contain"
             />
           </Link>
           <p className="text-sand-300 text-xs mt-3 max-w-sm leading-relaxed">

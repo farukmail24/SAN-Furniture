@@ -817,6 +817,71 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { success: true, message: `Product ${prodId} removed` });
     }
 
+    // Update Product (PATCH)
+    if (pathname.startsWith("/api/admin/products/") && method === "PATCH") {
+      const prodId = pathname.replace("/api/admin/products/", "");
+      const body = await readBody(req);
+      const {
+        title,
+        pricePennies,
+        compareAtPricePennies,
+        categoryId,
+        thumbnailUrl,
+        supplierCostPennies,
+        widthCm,
+        heightCm,
+        depthCm,
+        weightKg,
+        material,
+        color,
+        deliveryType,
+        fireSafetyCompliant,
+      } = body;
+
+      const pFields = [];
+      const pParams = [];
+      if (title) { pFields.push("title = ?"); pParams.push(title); }
+      if (pricePennies) { pFields.push("price_pennies = ?"); pParams.push(pricePennies); }
+      if (compareAtPricePennies !== undefined) { pFields.push("compare_at_price_pennies = ?"); pParams.push(compareAtPricePennies); }
+      if (categoryId) { pFields.push("category_id = ?"); pParams.push(categoryId); }
+      if (thumbnailUrl) { pFields.push("thumbnail_url = ?"); pParams.push(thumbnailUrl); }
+
+      if (pFields.length > 0) {
+        pParams.push(prodId);
+        await pool.query(`UPDATE products SET ${pFields.join(", ")} WHERE id = ?`, pParams);
+      }
+
+      const sFields = [];
+      const sParams = [];
+      if (widthCm) { sFields.push("width_cm = ?"); sParams.push(widthCm); }
+      if (heightCm) { sFields.push("height_cm = ?"); sParams.push(heightCm); }
+      if (depthCm) { sFields.push("depth_cm = ?"); sParams.push(depthCm); }
+      if (weightKg) { sFields.push("weight_kg = ?"); sParams.push(weightKg); }
+      if (material) { sFields.push("material = ?"); sParams.push(material); }
+      if (color) { sFields.push("color = ?"); sParams.push(color); }
+      if (deliveryType) { sFields.push("delivery_tier = ?"); sParams.push(deliveryType); }
+      if (fireSafetyCompliant !== undefined) { sFields.push("fire_safety_compliant = ?"); sParams.push(fireSafetyCompliant ? 1 : 0); }
+
+      if (sFields.length > 0) {
+        sParams.push(prodId);
+        await pool.query(`UPDATE furniture_specs SET ${sFields.join(", ")} WHERE product_id = ?`, sParams);
+      }
+
+      if (supplierCostPennies) {
+        await pool.query(
+          "UPDATE supplier_feed_items SET cost_price_pennies = ? WHERE product_id = ?",
+          [supplierCostPennies, prodId]
+        );
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPDATE_PRODUCT", "products", JSON.stringify({ id: prodId, body }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Product ${prodId} updated` });
+    }
+
     // 9. Admin Orders Management
     if (pathname === "/api/admin/orders" && method === "GET") {
       const [orders] = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
@@ -1073,6 +1138,426 @@ const server = http.createServer(async (req, res) => {
         "Access-Control-Allow-Origin": "*",
       });
       return res.end(csv);
+    }
+
+    // 17. Admin Customers CRM CRUD API
+    if (pathname === "/api/admin/customers" && method === "GET") {
+      const [customers] = await pool.query(`
+        SELECT 
+          c.id, c.email, c.first_name, c.last_name, c.phone, c.created_at,
+          COUNT(DISTINCT o.id) AS orders_count,
+          COALESCE(SUM(o.total_pennies), 0) AS total_spend_pennies,
+          MAX(o.created_at) AS last_order_at,
+          COALESCE(a.postcode, 'N/A') AS postcode,
+          COALESCE(a.city, 'N/A') AS city
+        FROM customers c
+        LEFT JOIN orders o ON c.email = o.customer_email
+        LEFT JOIN customer_addresses a ON c.id = a.customer_id AND a.is_default_delivery = 1
+        GROUP BY c.id
+        ORDER BY c.created_at DESC
+      `);
+      return sendJson(res, 200, { customers });
+    }
+
+    if (pathname === "/api/admin/customers" && method === "POST") {
+      const body = await readBody(req);
+      const { email, firstName, lastName, phone, password = "CustomerDefault123!", addressLine1, city, postcode } = body;
+      if (!email || !firstName || !lastName) {
+        return sendJson(res, 400, { error: "Email, First Name and Last Name are required" });
+      }
+
+      const custId = `cust_${Date.now()}`;
+      const passHash = hashPassword(password);
+
+      await pool.query(
+        "INSERT INTO customers (id, email, password_hash, first_name, last_name, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+        [custId, email.toLowerCase().trim(), passHash, firstName.trim(), lastName.trim(), phone || ""]
+      );
+
+      if (addressLine1 && postcode) {
+        await pool.query(
+          "INSERT INTO customer_addresses (id, customer_id, address_line1, city, postcode, is_default_delivery, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())",
+          [`addr_${Date.now()}`, custId, addressLine1, city || "London", postcode]
+        );
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "CREATE_CUSTOMER", "customers", JSON.stringify({ custId, email }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 201, { success: true, customerId: custId, message: "Customer created successfully" });
+    }
+
+    if (pathname.startsWith("/api/admin/customers/") && method === "PATCH") {
+      const custId = pathname.replace("/api/admin/customers/", "");
+      const body = await readBody(req);
+      const { firstName, lastName, phone, email } = body;
+
+      const fields = [];
+      const params = [];
+      if (firstName) { fields.push("first_name = ?"); params.push(firstName); }
+      if (lastName) { fields.push("last_name = ?"); params.push(lastName); }
+      if (phone !== undefined) { fields.push("phone = ?"); params.push(phone); }
+      if (email) { fields.push("email = ?"); params.push(email.toLowerCase().trim()); }
+
+      if (fields.length > 0) {
+        params.push(custId);
+        await pool.query(`UPDATE customers SET ${fields.join(", ")} WHERE id = ?`, params);
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPDATE_CUSTOMER", "customers", JSON.stringify({ custId, body }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Customer ${custId} updated` });
+    }
+
+    if (pathname.startsWith("/api/admin/customers/") && method === "DELETE") {
+      const custId = pathname.replace("/api/admin/customers/", "");
+      await pool.query("DELETE FROM customer_addresses WHERE customer_id = ?", [custId]);
+      await pool.query("DELETE FROM customers WHERE id = ?", [custId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_CUSTOMER", "customers", JSON.stringify({ custId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Customer ${custId} removed` });
+    }
+
+    // 18. Admin Users & Staff Management CRUD API
+    if (pathname === "/api/admin/users" && method === "GET") {
+      const [users] = await pool.query(
+        "SELECT id, email, full_name, role, is_active, last_login_at, created_at FROM admin_users ORDER BY created_at ASC"
+      );
+      return sendJson(res, 200, { users });
+    }
+
+    if (pathname === "/api/admin/users" && method === "POST") {
+      const body = await readBody(req);
+      const { email, fullName, role = "catalog_manager", password } = body;
+      if (!email || !fullName || !password) {
+        return sendJson(res, 400, { error: "Email, Full Name, and Password are required" });
+      }
+
+      const [existing] = await pool.query("SELECT id FROM admin_users WHERE email = ?", [email.toLowerCase().trim()]);
+      if (existing.length > 0) {
+        return sendJson(res, 400, { error: "Admin staff user with this email already exists" });
+      }
+
+      const userId = `admin_usr_${Date.now()}`;
+      const passHash = hashPassword(password);
+
+      await pool.query(
+        "INSERT INTO admin_users (id, email, password_hash, full_name, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())",
+        [userId, email.toLowerCase().trim(), passHash, fullName.trim(), role]
+      );
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "CREATE_ADMIN_USER", "admin_users", JSON.stringify({ userId, email, role }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 201, { success: true, userId, message: "Staff user created successfully" });
+    }
+
+    if (pathname.startsWith("/api/admin/users/") && method === "PATCH") {
+      const userId = pathname.replace("/api/admin/users/", "");
+      const body = await readBody(req);
+      const { fullName, role, isActive, password } = body;
+
+      const fields = [];
+      const params = [];
+      if (fullName) { fields.push("full_name = ?"); params.push(fullName); }
+      if (role) { fields.push("role = ?"); params.push(role); }
+      if (isActive !== undefined) { fields.push("is_active = ?"); params.push(isActive ? 1 : 0); }
+      if (password) { fields.push("password_hash = ?"); params.push(hashPassword(password)); }
+
+      if (fields.length > 0) {
+        params.push(userId);
+        await pool.query(`UPDATE admin_users SET ${fields.join(", ")} WHERE id = ?`, params);
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPDATE_ADMIN_USER", "admin_users", JSON.stringify({ userId, body }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Staff user ${userId} updated` });
+    }
+
+    if (pathname.startsWith("/api/admin/users/") && method === "DELETE") {
+      const userId = pathname.replace("/api/admin/users/", "");
+
+      // Check not last super_admin
+      const [superAdmins] = await pool.query("SELECT id FROM admin_users WHERE role = 'super_admin'");
+      if (superAdmins.length <= 1 && superAdmins[0]?.id === userId) {
+        return sendJson(res, 400, { error: "Cannot delete the sole surviving Super Admin account" });
+      }
+
+      await pool.query("DELETE FROM admin_users WHERE id = ?", [userId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_ADMIN_USER", "admin_users", JSON.stringify({ userId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Staff user ${userId} removed` });
+    }
+
+    // 19. Admin Categories Taxonomy CRUD API
+    if (pathname === "/api/admin/categories" && method === "GET") {
+      const [cats] = await pool.query(`
+        SELECT c.*, COUNT(p.id) AS products_count
+        FROM categories c
+        LEFT JOIN products p ON c.id = p.category_id
+        GROUP BY c.id
+        ORDER BY c.created_at ASC
+      `);
+      return sendJson(res, 200, { categories: cats });
+    }
+
+    if (pathname === "/api/admin/categories" && method === "POST") {
+      const body = await readBody(req);
+      const { name, handle, description, heroImage } = body;
+      if (!name) {
+        return sendJson(res, 400, { error: "Category name is required" });
+      }
+
+      const catHandle = handle || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const catId = `cat_${catHandle.replace(/-/g, "_")}`;
+
+      await pool.query(
+        "INSERT INTO categories (id, name, handle, description, hero_image) VALUES (?, ?, ?, ?, ?)",
+        [catId, name, catHandle, description || "", heroImage || "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=85"]
+      );
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "CREATE_CATEGORY", "categories", JSON.stringify({ catId, name }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 201, { success: true, categoryId: catId, message: "Category created" });
+    }
+
+    if (pathname.startsWith("/api/admin/categories/") && method === "PATCH") {
+      const catId = pathname.replace("/api/admin/categories/", "");
+      const body = await readBody(req);
+      const { name, handle, description, heroImage } = body;
+
+      const fields = [];
+      const params = [];
+      if (name) { fields.push("name = ?"); params.push(name); }
+      if (handle) { fields.push("handle = ?"); params.push(handle); }
+      if (description !== undefined) { fields.push("description = ?"); params.push(description); }
+      if (heroImage) { fields.push("hero_image = ?"); params.push(heroImage); }
+
+      if (fields.length > 0) {
+        params.push(catId);
+        await pool.query(`UPDATE categories SET ${fields.join(", ")} WHERE id = ?`, params);
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPDATE_CATEGORY", "categories", JSON.stringify({ catId, body }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Category ${catId} updated` });
+    }
+
+    if (pathname.startsWith("/api/admin/categories/") && method === "DELETE") {
+      const catId = pathname.replace("/api/admin/categories/", "");
+      await pool.query("DELETE FROM categories WHERE id = ?", [catId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_CATEGORY", "categories", JSON.stringify({ catId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Category ${catId} removed` });
+    }
+
+    // 20. Admin Global Media Library CRUD API
+    if (pathname === "/api/admin/media" && method === "GET") {
+      const category = url.searchParams.get("category");
+      const search = url.searchParams.get("q");
+
+      let query = "SELECT * FROM media_assets";
+      const params = [];
+      const conditions = [];
+
+      if (category && category !== "all") {
+        conditions.push("category = ?");
+        params.push(category);
+      }
+      if (search) {
+        conditions.push("(file_name LIKE ? OR alt_text LIKE ?)");
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      if (conditions.length > 0) {
+        query += " WHERE " + conditions.join(" AND ");
+      }
+      query += " ORDER BY created_at DESC";
+
+      const [media] = await pool.query(query, params);
+      return sendJson(res, 200, { media });
+    }
+
+    if (pathname === "/api/admin/media" && method === "POST") {
+      const body = await readBody(req);
+      const { fileName, fileUrl, altText, category = "product", mimeType = "image/jpeg", widthPx = 1200, heightPx = 800, fileSizeBytes = 250000 } = body;
+
+      if (!fileUrl) {
+        return sendJson(res, 400, { error: "File URL is required" });
+      }
+
+      const mediaId = `media_${Date.now()}`;
+      const name = fileName || fileUrl.split("/").pop()?.split("?")[0] || "furniture-image.jpg";
+
+      await pool.query(
+        `INSERT INTO media_assets (id, file_name, file_url, file_size_bytes, mime_type, width_px, height_px, alt_text, category)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [mediaId, name, fileUrl, fileSizeBytes, mimeType, widthPx, heightPx, altText || name, category]
+      );
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPLOAD_MEDIA", "media_assets", JSON.stringify({ mediaId, name, fileUrl }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 201, { success: true, mediaId, message: "Media asset added to library" });
+    }
+
+    if (pathname.startsWith("/api/admin/media/") && method === "DELETE") {
+      const mediaId = pathname.replace("/api/admin/media/", "");
+      await pool.query("DELETE FROM media_assets WHERE id = ?", [mediaId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_MEDIA", "media_assets", JSON.stringify({ mediaId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Media asset ${mediaId} removed` });
+    }
+
+    // 21. Admin Promotions & Coupon Engine CRUD API
+    if ((pathname === "/api/admin/promotions" || pathname === "/api/promotions") && method === "GET") {
+      const [promotions] = await pool.query("SELECT * FROM promotions ORDER BY created_at DESC");
+      return sendJson(res, 200, { promotions });
+    }
+
+    if (pathname === "/api/admin/promotions" && method === "POST") {
+      const body = await readBody(req);
+      const {
+        code,
+        description,
+        discountType = "percentage",
+        discountValue = 10,
+        minOrderPennies = 0,
+        maxUses = 100,
+        isActive = 1
+      } = body;
+
+      if (!code) {
+        return sendJson(res, 400, { error: "Voucher code is required" });
+      }
+
+      const promoId = `promo_${code.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      await pool.query(
+        `INSERT INTO promotions (id, code, description, discount_type, discount_value, min_order_pennies, is_active, usage_count, max_uses)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+         ON DUPLICATE KEY UPDATE description = VALUES(description), discount_type = VALUES(discount_type), discount_value = VALUES(discount_value), min_order_pennies = VALUES(min_order_pennies), is_active = VALUES(is_active)`,
+        [promoId, code.toUpperCase(), description || code, discountType, discountValue, minOrderPennies, isActive ? 1 : 0, maxUses]
+      );
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "CREATE_PROMOTION", "promotions", JSON.stringify({ promoId, code }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 201, { success: true, promoId, message: `Promotion ${code} created` });
+    }
+
+    if (pathname.startsWith("/api/admin/promotions/") && method === "PATCH") {
+      const promoId = pathname.replace("/api/admin/promotions/", "");
+      const body = await readBody(req);
+      const { isActive, description, discountValue, minOrderPennies } = body;
+
+      const fields = [];
+      const params = [];
+      if (isActive !== undefined) { fields.push("is_active = ?"); params.push(isActive ? 1 : 0); }
+      if (description !== undefined) { fields.push("description = ?"); params.push(description); }
+      if (discountValue !== undefined) { fields.push("discount_value = ?"); params.push(discountValue); }
+      if (minOrderPennies !== undefined) { fields.push("min_order_pennies = ?"); params.push(minOrderPennies); }
+
+      if (fields.length > 0) {
+        params.push(promoId);
+        await pool.query(`UPDATE promotions SET ${fields.join(", ")} WHERE id = ?`, params);
+      }
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "UPDATE_PROMOTION", "promotions", JSON.stringify({ promoId, body }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Promotion ${promoId} updated` });
+    }
+
+    if (pathname.startsWith("/api/admin/promotions/") && method === "DELETE") {
+      const promoId = pathname.replace("/api/admin/promotions/", "");
+      await pool.query("DELETE FROM promotions WHERE id = ?", [promoId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_PROMOTION", "promotions", JSON.stringify({ promoId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Promotion ${promoId} deleted` });
+    }
+
+    // 22. Customer Reviews Moderation API
+    if ((pathname === "/api/reviews" || pathname === "/api/admin/reviews") && method === "GET") {
+      const status = url.searchParams.get("status");
+      let q = "SELECT * FROM customer_reviews";
+      const params = [];
+      if (status) {
+        q += " WHERE status = ?";
+        params.push(status);
+      }
+      q += " ORDER BY created_at DESC";
+
+      const [reviews] = await pool.query(q, params);
+      return sendJson(res, 200, { reviews });
+    }
+
+    if (pathname.startsWith("/api/admin/reviews/") && pathname.endsWith("/status") && method === "PATCH") {
+      const revId = pathname.replace("/api/admin/reviews/", "").replace("/status", "");
+      const body = await readBody(req);
+      const { status } = body;
+
+      await pool.query("UPDATE customer_reviews SET status = ? WHERE id = ?", [status, revId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "MODERATE_REVIEW", "customer_reviews", JSON.stringify({ revId, status }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Review ${revId} status updated to ${status}` });
+    }
+
+    if (pathname.startsWith("/api/admin/reviews/") && method === "DELETE") {
+      const revId = pathname.replace("/api/admin/reviews/", "");
+      await pool.query("DELETE FROM customer_reviews WHERE id = ?", [revId]);
+
+      await pool.query(
+        "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
+        [`log_${Date.now()}`, "admin@sanfurniture.co.uk", "DELETE_REVIEW", "customer_reviews", JSON.stringify({ revId }), req.socket.remoteAddress]
+      );
+
+      return sendJson(res, 200, { success: true, message: `Review ${revId} deleted` });
     }
 
     // 404 Catch-All

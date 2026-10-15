@@ -24,7 +24,10 @@ import {
   Tag,
   Settings,
   Building2,
-  SlidersHorizontal
+  SlidersHorizontal,
+  FolderTree,
+  Users,
+  Image as ImageIcon
 } from "lucide-react";
 
 interface AdminUser {
@@ -89,11 +92,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       badge: "CRUD"
     },
     {
+      name: "Categories & Taxonomy",
+      href: "/admin/categories",
+      icon: FolderTree,
+      active: pathname.startsWith("/admin/categories")
+    },
+    {
+      name: "Global Media Library",
+      href: "/admin/media",
+      icon: ImageIcon,
+      active: pathname.startsWith("/admin/media"),
+      badge: "DAM"
+    },
+    {
       name: "Customer Orders & POs",
       href: "/admin/orders",
       icon: ShoppingBag,
       active: pathname.startsWith("/admin/orders"),
       badge: "HMRC VAT"
+    },
+    {
+      name: "Customers (CRM)",
+      href: "/admin/customers",
+      icon: Users,
+      active: pathname.startsWith("/admin/customers"),
+      badge: "CRM"
+    },
+    {
+      name: "Staff & User Roles",
+      href: "/admin/users",
+      icon: UserCheck,
+      active: pathname.startsWith("/admin/users"),
+      badge: "RBAC"
     },
     {
       name: "Dropship Suppliers",
@@ -112,7 +142,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       href: "/admin/security",
       icon: ShieldAlert,
       active: pathname.startsWith("/admin/security"),
-      badge: "2 Jailed"
+      badge: "WAF"
     },
     {
       name: "Google & Meta Feeds",
