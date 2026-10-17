@@ -33,7 +33,7 @@ export class CloudflareTurnstileService {
       return {
         success: true,
         challengeTs: new Date().toISOString(),
-        hostname: "sanfurniture.co.uk",
+        hostname: "sanfurniture.com",
         isMockPass: true,
       };
     }

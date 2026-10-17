@@ -37,7 +37,7 @@ export async function generateMetadata({
     title: `${category.name} | Luxury UK Furniture | SAN Furniture`,
     description: category.description,
     alternates: {
-      canonical: `https://sanfurniture.co.uk/categories/${category.handle}`,
+      canonical: `https://sanfurniture.com/categories/${category.handle}`,
     },
     openGraph: {
       title: `${category.name} | SAN Furniture UK`,

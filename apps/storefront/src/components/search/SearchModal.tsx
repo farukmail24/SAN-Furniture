@@ -194,6 +194,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               <Link
                 key={product.id}
                 href={`/products/${product.handle}`}
+                prefetch={true}
                 onClick={onClose}
                 className="group flex items-center justify-between p-3 rounded-lg hover:bg-sand-200/60 transition-colors"
               >

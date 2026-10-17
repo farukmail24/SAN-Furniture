@@ -8,7 +8,7 @@ import { apiUrl } from "@/lib/api-config";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@sanfurniture.co.uk");
+  const [email, setEmail] = useState("admin@sanfurniture.com");
   const [password, setPassword] = useState("AdminPassword2026!");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ export default function AdminLoginPage() {
   };
 
   const handleQuickFill = () => {
-    setEmail("admin@sanfurniture.co.uk");
+    setEmail("admin@sanfurniture.com");
     setPassword("AdminPassword2026!");
     setError(null);
   };
@@ -110,7 +110,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@sanfurniture.co.uk"
+                  placeholder="admin@sanfurniture.com"
                   className="w-full pl-10 pr-4 py-2.5 bg-navy-950 border border-navy-700 rounded-xl text-sand-50 text-xs focus:outline-none focus:border-brass-500 transition-colors"
                 />
               </div>

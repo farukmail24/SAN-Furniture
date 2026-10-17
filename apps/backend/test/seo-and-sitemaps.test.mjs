@@ -8,7 +8,7 @@ import {
 } from "../dist/src/modules/seo/services/programmatic-seo-engine.js";
 
 test("SchemaOrgGenerator: Emits valid Schema.org Organization, Breadcrumbs and FAQ JSON-LD", () => {
-  const generator = new SchemaOrgGenerator("https://sanfurniture.co.uk");
+  const generator = new SchemaOrgGenerator("https://sanfurniture.com");
 
   // Organization Schema
   const org = generator.generateOrganizationSchema();
@@ -28,7 +28,7 @@ test("SchemaOrgGenerator: Emits valid Schema.org Organization, Breadcrumbs and F
   assert.equal(breadcrumbs.itemListElement.length, 3);
   assert.equal(breadcrumbs.itemListElement[0].position, 1);
   assert.equal(breadcrumbs.itemListElement[0].name, "Home");
-  assert.equal(breadcrumbs.itemListElement[2].item, "https://sanfurniture.co.uk/categories/sofas");
+  assert.equal(breadcrumbs.itemListElement[2].item, "https://sanfurniture.com/categories/sofas");
 
   // FAQ Schema
   const faqs = generator.generateFaqSchema([
@@ -43,7 +43,7 @@ test("SchemaOrgGenerator: Emits valid Schema.org Organization, Breadcrumbs and F
 });
 
 test("ProgrammaticSeoEngine: Thin Content Guard protects against Scaled Content Abuse penalties", () => {
-  const engine = new ProgrammaticSeoEngine("https://sanfurniture.co.uk", 2); // Requires at least 2 products
+  const engine = new ProgrammaticSeoEngine("https://sanfurniture.com", 2); // Requires at least 2 products
 
   const def = PROGRAMMATIC_COLLECTIONS[0]; // boucle-sofas
 
@@ -57,7 +57,7 @@ test("ProgrammaticSeoEngine: Thin Content Guard protects against Scaled Content 
   const healthyResult = engine.evaluateCollection(def, healthyInventory);
   assert.equal(healthyResult.isIndexable, true);
   assert.equal(healthyResult.robotsDirective, "index, follow");
-  assert.equal(healthyResult.canonicalUrl, "https://sanfurniture.co.uk/collections/boucle-sofas");
+  assert.equal(healthyResult.canonicalUrl, "https://sanfurniture.com/collections/boucle-sofas");
   assert.equal(healthyResult.matchingProductCount, 3);
 
   // Scenario B: Thin / Depleted inventory (only 1 product remains)
@@ -70,6 +70,6 @@ test("ProgrammaticSeoEngine: Thin Content Guard protects against Scaled Content 
   // Thin Content Guard triggers: Do not index thin page, canonicalize to parent category
   assert.equal(thinResult.isIndexable, false);
   assert.equal(thinResult.robotsDirective, "noindex, follow");
-  assert.equal(thinResult.canonicalUrl, "https://sanfurniture.co.uk/categories/sofas");
+  assert.equal(thinResult.canonicalUrl, "https://sanfurniture.com/categories/sofas");
   assert.equal(thinResult.matchingProductCount, 1);
 });

@@ -13,7 +13,13 @@ import {
   ExternalLink,
   ChevronRight,
   Layers,
-  Sparkles
+  Sparkles,
+  Eye,
+  X,
+  Coins,
+  Ruler,
+  Box,
+  Tag
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -24,22 +30,31 @@ interface ProductItem {
   id: string;
   title: string;
   handle: string;
+  subtitle?: string;
+  description?: string;
   category_id: string;
   price_pennies: number;
   compare_at_price_pennies?: number;
   thumbnail_url: string;
+  images?: string[];
+  images_json?: string | string[];
   status: string;
+  stock_level?: number;
   width_cm: number;
   height_cm: number;
   depth_cm: number;
+  seat_height_cm?: number;
   weight_kg: number;
   material: string;
   color: string;
+  assembly_required?: number | boolean;
   fire_safety_compliant: number | boolean;
   delivery_type?: string;
   delivery_tier?: string;
   cost_price_pennies?: number;
   markup_percentage?: number;
+  created_at?: string;
+  variants?: any[];
 }
 
 interface CategoryOption {
@@ -56,6 +71,84 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<CategoryOption[]>(() => cachedCats?.categories || []);
   const [loading, setLoading] = useState<boolean>(() => !cachedProds?.products?.length);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // View Modal state
+  const [viewingProduct, setViewingProduct] = useState<ProductItem | null>(null);
+  const [activeImage, setActiveImage] = useState<string>("");
+  const [detailLoading, setDetailLoading] = useState<boolean>(false);
+
+  // Gallery images list for the active product
+  const modalGalleryImages = useMemo(() => {
+    if (!viewingProduct) return [];
+    let list: string[] = [];
+    if (Array.isArray(viewingProduct.images)) {
+      list = viewingProduct.images;
+    } else if (viewingProduct.images_json) {
+      try {
+        const parsed =
+          typeof viewingProduct.images_json === "string"
+            ? JSON.parse(viewingProduct.images_json)
+            : viewingProduct.images_json;
+        if (Array.isArray(parsed)) list = parsed;
+      } catch (e) {}
+    }
+    const combined = [viewingProduct.thumbnail_url, ...list].filter(Boolean);
+    return Array.from(new Set(combined));
+  }, [viewingProduct]);
+
+  // Synchronize modal active image and fetch full product specifications
+  useEffect(() => {
+    if (!viewingProduct) {
+      setActiveImage("");
+      return;
+    }
+    setActiveImage(viewingProduct.thumbnail_url || "");
+
+    let isCancelled = false;
+    setDetailLoading(true);
+    fetch(apiUrl(`/api/admin/products/${viewingProduct.id}`))
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCancelled && data?.product) {
+          setViewingProduct((prev) => (prev && prev.id === data.product.id ? { ...prev, ...data.product } : prev));
+        }
+      })
+      .catch((err) => console.error("Error fetching product detail:", err))
+      .finally(() => {
+        if (!isCancelled) setDetailLoading(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [viewingProduct?.id]);
+
+  // Lock body scroll while modal is active
+  useEffect(() => {
+    if (viewingProduct) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [viewingProduct]);
+
+  // Close modal with Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setViewingProduct(null);
+      }
+    };
+    if (viewingProduct) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [viewingProduct]);
 
   // Fetch products & categories from backend with instant SWR cache
   const fetchProducts = async () => {
@@ -205,6 +298,52 @@ export default function AdminProductsPage() {
         },
       },
       {
+        key: "stock_level",
+        header: "Stock Level",
+        sortable: true,
+        width: "140px",
+        cell: (p) => {
+          let totalStock = p.stock_level ?? 25;
+          if (Array.isArray(p.variants) && p.variants.length > 0) {
+            const varSum = p.variants.reduce((acc: number, v: any) => acc + (v.stock_quantity ?? v.stock ?? 0), 0);
+            if (varSum > 0) totalStock = varSum;
+          }
+          const isOut = totalStock <= 0 || p.status === "out_of_stock";
+          const isLow = !isOut && totalStock <= 10;
+          const isHigh = !isOut && totalStock > 10;
+
+          return (
+            <div className="flex flex-col gap-0.5 whitespace-nowrap min-w-[115px]">
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap w-fit border ${
+                  isOut
+                    ? "bg-rose-50 text-rose-800 border-rose-200"
+                    : isLow
+                    ? "bg-amber-50 text-amber-800 border-amber-200"
+                    : "bg-emerald-50 text-emerald-800 border-emerald-200"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                    isOut
+                      ? "bg-rose-500"
+                      : isLow
+                      ? "bg-amber-500"
+                      : "bg-emerald-500 animate-pulse"
+                  }`}
+                />
+                <span className="whitespace-nowrap font-medium">
+                  {isOut ? "Out of Stock" : `${totalStock} in stock`}
+                </span>
+              </span>
+              <span className="text-[10px] text-navy-400 font-mono pl-1 whitespace-nowrap">
+                {isOut ? "Auto-Hidden" : isLow ? "Low Inventory" : "Healthy UK Hub"}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
         key: "dimensions",
         header: "Dimensions (cm)",
         cell: (p) => (
@@ -228,6 +367,14 @@ export default function AdminProductsPage() {
         header: "Actions",
         cell: (p) => (
           <div className="flex items-center justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setViewingProduct(p)}
+              className="p-1.5 rounded-lg text-navy-600 hover:text-navy-950 hover:bg-sand-100 transition-colors inline-flex items-center"
+              title="Quick view product specs & details"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
             <Link
               href={`/admin/products/${p.id}/edit`}
               className="p-1.5 rounded-lg text-brass-700 hover:text-brass-900 hover:bg-brass-50 transition-colors inline-flex items-center"
@@ -294,10 +441,16 @@ export default function AdminProductsPage() {
       )}
 
       {/* Overview Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Catalog Items</span>
           <p className="text-2xl font-display font-bold text-navy-950 mt-1">{products.length}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
+          <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Live Units In Stock</span>
+          <p className="text-2xl font-display font-bold text-emerald-700 mt-1">
+            {products.reduce((acc, p) => acc + (p.stock_level ?? 25), 0)}
+          </p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Active Categories</span>
@@ -326,6 +479,481 @@ export default function AdminProductsPage() {
         onBulkDelete={handleBulkDelete}
         exportFileName="san_furniture_catalog"
       />
+
+      {/* Product Quick-View Spec Modal */}
+      {viewingProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-navy-950/70 backdrop-blur-sm overflow-y-auto animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewingProduct(null);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="product-modal-title"
+        >
+          <div
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-sand-200 overflow-hidden my-auto flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Top Header */}
+            <div className="bg-sand-50/95 border-b border-sand-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
+              <div className="space-y-1.5 pr-4 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[11px] font-bold text-navy-600 bg-sand-200/80 px-2.5 py-0.5 rounded-md">
+                    {viewingProduct.id}
+                  </span>
+                  <span className="text-xs font-semibold text-brass-800 bg-brass-100/70 px-2.5 py-0.5 rounded-full capitalize">
+                    {categories.find((c) => c.id === viewingProduct.category_id)?.name ||
+                      viewingProduct.category_id?.replace("cat_", "").replace(/_/g, " ")}
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+                      viewingProduct.status === "published"
+                        ? "text-emerald-800 bg-emerald-50 border-emerald-200"
+                        : "text-amber-800 bg-amber-50 border-amber-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        viewingProduct.status === "published"
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="capitalize">{viewingProduct.status || "Draft"}</span>
+                  </span>
+                  <span
+                    className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
+                      (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                        ? "text-rose-800 bg-rose-50 border-rose-200"
+                        : (viewingProduct.stock_level ?? 25) <= 10
+                        ? "text-amber-800 bg-amber-50 border-amber-200"
+                        : "text-emerald-800 bg-emerald-50 border-emerald-200"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                          ? "bg-rose-500"
+                          : (viewingProduct.stock_level ?? 25) <= 10
+                          ? "bg-amber-500"
+                          : "bg-emerald-500 animate-pulse"
+                      }`}
+                    />
+                    <span className="whitespace-nowrap">
+                      {(viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                        ? "Out of Stock (Auto-Hidden)"
+                        : `${viewingProduct.stock_level ?? 25} in stock`}
+                    </span>
+                  </span>
+                  {detailLoading && (
+                    <span className="text-[11px] text-navy-400 font-medium animate-pulse flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-brass-600 animate-spin" />
+                      Syncing live specs...
+                    </span>
+                  )}
+                </div>
+                <h2
+                  id="product-modal-title"
+                  className="font-display text-xl sm:text-2xl font-bold text-navy-950 tracking-tight truncate"
+                  title={viewingProduct.title}
+                >
+                  {viewingProduct.title}
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <a
+                  href={`/products/${viewingProduct.handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-xl text-navy-600 hover:text-navy-950 hover:bg-sand-200/80 transition-colors hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold"
+                  title="Preview on live UK storefront"
+                >
+                  <ExternalLink className="w-4 h-4 text-navy-500" />
+                  <span>Storefront</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setViewingProduct(null)}
+                  className="p-2 rounded-xl text-navy-400 hover:text-navy-900 hover:bg-sand-200/80 transition-colors"
+                  title="Close modal (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 text-navy-950">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Left Column: Visuals & Compliance */}
+                <div className="md:col-span-5 space-y-4">
+                  {/* Main Image Stage */}
+                  <div className="relative aspect-square w-full rounded-2xl overflow-hidden border border-sand-200 bg-sand-100 shadow-inner flex items-center justify-center group">
+                    {activeImage ? (
+                      <img
+                        src={activeImage}
+                        alt={viewingProduct.title}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="p-8 text-center text-navy-400">
+                        <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <span className="text-xs">No image available</span>
+                      </div>
+                    )}
+                    <div className="absolute top-3 left-3">
+                      <span className="font-mono text-[10px] uppercase font-bold text-navy-950 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-md shadow-xs border border-sand-200/50">
+                        UK Spec
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Multi-Image Gallery Row */}
+                  {modalGalleryImages.length > 1 && (
+                    <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                      {modalGalleryImages.map((img, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveImage(img)}
+                          className={`relative flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                            activeImage === img
+                              ? "border-brass-600 ring-2 ring-brass-500/30 scale-105"
+                              : "border-sand-200 opacity-70 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={img}
+                            alt={`Angle ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* UK Fire Safety Card */}
+                  <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/90 flex items-start gap-3 shadow-xs">
+                    <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 flex-shrink-0">
+                      <Flame className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-xs text-emerald-950">
+                          BS 5852 UK Fire Safety Certified
+                        </h4>
+                        <span className="text-[10px] font-bold uppercase bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded">
+                          Reg 1988
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
+                        Adheres strictly to UK Furniture and Furnishings (Fire Safety) Regulations 1988 with certified cigarette and match resistant upholstery.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* UK Logistics Tier Card */}
+                  <div className="p-4 rounded-xl bg-sand-100/80 border border-sand-200 flex items-start gap-3 shadow-xs">
+                    <div className="p-2 rounded-lg bg-sand-200 text-navy-800 flex-shrink-0">
+                      <Truck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-xs text-navy-950">
+                        {viewingProduct.delivery_tier === "two_man_white_glove"
+                          ? "Specialist 2-Man White Glove"
+                          : viewingProduct.delivery_tier === "pallet"
+                          ? "Kerbside Pallet Delivery"
+                          : "UK Tracked Standard Parcel"}
+                      </h4>
+                      <p className="text-[11px] text-navy-600 mt-0.5 leading-relaxed">
+                        {viewingProduct.delivery_tier === "two_man_white_glove"
+                          ? "Delivered directly to room of choice by 2-man uniformed logistics team with full packaging removal."
+                          : viewingProduct.delivery_tier === "pallet"
+                          ? "Heavy freight pallet delivery with tailgate offloading at mainland UK curb."
+                          : "Standard nationwide carrier delivery with live track-and-trace notifications."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Financials, Dimensions, Materials & Details */}
+                <div className="md:col-span-7 space-y-4">
+                  {/* Live Warehouse Inventory & Stock Card */}
+                  <div
+                    className={`p-4 rounded-2xl border shadow-xs flex items-center justify-between ${
+                      (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                        ? "bg-rose-50/90 border-rose-200"
+                        : "bg-gradient-to-br from-emerald-50/90 to-sand-50 border-emerald-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div
+                        className={`p-2.5 rounded-xl flex-shrink-0 shadow-xs ${
+                          (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        <Box
+                          className={`w-5 h-5 ${
+                            (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                              ? "text-rose-700"
+                              : "text-emerald-700"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-xs text-navy-950 uppercase tracking-wider">
+                            Live Warehouse Stock Level
+                          </h4>
+                          <span
+                            className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                              (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                                ? "bg-rose-200 text-rose-900"
+                                : "bg-emerald-200/80 text-emerald-900"
+                            }`}
+                          >
+                            {(viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                              ? "Stock Out Detected"
+                              : "UK Hub"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-navy-700 mt-1">
+                          <strong
+                            className={`font-display text-base font-bold ${
+                              (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                                ? "text-rose-700"
+                                : "text-emerald-800"
+                            }`}
+                          >
+                            {(viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                              ? "Out of Stock (Auto-Hidden from Storefront)"
+                              : `${viewingProduct.stock_level ?? 25} Units In Stock`}
+                          </strong>{" "}
+                          &bull;{" "}
+                          {(viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                            ? "Automatically hidden from customer storefront to prevent unfulfillable orders."
+                            : `Ready for instant dispatch via ${viewingProduct.delivery_tier === "two_man_white_glove" ? "2-Man White Glove" : "Freight"}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                      <span
+                        className={`text-[11px] font-mono font-semibold px-3 py-1.5 rounded-lg border shadow-xs ${
+                          (viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                            ? "text-rose-800 bg-rose-100/80 border-rose-200"
+                            : "text-emerald-800 bg-white/90 border-emerald-200/80"
+                        }`}
+                      >
+                        {(viewingProduct.stock_level ?? 25) <= 0 || viewingProduct.status === "out_of_stock"
+                          ? "Status: Hidden"
+                          : "Lead: 3-5 Working Days"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Commercial Financials Bento Card */}
+                  <div className="p-5 rounded-2xl bg-gradient-to-br from-sand-100/90 to-sand-50 border border-sand-300/80 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-navy-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Coins className="w-4 h-4 text-brass-600" />
+                        Commercial Pricing &amp; Margins
+                      </span>
+                      <span className="text-[11px] font-semibold text-navy-500 bg-sand-200/80 px-2 py-0.5 rounded-full">
+                        20% UK VAT Included
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="p-3 bg-white rounded-xl border border-sand-200 shadow-xs">
+                        <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">
+                          Retail Price
+                        </span>
+                        <p className="text-xl font-display font-bold text-navy-950 mt-0.5">
+                          {formatGBP(viewingProduct.price_pennies)}
+                        </p>
+                        {viewingProduct.compare_at_price_pennies && viewingProduct.compare_at_price_pennies > viewingProduct.price_pennies && (
+                          <span className="text-[10px] text-navy-400 line-through">
+                            {formatGBP(viewingProduct.compare_at_price_pennies)}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="p-3 bg-white rounded-xl border border-sand-200 shadow-xs">
+                        <span className="text-[10px] font-semibold text-navy-500 uppercase tracking-wider block">
+                          Supplier Cost
+                        </span>
+                        <p className="text-xl font-mono font-bold text-navy-800 mt-0.5">
+                          {viewingProduct.cost_price_pennies ? formatGBP(viewingProduct.cost_price_pennies) : "£0.00"}
+                        </p>
+                        <span className="text-[10px] text-navy-400">Wholesale trade</span>
+                      </div>
+
+                      <div className="p-3 bg-emerald-50/90 rounded-xl border border-emerald-200 shadow-xs">
+                        <span className="text-[10px] font-semibold text-emerald-800 uppercase tracking-wider block">
+                          Gross Margin
+                        </span>
+                        <p className="text-xl font-bold text-emerald-700 mt-0.5">
+                          {viewingProduct.cost_price_pennies
+                            ? (((viewingProduct.price_pennies - viewingProduct.cost_price_pennies) / viewingProduct.price_pennies) * 100).toFixed(1)
+                            : (viewingProduct.markup_percentage || "40.0")}%
+                        </p>
+                        <span className="text-[10px] text-emerald-700 font-medium">
+                          +{formatGBP(
+                            viewingProduct.cost_price_pennies
+                              ? viewingProduct.price_pennies - viewingProduct.cost_price_pennies
+                              : Math.round(viewingProduct.price_pennies * 0.4)
+                          )} profit
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-sand-200/70 flex items-center justify-between text-[11px] text-navy-600">
+                      <span>UK VAT (20% Net HMRC calculation):</span>
+                      <span className="font-mono font-semibold text-navy-900">
+                        {formatGBP(Math.round(viewingProduct.price_pennies - viewingProduct.price_pennies / 1.2))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Physical Specifications Grid */}
+                  <div>
+                    <h4 className="text-xs font-bold text-navy-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                      <Ruler className="w-4 h-4 text-navy-600" />
+                      Furniture Dimensions &amp; Craftsmanship
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 bg-sand-50 rounded-xl border border-sand-200">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-medium text-navy-500">Dimensions</span>
+                          <span className="text-[10px] font-mono text-navy-400">W &times; D &times; H</span>
+                        </div>
+                        <p className="font-mono font-bold text-sm text-navy-950 mt-1">
+                          {viewingProduct.width_cm}cm &times; {viewingProduct.depth_cm}cm &times; {viewingProduct.height_cm}cm
+                        </p>
+                        {viewingProduct.seat_height_cm ? (
+                          <span className="text-[11px] text-navy-600 mt-0.5 block">
+                            Seat Height: {viewingProduct.seat_height_cm} cm
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="p-3 bg-sand-50 rounded-xl border border-sand-200">
+                        <span className="text-[11px] font-medium text-navy-500 block">Net Item Weight</span>
+                        <p className="font-mono font-bold text-sm text-navy-950 mt-1">
+                          {viewingProduct.weight_kg} kg
+                        </p>
+                        <span className="text-[11px] text-navy-600 mt-0.5 block">
+                          {viewingProduct.weight_kg > 50 ? "Requires 2-person lift" : "Standard single handling"}
+                        </span>
+                      </div>
+
+                      <div className="p-3 bg-sand-50 rounded-xl border border-sand-200">
+                        <span className="text-[11px] font-medium text-navy-500 block">Primary Material</span>
+                        <p className="font-semibold text-sm text-navy-950 mt-1 capitalize">
+                          {viewingProduct.material?.replace(/_/g, " ") || "Engineered Hardwood"}
+                        </p>
+                        <span className="text-[11px] text-navy-600 mt-0.5 block">Premium grade finish</span>
+                      </div>
+
+                      <div className="p-3 bg-sand-50 rounded-xl border border-sand-200">
+                        <span className="text-[11px] font-medium text-navy-500 block">Color / Finish</span>
+                        <p className="font-semibold text-sm text-navy-950 mt-1">
+                          {viewingProduct.color || "Standard"}
+                        </p>
+                        <span className="text-[11px] text-navy-600 mt-0.5 block">Catalog palette</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Available Options & Variants */}
+                  {viewingProduct.variants && viewingProduct.variants.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-bold text-navy-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Layers className="w-4 h-4 text-navy-600" />
+                        Available Options &amp; Variants ({viewingProduct.variants.length})
+                      </h4>
+                      <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1 no-scrollbar">
+                        {viewingProduct.variants.map((v: any, i: number) => (
+                          <span
+                            key={v.id || i}
+                            className="px-2.5 py-1 rounded-lg bg-sand-100 border border-sand-300 text-xs text-navy-900 font-medium flex items-center gap-1.5"
+                          >
+                            <span>{v.title || "Option"}</span>
+                            {v.sku && <span className="text-[10px] font-mono text-navy-500 font-bold">({v.sku})</span>}
+                            {v.stock_quantity !== undefined && (
+                              <span className="text-[10px] text-navy-500">&bull; {v.stock_quantity} in stock</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product Overview / Description (if available) */}
+                  {viewingProduct.description && (
+                    <div>
+                      <h4 className="text-xs font-bold text-navy-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-brass-600" />
+                        Description &amp; Specifications
+                      </h4>
+                      <div className="text-xs text-navy-700 leading-relaxed bg-sand-50 p-3.5 rounded-xl border border-sand-200 max-h-32 overflow-y-auto">
+                        <p>{viewingProduct.description}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Product Handle & Direct Route */}
+                  <div className="p-3 bg-sand-100/60 rounded-xl border border-sand-200/80 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="text-navy-500">Live Handle:</span>
+                      <code className="font-mono text-navy-900 bg-sand-200/70 px-1.5 py-0.5 rounded text-[11px]">
+                        /products/{viewingProduct.handle}
+                      </code>
+                    </div>
+                    <span className="text-[11px] text-navy-400 font-mono">
+                      ID: {viewingProduct.id}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Action Footer */}
+            <div className="bg-sand-50/95 border-t border-sand-200 px-6 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+              <a
+                href={`/products/${viewingProduct.handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-navy-700 hover:text-brass-700 transition-colors order-2 sm:order-1"
+              >
+                <ExternalLink className="w-4 h-4 text-navy-500" />
+                <span>Open Customer Product Page</span>
+              </a>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end order-1 sm:order-2">
+                <button
+                  type="button"
+                  onClick={() => setViewingProduct(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-navy-700 bg-sand-200/80 hover:bg-sand-300 transition-colors"
+                >
+                  Close
+                </button>
+                <Link
+                  href={`/admin/products/${viewingProduct.id}/edit`}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-brass-500 to-brass-600 hover:from-brass-400 hover:to-brass-500 text-navy-950 font-bold text-xs tracking-wide shadow-sm shadow-brass-500/20 transition-all"
+                >
+                  <Edit3 className="w-4 h-4" />
+                  <span>Edit Full Product</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

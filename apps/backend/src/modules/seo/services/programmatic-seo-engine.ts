@@ -89,7 +89,7 @@ export class ProgrammaticSeoEngine {
   private baseUrl: string;
   private minProductsThreshold: number;
 
-  constructor(baseUrl = "https://sanfurniture.co.uk", minProductsThreshold = 1) {
+  constructor(baseUrl = "https://sanfurniture.com", minProductsThreshold = 1) {
     this.baseUrl = baseUrl.replace(/\/$/, "");
     this.minProductsThreshold = minProductsThreshold;
   }

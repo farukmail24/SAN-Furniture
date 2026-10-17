@@ -143,21 +143,21 @@ async function migrateAdminAdvances() {
   const staffMembers = [
     {
       id: "admin_usr_02",
-      email: "sophie.mercer@sanfurniture.co.uk",
+      email: "sophie.mercer@sanfurniture.com",
       full_name: "Sophie Mercer",
       role: "catalog_manager",
       is_active: 1,
     },
     {
       id: "admin_usr_03",
-      email: "james.holloway@sanfurniture.co.uk",
+      email: "james.holloway@sanfurniture.com",
       full_name: "James Holloway",
       role: "logistics_operator",
       is_active: 1,
     },
     {
       id: "admin_usr_04",
-      email: "clara.oswald@sanfurniture.co.uk",
+      email: "clara.oswald@sanfurniture.com",
       full_name: "Clara Oswald",
       role: "support_agent",
       is_active: 1,

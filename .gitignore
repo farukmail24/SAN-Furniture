@@ -8,3 +8,6 @@ build/
 .env.local
 .DS_Store
 Thumbs.db
+Dropship Suppliers/
+*.zip
+*.tsbuildinfo

@@ -30,7 +30,10 @@ import {
   ArrowRight,
   Loader2,
   Link2,
-  Package
+  Package,
+  Eye,
+  EyeOff,
+  Key
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
@@ -53,7 +56,7 @@ export default function AdminSettingsPage() {
     company_number: "14289123",
     vat_number: "GB 438 9123 76",
     registered_address: "48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom",
-    support_email: "concierge@sanfurniture.co.uk",
+    support_email: "concierge@sanfurniture.com",
     support_phone: "+44 (0) 20 7946 0912",
     // Logistics
     free_shipping_threshold_pennies: "50000",
@@ -68,9 +71,9 @@ export default function AdminSettingsPage() {
     smtp_host: "smtp.mailgun.org",
     smtp_port: "587",
     smtp_encryption: "TLS",
-    smtp_user: "postmaster@sanfurniture.co.uk",
+    smtp_user: "postmaster@sanfurniture.com",
     smtp_pass: "••••••••••••••••",
-    smtp_from_email: "orders@sanfurniture.co.uk",
+    smtp_from_email: "orders@sanfurniture.com",
     smtp_from_name: "SAN Furniture Concierge",
     // SMS Gateway
     sms_provider: "twilio",
@@ -79,10 +82,14 @@ export default function AdminSettingsPage() {
     sms_sender_id: "SANFURNITURE",
     sms_dispatch_enabled: "true",
     sms_driver_alert_enabled: "true",
-    // Payment
+    // Payment (Stripe UK Gateway Dedicated Provider)
     stripe_enabled: "true",
-    klarna_enabled: "true",
-    klarna_merchant_id: "K1482910_GB",
+    stripe_mode: "test",
+    stripe_publishable_key: "pk_test_51SANFurnitureUK0000000DemoKey",
+    stripe_secret_key: "sk_test_51SANFurnitureUK0000000SecretDemoKey",
+    stripe_webhook_secret: "whsec_san_furniture_webhook_demo_001",
+    stripe_currency: "GBP",
+    stripe_statement_descriptor: "SAN FURNITURE UK",
     // Security
     ip_jail_max_failures: "5",
     ip_jail_duration_mins: "15"
@@ -92,6 +99,11 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
+  const [showStripeSecret, setShowStripeSecret] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
+  const [testingStripe, setTestingStripe] = useState(false);
+  const [stripeTestResult, setStripeTestResult] = useState<any>(null);
+  const [copiedStripeWebhook, setCopiedStripeWebhook] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -320,6 +332,34 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleTestStripe = async () => {
+    setTestingStripe(true);
+    setStripeTestResult(null);
+    try {
+      const res = await fetch(apiUrl("/api/admin/settings/test-stripe"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stripe_publishable_key: settings.stripe_publishable_key,
+          stripe_secret_key: settings.stripe_secret_key,
+          stripe_mode: settings.stripe_mode,
+        }),
+      });
+      const data = await res.json();
+      setStripeTestResult(data);
+      if (res.ok) {
+        setSuccessMsg(data.message || "Stripe UK Gateway credentials verified successfully!");
+        setTimeout(() => setSuccessMsg(null), 5000);
+      } else {
+        setErrorMsg(data.error || "Stripe credentials verification failed.");
+      }
+    } catch (err: any) {
+      setErrorMsg("Stripe test error: " + err.message);
+    } finally {
+      setTestingStripe(false);
+    }
+  };
+
   const handleMediaSelect = (url: string) => {
     if (activeLogoTarget === "light") {
       handleChange("site_logo_light", url);
@@ -372,123 +412,123 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      {/* Settings Navigation Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 border-b border-sand-200 text-xs font-semibold scrollbar-none">
+      {/* Settings Navigation Tabs - Wrapped & Responsive (Zero Overflow / No Truncation) */}
+      <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-sand-100/80 border border-sand-200/90 shadow-2xs">
         <button
           type="button"
           onClick={() => setActiveTab("branding")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "branding"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <ImageIcon className="w-4 h-4" />
-          <span>Branding, Logos &amp; Favicon</span>
+          <ImageIcon className={`w-3.5 h-3.5 ${activeTab === "branding" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>Branding &amp; Logos</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("legal")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "legal"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <Building className="w-4 h-4" />
-          <span>HMRC VAT &amp; Legal Entity</span>
+          <Building className={`w-3.5 h-3.5 ${activeTab === "legal" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>HMRC VAT &amp; Legal</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("email")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "email"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <Mail className="w-4 h-4" />
-          <span>Email (SMTP) Gateway</span>
+          <Mail className={`w-3.5 h-3.5 ${activeTab === "email" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>Email (SMTP)</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("sms")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "sms"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <MessageSquare className="w-4 h-4" />
+          <MessageSquare className={`w-3.5 h-3.5 ${activeTab === "sms" ? "text-brass-400" : "text-navy-500"}`} />
           <span>SMS &amp; 2-Man Alerts</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("logistics")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "logistics"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <Truck className="w-4 h-4" />
+          <Truck className={`w-3.5 h-3.5 ${activeTab === "logistics" ? "text-brass-400" : "text-navy-500"}`} />
           <span>Delivery Rates &amp; Surcharges</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("dropship")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "dropship"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <Zap className="w-4 h-4" />
-          <span>Dropship Automation &amp; Margins</span>
+          <Zap className={`w-3.5 h-3.5 ${activeTab === "dropship" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>Dropship &amp; Margins</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("payments")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "payments"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <CreditCard className="w-4 h-4" />
+          <CreditCard className={`w-3.5 h-3.5 ${activeTab === "payments" ? "text-brass-400" : "text-navy-500"}`} />
           <span>UK Payment Gateways</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("security")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "security"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <Lock className="w-4 h-4" />
-          <span>Security &amp; IP Lockout</span>
+          <Lock className={`w-3.5 h-3.5 ${activeTab === "security" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>Security &amp; IP Jail</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("storage")}
-          className={`px-4 py-2 rounded-xl flex items-center gap-2 whitespace-nowrap transition-all ${
+          className={`px-3.5 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             activeTab === "storage"
-              ? "bg-navy-950 text-brass-400 shadow-sm"
-              : "text-navy-700 hover:bg-sand-200"
+              ? "bg-navy-950 text-sand-50 border border-navy-950 shadow-sm font-bold"
+              : "bg-white/90 hover:bg-white text-navy-700 hover:text-navy-950 border border-sand-300/80 shadow-2xs"
           }`}
         >
-          <FolderGit2 className="w-4 h-4 text-brass-400" />
-          <span>Storage Symlink &amp; Shortcuts</span>
+          <FolderGit2 className={`w-3.5 h-3.5 ${activeTab === "storage" ? "text-brass-400" : "text-navy-500"}`} />
+          <span>Storage &amp; Shortcuts</span>
         </button>
       </div>
 
@@ -796,7 +836,7 @@ export default function AdminSettingsPage() {
                   type="email"
                   value={settings.smtp_from_email}
                   onChange={(e) => handleChange("smtp_from_email", e.target.value)}
-                  placeholder="orders@sanfurniture.co.uk"
+                  placeholder="orders@sanfurniture.com"
                   className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
                 />
               </div>
@@ -1203,45 +1243,330 @@ export default function AdminSettingsPage() {
           </div>
         )}
 
-        {/* TAB 7: PAYMENTS */}
+        {/* TAB 7: PAYMENTS (STRIPE UK GATEWAY DEDICATED SOLE PROCESSOR) */}
         {activeTab === "payments" && (
-          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-brass-600" />
-              <span>Payment Gateway Integrations</span>
-            </h2>
+          <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-6">
+            
+            {/* Header Showcase Card */}
+            <div className="p-5 rounded-xl bg-gradient-to-r from-navy-950 via-[#1e1b4b] to-[#312e81] text-sand-50 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm border border-indigo-900/50">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-2.5 py-0.5 rounded-full bg-brass-500/20 text-brass-400 border border-brass-500/30 text-[10px] font-bold uppercase tracking-wider">
+                    Official UK Payment Gateway
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    3D Secure 2.0 &amp; SCA Enforced
+                  </span>
+                </div>
+                <h2 className="text-xl font-bold font-display text-sand-50 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-brass-400" />
+                  Stripe UK Gateway Credentials &amp; Terminal
+                </h2>
+                <p className="text-xs text-sand-300 max-w-xl">
+                  Dedicated payment gateway for SAN Furniture. Processes Visa, Mastercard, American Express, Apple Pay, and Google Pay with UK PSD2 Strong Customer Authentication and automated dropship purchase order dispatch.
+                </p>
+              </div>
 
-            <div className="space-y-4">
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={settings.stripe_enabled === "true"}
-                  onChange={(e) => handleChange("stripe_enabled", e.target.checked ? "true" : "false")}
-                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
-                />
-                <span>Enable Stripe (UK Credit/Debit Cards, Apple Pay, Google Pay)</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-900 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={settings.klarna_enabled === "true"}
-                  onChange={(e) => handleChange("klarna_enabled", e.target.checked ? "true" : "false")}
-                  className="w-4 h-4 rounded text-brass-500 focus:ring-0"
-                />
-                <span>Enable Klarna Pay in 3 &amp; Financing</span>
-              </label>
-
-              <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1">Klarna Merchant ID</label>
-                <input
-                  type="text"
-                  value={settings.klarna_merchant_id}
-                  onChange={(e) => handleChange("klarna_merchant_id", e.target.value)}
-                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
-                />
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleTestStripe}
+                  disabled={testingStripe}
+                  className="px-4 py-2.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-navy-950 text-xs font-bold flex items-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-60 cursor-pointer"
+                >
+                  {testingStripe ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Verifying Stripe Keys...</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-3.5 h-3.5 text-navy-950" />
+                      <span>Test Stripe Connection</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
+
+            {/* Test Result Banner */}
+            {stripeTestResult && (
+              <div className={`p-4 rounded-xl border text-xs space-y-1.5 animate-fade-in ${
+                stripeTestResult.success
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                  : "bg-rose-50 border-rose-300 text-rose-900"
+              }`}>
+                <div className="flex items-center justify-between font-bold">
+                  <span className="flex items-center gap-1.5">
+                    {stripeTestResult.success ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                    )}
+                    {stripeTestResult.message || (stripeTestResult.success ? "Connection Verified" : "Verification Failed")}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStripeTestResult(null)}
+                    className="text-[10px] text-navy-500 hover:text-navy-900 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+                {stripeTestResult.success && (
+                  <p className="text-[11px] text-emerald-800">
+                    Mode: <strong>{stripeTestResult.mode?.toUpperCase()}</strong> &bull; Currency: <strong>GBP (£)</strong> &bull; SCA: <strong>3D Secure 2.0 Active</strong>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Gateway Status & Environment Mode */}
+            <div className="p-4 rounded-xl bg-sand-100 border border-sand-300 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-sand-200">
+                <div>
+                  <h3 className="font-bold text-xs text-navy-950">Gateway Activation</h3>
+                  <p className="text-[11px] text-navy-600">
+                    Enable or disable the credit/debit card gateway across the public storefront.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-navy-950">
+                  <input
+                    type="checkbox"
+                    checked={settings.stripe_enabled === "true"}
+                    onChange={(e) => handleChange("stripe_enabled", e.target.checked ? "true" : "false")}
+                    className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                  />
+                  <span>Enable Stripe UK Gateway</span>
+                </label>
+              </div>
+
+              {/* Environment Mode Switcher */}
+              <div>
+                <label className="block text-xs font-bold text-navy-900 mb-1.5">
+                  Environment Mode (Sandbox vs. Live Production)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                      settings.stripe_mode === "test"
+                        ? "bg-brass-50/60 border-brass-500 ring-1 ring-brass-500"
+                        : "bg-white border-sand-300 hover:bg-sand-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="stripe_environment_mode"
+                      value="test"
+                      checked={settings.stripe_mode === "test" || !settings.stripe_mode}
+                      onChange={() => handleChange("stripe_mode", "test")}
+                      className="mt-0.5 text-brass-600 focus:ring-brass-500"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-navy-950 block">
+                        Test Mode (Sandbox / Development)
+                      </span>
+                      <p className="text-[11px] text-navy-600 mt-0.5">
+                        Test checkouts safely without real charges. Uses test card numbers (<code className="font-mono text-[10px] bg-sand-200 px-1 rounded">4242...</code>) and simulated 3D Secure OTP (<code className="font-mono text-[10px] bg-sand-200 px-1 rounded">123456</code>).
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border cursor-pointer transition-all flex items-start gap-3 ${
+                      settings.stripe_mode === "live"
+                        ? "bg-emerald-50/60 border-emerald-500 ring-1 ring-emerald-500"
+                        : "bg-white border-sand-300 hover:bg-sand-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="stripe_environment_mode"
+                      value="live"
+                      checked={settings.stripe_mode === "live"}
+                      onChange={() => handleChange("stripe_mode", "live")}
+                      className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div>
+                      <span className="text-xs font-bold text-navy-950 block">
+                        Live Production Mode
+                      </span>
+                      <p className="text-[11px] text-navy-600 mt-0.5">
+                        Process real customer debit/credit cards in British Pounds (GBP). Charges are settled directly into your UK commercial bank account.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* API Credentials Grid */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-xs uppercase tracking-wider text-navy-900 flex items-center gap-1.5">
+                <Key className="w-4 h-4 text-brass-600" />
+                <span>Stripe API Credentials</span>
+              </h3>
+
+              <div className="grid grid-cols-1 gap-4">
+                {/* Publishable Key */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+                      <span>Stripe Publishable API Key</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-sand-200 text-navy-700 font-mono">
+                        {settings.stripe_mode === "live" ? "pk_live_..." : "pk_test_..."}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyCommand(settings.stripe_publishable_key || "", "stripe_pub")}
+                      className="text-[10px] text-brass-700 hover:underline flex items-center gap-1 font-semibold"
+                    >
+                      {copiedCmd === "stripe_pub" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedCmd === "stripe_pub" ? "Copied" : "Copy Key"}</span>
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={settings.stripe_publishable_key || ""}
+                    onChange={(e) => handleChange("stripe_publishable_key", e.target.value.trim())}
+                    placeholder="pk_test_51..."
+                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950 focus:outline-none focus:border-brass-500"
+                  />
+                  <p className="text-[10px] text-navy-500 mt-1">
+                    Client-facing key used to securely mount the Stripe Payment Element on the storefront checkout page.
+                  </p>
+                </div>
+
+                {/* Secret Key */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+                      <span>Stripe Secret API Key</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-sand-200 text-navy-700 font-mono">
+                        {settings.stripe_mode === "live" ? "sk_live_..." : "sk_test_..."}
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowStripeSecret(!showStripeSecret)}
+                      className="text-[10px] text-navy-600 hover:text-navy-950 flex items-center gap-1 font-semibold"
+                    >
+                      {showStripeSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      <span>{showStripeSecret ? "Hide Secret" : "Reveal Secret"}</span>
+                    </button>
+                  </div>
+                  <input
+                    type={showStripeSecret ? "text" : "password"}
+                    value={settings.stripe_secret_key || ""}
+                    onChange={(e) => handleChange("stripe_secret_key", e.target.value.trim())}
+                    placeholder="sk_test_51..."
+                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950 focus:outline-none focus:border-brass-500"
+                  />
+                  <p className="text-[10px] text-navy-500 mt-1">
+                    Server-side private secret. Stored securely on the backend server; never exposed to browser visitors.
+                  </p>
+                </div>
+
+                {/* Webhook Signing Secret */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-navy-900 flex items-center gap-1.5">
+                      <span>Stripe Webhook Signing Secret</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-sand-200 text-navy-700 font-mono">
+                        whsec_...
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                      className="text-[10px] text-navy-600 hover:text-navy-950 flex items-center gap-1 font-semibold"
+                    >
+                      {showWebhookSecret ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                      <span>{showWebhookSecret ? "Hide" : "Reveal"}</span>
+                    </button>
+                  </div>
+                  <input
+                    type={showWebhookSecret ? "text" : "password"}
+                    value={settings.stripe_webhook_secret || ""}
+                    onChange={(e) => handleChange("stripe_webhook_secret", e.target.value.trim())}
+                    placeholder="whsec_..."
+                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950 focus:outline-none focus:border-brass-500"
+                  />
+                  <p className="text-[10px] text-navy-500 mt-1">
+                    Verifies cryptographic signatures on incoming webhook notifications from Stripe (<code className="font-mono text-[10px]">stripe.webhooks.constructEvent</code>).
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Parameters & Descriptors Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-sand-200">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">
+                  Card Statement Descriptor (Max 22 Chars)
+                </label>
+                <input
+                  type="text"
+                  maxLength={22}
+                  value={settings.stripe_statement_descriptor || "SAN FURNITURE UK"}
+                  onChange={(e) => handleChange("stripe_statement_descriptor", e.target.value.toUpperCase())}
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-bold font-mono text-navy-950 uppercase"
+                />
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Appears on customer bank and credit card statements.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">
+                  Settlement Currency
+                </label>
+                <input
+                  type="text"
+                  readOnly
+                  value="GBP (£) - British Pound Sterling"
+                  className="w-full px-3 py-2 bg-sand-200/70 border border-sand-300 rounded-lg text-xs font-bold text-navy-800 cursor-not-allowed"
+                />
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Locked to GBP pennies adhering to UK statutory e-commerce guidelines.
+                </p>
+              </div>
+            </div>
+
+            {/* Ready-to-Copy Stripe Webhook Configuration Box */}
+            <div className="p-4 rounded-xl bg-sand-100 border border-sand-300 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-xs text-navy-950 flex items-center gap-1.5">
+                  <Terminal className="w-3.5 h-3.5 text-brass-600" />
+                  Stripe Dashboard Webhook Endpoint URL
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/api/webhooks/stripe`;
+                    navigator.clipboard.writeText(webhookUrl);
+                    setCopiedStripeWebhook(true);
+                    setTimeout(() => setCopiedStripeWebhook(false), 2000);
+                  }}
+                  className="text-[11px] font-bold text-brass-700 hover:text-brass-800 flex items-center gap-1"
+                >
+                  {copiedStripeWebhook ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                  <span>{copiedStripeWebhook ? "Endpoint Copied!" : "Copy Webhook URL"}</span>
+                </button>
+              </div>
+              <p className="text-[11px] text-navy-600">
+                In your <strong>Stripe Dashboard &rarr; Developers &rarr; Webhooks</strong>, click <em>Add Endpoint</em> and paste this URL:
+              </p>
+              <div className="p-2.5 rounded-lg bg-navy-950 text-sand-50 font-mono text-xs flex items-center justify-between overflow-x-auto">
+                <span>{typeof window !== "undefined" ? window.location.origin : "https://sanfurniture.com"}/api/webhooks/stripe</span>
+              </div>
+              <p className="text-[10px] text-navy-500">
+                Recommended listening events: <code className="font-mono bg-sand-200 px-1 rounded">payment_intent.succeeded</code>, <code className="font-mono bg-sand-200 px-1 rounded">charge.refunded</code>, <code className="font-mono bg-sand-200 px-1 rounded">payment_intent.payment_failed</code>.
+              </p>
+            </div>
+
           </div>
         )}
 

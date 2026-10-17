@@ -52,20 +52,31 @@ export async function preloadCache(url: string, options?: RequestInit): Promise<
  */
 export function preloadAdminRoutes(): void {
   if (typeof window === "undefined") return;
-  // Delay slightly (250ms) to prioritize current route hydration
-  setTimeout(() => {
+  const runPreload = () => {
     const endpoints = [
-      apiUrl("/api/admin/categories"),
+      apiUrl("/api/admin/metrics"),
       apiUrl("/api/admin/products"),
       apiUrl("/api/admin/orders"),
+      apiUrl("/api/admin/categories"),
       apiUrl("/api/admin/customers"),
       apiUrl("/api/admin/users"),
       apiUrl("/api/admin/reviews"),
+      apiUrl("/api/admin/suppliers"),
+      apiUrl("/api/admin/promotions"),
+      apiUrl("/api/admin/logistics"),
       apiUrl("/api/admin/settings"),
       apiUrl("/api/admin/media"),
+      apiUrl("/api/security/ip-jail"),
+      apiUrl("/api/admin/audit?limit=25"),
     ];
     endpoints.forEach((ep) => preloadCache(ep));
-  }, 250);
+  };
+
+  if ("requestIdleCallback" in window) {
+    (window as any).requestIdleCallback(runPreload, { timeout: 100 });
+  } else {
+    setTimeout(runPreload, 30);
+  }
 }
 
 export async function fetchWithSwr<T>(

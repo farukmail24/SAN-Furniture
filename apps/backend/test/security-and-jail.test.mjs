@@ -82,7 +82,7 @@ test("CloudflareTurnstileService: Accurately validates test tokens and handles m
   // Test pass token
   const passResult = await turnstile.verifyToken(CloudflareTurnstileService.DUMMY_PASS_TOKEN);
   assert.equal(passResult.success, true);
-  assert.equal(passResult.hostname, "sanfurniture.co.uk");
+  assert.equal(passResult.hostname, "sanfurniture.com");
 
   // Test fail token
   const failResult = await turnstile.verifyToken(CloudflareTurnstileService.DUMMY_FAIL_TOKEN);

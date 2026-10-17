@@ -1,14 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Search, ShoppingBag, ShieldCheck, Truck, Menu, X, ArrowRight, User } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import {
+  Search,
+  ShoppingBag,
+  ShieldCheck,
+  Truck,
+  Menu,
+  X,
+  ArrowRight,
+  User,
+  Sparkles,
+  ChevronRight,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import { SearchModal } from "@/components/search/SearchModal";
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { CATALOG_CATEGORIES } from "@/lib/catalog";
 
 export function Header() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { totalCount, openCart } = useCart();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -39,6 +54,18 @@ export function Header() {
       window.removeEventListener("open-search-modal", handleOpenSearch);
     };
   }, []);
+
+  // Prevent body scroll when mobile drawer is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <>
@@ -86,49 +113,34 @@ export function Header() {
             />
           </Link>
 
-          {/* Primary Desktop Category Links */}
+          {/* Primary Desktop Category Links with Instant Hover Prefetch */}
           <nav className="hidden lg:flex items-center gap-6 xl:gap-8 text-sm font-medium text-navy-900">
-            <Link
-              href="/catalog"
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              All Furniture
-            </Link>
-            <Link
-              href="/categories/sofas"
-              prefetch={true}
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              Sofas
-            </Link>
-            <Link
-              href="/categories/armchairs"
-              prefetch={true}
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              Armchairs
-            </Link>
-            <Link
-              href="/categories/dining"
-              prefetch={true}
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              Dining
-            </Link>
-            <Link
-              href="/categories/beds"
-              prefetch={true}
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              Bedroom
-            </Link>
-            <Link
-              href="/categories/living-tables"
-              prefetch={true}
-              className="hover:text-brass-600 transition-colors py-2 border-b-2 border-transparent hover:border-brass-500"
-            >
-              Tables
-            </Link>
+            {[
+              { name: "All Furniture", href: "/catalog" },
+              { name: "Sofas", href: "/categories/sofas" },
+              { name: "Armchairs", href: "/categories/armchairs" },
+              { name: "Dining", href: "/categories/dining" },
+              { name: "Bedroom", href: "/categories/beds" },
+              { name: "Tables", href: "/categories/living-tables" },
+            ].map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  prefetch={true}
+                  onMouseEnter={() => router.prefetch(link.href)}
+                  onTouchStart={() => router.prefetch(link.href)}
+                  className={`py-2 border-b-2 transition-colors ${
+                    isActive
+                      ? "text-brass-600 border-brass-500 font-semibold"
+                      : "border-transparent hover:text-brass-600 hover:border-brass-500"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Search & Basket Actions */}
@@ -185,68 +197,151 @@ export function Header() {
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
+      </header>
+
+      {/* Mobile Navigation Drawer - Native Mobile App Sheet with Framer Motion (Rendered outside header to escape backdrop-filter containing block) */}
+      <AnimatePresence>
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div
-              className="fixed inset-0 bg-navy-950/60 backdrop-blur-sm"
+          <div className="fixed inset-0 z-[90] lg:hidden">
+            {/* Backdrop with fade-in animation */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="fixed inset-0 bg-navy-950/70 backdrop-blur-sm"
               onClick={() => setIsMobileMenuOpen(false)}
+              aria-hidden="true"
             />
-            <div className="fixed inset-y-0 left-0 w-4/5 max-w-sm bg-sand-50 p-6 flex flex-col justify-between shadow-2xl">
-              <div>
+
+            {/* Native Mobile App Sheet / Drawer */}
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 280 }}
+              className="fixed inset-y-0 left-0 w-[86%] max-w-sm bg-[#FAF8F5] flex flex-col justify-between shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] z-[95] border-r border-sand-300 overflow-y-auto"
+            >
+              <div className="p-5 sm:p-6">
+                {/* Drawer Header */}
                 <div className="flex items-center justify-between pb-4 border-b border-sand-200">
-                  <img
-                    src="/SanFurnitureLogo.png"
-                    alt="SAN Furniture"
-                    className="h-9 w-auto object-contain"
-                  />
+                  <Link
+                    href="/"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center"
+                  >
+                    <img
+                      src="/SanFurnitureLogo.png"
+                      alt="SAN Furniture"
+                      className="h-10 w-auto object-contain"
+                    />
+                  </Link>
                   <button
                     type="button"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    aria-label="Close mobile menu"
-                    className="p-1 text-navy-600 hover:text-navy-950"
+                    aria-label="Close mobile navigation"
+                    className="w-9 h-9 rounded-full bg-sand-200/80 hover:bg-sand-300 text-navy-800 flex items-center justify-center transition-transform active:scale-90"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <nav className="mt-6 flex flex-col gap-4 text-base font-semibold text-navy-950">
-                  <Link
-                    href="/catalog"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-between py-2 border-b border-sand-200"
-                  >
-                    <span>All Furniture Collections</span>
-                    <ArrowRight className="w-4 h-4 text-navy-400" />
-                  </Link>
-                  {CATALOG_CATEGORIES.map((cat) => (
+                {/* Quick Search Tap Target */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsSearchOpen(true);
+                  }}
+                  className="w-full mt-4 flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-sand-100/90 border border-sand-200 text-xs text-navy-700 active:scale-[0.98] transition-all"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Search className="w-4 h-4 text-brass-600" />
+                    <span>Search furniture...</span>
+                  </div>
+                  <kbd className="px-1.5 py-0.5 text-[10px] bg-sand-50 rounded border border-sand-300 text-navy-500 font-mono">
+                    ⌘K
+                  </kbd>
+                </button>
+
+                {/* Navigation Links */}
+                <div className="mt-6">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-navy-500 mb-2 px-1">
+                    Collections
+                  </div>
+                  <nav className="flex flex-col gap-1 text-sm font-semibold text-navy-950">
                     <Link
-                      key={cat.id}
-                      href={`/categories/${cat.handle}`}
+                      href="/catalog"
+                      prefetch={true}
+                      onTouchStart={() => router.prefetch("/catalog")}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center justify-between py-2 text-navy-800 hover:text-brass-600"
+                      className="flex items-center justify-between p-3 rounded-xl bg-sand-100/70 border border-sand-200/80 hover:bg-sand-200/70 text-navy-950 active:scale-[0.99] transition-all"
                     >
-                      <span>{cat.name}</span>
-                      <ArrowRight className="w-4 h-4 text-sand-400" />
+                      <span className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-brass-600" />
+                        <span>All Furniture Collections</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-navy-400" />
                     </Link>
-                  ))}
-                </nav>
+
+                    {CATALOG_CATEGORIES.map((cat) => (
+                      <Link
+                        key={cat.id}
+                        href={`/categories/${cat.handle}`}
+                        prefetch={true}
+                        onTouchStart={() => router.prefetch(`/categories/${cat.handle}`)}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-3 py-2.5 rounded-xl text-navy-800 hover:text-brass-700 hover:bg-sand-100/50 active:scale-[0.99] transition-all"
+                      >
+                        <span>{cat.name}</span>
+                        <ChevronRight className="w-4 h-4 text-sand-400" />
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+
+                {/* Account / Client Portal Quick Card */}
+                <div className="mt-6 pt-5 border-t border-sand-200">
+                  <Link
+                    href={mounted && customer ? "/account" : "/account/login"}
+                    prefetch={true}
+                    onTouchStart={() => router.prefetch(customer ? "/account" : "/account/login")}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center justify-between p-3 rounded-xl bg-navy-950 text-sand-50 hover:bg-navy-900 active:scale-[0.98] transition-all shadow-sm"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-sand-100/10 flex items-center justify-center text-brass-400">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-semibold leading-tight">
+                          {mounted && customer?.firstName ? customer.firstName : "Client Portal"}
+                        </p>
+                        <p className="text-[10px] text-sand-400">
+                          {mounted && customer ? "View Orders & Account" : "Sign In / Register"}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-sand-400" />
+                  </Link>
+                </div>
               </div>
 
-              <div className="pt-6 border-t border-sand-200 space-y-3 text-xs text-navy-600">
-                <div className="flex items-center gap-2 text-forest-700 font-medium">
-                  <Truck className="w-4 h-4" />
+              {/* Bottom UK Guarantees & Compliance */}
+              <div className="p-5 sm:p-6 border-t border-sand-200 bg-sand-100/50 space-y-2.5 text-xs text-navy-700">
+                <div className="flex items-center gap-2 text-forest-800 font-medium text-[11px]">
+                  <Truck className="w-4 h-4 shrink-0 text-forest-700" />
                   <span>Free UK White Glove Delivery over £500</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-brass-600" />
-                  <span>UK Fire Safety Compliant (BS 5852)</span>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <ShieldCheck className="w-4 h-4 shrink-0 text-brass-600" />
+                  <span>BS 5852 Fire Safety Statutory Certified</span>
                 </div>
               </div>
-            </div>
+            </motion.aside>
           </div>
         )}
-      </header>
+      </AnimatePresence>
 
       {/* Global Interactive Modals */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

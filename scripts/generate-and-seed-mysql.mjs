@@ -272,7 +272,7 @@ INSERT INTO \`order_po_dispatches\` (\`id\`, \`po_number\`, \`order_id\`, \`supp
 -- ADMIN AUDIT LOGS
 INSERT INTO \`admin_audit_logs\` (\`id\`, \`actor\`, \`action\`, \`resource\`, \`details_json\`, \`ip_address\`) VALUES
 ('log_001', 'system_initializer', 'SEED_CATALOG', 'database/san_furniture', '{"tables_initialized": 9, "products_count": 8, "categories_count": 5}', '127.0.0.1'),
-('log_002', 'ops_admin@sanfurniture.co.uk', 'INITIALIZE_MARGINS', 'margin_guard', '{"floor_margin_pct": 15, "default_markup_pct": 45}', '127.0.0.1');
+('log_002', 'ops_admin@sanfurniture.com', 'INITIALIZE_MARGINS', 'margin_guard', '{"floor_margin_pct": 15, "default_markup_pct": 45}', '127.0.0.1');
 
 -- COMPLETED SAN FURNITURE MYSQL SCHEMA & SEED
 `;

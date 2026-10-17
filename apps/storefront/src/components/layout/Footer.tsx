@@ -73,7 +73,7 @@ export function Footer() {
           <div className="mt-6 text-xs text-sand-400">
             <p className="font-medium text-sand-200">Customer Support (UK)</p>
             <p className="mt-1">Monday – Friday: 09:00 – 18:00 GMT</p>
-            <p>support@sanfurniture.co.uk</p>
+            <p>support@sanfurniture.com</p>
           </div>
         </div>
 

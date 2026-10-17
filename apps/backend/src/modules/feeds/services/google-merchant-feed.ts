@@ -34,7 +34,7 @@ const CATEGORY_MAP: Record<string, string> = {
 export class GoogleMerchantFeedGenerator {
   private baseUrl: string;
 
-  constructor(baseUrl = "https://sanfurniture.co.uk") {
+  constructor(baseUrl = "https://sanfurniture.com") {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 

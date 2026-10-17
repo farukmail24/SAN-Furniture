@@ -26,7 +26,7 @@ async function runVerification() {
   const adminLogin = await fetch("http://localhost:9000/api/admin/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "admin@sanfurniture.co.uk", password: "AdminPassword2026!" }),
+    body: JSON.stringify({ email: "admin@sanfurniture.com", password: "AdminPassword2026!" }),
   });
   const adminData = await adminLogin.json();
   if (adminLogin.status === 200 && adminData.token) {

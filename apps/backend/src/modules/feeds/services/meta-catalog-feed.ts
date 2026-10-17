@@ -3,7 +3,7 @@ import { type FeedProductItem } from "./google-merchant-feed.js";
 export class MetaCatalogFeedGenerator {
   private baseUrl: string;
 
-  constructor(baseUrl = "https://sanfurniture.co.uk") {
+  constructor(baseUrl = "https://sanfurniture.com") {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 

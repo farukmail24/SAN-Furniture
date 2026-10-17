@@ -3,8 +3,18 @@ import path from "node:path";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  devIndicators: {
+    position: "bottom-right",
+  },
   outputFileTracingRoot: path.resolve(process.cwd(), "../../"),
   transpilePackages: ["@san-furniture/types", "@san-furniture/config"],
+  experimental: {
+    staleTimes: {
+      dynamic: 180,
+      static: 300,
+    },
+    scrollRestoration: true,
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -14,7 +24,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "assets.sanfurniture.co.uk"
+        hostname: "assets.sanfurniture.com"
       }
     ]
   },
@@ -28,13 +38,14 @@ const nextConfig: NextConfig = {
   },
   // Hardened response security headers
   async headers() {
+    const isProd = process.env.NODE_ENV === "production";
     return [
       {
         source: "/(.*)",
         headers: [
           {
             key: "X-Frame-Options",
-            value: "DENY"
+            value: isProd ? "DENY" : "SAMEORIGIN"
           },
           {
             key: "X-Content-Type-Options",

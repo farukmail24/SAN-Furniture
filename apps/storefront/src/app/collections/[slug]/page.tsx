@@ -58,8 +58,8 @@ export async function generateMetadata({
     description: collection.metaDescription,
     alternates: {
       canonical: isIndexable
-        ? `https://sanfurniture.co.uk/collections/${collection.slug}`
-        : `https://sanfurniture.co.uk/categories/${collection.categoryHandle}`,
+        ? `https://sanfurniture.com/collections/${collection.slug}`
+        : `https://sanfurniture.com/categories/${collection.categoryHandle}`,
     },
     robots: {
       index: isIndexable,
@@ -68,7 +68,7 @@ export async function generateMetadata({
     openGraph: {
       title: collection.title,
       description: collection.metaDescription,
-      url: `https://sanfurniture.co.uk/collections/${collection.slug}`,
+      url: `https://sanfurniture.com/collections/${collection.slug}`,
       type: "website",
     },
   };
@@ -102,19 +102,19 @@ export default async function ProgrammaticCollectionPage({
         "@type": "ListItem",
         position: 1,
         name: "Home",
-        item: "https://sanfurniture.co.uk",
+        item: "https://sanfurniture.com",
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "Collections",
-        item: "https://sanfurniture.co.uk/catalog",
+        item: "https://sanfurniture.com/catalog",
       },
       {
         "@type": "ListItem",
         position: 3,
         name: collection.headline,
-        item: `https://sanfurniture.co.uk/collections/${collection.slug}`,
+        item: `https://sanfurniture.com/collections/${collection.slug}`,
       },
     ],
   };

@@ -2,9 +2,11 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Filter, X, ChevronDown, Truck, ShieldCheck, Sparkles, SlidersHorizontal } from "lucide-react";
 import { type CatalogProduct, type ProductCategory } from "@/lib/catalog";
 import { formatGBP } from "@san-furniture/types";
+import { StaggerContainer, StaggerItem, ScrollReveal } from "@/components/motion/MotionWrapper";
 
 interface CategoryViewProps {
   category?: ProductCategory;
@@ -13,6 +15,7 @@ interface CategoryViewProps {
 }
 
 export function CategoryView({ category, initialProducts, allCategories }: CategoryViewProps) {
+  const router = useRouter();
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedDeliveryTiers, setSelectedDeliveryTiers] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
@@ -83,7 +86,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
   const hasActiveFilters = selectedMaterials.length > 0 || selectedDeliveryTiers.length > 0 || priceRange !== "all";
 
   return (
-    <div className="py-6 sm:py-8 max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+    <div className="w-full px-0">
       {/* Category Header Banner */}
       <div className="mb-10 pb-8 border-b border-sand-200">
         <div className="flex items-center gap-2 text-xs text-navy-500 mb-3">
@@ -356,18 +359,24 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
             </div>
           ) : (
             /* Product Cards Grid (App-style 2-column on mobile, responsive multi-column on desktop) */
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+            <StaggerContainer
+              key={`${sortBy}-${priceRange}-${selectedMaterials.join("-")}-${selectedDeliveryTiers.join("-")}`}
+              className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
+            >
               {filteredProducts.map((product) => {
                 const klarnaMonthly = Math.round(product.pricePennies / 3);
 
                 return (
-                  <article
-                    key={product.id}
-                    className="group flex flex-col rounded-2xl overflow-hidden bg-sand-100/80 border border-sand-200/90 hover:border-sand-300 transition-all shadow-sm hover:shadow-card active:scale-[0.99]"
-                  >
+                  <StaggerItem key={product.id}>
+                    <article
+                      className="group flex flex-col rounded-2xl overflow-hidden bg-sand-100/80 border border-sand-200/90 hover:border-sand-300 transition-all shadow-sm hover:shadow-card active:scale-[0.99] h-full"
+                    >
                     {/* Product Image */}
                     <Link
                       href={`/products/${product.handle}`}
+                      prefetch={true}
+                      onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
+                      onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
                       className="relative block aspect-[4/3] bg-sand-200 overflow-hidden"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -390,12 +399,17 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                     <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between text-[10px] sm:text-[11px] text-navy-500 mb-1">
-                          <span className="capitalize truncate max-w-[80px] sm:max-w-none">{product.specs.material.replace("_", " ")}</span>
-                          <span className="shrink-0">{product.specs.width_cm}cm W</span>
+                          <span className="capitalize truncate max-w-[80px] sm:max-w-none">{product.specs?.material ? product.specs.material.replace("_", " ") : "Hardwood"}</span>
+                          <span className="shrink-0">{product.specs?.width_cm ?? 120}cm W</span>
                         </div>
 
                         <h3 className="font-display font-bold text-xs sm:text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1">
-                          <Link href={`/products/${product.handle}`}>
+                          <Link
+                            href={`/products/${product.handle}`}
+                            prefetch={true}
+                            onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
+                            onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
+                          >
                             {product.title}
                           </Link>
                         </h3>
@@ -427,6 +441,9 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                         {/* CTA Link */}
                         <Link
                           href={`/products/${product.handle}`}
+                          prefetch={true}
+                          onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
+                          onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
                           className="mt-2 block w-full text-center py-1.5 sm:py-2 rounded-lg bg-navy-950 hover:bg-navy-900 active:scale-95 text-sand-50 text-[11px] sm:text-xs font-semibold transition-all shadow-sm"
                         >
                           View Piece
@@ -434,10 +451,11 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                       </div>
                     </div>
                   </article>
-                );
-              })}
-            </div>
-          )}
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        )}
         </section>
 
       </div>

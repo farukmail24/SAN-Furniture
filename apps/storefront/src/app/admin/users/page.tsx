@@ -387,7 +387,7 @@ export default function AdminUsersPage() {
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
-                  placeholder="sophie.mercer@sanfurniture.co.uk"
+                  placeholder="sophie.mercer@sanfurniture.com"
                 />
               </div>
 

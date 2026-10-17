@@ -54,7 +54,7 @@ async function run() {
   `);
 
   // 3. Seed Default Super Admin
-  const adminEmail = "admin@sanfurniture.co.uk";
+  const adminEmail = "admin@sanfurniture.com";
   const [existing] = await connection.query("SELECT id FROM admin_users WHERE email = ?", [adminEmail]);
 
   const defaultPassword = "AdminPassword2026!";

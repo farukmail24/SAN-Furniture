@@ -51,9 +51,22 @@ export function ProductActions({ product }: ProductActionsProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
-  // Pick fabric swatches based on product material or default to none
-  const swatches = FABRIC_SWATCHES[product.specs.material] || FABRIC_SWATCHES.boucle;
-  const [selectedSwatch, setSelectedSwatch] = useState(swatches[0]);
+  const [selectedVariant, setSelectedVariant] = useState(
+    product.variants && product.variants.length > 0 ? product.variants[0] : null
+  );
+
+  // Check if product is upholstered (boucle, velvet, linen, leather)
+  const isUpholstered = Boolean(
+    product.specs?.material && ["boucle", "velvet", "linen", "leather"].includes(product.specs.material)
+  );
+
+  // Pick fabric swatches only if upholstered
+  const swatches = isUpholstered
+    ? (FABRIC_SWATCHES[product.specs.material] || FABRIC_SWATCHES.boucle)
+    : [];
+  const [selectedSwatch, setSelectedSwatch] = useState<{ name: string; hex: string; desc: string } | null>(
+    swatches.length > 0 ? swatches[0] : null
+  );
 
   // Observer for sticky mobile bottom CTA
   const mainCtaRef = useRef<HTMLDivElement>(null);
@@ -74,16 +87,24 @@ export function ProductActions({ product }: ProductActionsProps) {
     return () => observer.disconnect();
   }, []);
 
+  const effectivePricePennies = selectedVariant
+    ? (selectedVariant.price_pennies ?? (product.pricePennies + (selectedVariant.price_modifier_pennies || 0)))
+    : product.pricePennies;
+
   const handleAddToCart = () => {
     addItem(product, quantity, {
-      fabric: product.specs.material,
-      finish: selectedSwatch.name,
+      fabric: product.specs?.material,
+      finish: selectedVariant
+        ? selectedVariant.title
+        : selectedSwatch
+        ? selectedSwatch.name
+        : product.specs?.color || "Standard Finish",
     });
     setIsAdded(true);
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  const klarnaMonthlyPennies = Math.round(product.pricePennies / 3);
+  const klarnaMonthlyPennies = Math.round(effectivePricePennies / 3);
 
   return (
     <div className="space-y-6">
@@ -91,11 +112,11 @@ export function ProductActions({ product }: ProductActionsProps) {
       <div>
         <div className="flex items-baseline gap-3 mb-2">
           <span className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-navy-950">
-            {formatGBP(product.pricePennies)}
+            {formatGBP(effectivePricePennies)}
           </span>
           {product.compareAtPricePennies && (
             <span className="text-base sm:text-lg text-navy-400 line-through">
-              {formatGBP(product.compareAtPricePennies)}
+              {formatGBP(product.compareAtPricePennies + (selectedVariant?.price_modifier_pennies || 0))}
             </span>
           )}
           <span className="text-xs font-semibold text-sand-50 bg-forest-800 px-2.5 py-0.5 rounded-full">
@@ -117,39 +138,103 @@ export function ProductActions({ product }: ProductActionsProps) {
         </div>
       </div>
 
-      {/* Fabric / Finish Swatches Selector */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-bold text-navy-950 uppercase tracking-wide">
-            Finish / Shade: <span className="font-medium text-navy-700">{selectedSwatch.name}</span>
-          </span>
-          <span className="text-[11px] text-navy-500">{selectedSwatch.desc}</span>
-        </div>
+      {/* Product Variations / Sizes Selector */}
+      {product.variants && product.variants.length > 0 && (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-navy-950 uppercase tracking-wide">
+              Option / Size: <span className="font-medium text-navy-700">{selectedVariant?.title}</span>
+            </span>
+            {selectedVariant?.sku && (
+              <span className="text-[11px] font-mono text-navy-500">SKU: {selectedVariant.sku}</span>
+            )}
+          </div>
 
-        <div className="flex items-center gap-3">
-          {swatches.map((swatch) => (
-            <button
-              key={swatch.name}
-              type="button"
-              onClick={() => setSelectedSwatch(swatch)}
-              aria-label={`Select ${swatch.name}`}
-              className={`group relative flex items-center gap-2 p-1.5 rounded-lg border transition-all text-xs font-medium ${
-                selectedSwatch.name === swatch.name
-                  ? "border-navy-950 bg-sand-200/60 ring-2 ring-brass-500/50"
-                  : "border-sand-300 hover:border-sand-400 bg-sand-50"
-              }`}
-            >
-              <span
-                className="w-6 h-6 rounded-full border border-sand-400 shadow-inner flex-shrink-0"
-                style={{ backgroundColor: swatch.hex }}
-              />
-              <span className="text-navy-900 hidden sm:inline pr-1">
-                {swatch.name.split(" ")[0]}
-              </span>
-            </button>
-          ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {product.variants.map((v) => {
+              const isSelected = selectedVariant?.id === v.id;
+              const vPrice = v.price_pennies ?? (product.pricePennies + (v.price_modifier_pennies || 0));
+              const mod = v.price_modifier_pennies || 0;
+
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setSelectedVariant(v)}
+                  className={`flex items-center justify-between p-2.5 rounded-xl border text-xs text-left transition-all ${
+                    isSelected
+                      ? "border-navy-950 bg-sand-200/80 ring-2 ring-brass-500/50 shadow-xs"
+                      : "border-sand-300 hover:border-sand-400 bg-sand-50"
+                  }`}
+                >
+                  <div className="pr-2">
+                    <p className={`font-semibold ${isSelected ? "text-navy-950 font-bold" : "text-navy-800"}`}>
+                      {v.title}
+                    </p>
+                    <p className="text-[10px] text-navy-500">
+                      {v.stock_quantity > 0 ? "In Stock (Dispatch 2-5 Days)" : "Pre-order"}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <span className="font-bold text-navy-950">{formatGBP(vPrice)}</span>
+                    {mod !== 0 && (
+                      <span className="block text-[10px] text-brass-700 font-medium">
+                        {mod > 0 ? `+${formatGBP(mod)}` : `-${formatGBP(Math.abs(mod))}`}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Fabric / Finish Swatches Selector - Only for upholstered furniture */}
+      {(!product.variants || product.variants.length === 0) && isUpholstered && selectedSwatch && (
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-navy-950 uppercase tracking-wide">
+              Finish / Shade: <span className="font-medium text-navy-700">{selectedSwatch.name}</span>
+            </span>
+            <span className="text-[11px] text-navy-500">{selectedSwatch.desc}</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {swatches.map((swatch) => (
+              <button
+                key={swatch.name}
+                type="button"
+                onClick={() => setSelectedSwatch(swatch)}
+                aria-label={`Select ${swatch.name}`}
+                className={`group relative flex items-center gap-2 p-1.5 rounded-lg border transition-all text-xs font-medium ${
+                  selectedSwatch.name === swatch.name
+                    ? "border-navy-950 bg-sand-200/60 ring-2 ring-brass-500/50"
+                    : "border-sand-300 hover:border-sand-400 bg-sand-50"
+                }`}
+              >
+                <span
+                  className="w-6 h-6 rounded-full border border-sand-400 shadow-inner flex-shrink-0"
+                  style={{ backgroundColor: swatch.hex }}
+                />
+                <span className="text-navy-900 hidden sm:inline pr-1">
+                  {swatch.name.split(" ")[0]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Casegoods / Non-upholstered Finish Display */}
+      {(!product.variants || product.variants.length === 0) && !isUpholstered && product.specs?.color && (
+        <div className="flex items-center gap-2 text-xs py-1">
+          <span className="font-bold text-navy-950 uppercase tracking-wide">Finish / Style:</span>
+          <span className="px-3 py-1 bg-sand-100 rounded-md font-semibold text-navy-900 border border-sand-300 shadow-2xs">
+            {product.specs.color}
+          </span>
+        </div>
+      )}
 
       {/* Quantity Selector & Primary CTA Button */}
       <div ref={mainCtaRef} className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
@@ -192,7 +277,7 @@ export function ProductActions({ product }: ProductActionsProps) {
           ) : (
             <>
               <ShoppingBag className="w-5 h-5" />
-              <span>Add to Basket • {formatGBP(product.pricePennies * quantity)}</span>
+              <span>Add to Basket • {formatGBP(effectivePricePennies * quantity)}</span>
             </>
           )}
         </button>
@@ -243,7 +328,7 @@ export function ProductActions({ product }: ProductActionsProps) {
                 {product.title}
               </span>
               <span className="text-xs font-display font-bold text-brass-600">
-                {formatGBP(product.pricePennies)}
+                {formatGBP(effectivePricePennies)}
               </span>
             </div>
           </div>

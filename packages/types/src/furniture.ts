@@ -94,3 +94,18 @@ export const FurnitureSpecsSchema = z.object({
   lead_time_days: z.number().int().positive().default(5)
 });
 export type FurnitureSpecs = z.infer<typeof FurnitureSpecsSchema>;
+
+/**
+ * Product Variant Schema for sizes, colors, finishes & doors
+ */
+export const ProductVariantSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  sku: z.string().optional(),
+  price_pennies: z.number().int().positive().optional(),
+  price_modifier_pennies: z.number().int().default(0),
+  options: z.record(z.string()).optional(),
+  stock_quantity: z.number().int().default(10),
+  thumbnail_url: z.string().optional()
+});
+export type ProductVariant = z.infer<typeof ProductVariantSchema>;

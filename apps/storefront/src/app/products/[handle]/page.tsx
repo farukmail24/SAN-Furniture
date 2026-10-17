@@ -22,6 +22,7 @@ import { DimensionsClearance } from "@/components/product/DimensionsClearance";
 import { PostcodeEstimator } from "@/components/product/PostcodeEstimator";
 import { ProductActions } from "@/components/product/ProductActions";
 import { formatGBP } from "@san-furniture/types";
+import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrapper";
 
 interface ProductPageProps {
   params: Promise<{
@@ -52,12 +53,12 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     title: `${product.title} | Luxury UK Furniture | SAN Furniture`,
     description: product.description,
     alternates: {
-      canonical: `https://sanfurniture.co.uk/products/${product.handle}`,
+      canonical: `https://sanfurniture.com/products/${product.handle}`,
     },
     openGraph: {
       title: `${product.title} | SAN Furniture UK`,
       description: product.description,
-      url: `https://sanfurniture.co.uk/products/${product.handle}`,
+      url: `https://sanfurniture.com/products/${product.handle}`,
       images: [
         {
           url: product.thumbnailUrl,
@@ -101,7 +102,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     category: category ? category.name : "Furniture",
     offers: {
       "@type": "Offer",
-      url: `https://sanfurniture.co.uk/products/${product.handle}`,
+      url: `https://sanfurniture.com/products/${product.handle}`,
       priceCurrency: "GBP",
       price: (product.pricePennies / 100).toFixed(2),
       priceValidUntil: "2027-12-31",
@@ -176,12 +177,22 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left Column: Image Gallery (7 cols on lg) */}
-          <div className="lg:col-span-7">
-            <ProductGallery images={product.images} title={product.title} />
-          </div>
+          <ScrollReveal direction="scale" duration={0.55} className="lg:col-span-7">
+            <ProductGallery
+              images={
+                product.thumbnailUrl
+                  ? [
+                      product.thumbnailUrl,
+                      ...(product.images || []).filter((img) => img && img !== product.thumbnailUrl),
+                    ]
+                  : product.images || []
+              }
+              title={product.title}
+            />
+          </ScrollReveal>
 
           {/* Right Column: Title, Subtitle, Price & Actions (5 cols on lg) */}
-          <div className="lg:col-span-5 space-y-6">
+          <ScrollReveal direction="up" delay={0.08} duration={0.55} className="lg:col-span-5 space-y-6">
             <div>
               {/* Category & Status Pill */}
               <div className="flex items-center gap-2 mb-2">
@@ -218,7 +229,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 {product.description}
               </p>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
 
         {/* Technical Widgets Section: Dimensions Visualizer & Postcode Estimator */}
@@ -238,18 +249,18 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Dimensions & Doorway Clearance Visualizer */}
             <DimensionsClearance
-              widthCm={product.specs.width_cm}
-              heightCm={product.specs.height_cm}
-              depthCm={product.specs.depth_cm}
-              seatHeightCm={product.specs.seat_height_cm}
-              weightKg={product.specs.weight_kg}
-              doorwayClearanceMinCm={product.specs.doorway_clearance_min_cm}
+              widthCm={product.specs?.width_cm ?? 180}
+              heightCm={product.specs?.height_cm ?? 215}
+              depthCm={product.specs?.depth_cm ?? 60}
+              seatHeightCm={product.specs?.seat_height_cm ?? undefined}
+              weightKg={product.specs?.weight_kg ?? 100}
+              doorwayClearanceMinCm={product.specs?.doorway_clearance_min_cm ?? 65}
             />
 
             {/* UK Live Postcode Delivery Estimator */}
             <PostcodeEstimator
-              deliveryTier={product.specs.delivery_tier}
-              leadTimeDays={product.specs.lead_time_days}
+              deliveryTier={product.specs?.delivery_tier || "two_man_white_glove"}
+              leadTimeDays={product.specs?.lead_time_days ?? 7}
             />
           </div>
         </div>
@@ -265,23 +276,23 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Upholstery / Primary Material</span>
                 <span className="font-semibold text-navy-950 capitalize">
-                  {product.specs.material}
+                  {product.specs?.material ? product.specs.material.replace(/_/g, " ") : "Engineered Hardwood"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Frame & Internal Structure</span>
                 <span className="font-semibold text-navy-950 capitalize">
-                  {product.specs.frame_material.replace(/_/g, " ")}
+                  {product.specs?.frame_material ? product.specs.frame_material.replace(/_/g, " ") : "Engineered Hardwood"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Color / Finish</span>
-                <span className="font-semibold text-navy-950">{product.specs.color}</span>
+                <span className="font-semibold text-navy-950">{product.specs?.color || "Standard Finish"}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Assembly Requirement</span>
                 <span className="font-semibold text-navy-950">
-                  {product.specs.assembly_required
+                  {product.specs?.assembly_required
                     ? `Assembly Required (~${product.specs.assembly_time_mins || 20} mins)`
                     : "Fully Assembled (No assembly needed)"}
                 </span>
@@ -293,19 +304,19 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 <span className="text-navy-500">UK Fire Safety Standard</span>
                 <span className="font-semibold text-forest-800 flex items-center gap-1">
                   <FileCheck2 className="w-3.5 h-3.5" />
-                  {product.specs.fire_safety.standard}
+                  {product.specs?.fire_safety?.standard || "BS 5852 / UK Statutory Timber Compliance"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Fire Certificate Reference</span>
                 <span className="font-mono font-semibold text-navy-950">
-                  {product.specs.fire_safety.certificate_ref}
+                  {product.specs?.fire_safety?.certificate_ref || "BS-UK-STATUTORY"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">Regulatory Fire Label Attached</span>
                 <span className="font-semibold text-navy-950">
-                  {product.specs.fire_safety.label_attached ? "Yes (UK Statutory)" : "Exempt"}
+                  {product.specs?.fire_safety?.label_attached ? "Yes (UK Statutory)" : "Exempt"}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
@@ -320,7 +331,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
         {/* Curated Related Furniture Grid */}
         {relatedProducts.length > 0 && (
-          <div className="mt-16 pt-12 border-t border-sand-200">
+          <ScrollReveal direction="up" className="mt-16 pt-12 border-t border-sand-200">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-widest text-brass-600 block mb-1">
@@ -339,13 +350,14 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+            <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               {relatedProducts.map((item) => (
-                <Link
-                  key={item.id}
-                  href={`/products/${item.handle}`}
-                  className="group rounded-xl border border-sand-200 bg-sand-50 overflow-hidden hover:shadow-lg transition-all"
-                >
+                <StaggerItem key={item.id}>
+                  <Link
+                    href={`/products/${item.handle}`}
+                    prefetch={true}
+                    className="group rounded-xl border border-sand-200 bg-sand-50 overflow-hidden hover:shadow-lg transition-all block h-full"
+                  >
                   <div className="relative aspect-[4/3] bg-sand-200 overflow-hidden">
                     <img
                       src={item.thumbnailUrl}
@@ -363,10 +375,11 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     </div>
                   </div>
                 </Link>
-              ))}
-            </div>
-          </div>
-        )}
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        </ScrollReveal>
+      )}
       </div>
     </div>
   );

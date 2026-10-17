@@ -30,7 +30,7 @@ async function migrateAdminSuite() {
     { key: "company_number", val: "14289123", cat: "legal", desc: "Companies House Registration" },
     { key: "vat_number", val: "GB 438 9123 76", cat: "legal", desc: "HMRC VAT Registration Number" },
     { key: "registered_address", val: "48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom", cat: "legal", desc: "Official Registered Office" },
-    { key: "support_email", val: "concierge@sanfurniture.co.uk", cat: "contact", desc: "Customer Support Email" },
+    { key: "support_email", val: "concierge@sanfurniture.com", cat: "contact", desc: "Customer Support Email" },
     { key: "support_phone", val: "+44 (0) 20 7946 0912", cat: "contact", desc: "Customer Phone Line" },
     { key: "free_shipping_threshold_pennies", val: "50000", cat: "logistics", desc: "Free 2-Man delivery threshold (£500.00)" },
     { key: "standard_delivery_fee_pennies", val: "4900", cat: "logistics", desc: "Standard parcel / pallet rate (£49.00)" },

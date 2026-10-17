@@ -184,7 +184,7 @@ test("SAN FURNITURE E2E LAUNCH VERIFICATION: All 11 Phases Pass Acceptance Crite
   const capi = new MetaConversionsApiService();
   const capiEvent = capi.buildEventPayload(
     "Purchase",
-    "https://sanfurniture.co.uk/checkout/success",
+    "https://sanfurniture.com/checkout/success",
     "dedup_launch_01",
     { email: "eleanor@example.co.uk", postcode: "SW1A 1AA" },
     { currency: "GBP", value: 1299.0 }
@@ -195,7 +195,7 @@ test("SAN FURNITURE E2E LAUNCH VERIFICATION: All 11 Phases Pass Acceptance Crite
 
   // PHASE 7: Programmatic SEO & Thin Content Guard
   console.log("[7/11] Verifying Programmatic SEO & Thin Content Guard...");
-  const seoEngine = new ProgrammaticSeoEngine("https://sanfurniture.co.uk", 2);
+  const seoEngine = new ProgrammaticSeoEngine("https://sanfurniture.com", 2);
   const healthyEval = seoEngine.evaluateCollection(PROGRAMMATIC_COLLECTIONS[0], [
     { categoryId: "cat_sofas", specs: { material: "boucle" } },
     { categoryId: "cat_sofas", specs: { material: "boucle" } },

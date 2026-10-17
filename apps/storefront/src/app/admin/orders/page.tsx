@@ -633,7 +633,7 @@ export default function AdminOrdersPage() {
               {/* Statutory Footnote */}
               <div className="pt-6 border-t border-sand-200 text-[10px] text-navy-500 text-center space-y-1">
                 <p>All upholstered items comply with the Furniture and Furnishings (Fire Safety) Regulations 1988 (BS 5852).</p>
-                <p>Thank you for choosing SAN Furniture &bull; Customer Concierge: concierge@sanfurniture.co.uk</p>
+                <p>Thank you for choosing SAN Furniture &bull; Customer Concierge: concierge@sanfurniture.com</p>
               </div>
             </div>
           </div>

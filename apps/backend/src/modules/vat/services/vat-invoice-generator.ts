@@ -175,9 +175,8 @@ export class VatInvoiceGenerator {
         <th>SKU</th>
         <th>Description</th>
         <th class="text-right">Qty</th>
-        <th class="text-right">Net</th>
-        <th class="text-right">VAT (20%)</th>
-        <th class="text-right">Gross Total</th>
+        <th class="text-right">Unit Price (Inc. VAT)</th>
+        <th class="text-right">Amount (Inc. VAT)</th>
       </tr>
     </thead>
     <tbody>
@@ -185,11 +184,10 @@ export class VatInvoiceGenerator {
         .map(
           (it) => `
         <tr>
-          <td style="font-family: monospace;">${it.sku}</td>
-          <td>${it.title}</td>
+          <td style="font-family: monospace; color: #4F6D7A;">${it.sku}</td>
+          <td><strong>${it.title}</strong></td>
           <td class="text-right">${it.quantity}</td>
-          <td class="text-right">${it.formattedNet}</td>
-          <td class="text-right">${it.formattedVat}</td>
+          <td class="text-right">${formatGBP(Math.round(it.grossTotalPennies / it.quantity))}</td>
           <td class="text-right"><strong>${it.formattedGross}</strong></td>
         </tr>`
         )
@@ -197,18 +195,16 @@ export class VatInvoiceGenerator {
       ${
         invoice.shippingGrossPennies > 0
           ? `<tr>
-        <td style="font-family: monospace;">SHIPPING-UK</td>
-        <td>UK Delivery & Logistics</td>
+        <td style="font-family: monospace; color: #4F6D7A;">SHIPPING-UK</td>
+        <td><strong>UK Delivery &amp; Logistics</strong></td>
         <td class="text-right">1</td>
-        <td class="text-right">${calculateNetAndVat(invoice.shippingGrossPennies).formattedNet}</td>
-        <td class="text-right">${calculateNetAndVat(invoice.shippingGrossPennies).formattedVat}</td>
+        <td class="text-right">${formatGBP(invoice.shippingGrossPennies)}</td>
         <td class="text-right"><strong>${formatGBP(invoice.shippingGrossPennies)}</strong></td>
       </tr>`
           : `<tr>
-        <td style="font-family: monospace;">SHIPPING-FREE</td>
-        <td>Free 2-Man White Glove Delivery (Order &gt; £500)</td>
+        <td style="font-family: monospace; color: #4F6D7A;">SHIPPING-FREE</td>
+        <td><strong>Free 2-Man White Glove Delivery (Order &gt; £500)</strong></td>
         <td class="text-right">1</td>
-        <td class="text-right">£0.00</td>
         <td class="text-right">£0.00</td>
         <td class="text-right"><strong>FREE</strong></td>
       </tr>`
@@ -216,18 +212,40 @@ export class VatInvoiceGenerator {
     </tbody>
   </table>
 
-  <div class="totals">
-    <div class="totals-row">
-      <span>Total Net Amount (ex. VAT):</span>
-      <span>${invoice.breakdown.formattedNet}</span>
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 24px; gap: 24px;">
+    <div style="flex: 1; max-width: 380px; background: #F8F6F0; border: 1px solid #E8E2D5; border-radius: 6px; padding: 14px 18px; font-size: 11px; color: #4F6D7A; line-height: 1.6;">
+      <strong style="color: #0B132B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">
+        UK Statutory Tax Breakdown (HMRC VAT)
+      </strong>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+        <span>Taxable Net Goods &amp; Logistics:</span>
+        <strong style="color: #070D1E;">${invoice.breakdown.formattedNet}</strong>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+        <span>UK VAT @ Standard Rate (20%):</span>
+        <strong style="color: #070D1E;">${invoice.breakdown.formattedVat}</strong>
+      </div>
+      <div style="border-top: 1px dashed #D5CEBF; padding-top: 5px; font-size: 10px; color: #64748B;">
+        Note: All product &amp; delivery prices above already include 20% UK VAT. The VAT amount shown here is the statutory tax portion included in your total payment, not an additional charge.
+      </div>
     </div>
-    <div class="totals-row">
-      <span>Total UK VAT (20%):</span>
-      <span>${invoice.breakdown.formattedVat}</span>
-    </div>
-    <div class="totals-row grand">
-      <span>Grand Total (Inc. VAT):</span>
-      <span>${invoice.breakdown.formattedGross}</span>
+
+    <div class="totals" style="width: 280px; margin: 0;">
+      <div class="totals-row">
+        <span>Goods Subtotal:</span>
+        <span>${formatGBP(invoice.items.reduce((acc, i) => acc + i.grossTotalPennies, 0))}</span>
+      </div>
+      <div class="totals-row">
+        <span>UK Logistics &amp; Delivery:</span>
+        <span>${invoice.shippingGrossPennies > 0 ? formatGBP(invoice.shippingGrossPennies) : "FREE"}</span>
+      </div>
+      <div class="totals-row grand">
+        <span>Total Amount Paid:</span>
+        <span>${invoice.breakdown.formattedGross}</span>
+      </div>
+      <div style="text-align: right; font-size: 11px; color: #4F6D7A; margin-top: 4px;">
+        (Includes 20% UK VAT of ${invoice.breakdown.formattedVat})
+      </div>
     </div>
   </div>
 

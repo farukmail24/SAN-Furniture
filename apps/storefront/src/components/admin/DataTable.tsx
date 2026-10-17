@@ -391,7 +391,7 @@ export function DataTable<T extends Record<string, any>>({
                       </td>
 
                       {visibleColumns.map((col) => (
-                        <td key={col.key} className="py-3 px-4 text-xs text-[#0B132B]">
+                        <td key={col.key} style={{ width: col.width }} className="py-3 px-4 text-xs text-[#0B132B]">
                           {col.cell ? col.cell(item, index) : item[col.key] ?? "—"}
                         </td>
                       ))}

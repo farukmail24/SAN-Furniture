@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 /**
  * TopProgressBar
  * High-performance, tactile navigation progress bar.
- * Fires INSTANTLY (0ms) on any internal link click or route transition,
- * eliminating the "is this link dead/broken?" delay.
+ * Fires instantly on internal link clicks for tactile responsiveness.
+ * Remains smoothly active throughout the entire page loading/compilation duration.
+ * Snaps to 100% and gracefully fades out ONLY when the route transition arrives.
  */
 export function TopProgressBar() {
   const pathname = usePathname();
@@ -15,29 +16,44 @@ export function TopProgressBar() {
   const [progress, setProgress] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Complete progress on route change
+  const isNavigatingRef = useRef(false);
+  const watchdogRef = useRef<NodeJS.Timeout | null>(null);
+  const animIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const completeAndHide = () => {
+    if (animIntervalRef.current) {
+      clearInterval(animIntervalRef.current);
+      animIntervalRef.current = null;
+    }
+    if (watchdogRef.current) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+    isNavigatingRef.current = false;
+    setProgress(100);
+    setTimeout(() => {
+      setIsVisible(false);
+      setProgress(0);
+    }, 180);
+  };
+
+  // Whenever route (pathname or searchParams) changes, immediately complete and hide
   useEffect(() => {
-    if (isVisible) {
-      setProgress(100);
-      document.body.style.cursor = "";
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setProgress(0);
-      }, 200);
-      return () => clearTimeout(timer);
+    if (isNavigatingRef.current || progress > 0) {
+      completeAndHide();
     }
   }, [pathname, searchParams]);
 
-  // Intercept all internal link clicks for 0ms instantaneous feedback
+  // Click interceptor for instant tactile feedback
   useEffect(() => {
-    let animInterval: NodeJS.Timeout | null = null;
-
     const handleLinkClick = (e: MouseEvent) => {
-      // Find nearest anchor tag
       const target = (e.target as HTMLElement).closest("a");
-      if (!target || !target.href) return;
+      if (!target) return;
 
       const href = target.getAttribute("href");
+      const targetAttr = target.getAttribute("target");
+      const isExternalTarget = targetAttr === "_blank" || target.target === "_blank";
+
       // Skip external links, hashes, download, or modifier keys (Ctrl/Cmd click)
       if (
         !href ||
@@ -46,7 +62,8 @@ export function TopProgressBar() {
         href.startsWith("https://") ||
         href.startsWith("mailto:") ||
         href.startsWith("tel:") ||
-        target.target === "_blank" ||
+        href.startsWith("javascript:") ||
+        isExternalTarget ||
         target.hasAttribute("download") ||
         e.metaKey ||
         e.ctrlKey ||
@@ -56,35 +73,44 @@ export function TopProgressBar() {
         return;
       }
 
-      // Check if clicking current URL
-      if (href === pathname || href === window.location.pathname) {
+      // Check if clicking the same URL
+      const cleanHref = href.split("?")[0].split("#")[0];
+      const cleanCurrent = (window.location.pathname || pathname).split("?")[0].split("#")[0];
+      if (cleanHref === cleanCurrent && !href.includes("?")) {
         return;
       }
 
-      // Immediately show top progress bar and tactile cursor
+      // Start navigation indicator
+      isNavigatingRef.current = true;
       setIsVisible(true);
-      setProgress(35);
-      document.body.style.cursor = "progress";
+      setProgress(25);
 
-      if (animInterval) clearInterval(animInterval);
-      animInterval = setInterval(() => {
+      if (animIntervalRef.current) clearInterval(animIntervalRef.current);
+      animIntervalRef.current = setInterval(() => {
         setProgress((prev) => {
-          if (prev >= 88) {
-            if (animInterval) clearInterval(animInterval);
-            return prev;
-          }
-          // Ease towards 88%
-          return prev + Math.random() * 12;
+          // Smooth, non-linear progression that keeps moving throughout the wait
+          if (prev < 50) return prev + 6;
+          if (prev < 70) return prev + 3;
+          if (prev < 85) return prev + 1.2;
+          if (prev < 92) return prev + 0.4;
+          if (prev < 95) return prev + 0.1;
+          return prev;
         });
       }, 100);
+
+      // Failsafe Watchdog: Auto-complete after 10 seconds ONLY if navigation was completely abandoned or failed
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
+      watchdogRef.current = setTimeout(() => {
+        completeAndHide();
+      }, 10000);
     };
 
     document.addEventListener("click", handleLinkClick, { capture: true });
 
     return () => {
       document.removeEventListener("click", handleLinkClick, { capture: true });
-      if (animInterval) clearInterval(animInterval);
-      document.body.style.cursor = "";
+      if (animIntervalRef.current) clearInterval(animIntervalRef.current);
+      if (watchdogRef.current) clearTimeout(watchdogRef.current);
     };
   }, [pathname]);
 
@@ -93,13 +119,19 @@ export function TopProgressBar() {
   return (
     <div
       aria-hidden="true"
-      className="fixed top-0 left-0 right-0 z-[999999] pointer-events-none h-[3.5px] bg-transparent"
+      className="fixed top-0 left-0 right-0 z-[999999] pointer-events-none h-[3px] bg-transparent"
     >
       <div
-        className="h-full bg-gradient-to-r from-brass-600 via-amber-400 to-amber-200 transition-all duration-150 ease-out shadow-[0_0_16px_rgba(200,155,60,0.95)]"
+        className="h-full bg-gradient-to-r from-brass-600 via-amber-400 to-amber-200 shadow-[0_0_12px_rgba(200,155,60,0.9)]"
         style={{
           width: `${progress}%`,
           opacity: isVisible || progress > 0 ? 1 : 0,
+          transition:
+            progress === 0
+              ? "none"
+              : progress === 100
+              ? "width 100ms ease-out, opacity 180ms ease-out"
+              : "width 180ms cubic-bezier(0.1, 0.9, 0.2, 1)",
         }}
       />
     </div>

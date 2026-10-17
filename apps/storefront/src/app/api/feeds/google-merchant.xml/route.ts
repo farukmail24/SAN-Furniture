@@ -19,7 +19,7 @@ function escapeXml(unsafe: string): string {
 }
 
 export async function GET() {
-  const baseUrl = "https://sanfurniture.co.uk";
+  const baseUrl = "https://sanfurniture.com";
   const liveProducts = await getLiveProducts();
   const itemsXml = liveProducts.filter((p) => p.status !== "draft")
     .map((p) => {

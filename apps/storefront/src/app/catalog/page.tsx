@@ -9,12 +9,12 @@ export const metadata: Metadata = {
   description:
     "Explore our complete collection of handcrafted British sofas, dining sets, accent armchairs, ottoman beds, and designer coffee tables. Delivered with 2-man white glove service.",
   alternates: {
-    canonical: "https://sanfurniture.co.uk/catalog",
+    canonical: "https://sanfurniture.com/catalog",
   },
   openGraph: {
     title: "All Luxury Furniture Collections | SAN Furniture UK",
     description: "Handcrafted British living furniture with free UK white glove delivery over £500.",
-    url: "https://sanfurniture.co.uk/catalog",
+    url: "https://sanfurniture.com/catalog",
   },
 };
 

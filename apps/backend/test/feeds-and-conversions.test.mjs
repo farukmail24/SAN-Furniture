@@ -55,7 +55,7 @@ const TEST_PRODUCTS = [
 ];
 
 test("GoogleMerchantFeedGenerator: Produces fully compliant RSS 2.0 XML with Google Shopping tags", () => {
-  const generator = new GoogleMerchantFeedGenerator("https://sanfurniture.co.uk");
+  const generator = new GoogleMerchantFeedGenerator("https://sanfurniture.com");
   const xml = generator.generateFeedXml(TEST_PRODUCTS);
 
   // Structural checks
@@ -66,7 +66,7 @@ test("GoogleMerchantFeedGenerator: Produces fully compliant RSS 2.0 XML with Goo
   // Mandatory Google Attributes checks
   assert.ok(xml.includes("<g:id>prod_sofa_001</g:id>"));
   assert.ok(xml.includes("<g:title>The Kensington 3-Seater Sofa in Oat Bouclé</g:title>"));
-  assert.ok(xml.includes("<g:link>https://sanfurniture.co.uk/products/kensington-3-seater-sofa-oat-boucle</g:link>"));
+  assert.ok(xml.includes("<g:link>https://sanfurniture.com/products/kensington-3-seater-sofa-oat-boucle</g:link>"));
   assert.ok(xml.includes("<g:availability>in_stock</g:availability>"));
   assert.ok(xml.includes("<g:price>1299.00 GBP</g:price>"));
   assert.ok(xml.includes("<g:brand>SAN Furniture</g:brand>"));
@@ -87,7 +87,7 @@ test("GoogleMerchantFeedGenerator: Produces fully compliant RSS 2.0 XML with Goo
 });
 
 test("MetaCatalogFeedGenerator: Generates RFC 4180 CSV for Meta Commerce Manager", () => {
-  const generator = new MetaCatalogFeedGenerator("https://sanfurniture.co.uk");
+  const generator = new MetaCatalogFeedGenerator("https://sanfurniture.com");
   const csv = generator.generateFeedCsv(TEST_PRODUCTS);
 
   const lines = csv.split("\n");
@@ -100,7 +100,7 @@ test("MetaCatalogFeedGenerator: Generates RFC 4180 CSV for Meta Commerce Manager
   // Row content check
   assert.ok(csv.includes("prod_sofa_001"));
   assert.ok(csv.includes("1299.00 GBP"));
-  assert.ok(csv.includes("https://sanfurniture.co.uk/products/kensington-3-seater-sofa-oat-boucle"));
+  assert.ok(csv.includes("https://sanfurniture.com/products/kensington-3-seater-sofa-oat-boucle"));
   assert.ok(csv.includes("in stock"));
   assert.ok(csv.includes("SAN Furniture"));
 });
@@ -116,7 +116,7 @@ test("MetaConversionsApiService: SHA-256 normalizes PII and generates compliant 
   // Test Event Payload Construction
   const payload = capi.buildEventPayload(
     "Purchase",
-    "https://sanfurniture.co.uk/checkout/success",
+    "https://sanfurniture.com/checkout/success",
     "evt_test_dedup_001",
     {
       email: "eleanor.vance@example.co.uk",

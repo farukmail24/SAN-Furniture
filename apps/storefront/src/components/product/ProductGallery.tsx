@@ -11,7 +11,7 @@ interface ProductGalleryProps {
 
 export function ProductGallery({ images, title }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const activeImage = images[selectedIndex] || images[0];
+  const activeImage = images?.[selectedIndex] || images?.[0] || "/SanFurnitureLogo.png";
 
   return (
     <div className="flex flex-col gap-4">
@@ -20,6 +20,14 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
         <img
           src={activeImage}
           alt={`${title} - View ${selectedIndex + 1}`}
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (images?.[0] && target.src !== images[0]) {
+              target.src = images[0];
+            } else if (!target.src.includes("SanFurnitureLogo.png")) {
+              target.src = "/SanFurnitureLogo.png";
+            }
+          }}
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
         />
 

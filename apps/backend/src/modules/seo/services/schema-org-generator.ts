@@ -11,7 +11,7 @@ export interface FaqItem {
 export class SchemaOrgGenerator {
   private baseUrl: string;
 
-  constructor(baseUrl = "https://sanfurniture.co.uk") {
+  constructor(baseUrl = "https://sanfurniture.com") {
     this.baseUrl = baseUrl.replace(/\/$/, "");
   }
 
@@ -27,7 +27,7 @@ export class SchemaOrgGenerator {
       logo: `${this.baseUrl}/images/brand-logo.png`,
       description: "Ultra-premium handcrafted British furniture with 2-man white glove delivery.",
       telephone: "+44 20 7946 0991",
-      email: "concierge@sanfurniture.co.uk",
+      email: "concierge@sanfurniture.com",
       priceRange: "£££",
       address: {
         "@type": "PostalAddress",

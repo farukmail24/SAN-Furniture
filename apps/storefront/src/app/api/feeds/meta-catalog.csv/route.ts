@@ -9,7 +9,7 @@ function escapeCsv(field: string): string {
 }
 
 export async function GET() {
-  const baseUrl = "https://sanfurniture.co.uk";
+  const baseUrl = "https://sanfurniture.com";
   const liveProducts = await getLiveProducts();
   const headers = [
     "id",

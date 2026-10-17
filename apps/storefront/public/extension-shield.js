@@ -1,8 +1,8 @@
 /**
  * SAN Furniture - Third-Party Browser Extension Error Shield
- * Intercepts, silences, and purges runtime errors thrown by browser extensions
- * (such as coupon searchers, video downloaders, translation tools, e.g. 200.js / M_ID)
- * so that Next.js development error overlays never interrupt testing.
+ * Intercepts and silences runtime errors thrown by browser extensions
+ * (such as coupon searchers, password managers, skin checkers, e.g. bis_skin_checked / 200.js / M_ID)
+ * Passive, non-blocking: Never mutates DOM in loops, zero CPU overhead.
  */
 (function () {
   if (typeof window === "undefined") return;
@@ -25,16 +25,10 @@
           " " +
           (val.reason && (val.reason.message || val.reason.stack || "")) +
           " " +
-          (val.error && (val.error.message || val.error.stack || "")) +
-          " " +
-          JSON.stringify(val);
+          (val.error && (val.error.message || val.error.stack || ""));
       }
     } catch (_) {
-      try {
-        str = String(val);
-      } catch (__) {
-        str = "";
-      }
+      str = "";
     }
     var lower = str.toLowerCase();
     return (
@@ -44,30 +38,15 @@
       lower.indexOf("eppicocmhmnlblhjplcgkofcliegomcon") !== -1 ||
       lower.indexOf("m_id") !== -1 ||
       lower.indexOf("executors/200.js") !== -1 ||
-      lower.indexOf("200.js") !== -1
+      lower.indexOf("200.js") !== -1 ||
+      lower.indexOf("bis_skin_checked") !== -1 ||
+      lower.indexOf("cz-shortcut-listen") !== -1 ||
+      lower.indexOf("fdprocessedid") !== -1
     );
   }
 
-  // 1. Wrap window.addEventListener so Next.js's dev-overlay error listeners never receive extension errors
-  var originalAddEventListener = window.addEventListener;
-  window.addEventListener = function (type, listener, options) {
-    if ((type === "error" || type === "unhandledrejection") && typeof listener === "function") {
-      var wrappedListener = function (event) {
-        if (isIgnored(event)) {
-          if (event && event.stopImmediatePropagation) event.stopImmediatePropagation();
-          if (event && event.preventDefault) event.preventDefault();
-          return;
-        }
-        return listener.apply(this, arguments);
-      };
-      return originalAddEventListener.call(this, type, wrappedListener, options);
-    }
-    return originalAddEventListener.apply(this, arguments);
-  };
-
-  // 2. Immediate capture-phase listeners on window
-  originalAddEventListener.call(
-    window,
+  // Intercept window errors in capture phase
+  window.addEventListener(
     "error",
     function (e) {
       if (isIgnored(e)) {
@@ -78,8 +57,7 @@
     true
   );
 
-  originalAddEventListener.call(
-    window,
+  window.addEventListener(
     "unhandledrejection",
     function (e) {
       if (isIgnored(e)) {
@@ -90,46 +68,43 @@
     true
   );
 
-  // 3. Monkeypatch console.error to prevent Next.js dev overlay console interceptor from capturing it
+  // Silently filter extension warnings from console.error without recursive DOM loops
   var originalConsoleError = window.console.error;
   window.console.error = function () {
+    var combinedStr = "";
     for (var i = 0; i < arguments.length; i++) {
-      if (isIgnored(arguments[i])) {
-        return; // Drop silently
+      var arg = arguments[i];
+      if (typeof arg === "string") {
+        combinedStr += " " + arg;
+      } else if (arg && arg.message) {
+        combinedStr += " " + arg.message;
+      } else if (arg && arg.stack) {
+        combinedStr += " " + arg.stack;
+      } else {
+        try {
+          combinedStr += " " + String(arg);
+        } catch (_) {}
       }
     }
+
+    var lower = combinedStr.toLowerCase();
+    if (
+      lower.indexOf("bis_skin_checked") !== -1 ||
+      lower.indexOf("fdprocessedid") !== -1 ||
+      lower.indexOf("cz-shortcut-listen") !== -1 ||
+      lower.indexOf("__next_route_announcer__") !== -1 ||
+      lower.indexOf("chrome-extension://") !== -1 ||
+      lower.indexOf("moz-extension://") !== -1 ||
+      lower.indexOf("safari-extension://") !== -1 ||
+      lower.indexOf("eppicocmhmnlblhjplcgkofcliegomcon") !== -1 ||
+      lower.indexOf("m_id") !== -1 ||
+      lower.indexOf("executors/200.js") !== -1 ||
+      lower.indexOf("200.js") !== -1 ||
+      (lower.indexOf("hydrat") !== -1 && (lower.indexOf("extension") !== -1 || lower.indexOf("bis_skin") !== -1 || lower.indexOf("match") !== -1 || lower.indexOf("attribute") !== -1))
+    ) {
+      return; // Silently drop extension noise
+    }
+
     return originalConsoleError.apply(window.console, arguments);
   };
-
-  // 4. MutationObserver to purge any <nextjs-portal> that renders an extension error
-  function purgeExtensionOverlay() {
-    try {
-      var portals = document.querySelectorAll("nextjs-portal");
-      for (var i = 0; i < portals.length; i++) {
-        var portal = portals[i];
-        var shadow = portal.shadowRoot;
-        if (shadow) {
-          var content = shadow.innerHTML || "";
-          if (isIgnored(content)) {
-            portal.remove();
-          }
-        }
-      }
-    } catch (_) {}
-  }
-
-  if (typeof MutationObserver !== "undefined") {
-    var observer = new MutationObserver(function () {
-      purgeExtensionOverlay();
-    });
-    if (document.documentElement) {
-      observer.observe(document.documentElement, { childList: true, subtree: true });
-    } else {
-      document.addEventListener("DOMContentLoaded", function () {
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-      });
-    }
-  }
-
-  setInterval(purgeExtensionOverlay, 400);
 })();

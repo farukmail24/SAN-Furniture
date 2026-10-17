@@ -56,12 +56,60 @@
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: scaleIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* Touch & tap tactile responsiveness without mobile gray flashes */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Instant silky active press feel */
+.active-press {
+  transition: transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.active-press:active {
+  transform: scale(0.98);
+}
+
+/* Custom scrollbar hiding utilities */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
+/* Luxury Admin Sidebar Custom Scrollbar */
+.admin-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(200, 155, 60, 0.4) transparent;
+}
+.admin-sidebar-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: rgba(232, 226, 213, 0.25);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+.admin-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 155, 60, 0.7);
+}
+
 
 /* Reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
@@ -70,5 +118,57 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Dedicated Print Layout for Order Receipts */
+@media print {
+  /* Suppress all website chrome, sticky headers, bottom docks, navigations, footers & action buttons */
+  header,
+  footer,
+  nav,
+  aside,
+  .no-print,
+  #nprogress,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+
+  /* Reset body and main backgrounds for clean paper print */
+  html,
+  body {
+    background: #ffffff !important;
+    color: #070D1E !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+  }
+
+  .print-receipt-container {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .print-receipt-card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    padding: 20px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }

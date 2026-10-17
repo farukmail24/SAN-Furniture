@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { CATALOG_CATEGORIES, getLiveProducts } from "@/lib/catalog";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://sanfurniture.co.uk";
+  const baseUrl = "https://sanfurniture.com";
   const now = new Date();
   const liveProducts = await getLiveProducts();
 

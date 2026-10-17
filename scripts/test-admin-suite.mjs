@@ -7,7 +7,7 @@ async function testAdminSuite() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      email: "admin@sanfurniture.co.uk",
+      email: "admin@sanfurniture.com",
       password: "AdminPassword2026!",
     }),
   });
