@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 
 async function run() {

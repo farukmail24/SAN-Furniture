@@ -254,7 +254,7 @@ export function MediaPickerModal({
                         <option value="dining">Dining Furniture</option>
                         <option value="beds">Luxury Beds</option>
                         <option value="tables">Coffee &amp; Side Tables</option>
-                        <option value="fabric">Fabric Swatches</option>
+                        <option value="fabric">Material & Texture</option>
                         <option value="logo">Brand Logos</option>
                       </select>
                     </div>
@@ -308,7 +308,7 @@ export function MediaPickerModal({
                       <option value="dining">Dining</option>
                       <option value="beds">Beds</option>
                       <option value="tables">Tables</option>
-                      <option value="fabric">Fabric Swatches</option>
+                      <option value="fabric">Material & Texture</option>
                       <option value="logo">Logos</option>
                     </select>
 

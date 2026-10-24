@@ -6,7 +6,8 @@ import {
   classifyUKPostcode,
   calculateRetailWithMarginGuard,
   FurnitureSpecsSchema,
-  UKAddressSchema
+  UKAddressSchema,
+  CustomerRegistrationSchema
 } from "../dist/index.js";
 
 test("UK VAT Engine: Calculates 20% VAT on gross integer pennies correctly", () => {
@@ -129,4 +130,49 @@ test("UK Address Schema: Accepts valid UK postal formats and rejects malformed o
   };
   const invalidParsed = UKAddressSchema.safeParse(invalidAddress);
   assert.equal(invalidParsed.success, false);
+});
+
+test("Customer Registration Schema: Requires mobile/telephone number for account creation", () => {
+  const validRegistration = {
+    firstName: "Eleanor",
+    lastName: "Vance",
+    email: "eleanor.vance@example.co.uk",
+    password: "SecurePassword123!",
+    phone: "+44 7700 900123",
+    addressLine1: "14 Kensington Palace Gardens",
+    city: "London",
+    postcode: "SW1A 1AA"
+  };
+
+  const parsed = CustomerRegistrationSchema.safeParse(validRegistration);
+  assert.equal(parsed.success, true);
+  if (parsed.success) {
+    assert.equal(parsed.data.phone, "+44 7700 900123");
+  }
+
+  // Missing phone should fail
+  const missingPhone = {
+    firstName: "Eleanor",
+    lastName: "Vance",
+    email: "eleanor.vance@example.co.uk",
+    password: "SecurePassword123!"
+  };
+  const missingPhoneParsed = CustomerRegistrationSchema.safeParse(missingPhone);
+  assert.equal(missingPhoneParsed.success, false);
+
+  // Empty string phone should fail
+  const emptyPhone = {
+    ...validRegistration,
+    phone: "   "
+  };
+  const emptyPhoneParsed = CustomerRegistrationSchema.safeParse(emptyPhone);
+  assert.equal(emptyPhoneParsed.success, false);
+
+  // Too short phone should fail
+  const shortPhone = {
+    ...validRegistration,
+    phone: "12345"
+  };
+  const shortPhoneParsed = CustomerRegistrationSchema.safeParse(shortPhone);
+  assert.equal(shortPhoneParsed.success, false);
 });

@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 import fs from "node:fs";
 import path from "node:path";
@@ -151,7 +152,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 70,
         delivery_tier: "two_man_white_glove",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 5
       },
       feed: {
@@ -194,7 +195,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 60,
         delivery_tier: "two_man_white_glove",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 5
       },
       feed: {
@@ -236,7 +237,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 50,
         delivery_tier: "pallet",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 3
       },
       feed: {
@@ -278,7 +279,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 60,
         delivery_tier: "pallet",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 4
       },
       feed: {
@@ -320,7 +321,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 55,
         delivery_tier: "pallet",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 4
       },
       feed: {
@@ -362,7 +363,7 @@ async function runCleanAmosMannSeed() {
         doorway_clearance_min_cm: 40,
         delivery_tier: "standard_parcel",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852 / UK Statutory Timber Compliance",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 3
       },
       feed: {

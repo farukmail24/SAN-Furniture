@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -36,29 +36,12 @@ import {
   Clock,
   PanelLeftClose,
   PanelLeftOpen,
-  ChevronLeft
+  ChevronLeft,
+  Trash2,
+  LayoutTemplate,
+  ShieldCheck
 } from "lucide-react";
-import { preloadAdminRoutes, preloadCache } from "@/lib/api-cache";
 import { apiUrl } from "@/lib/api-config";
-
-const ADMIN_API_PREFETCH_MAP: Record<string, string> = {
-  "/admin": "/api/admin/metrics",
-  "/admin/products": "/api/admin/products",
-  "/admin/categories": "/api/admin/categories",
-  "/admin/media": "/api/admin/media",
-  "/admin/orders": "/api/admin/orders",
-  "/admin/support": "/api/support/tickets",
-  "/admin/customers": "/api/admin/customers",
-  "/admin/users": "/api/admin/users",
-  "/admin/suppliers": "/api/admin/suppliers",
-  "/admin/logistics": "/api/admin/logistics",
-  "/admin/security": "/api/security/ip-jail",
-  "/admin/marketing": "/api/admin/promotions",
-  "/admin/reviews": "/api/admin/reviews",
-  "/admin/promotions": "/api/admin/promotions",
-  "/admin/audit": "/api/admin/audit?limit=25",
-  "/admin/settings": "/api/admin/settings",
-};
 
 interface AdminNotification {
   id: string;
@@ -81,9 +64,11 @@ interface AdminUser {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLoginPage = pathname === "/admin/login";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<"checking" | "online" | "offline">("checking");
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Collapsible Sidebar State (Persisted in localStorage)
@@ -108,33 +93,127 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   };
 
-  // Operations Notifications State
+  // Operations Notifications & Live Orders Badge State
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [openTicketsCount, setOpenTicketsCount] = useState<number>(3);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
+  const isFetchingNotifications = useRef(false);
 
-  // Fetch admin notifications
-  const fetchNotifications = async () => {
+  // Fetch admin notifications and pending dispatch orders count
+  const fetchNotifications = useCallback(async () => {
+    if (document.visibilityState !== "visible" || isFetchingNotifications.current) return;
+    isFetchingNotifications.current = true;
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
     try {
-      const res = await fetch(apiUrl("/api/notifications?recipient_type=admin&limit=15"));
-      if (res.ok) {
-        const data = await res.json();
+      const [notificationResult, metricsResult, ticketsResult] = await Promise.allSettled([
+        fetch(apiUrl("/api/notifications?recipient_type=admin&limit=15"), {
+          signal: AbortSignal.timeout(8000),
+          headers: authHeaders,
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(`Notification request failed (${res.status})`);
+          return res.json();
+        }),
+        fetch(apiUrl("/api/admin/metrics"), {
+          signal: AbortSignal.timeout(8000),
+          headers: authHeaders,
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(`Admin metrics request failed (${res.status})`);
+          return res.json();
+        }),
+        fetch(apiUrl("/api/support/tickets?limit=1"), {
+          signal: AbortSignal.timeout(8000),
+          headers: authHeaders,
+        }).then(async (res) => {
+          if (!res.ok) throw new Error(`Tickets request failed (${res.status})`);
+          return res.json();
+        }),
+      ]);
+
+      if (notificationResult.status === "fulfilled") {
+        const data = notificationResult.value;
         setNotifications(data.notifications || []);
         setUnreadCount(Number(data.unread_count || 0));
+      } else {
+        console.warn("Admin notification refresh failed:", notificationResult.reason);
       }
-    } catch {}
-  };
+
+      if (metricsResult.status === "fulfilled") {
+        const overview = metricsResult.value.overview;
+        if (overview?.awaitingDispatchOrders !== undefined) {
+          setNewOrdersCount(Number(overview.awaitingDispatchOrders));
+        }
+      } else {
+        console.warn("Admin metrics refresh failed:", metricsResult.reason);
+      }
+
+      if (ticketsResult.status === "fulfilled") {
+        const counts = ticketsResult.value?.counts;
+        const totalOpen = Number(counts?.open || 0) + Number(counts?.in_progress || 0);
+        if (totalOpen > 0) {
+          setOpenTicketsCount(totalOpen);
+        }
+      }
+    } finally {
+      isFetchingNotifications.current = false;
+    }
+  }, []);
 
   useEffect(() => {
+    if (isLoginPage) return;
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 25000);
-    return () => clearInterval(interval);
-  }, []);
+    const interval = setInterval(fetchNotifications, 60000);
+    document.addEventListener("visibilitychange", fetchNotifications);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", fetchNotifications);
+    };
+  }, [fetchNotifications, isLoginPage]);
+
+  useEffect(() => {
+    if (isLoginPage) return;
+
+    let isMounted = true;
+    const checkBackendStatus = async () => {
+      try {
+        const response = await fetch(apiUrl("/api/health"), {
+          signal: AbortSignal.timeout(5000),
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Admin API health check failed (${response.status})`);
+        }
+
+        const data = await response.json();
+        if ((data?.status !== "healthy" && !data?.overview) || !isMounted) {
+          if (isMounted) setBackendStatus("offline");
+          return;
+        }
+        setBackendStatus("online");
+      } catch {
+        if (isMounted) setBackendStatus("offline");
+      }
+    };
+
+    checkBackendStatus();
+    const interval = setInterval(checkBackendStatus, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [isLoginPage]);
 
   const handleMarkAsRead = async (id: string, link?: string) => {
     try {
-      await fetch(apiUrl(`/api/notifications/${id}/read`), { method: "PATCH" });
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      await fetch(apiUrl(`/api/notifications/${id}/read`), {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: 1 } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
       if (link) {
@@ -146,9 +225,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleMarkAllAsRead = async () => {
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
       await fetch(apiUrl("/api/notifications/read-all"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ recipient_type: "admin" }),
       });
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
@@ -156,21 +239,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     } catch {}
   };
 
-  // If on login page, render clean full-screen login container without sidebar
-  const isLoginPage = pathname === "/admin/login";
-
-  // Preload route bundle and API cache on hover/touch for instant 0ms switching
-  const handlePrefetch = (href: string) => {
+  const handleDeleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     try {
-      router.prefetch(href);
-      const endpoint = ADMIN_API_PREFETCH_MAP[href];
-      if (endpoint) {
-        preloadCache(apiUrl(endpoint));
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      const res = await fetch(apiUrl(`/api/notifications/${id}`), {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+        setUnreadCount((prev) => {
+          const notif = notifications.find((n) => n.id === id);
+          return notif && !notif.is_read ? Math.max(0, prev - 1) : prev;
+        });
       }
     } catch {}
   };
 
-  // Auto-close user and notification dropdown on route changes
+  // Auto-close dropdowns on route changes
   useEffect(() => {
     setIsUserMenuOpen(false);
     setIsNotificationOpen(false);
@@ -191,28 +278,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
-    // Warm up admin route cache in background
-    preloadAdminRoutes();
-  }, [pathname]);
-
-  useEffect(() => {
 
     // Check local admin session
+    const token = localStorage.getItem("san_admin_token");
     const storedUser = localStorage.getItem("san_admin_user");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch {
-        setCurrentUser(null);
-      }
-    } else {
-      // Default fallback session for smooth dev experience
-      setCurrentUser({
-        id: "admin_usr_01",
-        email: "admin@sanfurniture.com",
-        fullName: "SAN Operations Lead",
-        role: "super_admin"
-      });
+
+    if (!token || !storedUser) {
+      router.replace("/admin/login");
+      return;
+    }
+
+    try {
+      setCurrentUser(JSON.parse(storedUser));
+    } catch {
+      router.replace("/admin/login");
     }
   }, [pathname]);
 
@@ -229,7 +308,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navLinks = [
     {
-      name: "Dashboard & KPIs",
+      name: "Dashboard",
       href: "/admin",
       icon: LayoutDashboard,
       active: pathname === "/admin"
@@ -238,11 +317,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       name: "Products & Inventory",
       href: "/admin/products",
       icon: Package,
-      active: pathname.startsWith("/admin/products"),
-      badge: "CRUD"
+      active: pathname.startsWith("/admin/products")
     },
     {
-      name: "Categories & Taxonomy",
+      name: "Categories",
       href: "/admin/categories",
       icon: FolderTree,
       active: pathname.startsWith("/admin/categories")
@@ -251,35 +329,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       name: "Global Media Library",
       href: "/admin/media",
       icon: ImageIcon,
-      active: pathname.startsWith("/admin/media"),
-      badge: "DAM"
+      active: pathname.startsWith("/admin/media")
     },
     {
-      name: "Customer Orders & POs",
+      name: "Page Content (CMS)",
+      href: "/admin/pages",
+      icon: LayoutTemplate,
+      active: pathname.startsWith("/admin/pages")
+    },
+    {
+      name: "Customer Orders",
       href: "/admin/orders",
       icon: ShoppingBag,
-      active: pathname.startsWith("/admin/orders")
+      active: pathname.startsWith("/admin/orders"),
+      badge: newOrdersCount > 0 ? `${newOrdersCount}` : undefined
     },
     {
       name: "Customer Helpdesk",
       href: "/admin/support",
       icon: Headphones,
       active: pathname.startsWith("/admin/support"),
-      badge: "Tickets"
+      badge: openTicketsCount > 0 ? `${openTicketsCount}` : undefined
+    },
+    {
+      name: "Notifications Hub",
+      href: "/admin/notifications",
+      icon: Bell,
+      active: pathname.startsWith("/admin/notifications"),
+      badge: unreadCount > 0 ? `${unreadCount}` : undefined
     },
     {
       name: "Customers (CRM)",
       href: "/admin/customers",
       icon: Users,
-      active: pathname.startsWith("/admin/customers"),
-      badge: "CRM"
+      active: pathname.startsWith("/admin/customers")
     },
     {
       name: "Staff & User Roles",
       href: "/admin/users",
       icon: UserCheck,
-      active: pathname.startsWith("/admin/users"),
-      badge: "RBAC"
+      active: pathname.startsWith("/admin/users")
     },
     {
       name: "Dropship Suppliers",
@@ -297,8 +386,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       name: "Security & IP Jail",
       href: "/admin/security",
       icon: ShieldAlert,
-      active: pathname.startsWith("/admin/security"),
-      badge: "WAF"
+      active: pathname.startsWith("/admin/security")
     },
     {
       name: "Google & Meta Feeds",
@@ -328,20 +416,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       name: "System Settings",
       href: "/admin/settings",
       icon: Settings,
-      active: pathname.startsWith("/admin/settings"),
-      badge: "Core"
+      active: pathname.startsWith("/admin/settings")
     }
   ];
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#070D1E] flex flex-col lg:flex-row antialiased w-full" suppressHydrationWarning>
+    <div className="min-h-screen bg-[#F4F1EA] print:bg-white print:min-h-0 text-[#00072D] flex flex-col lg:flex-row antialiased w-full" suppressHydrationWarning>
       {/* Mobile Top Bar */}
-      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0B132B] text-sand-50 border-b border-navy-800">
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#00072D] text-sand-50 border-b border-navy-800 print:hidden">
         <div className="flex items-center gap-2">
           <img
             src="/San-Furniture-Logo-Dark.png"
             alt="SAN Furniture Operations"
-            className="h-7 w-auto object-contain"
+            width={120} height={28} className="h-7 w-auto object-contain"
           />
         </div>
         <button
@@ -357,21 +444,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div
         className={`fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-40 transition-opacity lg:hidden ${
           isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
+        } print:hidden`}
         onClick={() => setIsMobileMenuOpen(false)}
         aria-hidden="true"
       />
 
       {/* Enterprise Dark Navy Left Sidebar (Collapsible with smooth transition) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-[#070D1E] text-sand-100 flex flex-col border-r border-navy-800 transition-all duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 bg-[#00072D] text-sand-100 flex flex-col border-r border-navy-800 transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? "lg:w-20" : "lg:w-64"
         } w-64 ${
           isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
-        }`}
+        } print:hidden`}
       >
         {/* Brand Header (Flexible / Unfixed) */}
-        <div className={`p-4 border-b border-navy-800/80 bg-[#070D1E] flex items-center ${
+        <div className={`p-4 border-b border-navy-800/80 bg-[#00072D] flex items-center ${
           isSidebarCollapsed ? "justify-center" : "justify-between"
         }`}>
           {!isSidebarCollapsed ? (
@@ -379,7 +466,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <img
                 src="/San-Furniture-Logo-Dark.png"
                 alt="SAN Furniture Operations"
-                className="h-9 w-auto object-contain"
+                width={140} height={36} className="h-9 w-auto object-contain"
               />
               <div className="flex items-center gap-1.5 mt-1.5 px-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -427,14 +514,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={link.name}
                 href={link.href}
-                prefetch={true}
+                prefetch={false}
                 title={link.name}
-                onMouseEnter={() => handlePrefetch(link.href)}
-                onTouchStart={() => handlePrefetch(link.href)}
-                onClick={() => setIsMobileMenuOpen(false)}
+                onMouseEnter={() => router.prefetch(link.href)}
+                onFocus={() => router.prefetch(link.href)}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                }}
                 className={`flex items-center ${
                   isSidebarCollapsed ? "justify-center p-3" : "justify-between px-3 py-2.5"
-                } rounded-xl text-xs font-medium transition-all relative ${
+                } rounded-xl text-xs font-medium active:scale-[0.97] transition-all relative ${
                   isActive
                     ? "bg-brass-500/20 text-brass-400 border border-brass-500/35 font-semibold shadow-xs"
                     : "text-sand-300 hover:bg-navy-900 hover:text-sand-50"
@@ -442,12 +531,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               >
                 <div className={`flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-brass-400" : "text-sand-400"}`} />
-                  {!isSidebarCollapsed && <span className="truncate">{link.name}</span>}
+                  {!isSidebarCollapsed && (
+                    <span className="truncate flex items-center gap-1.5">
+                      {link.name}
+                    </span>
+                  )}
                 </div>
                 {!isSidebarCollapsed && link.badge && (
                   <span
                     className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                      isActive
+                      (link.name === "Customer Orders" || link.name === "Customer Helpdesk") && !isActive
+                        ? "bg-amber-500/25 text-amber-300 border border-amber-500/40"
+                        : isActive
                         ? "bg-brass-500 text-navy-950"
                         : "bg-navy-800 text-sand-300 border border-navy-700"
                     }`}
@@ -456,7 +551,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </span>
                 )}
                 {isSidebarCollapsed && link.badge && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brass-500 ring-2 ring-[#070D1E]" title={link.badge} />
+                  <span
+                    className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-[#00072D] ${
+                      link.name === "Customer Orders" || link.name === "Customer Helpdesk" ? "bg-amber-400 animate-pulse" : "bg-brass-500"
+                    }`}
+                    title={`${link.name}: ${link.badge}`}
+                  />
                 )}
               </Link>
             );
@@ -513,11 +613,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div
         className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out ${
           isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
-        } min-h-screen`}
+        } min-h-screen print:pl-0 print:p-0 print:m-0 print:min-h-0 print:bg-white`}
         suppressHydrationWarning
       >
         {/* Top Operations Header with User Profile Dropdown */}
-        <header className="sticky top-0 z-30 bg-sand-50/95 backdrop-blur-md border-b border-sand-200 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-3 sm:gap-4 w-full shadow-sm">
+        <header className="sticky top-0 z-30 bg-sand-50/95 backdrop-blur-md border-b border-sand-200 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-3 sm:gap-4 w-full shadow-sm print:hidden">
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Desktop Sidebar Toggle Button */}
             <button
@@ -535,10 +635,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </button>
 
             <span className="text-xs font-medium text-navy-600 hidden md:inline">Terminal:</span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="hidden sm:inline">All Systems Operational</span>
-              <span className="sm:hidden">Operational</span>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold ${
+              backendStatus === "online"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                : backendStatus === "offline"
+                  ? "bg-red-50 border-red-200 text-red-800"
+                  : "bg-sand-100 border-sand-300 text-navy-700"
+            }`}>
+              <CheckCircle2 className={`w-3.5 h-3.5 ${
+                backendStatus === "online"
+                  ? "text-emerald-600"
+                  : backendStatus === "offline"
+                    ? "text-red-600"
+                    : "text-navy-500"
+              }`} />
+              <span className="hidden sm:inline">
+                {backendStatus === "online" ? "API & Database Connected" : backendStatus === "offline" ? "Backend Unavailable" : "Checking Backend"}
+              </span>
+              <span className="sm:hidden">
+                {backendStatus === "online" ? "Connected" : backendStatus === "offline" ? "Offline" : "Checking"}
+              </span>
             </span>
           </div>
 
@@ -563,11 +679,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span>Manage Products</span>
             </Link>
 
-            <div className="hidden xl:flex items-center gap-2 text-xs text-navy-700 bg-sand-100 px-3 py-1.5 rounded-xl border border-sand-200 font-mono">
-              <Lock className="w-3.5 h-3.5 text-brass-600" />
-              <span>TLS 1.3 UK Vault</span>
-            </div>
-
             {/* Topbar Operations Notifications Bell & Dropdown */}
             <div className="relative" ref={notificationDropdownRef}>
               <button
@@ -588,7 +699,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               {/* Luxury Notifications Drawer */}
               {isNotificationOpen && (
                 <div className="absolute right-0 sm:right-auto sm:left-1/2 sm:-translate-x-1/2 mt-2 w-80 sm:w-96 bg-white rounded-2xl border border-sand-300 shadow-2xl p-0 z-50 animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
-                  <div className="p-3.5 bg-[#070D1E] text-sand-50 flex items-center justify-between border-b border-navy-800">
+                  <div className="p-3.5 bg-[#00072D] text-sand-50 flex items-center justify-between border-b border-navy-800">
                     <div className="flex items-center gap-2">
                       <Bell className="w-4 h-4 text-brass-400" />
                       <span className="text-xs font-bold text-sand-50">Operations Alerts</span>
@@ -638,9 +749,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1 mb-0.5">
                               <h5 className="font-bold text-navy-950 text-xs truncate">{n.title}</h5>
-                              {!n.is_read && (
-                                <span className="w-2 h-2 rounded-full bg-brass-600 flex-shrink-0" />
-                              )}
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {!n.is_read && (
+                                  <span className="w-2 h-2 rounded-full bg-brass-600 flex-shrink-0" />
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteNotification(n.id, e)}
+                                  className="p-1 rounded text-navy-400 hover:text-rose-600 hover:bg-sand-200 transition-colors cursor-pointer"
+                                  title="Delete Notification"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             <p className="text-[11px] text-navy-600 line-clamp-2 leading-relaxed">{n.message}</p>
                             <span className="text-[10px] text-navy-400 mt-1 block">
@@ -655,14 +776,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     )}
                   </div>
 
-                  <div className="p-2.5 bg-sand-50 border-t border-sand-200 text-center">
+                  <div className="p-2.5 bg-sand-50 border-t border-sand-200 space-y-1.5 text-center">
+                    <Link
+                      href="/admin/notifications"
+                      onClick={() => setIsNotificationOpen(false)}
+                      className="w-full py-1.5 px-3 rounded-lg bg-navy-950 text-sand-50 hover:bg-navy-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs"
+                    >
+                      <Bell className="w-3.5 h-3.5 text-brass-400" />
+                      <span>Manage &amp; View All Notifications</span>
+                      <ChevronRight className="w-3 h-3 text-sand-300" />
+                    </Link>
                     <Link
                       href="/admin/support"
                       onClick={() => setIsNotificationOpen(false)}
-                      className="text-xs font-semibold text-brass-700 hover:text-brass-900 inline-flex items-center gap-1"
+                      className="text-[11px] font-medium text-navy-600 hover:text-navy-950 inline-flex items-center gap-1"
                     >
                       <span>Open Customer Support Helpdesk</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <ChevronRight className="w-3 h-3" />
                     </Link>
                   </div>
                 </div>
@@ -678,11 +808,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 aria-label="User Account Menu"
                 aria-expanded={isUserMenuOpen}
               >
-                <div className="w-7 h-7 rounded-full bg-[#070D1E] border border-brass-500/50 flex items-center justify-center text-brass-400 font-bold text-xs shadow-inner">
+                <div className="w-7 h-7 rounded-full bg-[#00072D] border border-brass-500/50 flex items-center justify-center text-brass-400 font-bold text-xs shadow-inner">
                   {currentUser?.fullName ? currentUser.fullName.charAt(0) : "A"}
                 </div>
                 <div className="hidden md:flex flex-col text-left">
-                  <span className="text-xs font-bold leading-none text-[#070D1E]">
+                  <span className="text-xs font-bold leading-none text-[#00072D]">
                     {currentUser?.fullName || "SAN Operations Lead"}
                   </span>
                   <span className="text-[10px] text-navy-600 font-medium capitalize mt-0.5">
@@ -702,7 +832,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   {/* Dropdown Header Info */}
                   <div className="p-3 bg-sand-50 rounded-xl border border-sand-200/70 mb-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-[#070D1E] border border-brass-500/60 flex items-center justify-center text-brass-400 font-bold text-sm shadow">
+                      <div className="w-9 h-9 rounded-full bg-[#00072D] border border-brass-500/60 flex items-center justify-center text-brass-400 font-bold text-sm shadow">
                         {currentUser?.fullName ? currentUser.fullName.charAt(0) : "A"}
                       </div>
                       <div className="min-w-0 flex-1">
@@ -788,7 +918,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full" suppressHydrationWarning>{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full print:p-0 print:m-0" suppressHydrationWarning>
+          {children}
+        </main>
       </div>
     </div>
   );

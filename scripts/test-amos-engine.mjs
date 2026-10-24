@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 import { amosMannExtractor } from "../apps/backend/src/modules/dropship/services/amos-mann-extractor.mjs";
 

@@ -1,25 +1,4 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: san_furniture_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-san_furniture_dev}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init-extensions.sql:/docker-entrypoint-initdb.d/init-extensions.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d san_furniture_dev"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - san_network
-
   redis:
     image: redis:7-alpine
     container_name: san_furniture_redis
@@ -58,8 +37,6 @@ services:
       - san_network
 
 volumes:
-  postgres_data:
-    driver: local
   redis_data:
     driver: local
   meili_data:

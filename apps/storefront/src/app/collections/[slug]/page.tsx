@@ -23,11 +23,7 @@ interface CollectionPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  return PROGRAMMATIC_COLLECTIONS.map((c) => ({
-    slug: c.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -178,12 +174,12 @@ export default async function ProgrammaticCollectionPage({
             <div className="flex flex-wrap items-center gap-4 text-xs text-navy-800 font-medium pt-4">
               <span className="flex items-center gap-1.5 text-sage-700">
                 <Truck className="w-4 h-4 text-brass-600" />
-                Free UK 2-Man Delivery on Orders Over £500
+                Free UK Delivery on Orders Over £500
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-forest-700" />
-                BS 5852 Fire Safety Guaranteed
+                UK Quality Checked Furniture
               </span>
             </div>
           </div>

@@ -20,7 +20,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface PromotionItem {
   id: string;
@@ -36,9 +36,8 @@ interface PromotionItem {
 }
 
 export default function AdminPromotionsPage() {
-  const cachedPromos = getCachedData<{ promotions: PromotionItem[] }>(apiUrl("/api/admin/promotions"));
-  const [promotions, setPromotions] = useState<PromotionItem[]>(() => cachedPromos?.promotions || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedPromos?.promotions?.length);
+  const [promotions, setPromotions] = useState<PromotionItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

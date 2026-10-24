@@ -77,25 +77,34 @@ test("Seed Products Schema: All products strictly validate against FurnitureSpec
   }
 });
 
-test("Database Indexing Architecture: ESR and partial indexes are verified", () => {
+test("Database Indexing Architecture: MySQL schema indexes are verified", () => {
   assert.equal(validateAllIndexPatterns(), true);
-  assert.equal(VERIFIED_INDEX_PATTERNS.length, 4);
+  assert.equal(VERIFIED_INDEX_PATTERNS.length, 2);
 
-  const esrFilterPattern = VERIFIED_INDEX_PATTERNS.find(
-    (p) => p.targetIndex === "idx_products_cat_status_created_price"
+  const catalogPattern = VERIFIED_INDEX_PATTERNS.find(
+    (p) => p.targetIndex === "idx_prod_cat_status_price"
   );
-  assert.ok(esrFilterPattern);
-  assert.deepEqual(esrFilterPattern.esrCompliance.equalityColumns, ["category_id", "status"]);
-  assert.deepEqual(esrFilterPattern.esrCompliance.sortColumns, ["created_at DESC"]);
-  assert.deepEqual(esrFilterPattern.esrCompliance.rangeColumns, ["price_pennies"]);
+  assert.ok(catalogPattern);
+  assert.deepEqual(catalogPattern.indexColumns, ["category_id", "status", "price_pennies"]);
+
+  const supplierPattern = VERIFIED_INDEX_PATTERNS.find(
+    (p) => p.targetIndex === "uniq_supplier_sku"
+  );
+  assert.ok(supplierPattern);
+  assert.deepEqual(supplierPattern.indexColumns, ["supplier_id", "supplier_sku"]);
 });
 
-test("SQL Generator: Produces valid PostgreSQL migration statements", () => {
+test("SQL Generator: Produces MySQL seed statements matching the canonical schema", () => {
   const sql = generateSeedSQL();
-  assert.ok(sql.includes("INSERT INTO product_categories"));
+  assert.ok(sql.includes("INSERT INTO categories"));
   assert.ok(sql.includes("INSERT INTO products"));
   assert.ok(sql.includes("INSERT INTO furniture_specs"));
   assert.ok(sql.includes("INSERT INTO supplier_feed_items"));
+  assert.ok(sql.includes("ON DUPLICATE KEY UPDATE"));
   assert.ok(sql.includes("cat_sofas"));
   assert.ok(sql.includes("kensington-3-seater-sofa-oat-boucle"));
+  assert.ok(sql.includes("fire_safety_cert"));
+  assert.ok(sql.includes("supplier_id, supplier_sku, product_id"));
+  assert.equal(sql.includes("ON CONFLICT"), false);
+  assert.equal(sql.includes("product_categories"), false);
 });

@@ -26,8 +26,8 @@ import {
   Truck,
   FileText
 } from "lucide-react";
-import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface SupportMessage {
   id: string;
@@ -131,34 +131,40 @@ export default function AdminSupportHelpdeskPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Fetch Tickets List
-  const fetchTickets = async () => {
+  // Fetch Tickets List with 0ms SWR Cache
+  const fetchTickets = async (isSilent = false) => {
     try {
-      setLoading(true);
+      if (tickets.length === 0 && !isSilent) {
+        setLoading(true);
+      }
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (priorityFilter !== "all") params.set("priority", priorityFilter);
       if (categoryFilter !== "all") params.set("category", categoryFilter);
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
-      const res = await fetch(apiUrl(`/api/support/tickets?${params.toString()}`));
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(data.tickets || []);
-        if (data.counts) {
-          setCounts({
-            total: Number(data.counts.total || 0),
-            open: Number(data.counts.open || 0),
-            in_progress: Number(data.counts.in_progress || 0),
-            waiting_customer: Number(data.counts.waiting_customer || 0),
-            resolved: Number(data.counts.resolved || 0),
-          });
+      const url = apiUrl(`/api/support/tickets?${params.toString()}`);
+      await fetchWithSwr<{
+        tickets: SupportTicket[];
+        counts: { total: number; open: number; in_progress: number; waiting_customer: number; resolved: number };
+      }>(url, (data) => {
+        if (data && data.tickets) {
+          setTickets(data.tickets);
+          if (data.counts) {
+            setCounts({
+              total: Number(data.counts.total || 0),
+              open: Number(data.counts.open || 0),
+              in_progress: Number(data.counts.in_progress || 0),
+              waiting_customer: Number(data.counts.waiting_customer || 0),
+              resolved: Number(data.counts.resolved || 0),
+            });
+          }
+          if (!selectedTicketId && data.tickets.length > 0) {
+            setSelectedTicketId(data.tickets[0].id);
+          }
+          setLoading(false);
         }
-        // Auto-select first ticket if none selected
-        if (!selectedTicketId && data.tickets?.length > 0) {
-          setSelectedTicketId(data.tickets[0].id);
-        }
-      }
+      });
     } catch (err) {
       console.error("Failed to load tickets:", err);
     } finally {
@@ -325,7 +331,7 @@ export default function AdminSupportHelpdeskPage() {
     <div className="space-y-6 antialiased" suppressHydrationWarning>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#070D1E] text-sand-50 px-5 py-3 rounded-xl shadow-2xl border border-brass-500/40 flex items-center gap-3 animate-fade-in text-xs font-semibold">
+        <div className="fixed bottom-6 right-6 z-50 bg-[#00072D] text-sand-50 px-5 py-3 rounded-xl shadow-2xl border border-brass-500/40 flex items-center gap-3 animate-fade-in text-xs font-semibold">
           <CheckCircle2 className="w-4 h-4 text-brass-400 flex-shrink-0" />
           <span>{toastMessage}</span>
         </div>
@@ -341,7 +347,7 @@ export default function AdminSupportHelpdeskPage() {
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="font-semibold text-navy-900">Customer Support Helpdesk</span>
           </div>
-          <h1 className="font-display text-2xl font-bold text-[#070D1E] flex items-center gap-2.5">
+          <h1 className="font-display text-2xl font-bold text-[#00072D] flex items-center gap-2.5">
             <Headphones className="w-7 h-7 text-brass-600" />
             <span>Customer Concierge &amp; Helpdesk Suite</span>
           </h1>
@@ -438,7 +444,7 @@ export default function AdminSupportHelpdeskPage() {
                   onClick={() => setStatusFilter(tab.key)}
                   className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition-colors ${
                     statusFilter === tab.key
-                      ? "bg-[#070D1E] text-sand-50"
+                      ? "bg-[#00072D] text-sand-50"
                       : "bg-white text-navy-700 border border-[#E8E2D5] hover:bg-sand-100"
                   }`}
                 >
@@ -538,7 +544,7 @@ export default function AdminSupportHelpdeskPage() {
 
                     {t.last_message_preview && (
                       <p className="text-[11px] text-navy-600 truncate line-clamp-1 italic bg-sand-50/70 px-2 py-1 rounded border border-sand-200/70">
-                        "{t.last_message_preview}"
+                        &ldquo;{t.last_message_preview}&rdquo;
                       </p>
                     )}
 
@@ -741,7 +747,7 @@ export default function AdminSupportHelpdeskPage() {
                       <div
                         className={`max-w-[85%] rounded-2xl p-3.5 text-xs shadow-xs ${
                           isAgent
-                            ? "bg-[#070D1E] text-sand-50 border border-navy-800 rounded-br-xs"
+                            ? "bg-[#00072D] text-sand-50 border border-navy-800 rounded-br-xs"
                             : "bg-white text-navy-950 border border-[#E8E2D5] rounded-bl-xs"
                         }`}
                       >
@@ -779,7 +785,7 @@ export default function AdminSupportHelpdeskPage() {
                       onClick={() => setIsInternalNote(false)}
                       className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
                         !isInternalNote
-                          ? "bg-[#070D1E] text-sand-50"
+                          ? "bg-[#00072D] text-sand-50"
                           : "bg-sand-100 text-navy-700 hover:bg-sand-200"
                       }`}
                     >
@@ -825,7 +831,7 @@ export default function AdminSupportHelpdeskPage() {
                     className={`absolute bottom-2.5 right-2.5 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                       isInternalNote
                         ? "bg-amber-600 hover:bg-amber-700 text-white"
-                        : "bg-[#070D1E] hover:bg-navy-900 text-sand-50"
+                        : "bg-[#00072D] hover:bg-navy-900 text-sand-50"
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
                     <span>{sendingReply ? "Sending..." : isInternalNote ? "Save Note" : "Send Reply"}</span>

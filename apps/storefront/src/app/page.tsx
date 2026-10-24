@@ -1,17 +1,29 @@
 import type { Metadata } from "next";
 import { getLiveProducts } from "@/lib/catalog";
 import { HomePageClient } from "@/components/home/HomePageClient";
+import { getLiveReviews } from "@/lib/cms-server";
 
 export const metadata: Metadata = {
   title: "SAN Furniture | Luxury Furniture Crafted for British Living",
   description:
-    "Discover handcrafted sofas, solid oak dining sets, and bespoke bouclé accent chairs. Enjoy free 2-man white glove delivery across the UK and Klarna interest-free financing.",
+    "Discover premium wardrobes, dining sets, chest of drawers, and living room collections. Reliable tracked delivery across the UK Mainland.",
   alternates: {
     canonical: "https://sanfurniture.com",
   },
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
-  const liveProducts = await getLiveProducts();
-  return <HomePageClient initialProducts={liveProducts} />;
+  const [liveProducts, liveReviews] = await Promise.all([
+    getLiveProducts(),
+    getLiveReviews(),
+  ]);
+
+  return (
+    <HomePageClient
+      initialProducts={liveProducts}
+      initialReviews={liveReviews}
+    />
+  );
 }

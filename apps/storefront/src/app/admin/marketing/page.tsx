@@ -38,7 +38,7 @@ export default function AdminMarketingPage() {
             <Share2 className="w-4 h-4" />
             <span>Growth & Social Commerce Feeds</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-[#0B132B]">
+          <h1 className="text-2xl sm:text-3xl font-serif text-[#00072D]">
             Google & Meta Product Catalogs
           </h1>
           <p className="text-sm text-[#4F6D7A] mt-1">
@@ -54,7 +54,7 @@ export default function AdminMarketingPage() {
             <span>Google Shopping UK</span>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <div className="text-2xl font-serif text-[#0B132B] mt-2">XML RSS 2.0</div>
+          <div className="text-2xl font-serif text-[#00072D] mt-2">XML RSS 2.0</div>
           <div className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" /> 100% Tax & Shipping Compliant
           </div>
@@ -65,7 +65,7 @@ export default function AdminMarketingPage() {
             <span>Meta Commerce (IG/FB)</span>
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           </div>
-          <div className="text-2xl font-serif text-[#0B132B] mt-2">CSV Catalog</div>
+          <div className="text-2xl font-serif text-[#00072D] mt-2">CSV Catalog</div>
           <div className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" /> Dynamic Product Ads (DPA) Ready
           </div>
@@ -76,7 +76,7 @@ export default function AdminMarketingPage() {
             <span>Meta CAPI Match Score</span>
             <TrendingUp className="w-4 h-4 text-[#C89B3C]" />
           </div>
-          <div className="text-2xl font-serif text-[#0B132B] mt-2">8.8 / 10</div>
+          <div className="text-2xl font-serif text-[#00072D] mt-2">8.8 / 10</div>
           <div className="text-xs text-[#4F6D7A] mt-1">
             SHA-256 hashed emails & postcodes
           </div>
@@ -93,7 +93,7 @@ export default function AdminMarketingPage() {
                 G
               </div>
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B]">
+                <h2 className="text-lg font-serif font-bold text-[#00072D]">
                   Google Merchant Center Feed (XML)
                 </h2>
                 <p className="text-xs text-[#4F6D7A]">
@@ -106,7 +106,7 @@ export default function AdminMarketingPage() {
               <button
                 type="button"
                 onClick={() => handleCopy(googleFeedUrl, "google")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-lg text-xs font-semibold transition-colors"
               >
                 {copiedFeed === "google" ? (
                   <>
@@ -125,7 +125,7 @@ export default function AdminMarketingPage() {
                 href={googleFeedUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#00072D] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors"
               >
                 <span>Open XML Feed</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
@@ -133,7 +133,7 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2D5] font-mono text-xs text-[#0B132B] break-all">
+          <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2D5] font-mono text-xs text-[#00072D] break-all">
             {googleFeedUrl}
           </div>
 
@@ -152,7 +152,7 @@ export default function AdminMarketingPage() {
                 M
               </div>
               <div>
-                <h2 className="text-lg font-serif font-bold text-[#0B132B]">
+                <h2 className="text-lg font-serif font-bold text-[#00072D]">
                   Meta / Instagram Commerce Catalog (CSV)
                 </h2>
                 <p className="text-xs text-[#4F6D7A]">
@@ -165,7 +165,7 @@ export default function AdminMarketingPage() {
               <button
                 type="button"
                 onClick={() => handleCopy(metaFeedUrl, "meta")}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-lg text-xs font-semibold transition-colors"
               >
                 {copiedFeed === "meta" ? (
                   <>
@@ -183,7 +183,7 @@ export default function AdminMarketingPage() {
               <a
                 href={metaFeedUrl}
                 download="san_furniture_meta_catalog.csv"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#00072D] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Download CSV</span>
@@ -191,7 +191,7 @@ export default function AdminMarketingPage() {
             </div>
           </div>
 
-          <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2D5] font-mono text-xs text-[#0B132B] break-all">
+          <div className="p-3 bg-[#FAF8F5] rounded-lg border border-[#E8E2D5] font-mono text-xs text-[#00072D] break-all">
             {metaFeedUrl}
           </div>
 

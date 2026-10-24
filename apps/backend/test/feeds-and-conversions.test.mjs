@@ -82,7 +82,7 @@ test("GoogleMerchantFeedGenerator: Produces fully compliant RSS 2.0 XML with Goo
 
   // Custom Labels checks
   assert.ok(xml.includes("<g:custom_label_0>two_man_white_glove</g:custom_label_0>"));
-  assert.ok(xml.includes("<g:custom_label_1>BS 5852 Fire Safety Verified</g:custom_label_1>"));
+  assert.ok(xml.includes("<g:custom_label_1>UK Quality Checked</g:custom_label_1>"));
   assert.ok(xml.includes("<g:custom_label_2>Free Delivery Eligible</g:custom_label_2>"));
 });
 

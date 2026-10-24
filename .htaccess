@@ -1,0 +1,66 @@
+# SAN Furniture - cPanel Apache Configuration & Reverse Proxy
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Enforce HTTPS
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # Serve Next.js static assets directly from apps/storefront/.next/static
+    RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/$1 -f
+    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/$1 [L]
+
+    # Serve public directory assets directly from apps/storefront/public
+    RewriteCond %{DOCUMENT_ROOT}/apps/storefront/public/$1 -f
+    RewriteRule ^(.*)$ apps/storefront/public/$1 [L]
+
+    # Serve static assets directly if they exist
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # IMPORTANT: DO NOT add mod_proxy rules (e.g. RewriteRule ... http://127.0.0.1:3000 [P])!
+    # cPanel Phusion Passenger handles dynamic requests natively via PassengerAppRoot.
+    # Proxying to port 3000 causes Apache to bypass Passenger and fail with 503 Service Unavailable.
+</IfModule>
+
+# Caching for Static Assets (Images, Fonts, CSS, JS)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/html "access plus 0 seconds"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/avif "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# Gzip & Brotli Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json
+</IfModule>
+
+# Security Headers & Anti-Stale Caching Controls
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Always ensure dynamic HTML and checkout routes are revalidated (never stale)
+    <FilesMatch "\.(html|htm)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
+
+    # Eliminate stale caching for Admin Cockpit, Checkout, Auth, and Dynamic APIs
+    SetEnvIf Request_URI "^/(admin|api|checkout)" NOCACHE_ROUTE=1
+    Header set Cache-Control "private, no-cache, no-store, max-age=0, must-revalidate" env=NOCACHE_ROUTE
+    Header set Pragma "no-cache" env=NOCACHE_ROUTE
+    Header set Expires "0" env=NOCACHE_ROUTE
+</IfModule>

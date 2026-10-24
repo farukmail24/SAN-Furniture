@@ -16,7 +16,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface CategoryRecord {
   id: string;
@@ -29,9 +29,8 @@ interface CategoryRecord {
 }
 
 export default function AdminCategoriesPage() {
-  const cachedData = getCachedData<{ categories: CategoryRecord[] }>(apiUrl("/api/admin/categories"));
-  const [categories, setCategories] = useState<CategoryRecord[]>(() => cachedData?.categories || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedData?.categories?.length);
+  const [categories, setCategories] = useState<CategoryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals state
@@ -68,6 +67,14 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }, []);
 
+  const clearCategoryCaches = () => {
+    invalidateCache("/api/admin/categories");
+    invalidateCache(apiUrl("/api/admin/categories"));
+    invalidateCache("/api/categories");
+    invalidateCache(apiUrl("/api/categories"));
+    fetch(apiUrl("/api/products/cache/invalidate")).catch(() => {});
+  };
+
   const handleCreateCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -84,6 +91,7 @@ export default function AdminCategoriesPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        clearCategoryCaches();
         setToastMsg({ type: "success", text: `Category "${formName}" created!` });
         setIsAddModalOpen(false);
         setFormName("");
@@ -118,6 +126,7 @@ export default function AdminCategoriesPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        clearCategoryCaches();
         setToastMsg({ type: "success", text: "Category updated successfully!" });
         setEditingCategory(null);
         fetchCategories();
@@ -139,7 +148,7 @@ export default function AdminCategoriesPage() {
         method: "DELETE",
       });
       if (res.ok) {
-        invalidateCache("/api/admin/categories");
+        clearCategoryCaches();
         setToastMsg({ type: "success", text: "Category deleted." });
         fetchCategories();
       }
@@ -170,7 +179,7 @@ export default function AdminCategoriesPage() {
       header: "Category Name & Slug",
       cell: (row) => (
         <div>
-          <div className="font-semibold text-[#0B132B]">{row.name}</div>
+          <div className="font-semibold text-[#00072D]">{row.name}</div>
           <div className="text-[11px] font-mono text-[#4F6D7A]">/categories/{row.handle}</div>
         </div>
       ),
@@ -189,7 +198,7 @@ export default function AdminCategoriesPage() {
       header: "Live Products",
       sortable: true,
       cell: (row) => (
-        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0B132B] text-white">
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#00072D] text-white">
           {row.products_count} Items
         </span>
       ),
@@ -257,7 +266,7 @@ export default function AdminCategoriesPage() {
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00072D] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
           >
             <Plus className="w-4 h-4 text-[#C89B3C]" />
             <span>Add Category</span>
@@ -272,12 +281,12 @@ export default function AdminCategoriesPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <FolderTree className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Add Furniture Category</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Add Furniture Category</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -285,7 +294,7 @@ export default function AdminCategoriesPage() {
 
             <form onSubmit={handleCreateCategory} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Category Name *</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Category Name *</label>
                 <input
                   type="text"
                   required
@@ -295,36 +304,36 @@ export default function AdminCategoriesPage() {
                     setFormName(e.target.value);
                     setFormHandle(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""));
                   }}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">URL Handle (Slug)</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">URL Handle (Slug)</label>
                 <input
                   type="text"
                   required
                   placeholder="footstools-benches"
                   value={formHandle}
                   onChange={(e) => setFormHandle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs font-mono text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs font-mono text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Description</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Description</label>
                 <textarea
                   rows={2}
                   placeholder="Bespoke handcrafted accent seating and ottomans..."
                   value={formDesc}
                   onChange={(e) => setFormDesc(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-[#0B132B]">Hero Image URL</label>
+                  <label className="block text-xs font-semibold text-[#00072D]">Hero Image URL</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -342,7 +351,7 @@ export default function AdminCategoriesPage() {
                   required
                   value={formHeroImage}
                   onChange={(e) => setFormHeroImage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
@@ -357,7 +366,7 @@ export default function AdminCategoriesPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Creating..." : "Save Category"}
                 </button>
@@ -374,12 +383,12 @@ export default function AdminCategoriesPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Edit Category</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Edit Category</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingCategory(null)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -387,7 +396,7 @@ export default function AdminCategoriesPage() {
 
             <form onSubmit={handleUpdateCategory} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Category Name</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Category Name</label>
                 <input
                   type="text"
                   required
@@ -395,12 +404,12 @@ export default function AdminCategoriesPage() {
                   onChange={(e) =>
                     setEditingCategory({ ...editingCategory, name: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">URL Handle</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">URL Handle</label>
                 <input
                   type="text"
                   required
@@ -408,25 +417,25 @@ export default function AdminCategoriesPage() {
                   onChange={(e) =>
                     setEditingCategory({ ...editingCategory, handle: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs font-mono text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs font-mono text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Description</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Description</label>
                 <textarea
                   rows={2}
                   value={editingCategory.description || ""}
                   onChange={(e) =>
                     setEditingCategory({ ...editingCategory, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-[#0B132B]">Hero Image URL</label>
+                  <label className="block text-xs font-semibold text-[#00072D]">Hero Image URL</label>
                   <button
                     type="button"
                     onClick={() => {
@@ -446,7 +455,7 @@ export default function AdminCategoriesPage() {
                   onChange={(e) =>
                     setEditingCategory({ ...editingCategory, hero_image: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
@@ -461,7 +470,7 @@ export default function AdminCategoriesPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Updating..." : "Save Changes"}
                 </button>

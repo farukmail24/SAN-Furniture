@@ -2,44 +2,75 @@
  * SAN Furniture - Universal API Base URL Resolver
  * Supports Localhost, Docker, VPS, and cPanel Production Deployments.
  *
- * Precedence:
- * 1. NEXT_PUBLIC_API_URL environment variable
- * 2. In browser: dynamic current hostname (e.g., https://yourdomain.com:9000 or /api)
- * 3. Fallback: http://localhost:9000
+ * Guaranteed Safe: In browser contexts, returns clean relative paths ("/api/...")
+ * ensuring same-origin proxying through Next.js without any CORS, port mismatch,
+ * or compiler inlining undefined issues.
  */
 
 export function getApiBaseUrl(): string {
-  // 1. Explicitly configured public env variable (Production, cPanel, Vercel, Docker)
-  if (process.env.NEXT_PUBLIC_API_URL !== undefined && process.env.NEXT_PUBLIC_API_URL !== "") {
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
-  }
-
-  // 2. Client-side browser execution:
   if (typeof window !== "undefined") {
-    const { hostname } = window.location;
-    // If running in development on localhost:3000 -> backend is localhost:9000
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return "http://localhost:9000";
+    const publicUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (
+      publicUrl &&
+      typeof publicUrl === "string" &&
+      publicUrl.startsWith("https://") &&
+      !publicUrl.includes("localhost") &&
+      !publicUrl.includes("127.0.0.1")
+    ) {
+      return publicUrl.replace(/\/+$/, "");
     }
-    // In production (cPanel / VPS domain), if NEXT_PUBLIC_API_URL is not set,
-    // return empty string so /api/* is called as a relative path through Next.js rewrite / reverse proxy
     return "";
   }
 
-  // 3. Server-side rendering (SSR) fallback
-  if (process.env.BACKEND_INTERNAL_URL) {
-    return process.env.BACKEND_INTERNAL_URL.replace(/\/+$/, "");
-  }
+  // Server-side rendering (SSR) fallback in Node.js runtime
+  const localPort = process.env.PORT || "3000";
+  const defaultLocalUrl = `http://127.0.0.1:${localPort}`;
 
-  return "http://localhost:9000";
+  const serverBase =
+    process.env.BACKEND_INTERNAL_URL ||
+    process.env.BACKEND_URL ||
+    process.env.NEXTAUTH_URL ||
+    defaultLocalUrl;
+
+  return typeof serverBase === "string" && serverBase.trim()
+    ? serverBase.trim().replace(/\/+$/, "")
+    : defaultLocalUrl;
 }
 
 /**
- * Constructs a fully qualified API endpoint URL.
- * Example: apiUrl("/api/admin/products") -> "https://yourdomain.com:9000/api/admin/products"
+ * Constructs a fully qualified or clean relative API endpoint URL.
+ * Example in browser: apiUrl("/api/admin/products") -> "/api/admin/products"
+ * Example in SSR:     apiUrl("/api/admin/products") -> "http://127.0.0.1:3000/api/admin/products"
  */
 export function apiUrl(endpoint: string): string {
-  const base = getApiBaseUrl();
   const cleanPath = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
-  return `${base}${cleanPath}`;
+
+  if (typeof window !== "undefined") {
+    const publicUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (
+      publicUrl &&
+      typeof publicUrl === "string" &&
+      publicUrl.startsWith("https://") &&
+      !publicUrl.includes("localhost") &&
+      !publicUrl.includes("127.0.0.1")
+    ) {
+      return `${publicUrl.replace(/\/+$/, "")}${cleanPath}`;
+    }
+    return cleanPath;
+  }
+
+  const localPort = process.env.PORT || "3000";
+  const defaultLocalUrl = `http://127.0.0.1:${localPort}`;
+
+  const serverBase =
+    process.env.BACKEND_INTERNAL_URL ||
+    process.env.BACKEND_URL ||
+    process.env.NEXTAUTH_URL ||
+    defaultLocalUrl;
+
+  const safeBase = typeof serverBase === "string" && serverBase.trim()
+    ? serverBase.trim().replace(/\/+$/, "")
+    : defaultLocalUrl;
+
+  return `${safeBase}${cleanPath}`;
 }

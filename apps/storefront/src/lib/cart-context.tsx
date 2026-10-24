@@ -46,7 +46,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
       if (stored) {
-        setItems(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Normalize and defensively filter corrupt or legacy cart items
+          const safeItems: CartItem[] = parsed
+            .filter((item) => item && (item.product || (item as any).title || (item as any).id))
+            .map((item) => {
+              const product = item.product || {
+                id: (item as any).productId || item.id || "san_prod",
+                title: (item as any).title || "Handcrafted Furniture Item",
+                handle: (item as any).handle || "furniture",
+                pricePennies: Number((item as any).pricePennies) || 0,
+                thumbnailUrl: (item as any).thumbnailUrl || "/images/placeholder.svg",
+                category: (item as any).category || "living_room",
+                specs: {
+                  color: (item as any).selectedFinish || "Standard Finish",
+                  material: (item as any).selectedFabric || "Premium Timber",
+                },
+              };
+              return {
+                id: item.id || `item_${product.id}`,
+                product,
+                quantity: Math.max(1, Number(item.quantity) || 1),
+                selectedFabric: item.selectedFabric,
+                selectedFinish: item.selectedFinish,
+              };
+            });
+          setItems(safeItems);
+        }
       }
     } catch {
       // LocalStorage access might fail in strict private browsing
@@ -120,23 +147,24 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const totalCount = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.quantity, 0);
+    return items.reduce((sum, item) => sum + (Number(item?.quantity) || 1), 0);
   }, [items]);
 
   const subtotalPennies = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.product.pricePennies * item.quantity, 0);
+    return items.reduce((sum, item) => {
+      const price = Number(item?.product?.pricePennies) || 0;
+      const qty = Math.max(1, Number(item?.quantity) || 1);
+      return sum + price * qty;
+    }, 0);
   }, [items]);
 
   const vatBreakdown = useMemo(() => {
     return calculateNetAndVat(subtotalPennies);
   }, [subtotalPennies]);
 
-  const freeDeliveryRemainingPennies = Math.max(0, FREE_DELIVERY_THRESHOLD_PENNIES - subtotalPennies);
-  const freeDeliveryProgressPercent = Math.min(
-    100,
-    Math.round((subtotalPennies / FREE_DELIVERY_THRESHOLD_PENNIES) * 100)
-  );
-  const hasFreeDelivery = subtotalPennies >= FREE_DELIVERY_THRESHOLD_PENNIES;
+  const freeDeliveryRemainingPennies = 0;
+  const freeDeliveryProgressPercent = 100;
+  const hasFreeDelivery = true; // Free UK Mainland Delivery on all orders!
 
   return (
     <CartContext.Provider

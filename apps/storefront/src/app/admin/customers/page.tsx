@@ -21,7 +21,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface CustomerRecord {
   id: string;
@@ -38,9 +38,8 @@ interface CustomerRecord {
 }
 
 export default function AdminCustomersPage() {
-  const cachedCust = getCachedData<{ customers: CustomerRecord[] }>(apiUrl("/api/admin/customers"));
-  const [customers, setCustomers] = useState<CustomerRecord[]>(() => cachedCust?.customers || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedCust?.customers?.length);
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals & Drawers state
@@ -184,11 +183,11 @@ export default function AdminCustomersPage() {
       header: "Customer Name & Email",
       cell: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#0B132B] text-[#C89B3C] flex items-center justify-center font-bold text-xs uppercase shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#00072D] text-[#C89B3C] flex items-center justify-center font-bold text-xs uppercase shrink-0">
             {row.first_name.charAt(0)}{row.last_name.charAt(0)}
           </div>
           <div className="min-w-0">
-            <div className="font-semibold text-[#0B132B] truncate">
+            <div className="font-semibold text-[#00072D] truncate">
               {row.first_name} {row.last_name}
             </div>
             <div className="text-[11px] text-[#4F6D7A] flex items-center gap-1">
@@ -203,7 +202,7 @@ export default function AdminCustomersPage() {
       key: "phone",
       header: "Telephone",
       cell: (row) => (
-        <div className="text-xs font-mono text-[#0B132B]">
+        <div className="text-xs font-mono text-[#00072D]">
           {row.phone || "—"}
         </div>
       ),
@@ -213,7 +212,7 @@ export default function AdminCustomersPage() {
       header: "Location (Postcode)",
       cell: (row) => (
         <div>
-          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-[#F4F1EA] text-[#0B132B] border border-[#E8E2D5]">
+          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-[#F4F1EA] text-[#00072D] border border-[#E8E2D5]">
             {row.postcode}
           </span>
           <span className="text-[11px] text-[#4F6D7A] ml-1.5">{row.city}</span>
@@ -225,7 +224,7 @@ export default function AdminCustomersPage() {
       header: "Orders",
       sortable: true,
       cell: (row) => (
-        <div className="flex items-center gap-1.5 font-semibold text-[#0B132B]">
+        <div className="flex items-center gap-1.5 font-semibold text-[#00072D]">
           <ShoppingBag className="w-3.5 h-3.5 text-[#C89B3C]" />
           <span>{row.orders_count} orders</span>
         </div>
@@ -236,7 +235,7 @@ export default function AdminCustomersPage() {
       header: "Lifetime Spend (LTV)",
       sortable: true,
       cell: (row) => (
-        <div className="font-bold text-[#0B132B] text-xs">
+        <div className="font-bold text-[#00072D] text-xs">
           {formatGBP(row.total_spend_pennies)}
         </div>
       ),
@@ -261,7 +260,7 @@ export default function AdminCustomersPage() {
           <button
             type="button"
             onClick={() => setViewingCustomer(row)}
-            className="p-1.5 rounded hover:bg-slate-100 text-[#4F6D7A] hover:text-[#0B132B]"
+            className="p-1.5 rounded hover:bg-slate-100 text-[#4F6D7A] hover:text-[#00072D]"
             title="View Customer Profile"
           >
             <Eye className="w-4 h-4" />
@@ -313,7 +312,7 @@ export default function AdminCustomersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Registered UK Customers
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {customers.length} Accounts
           </div>
           <div className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
@@ -325,7 +324,7 @@ export default function AdminCustomersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Total Gross CRM Spend
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {formatGBP(customers.reduce((acc, c) => acc + Number(c.total_spend_pennies || 0), 0))}
           </div>
           <div className="text-xs text-[#4F6D7A] mt-1">20% UK VAT included</div>
@@ -335,7 +334,7 @@ export default function AdminCustomersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             High-Value VIPs (&gt;£1,000 LTV)
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {customers.filter((c) => c.total_spend_pennies >= 100000).length} Clients
           </div>
           <div className="text-xs text-[#C89B3C] font-medium mt-1">
@@ -360,7 +359,7 @@ export default function AdminCustomersPage() {
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00072D] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
           >
             <UserPlus className="w-4 h-4 text-[#C89B3C]" />
             <span>Add New Customer</span>
@@ -375,12 +374,12 @@ export default function AdminCustomersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Add New Customer</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Add New Customer</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -389,60 +388,60 @@ export default function AdminCustomersPage() {
             <form onSubmit={handleCreateCustomer} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] mb-1">First Name *</label>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1">First Name *</label>
                   <input
                     type="text"
                     required
                     value={formFirstName}
                     onChange={(e) => setFormFirstName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                     placeholder="Eleanor"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] mb-1">Last Name *</label>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1">Last Name *</label>
                   <input
                     type="text"
                     required
                     value={formLastName}
                     onChange={(e) => setFormLastName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
-                    placeholder="Vance"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
+                    placeholder="Smith"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Email Address *</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Email Address *</label>
                 <input
                   type="email"
                   required
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="eleanor.vance@mayfair.co.uk"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">UK Phone</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">UK Phone</label>
                 <input
                   type="text"
                   value={formPhone}
                   onChange={(e) => setFormPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="+44 7700 900123"
                 />
               </div>
 
               <div className="pt-2 border-t border-[#E8E2D5] space-y-3">
-                <div className="text-xs font-semibold text-[#0B132B]">Delivery Address (Default)</div>
+                <div className="text-xs font-semibold text-[#00072D]">Delivery Address (Default)</div>
                 <div>
                   <input
                     type="text"
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                     placeholder="Street Address (e.g. 14 Berkeley Mews)"
                   />
                 </div>
@@ -451,14 +450,14 @@ export default function AdminCustomersPage() {
                     type="text"
                     value={formCity}
                     onChange={(e) => setFormCity(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                     placeholder="City (e.g. London)"
                   />
                   <input
                     type="text"
                     value={formPostcode}
                     onChange={(e) => setFormPostcode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                     placeholder="UK Postcode (e.g. W1K 2HP)"
                   />
                 </div>
@@ -475,7 +474,7 @@ export default function AdminCustomersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Creating..." : "Save Customer"}
                 </button>
@@ -492,12 +491,12 @@ export default function AdminCustomersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Edit Customer Profile</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Edit Customer Profile</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingCustomer(null)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -506,7 +505,7 @@ export default function AdminCustomersPage() {
             <form onSubmit={handleUpdateCustomer} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] mb-1">First Name</label>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1">First Name</label>
                   <input
                     type="text"
                     required
@@ -514,11 +513,11 @@ export default function AdminCustomersPage() {
                     onChange={(e) =>
                       setEditingCustomer({ ...editingCustomer, first_name: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] mb-1">Last Name</label>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1">Last Name</label>
                   <input
                     type="text"
                     required
@@ -526,13 +525,13 @@ export default function AdminCustomersPage() {
                     onChange={(e) =>
                       setEditingCustomer({ ...editingCustomer, last_name: e.target.value })
                     }
-                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                    className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Email</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Email</label>
                 <input
                   type="email"
                   required
@@ -540,19 +539,19 @@ export default function AdminCustomersPage() {
                   onChange={(e) =>
                     setEditingCustomer({ ...editingCustomer, email: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Phone</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Phone</label>
                 <input
                   type="text"
                   value={editingCustomer.phone || ""}
                   onChange={(e) =>
                     setEditingCustomer({ ...editingCustomer, phone: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
@@ -567,7 +566,7 @@ export default function AdminCustomersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Saving..." : "Update Details"}
                 </button>
@@ -584,11 +583,11 @@ export default function AdminCustomersPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between pb-4 border-b border-[#E8E2D5]">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#0B132B] text-[#C89B3C] flex items-center justify-center font-bold text-base uppercase">
+                  <div className="w-12 h-12 rounded-full bg-[#00072D] text-[#C89B3C] flex items-center justify-center font-bold text-base uppercase">
                     {viewingCustomer.first_name.charAt(0)}{viewingCustomer.last_name.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="font-serif font-bold text-lg text-[#0B132B]">
+                    <h3 className="font-serif font-bold text-lg text-[#00072D]">
                       {viewingCustomer.first_name} {viewingCustomer.last_name}
                     </h3>
                     <p className="text-xs text-[#4F6D7A] font-mono">{viewingCustomer.id}</p>
@@ -607,39 +606,39 @@ export default function AdminCustomersPage() {
                 <div className="p-4 bg-[#FAF8F5] rounded-xl border border-[#E8E2D5] flex items-center justify-between">
                   <div>
                     <div className="text-[11px] uppercase tracking-wider text-[#4F6D7A]">Lifetime Spend</div>
-                    <div className="text-xl font-serif font-bold text-[#0B132B]">
+                    <div className="text-xl font-serif font-bold text-[#00072D]">
                       {formatGBP(viewingCustomer.total_spend_pennies)}
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-[11px] uppercase tracking-wider text-[#4F6D7A]">Total Orders</div>
-                    <div className="text-xl font-serif font-bold text-[#0B132B]">
+                    <div className="text-xl font-serif font-bold text-[#00072D]">
                       {viewingCustomer.orders_count}
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 border border-[#E8E2D5] rounded-xl space-y-2 text-xs">
-                  <div className="font-semibold text-[#0B132B] uppercase tracking-wider text-[11px]">
+                  <div className="font-semibold text-[#00072D] uppercase tracking-wider text-[11px]">
                     Contact Information
                   </div>
-                  <div className="flex items-center gap-2 text-[#0B132B]">
+                  <div className="flex items-center gap-2 text-[#00072D]">
                     <Mail className="w-3.5 h-3.5 text-[#C89B3C]" />
                     <a href={`mailto:${viewingCustomer.email}`} className="hover:underline">
                       {viewingCustomer.email}
                     </a>
                   </div>
-                  <div className="flex items-center gap-2 text-[#0B132B]">
+                  <div className="flex items-center gap-2 text-[#00072D]">
                     <Phone className="w-3.5 h-3.5 text-[#C89B3C]" />
                     <span>{viewingCustomer.phone || "No phone registered"}</span>
                   </div>
                 </div>
 
                 <div className="p-4 border border-[#E8E2D5] rounded-xl space-y-2 text-xs">
-                  <div className="font-semibold text-[#0B132B] uppercase tracking-wider text-[11px]">
+                  <div className="font-semibold text-[#00072D] uppercase tracking-wider text-[11px]">
                     UK Delivery Postcode & Region
                   </div>
-                  <div className="flex items-center gap-2 text-[#0B132B]">
+                  <div className="flex items-center gap-2 text-[#00072D]">
                     <MapPin className="w-3.5 h-3.5 text-[#C89B3C]" />
                     <span>Postcode: <strong>{viewingCustomer.postcode}</strong> ({viewingCustomer.city})</span>
                   </div>
@@ -651,7 +650,7 @@ export default function AdminCustomersPage() {
               <button
                 type="button"
                 onClick={() => setViewingCustomer(null)}
-                className="w-full py-2.5 bg-[#0B132B] text-white rounded-lg text-xs font-semibold"
+                className="w-full py-2.5 bg-[#00072D] text-white rounded-lg text-xs font-semibold"
               >
                 Close Drawer
               </button>

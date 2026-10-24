@@ -29,10 +29,22 @@ import {
   Search,
   CheckSquare,
   Square,
-  ListPlus
+  ListPlus,
+  Zap,
+  ShieldCheck
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { formatGBP } from "@san-furniture/types";
+
+interface DynamicDeliveryOption {
+  id: string;
+  name: string;
+  badge?: string;
+  pricePennies: number;
+  timeframe?: string;
+  isActive: boolean;
+}
 
 interface Supplier {
   id: string;
@@ -85,7 +97,7 @@ interface SyncLogItem {
 
 export default function AdminSuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState<boolean>(false);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -108,7 +120,8 @@ export default function AdminSuppliersPage() {
   const [importMode, setImportMode] = useState<"sitemap" | "manual">("sitemap");
   const [newAmosUrl, setNewAmosUrl] = useState<string>("");
   const [newAmosCategory, setNewAmosCategory] = useState<string>("cat_beds");
-  const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("two_man_white_glove");
+  const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("del_opt_001");
+  const [dynamicDeliveryOptions, setDynamicDeliveryOptions] = useState<DynamicDeliveryOption[]>([]);
   const [importingUrl, setImportingUrl] = useState<boolean>(false);
   const [activeModalTab, setActiveModalTab] = useState<"items" | "logs">("items");
 
@@ -130,6 +143,38 @@ export default function AdminSuppliersPage() {
   const [sitemapCategoryFilter, setSitemapCategoryFilter] = useState<string>("all");
   const [selectedSitemapUrls, setSelectedSitemapUrls] = useState<string[]>([]);
   const [sitemapSearch, setSitemapSearch] = useState<string>("");
+
+  // Dedicated Furniture To Go (FTG) Live Extraction & Auto-Sync State
+  const [ftgImportModalOpen, setFtgImportModalOpen] = useState<boolean>(false);
+  const [ftgImportMode, setFtgImportMode] = useState<"sitemap" | "manual" | "sync">("sitemap");
+  const [newFtgUrl, setNewFtgUrl] = useState<string>("");
+  const [newFtgCategory, setNewFtgCategory] = useState<string>("cat_beds");
+  const [newFtgDeliveryTier, setNewFtgDeliveryTier] = useState<string>("del_opt_001");
+  const [importingFtg, setImportingFtg] = useState<boolean>(false);
+  const [ftgSyncing, setFtgSyncing] = useState<boolean>(false);
+  const [ftgCatalogData, setFtgCatalogData] = useState<{
+    totalInSitemap: number;
+    alreadyImportedCount: number;
+    availableToImportCount: number;
+    products: Array<{
+      url: string;
+      slug: string;
+      title: string;
+      category_id: string;
+      delivery_tier: string;
+      category_label: string;
+      is_imported: boolean;
+      product_id?: string | null;
+      current_retail_pennies?: number | null;
+    }>;
+  } | null>(null);
+  const [loadingFtgCatalog, setLoadingFtgCatalog] = useState<boolean>(false);
+  const [ftgCategoryFilter, setFtgCategoryFilter] = useState<string>("all");
+  const [selectedFtgUrls, setSelectedFtgUrls] = useState<string[]>([]);
+  const [ftgSearch, setFtgSearch] = useState<string>("");
+
+  // Feed SKU Inspector Modal Open Flag
+  const [feedInspectorOpen, setFeedInspectorOpen] = useState<boolean>(false);
 
   const fetchSuppliers = async () => {
     try {
@@ -156,6 +201,18 @@ export default function AdminSuppliersPage() {
       setLoading(false);
     }
     fetchSuppliers();
+
+    // Fetch dynamic store delivery options configured in admin logistics
+    fetchWithSwr(apiUrl("/api/admin/logistics"), (data: any) => {
+      if (Array.isArray(data?.deliveryOptions) && data.deliveryOptions.length > 0) {
+        setDynamicDeliveryOptions(data.deliveryOptions);
+        const activeOpt = data.deliveryOptions.find((o: any) => o.isActive) || data.deliveryOptions[0];
+        if (activeOpt) {
+          setNewAmosDeliveryTier(activeOpt.id);
+          setNewFtgDeliveryTier(activeOpt.id);
+        }
+      }
+    });
   }, []);
 
   const handleTriggerSync = async (supplierId: string) => {
@@ -225,6 +282,7 @@ export default function AdminSuppliersPage() {
 
   const handleOpenFeedInspector = async (supplier: Supplier) => {
     setInspectSupplier(supplier);
+    setFeedInspectorOpen(true);
     setLoadingFeedItems(true);
     setFeedSearch("");
     setActiveModalTab("items");
@@ -365,6 +423,117 @@ export default function AdminSuppliersPage() {
     }
   };
 
+  const fetchFtgCatalog = async (category = "all") => {
+    setLoadingFtgCatalog(true);
+    try {
+      const res = await fetch(apiUrl(`/api/admin/dropship/furniture-to-go/sitemap-catalog?category=${category}`));
+      const data = await res.json();
+      setFtgCatalogData(data);
+    } catch (err) {
+      console.error("Failed to load FTG catalog:", err);
+    } finally {
+      setLoadingFtgCatalog(false);
+    }
+  };
+
+  const handleImportFtgUrl = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFtgUrl.trim()) return;
+    setImportingFtg(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: newFtgUrl.trim(),
+          categoryId: newFtgCategory,
+          deliveryTier: newFtgDeliveryTier,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg({
+          type: "success",
+          text: data.message || "Furniture To Go product imported successfully!",
+        });
+        setFtgImportModalOpen(false);
+        setNewFtgUrl("");
+        if (inspectSupplier) {
+          handleOpenFeedInspector(inspectSupplier);
+        }
+        fetchSuppliers();
+      } else {
+        setToastMsg({ type: "error", text: data.error || "Failed to extract FTG product." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error extracting FTG product." });
+    } finally {
+      setImportingFtg(false);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
+  const handleBatchImportFtg = async () => {
+    if (selectedFtgUrls.length === 0) return;
+    setImportingFtg(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls: selectedFtgUrls,
+          categoryId: newFtgCategory,
+          deliveryTier: newFtgDeliveryTier,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg({
+          type: "success",
+          text: data.message || `Successfully batch-imported ${data.importedCount || selectedFtgUrls.length} FTG products!`,
+        });
+        setSelectedFtgUrls([]);
+        setFtgImportModalOpen(false);
+        fetchSuppliers();
+        if (inspectSupplier) {
+          handleOpenFeedInspector(inspectSupplier);
+        }
+      } else {
+        setToastMsg({ type: "error", text: data.error || "FTG batch import failed." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error during FTG batch import." });
+    } finally {
+      setImportingFtg(false);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
+  const handleFtgSync = async () => {
+    setFtgSyncing(true);
+    try {
+      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/sync-catalog"), { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setToastMsg({
+          type: "success",
+          text: data.message || "Furniture To Go live reconciliation finished!",
+        });
+        if (inspectSupplier) {
+          handleOpenFeedInspector(inspectSupplier);
+        }
+        fetchSuppliers();
+      } else {
+        setToastMsg({ type: "error", text: data.error || "FTG sync failed." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error triggering FTG reconcile." });
+    } finally {
+      setFtgSyncing(false);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
   const handleFileUpload = async () => {
     if (!inspectSupplier || !uploadContent.trim()) return;
     setUploading(true);
@@ -416,7 +585,7 @@ export default function AdminSuppliersPage() {
             <Building2 className="w-4 h-4" />
             <span>Supply Chain & B2B EDI Network</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-[#0B132B]">
+          <h1 className="text-2xl sm:text-3xl font-serif text-[#00072D]">
             UK Wholesale Dropship Suppliers
           </h1>
           <p className="text-sm text-[#4F6D7A] mt-1">
@@ -427,7 +596,7 @@ export default function AdminSuppliersPage() {
         <button
           onClick={() => handleTriggerSync("all")}
           disabled={syncingId !== null}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-md text-sm font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#00072D] hover:bg-[#1C2541] text-[#FAF8F5] rounded-md text-sm font-medium transition-all shadow-md hover:shadow-lg disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 text-[#C89B3C] ${syncingId ? "animate-spin" : ""}`} />
           <span>Sync Active Live Feeds</span>
@@ -458,14 +627,14 @@ export default function AdminSuppliersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Active Dropship Partners
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2 flex items-baseline gap-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2 flex items-baseline gap-2">
             <span>{activeSuppliers.length} Active</span>
             <span className="text-xs font-sans text-[#7A8B99]">
               ({pausedSuppliers.length} Paused)
             </span>
           </div>
           <div className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> 100% BS 5852 Fire Certified UK Hubs
+            <CheckCircle2 className="w-3.5 h-3.5" /> 100% Quality Checked UK Hubs
           </div>
         </div>
 
@@ -473,7 +642,7 @@ export default function AdminSuppliersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Active Catalog SKUs Synced
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {activeSuppliers.reduce((acc, s) => acc + (s.mapped_products_count || 0), 0)} SKUs
           </div>
           <div className="text-xs text-[#4F6D7A] mt-1">Live stock reservation & trade price guard</div>
@@ -483,7 +652,7 @@ export default function AdminSuppliersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Avg Active Dispatch Lead Time
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             3 - 5 Days
           </div>
           <div className="text-xs text-[#C89B3C] font-medium mt-1 flex items-center gap-1">
@@ -499,7 +668,7 @@ export default function AdminSuppliersPage() {
             onClick={() => setFilterTab("active")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
               filterTab === "active"
-                ? "bg-[#0B132B] text-white shadow-sm"
+                ? "bg-[#00072D] text-white shadow-sm"
                 : "bg-transparent text-[#4F6D7A] hover:bg-slate-100"
             }`}
           >
@@ -511,7 +680,7 @@ export default function AdminSuppliersPage() {
             onClick={() => setFilterTab("all")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
               filterTab === "all"
-                ? "bg-[#0B132B] text-white shadow-sm"
+                ? "bg-[#00072D] text-white shadow-sm"
                 : "bg-transparent text-[#4F6D7A] hover:bg-slate-100"
             }`}
           >
@@ -522,7 +691,7 @@ export default function AdminSuppliersPage() {
             onClick={() => setFilterTab("paused")}
             className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 ${
               filterTab === "paused"
-                ? "bg-[#0B132B] text-white shadow-sm"
+                ? "bg-[#00072D] text-white shadow-sm"
                 : "bg-transparent text-[#4F6D7A] hover:bg-slate-100"
             }`}
           >
@@ -551,7 +720,7 @@ export default function AdminSuppliersPage() {
       ) : displayedSuppliers.length === 0 ? (
         <div className="py-16 text-center bg-white border border-[#E8E2D5] rounded-xl p-8">
           <AlertCircle className="w-10 h-10 text-[#C89B3C] mx-auto mb-3" />
-          <h3 className="text-lg font-serif font-bold text-[#0B132B]">No Suppliers Found</h3>
+          <h3 className="text-lg font-serif font-bold text-[#00072D]">No Suppliers Found</h3>
           <p className="text-sm text-[#4F6D7A] mt-1">There are no suppliers matching the selected filter.</p>
         </div>
       ) : (
@@ -571,7 +740,7 @@ export default function AdminSuppliersPage() {
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0B132B] text-[#FAF8F5]">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#00072D] text-[#FAF8F5]">
                         {s.code.toUpperCase()}
                       </span>
 
@@ -587,12 +756,12 @@ export default function AdminSuppliersPage() {
                         </span>
                       )}
 
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F4F1EA] text-[#0B132B] uppercase">
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#F4F1EA] text-[#00072D] uppercase">
                         EDI: {s.feed_type}
                       </span>
                     </div>
 
-                    <h2 className="text-xl font-serif font-bold text-[#0B132B] flex items-center gap-2">
+                    <h2 className="text-xl font-serif font-bold text-[#00072D] flex items-center gap-2">
                       <span>{s.name}</span>
                       {!isActive && (
                         <span className="text-xs font-sans font-normal text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
@@ -623,7 +792,6 @@ export default function AdminSuppliersPage() {
                     {s.code === "amos_mann_furniture" && (
                       <button
                         onClick={() => {
-                          setInspectSupplier(s);
                           setImportUrlModalOpen(true);
                           fetchSitemapCatalog("all");
                         }}
@@ -635,21 +803,51 @@ export default function AdminSuppliersPage() {
                       </button>
                     )}
 
-                    {/* View Live Feed Data Button */}
+                    {/* Add FTG URL / Batch Dedicated Action */}
+                    {s.code === "furniture_to_go" && (
+                      <button
+                        onClick={() => {
+                          setFtgImportModalOpen(true);
+                          fetchFtgCatalog("all");
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                        title="Auto-discover 1,870+ products from live sitemap or import by URL"
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        <span>+ Add FTG URL / Batch</span>
+                      </button>
+                    )}
+
+                    {/* Upload CSV Feed Button for CSV suppliers like Furniture To Go */}
+                    {s.feed_type === "csv" && (
+                      <button
+                        onClick={() => {
+                          setInspectSupplier(s);
+                          setUploadModalOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
+                        title="Upload FTG Trade CSV / Stocklist Feed"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload CSV Feed</span>
+                      </button>
+                    )}
+
+                    {/* View Catalog SKUs Inspector */}
                     <button
                       onClick={() => handleOpenFeedInspector(s)}
-                      className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors shadow-sm"
-                      title="View synchronized wholesale SKUs, costs, stock levels & margins"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 border border-[#E8E2D5] hover:bg-slate-50 text-[#00072D] rounded-lg text-xs font-medium transition-colors"
+                      title="Inspect mapped catalog SKUs & live feed items"
                     >
                       <Eye className="w-3.5 h-3.5 text-[#C89B3C]" />
-                      <span>View Live Feed ({s.mapped_products_count || 0} SKUs)</span>
+                      <span>View SKUs ({s.mapped_products_count || 0})</span>
                     </button>
 
                     {/* Sync Button */}
                     <button
                       onClick={() => handleTriggerSync(s.id)}
                       disabled={syncingId === s.id || !isActive}
-                      className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-[#F4F1EA] hover:bg-[#E8E2D5] text-[#0B132B] rounded-lg text-xs font-semibold transition-colors disabled:opacity-40"
+                      className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-[#F4F1EA] hover:bg-[#E8E2D5] text-[#00072D] rounded-lg text-xs font-semibold transition-colors disabled:opacity-40"
                     >
                       <RefreshCw className={`w-3.5 h-3.5 ${syncingId === s.id ? "animate-spin" : ""}`} />
                       <span>{syncingId === s.id ? "Syncing..." : "Sync Catalog"}</span>
@@ -660,7 +858,7 @@ export default function AdminSuppliersPage() {
                       href={s.feed_url || "#"}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center gap-1 px-3.5 py-2 border border-[#E8E2D5] hover:bg-slate-50 text-[#0B132B] rounded-lg text-xs font-medium transition-colors"
+                      className="inline-flex items-center justify-center gap-1 px-3.5 py-2 border border-[#E8E2D5] hover:bg-slate-50 text-[#00072D] rounded-lg text-xs font-medium transition-colors"
                       title="Access official supplier B2B trade account & stock downloads"
                     >
                       <span>B2B Portal</span>
@@ -699,7 +897,7 @@ export default function AdminSuppliersPage() {
                 {/* Contact & Meta Bar */}
                 <div className="mt-5 pt-4 border-t border-[#E8E2D5] flex flex-wrap items-center justify-between gap-3 text-xs text-[#4F6D7A]">
                   <div className="flex flex-wrap items-center gap-4">
-                    <span className="font-medium text-[#0B132B]">
+                    <span className="font-medium text-[#00072D]">
                       Primary Contact: {s.contact_name || "Factory Dispatch Team"}
                     </span>
                     <span className="flex items-center gap-1">
@@ -729,291 +927,6 @@ export default function AdminSuppliersPage() {
         </div>
       )}
 
-      {/* FEED INSPECTOR MODAL */}
-      {inspectSupplier && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border border-[#E8E2D5] rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-[#E8E2D5] flex items-center justify-between bg-[#FAF8F5]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#0B132B] text-[#FAF8F5]">
-                    {inspectSupplier.code.toUpperCase()}
-                  </span>
-                  <span className="text-xs text-emerald-700 font-medium flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Live Wholesale Inventory Feed
-                  </span>
-                </div>
-                <h2 className="text-xl font-serif font-bold text-[#0B132B] mt-1">
-                  {inspectSupplier.name}
-                </h2>
-                <p className="text-xs text-[#4F6D7A]">
-                  Hub: {inspectSupplier.location} • Lead Time: {inspectSupplier.lead_time_days} days
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {inspectSupplier.code === "amos_mann_furniture" ? (
-                  <>
-                    <button
-                      onClick={() => setImportUrlModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                      title="Add a new live product URL from amosmannfurniture.co.uk"
-                    >
-                      <PlusCircle className="w-3.5 h-3.5" />
-                      <span>Add Amos Mann URL</span>
-                    </button>
-
-                    <button
-                      onClick={handleAmosMannSync}
-                      disabled={amosMannSyncing}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors disabled:opacity-50"
-                      title="Run live background crawler across all tracked products"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${amosMannSyncing ? "animate-spin" : ""}`} />
-                      <span>{amosMannSyncing ? "Reconciling..." : "Run Live Reconcile"}</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setUploadModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Feed File</span>
-                  </button>
-                )}
-
-                <button
-                  onClick={() => setInspectSupplier(null)}
-                  className="p-2 text-[#4F6D7A] hover:text-[#0B132B] hover:bg-slate-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Tabs for Amos Mann */}
-            {inspectSupplier.code === "amos_mann_furniture" && (
-              <div className="px-6 pt-3 border-b border-[#E8E2D5] bg-[#FAF8F5] flex items-center gap-4 text-xs font-medium">
-                <button
-                  onClick={() => setActiveModalTab("items")}
-                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
-                    activeModalTab === "items"
-                      ? "border-[#0B132B] text-[#0B132B] font-bold"
-                      : "border-transparent text-[#4F6D7A] hover:text-[#0B132B]"
-                  }`}
-                >
-                  <Layers className="w-3.5 h-3.5 text-[#C89B3C]" />
-                  <span>Tracked Live Products ({feedItems.length})</span>
-                </button>
-
-                <button
-                  onClick={() => setActiveModalTab("logs")}
-                  className={`pb-2.5 border-b-2 flex items-center gap-1.5 transition-colors ${
-                    activeModalTab === "logs"
-                      ? "border-[#0B132B] text-[#0B132B] font-bold"
-                      : "border-transparent text-[#4F6D7A] hover:text-[#0B132B]"
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5 text-[#C89B3C]" />
-                  <span>Auto-Sync History & Diffs ({amosMannLogs.length})</span>
-                </button>
-              </div>
-            )}
-
-            {/* Modal Search & Stats */}
-            {activeModalTab === "items" && (
-              <div className="p-4 border-b border-[#E8E2D5] bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <input
-                  type="text"
-                  placeholder="Search by SKU or product title..."
-                  value={feedSearch}
-                  onChange={(e) => setFeedSearch(e.target.value)}
-                  className="px-3.5 py-2 border border-[#E8E2D5] rounded-lg text-xs w-full sm:w-80 focus:outline-none focus:border-[#C89B3C]"
-                />
-
-                <div className="text-xs text-[#4F6D7A]">
-                  Showing <strong>{filteredFeedItems.length}</strong> of <strong>{feedItems.length}</strong> synchronized SKUs
-                </div>
-              </div>
-            )}
-
-            {/* Modal Body / Table */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              {loadingFeedItems ? (
-                <div className="py-20 flex flex-col items-center justify-center gap-3">
-                  <RefreshCw className="w-8 h-8 animate-spin text-[#C89B3C]" />
-                  <span className="text-xs text-[#4F6D7A]">Loading wholesale feed data...</span>
-                </div>
-              ) : activeModalTab === "logs" && inspectSupplier.code === "amos_mann_furniture" ? (
-                <div>
-                  {amosMannLogs.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-[#4F6D7A]">
-                      No previous extraction logs found. Click &quot;Run Live Reconcile&quot; to execute your first background sync.
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse">
-                        <thead>
-                          <tr className="border-b border-[#E8E2D5] text-[#4F6D7A] uppercase tracking-wider text-[10px]">
-                            <th className="pb-3 font-semibold">Execution Time</th>
-                            <th className="pb-3 font-semibold">Trigger</th>
-                            <th className="pb-3 font-semibold">Items Scanned</th>
-                            <th className="pb-3 font-semibold">Prices Updated</th>
-                            <th className="pb-3 font-semibold">Stock Updated</th>
-                            <th className="pb-3 font-semibold">Duration</th>
-                            <th className="pb-3 font-semibold">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#E8E2D5]">
-                          {amosMannLogs.map((log) => (
-                            <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 font-medium text-[#0B132B]">
-                                {new Date(log.created_at).toLocaleString("en-GB")}
-                              </td>
-                              <td className="py-3">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                                  log.trigger_type === "cron" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
-                                }`}>
-                                  {log.trigger_type.toUpperCase()}
-                                </span>
-                              </td>
-                              <td className="py-3 font-bold text-[#0B132B]">{log.items_scanned}</td>
-                              <td className="py-3">
-                                <span className={log.prices_updated > 0 ? "text-amber-700 font-bold" : "text-[#4F6D7A]"}>
-                                  {log.prices_updated}
-                                </span>
-                              </td>
-                              <td className="py-3">
-                                <span className={log.stock_updated > 0 ? "text-rose-700 font-bold" : "text-[#4F6D7A]"}>
-                                  {log.stock_updated}
-                                </span>
-                              </td>
-                              <td className="py-3 text-[#4F6D7A]">
-                                {(log.duration_ms / 1000).toFixed(1)}s
-                              </td>
-                              <td className="py-3">
-                                <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
-                                  <CheckCircle2 className="w-3.5 h-3.5" /> {log.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              ) : filteredFeedItems.length === 0 ? (
-                <div className="py-12 text-center text-sm text-[#4F6D7A]">
-                  No feed items found. Click &quot;Add Amos Mann URL&quot; or &quot;Run Live Reconcile&quot; to populate.
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-[#E8E2D5] text-[#4F6D7A] uppercase tracking-wider text-[10px]">
-                        <th className="pb-3 font-semibold">SKU / Item</th>
-                        {inspectSupplier.code === "amos_mann_furniture" && (
-                          <th className="pb-3 font-semibold">Live Website</th>
-                        )}
-                        <th className="pb-3 font-semibold">Trade Cost (Ex VAT)</th>
-                        <th className="pb-3 font-semibold">Carriage</th>
-                        <th className="pb-3 font-semibold">Retail Price</th>
-                        <th className="pb-3 font-semibold">Margin %</th>
-                        <th className="pb-3 font-semibold">Stock</th>
-                        <th className="pb-3 font-semibold">Lead Time</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#E8E2D5]">
-                      {filteredFeedItems.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="py-3 pr-4">
-                            <div className="flex items-center gap-3">
-                              {item.thumbnail_url && (
-                                <img
-                                  src={item.thumbnail_url}
-                                  alt={item.title}
-                                  className="w-10 h-10 object-cover rounded-md border border-[#E8E2D5] shrink-0"
-                                />
-                              )}
-                              <div>
-                                <div className="font-bold text-[#0B132B]">{item.supplier_sku}</div>
-                                <div className="text-[#4F6D7A] truncate max-w-xs">{item.title}</div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {inspectSupplier.code === "amos_mann_furniture" && (
-                            <td className="py-3 pr-2">
-                              {item.source_url ? (
-                                <a
-                                  href={item.source_url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#F4F1EA] hover:bg-[#E8E2D5] text-[#0B132B] text-[11px] font-medium transition-colors"
-                                  title="View product on amosmannfurniture.co.uk"
-                                >
-                                  <Globe className="w-3 h-3 text-[#C89B3C]" />
-                                  <span>View Site</span>
-                                  <ExternalLink className="w-3 h-3 text-[#4F6D7A]" />
-                                </a>
-                              ) : (
-                                <span className="text-gray-400 text-[10px]">—</span>
-                              )}
-                            </td>
-                          )}
-
-                          <td className="py-3 font-semibold text-[#0B132B]">
-                            £{((item.cost_price_pennies || 0) / 100).toFixed(2)}
-                          </td>
-                          <td className="py-3 text-[#4F6D7A]">
-                            £{((item.shipping_cost_pennies || 0) / 100).toFixed(2)}
-                          </td>
-                          <td className="py-3 font-bold text-[#0B132B]">
-                            £{((item.retail_price_pennies || 0) / 100).toFixed(2)}
-                          </td>
-                          <td className="py-3">
-                            <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                              {item.markup_percentage || 45}%
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <span
-                              className={`font-semibold ${
-                                (item.stock_level ?? 0) > 10
-                                  ? "text-emerald-700"
-                                  : (item.stock_level ?? 0) > 0
-                                  ? "text-amber-700"
-                                  : "text-rose-700"
-                              }`}
-                            >
-                              {(item.stock_level ?? 0) > 0 ? `${item.stock_level} units` : "Out of Stock"}
-                            </span>
-                          </td>
-                          <td className="py-3 text-[#4F6D7A]">{item.lead_time_days || 5} days</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 border-t border-[#E8E2D5] bg-[#FAF8F5] flex items-center justify-between text-xs text-[#4F6D7A]">
-              <span>Automated B2B Purchase Order dispatch active for this supplier</span>
-              <button
-                onClick={() => setInspectSupplier(null)}
-                className="px-4 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-white rounded-lg text-xs font-semibold transition-colors"
-              >
-                Close Inspector
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* UPLOAD FEED MODAL (FOR CSV SUPPLIERS) */}
       {uploadModalOpen && inspectSupplier && (
@@ -1022,13 +935,13 @@ export default function AdminSuppliersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">
                   Import Feed for {inspectSupplier.name}
                 </h3>
               </div>
               <button
                 onClick={() => setUploadModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1039,7 +952,7 @@ export default function AdminSuppliersPage() {
             </p>
 
             <div>
-              <label className="block text-xs font-semibold text-[#0B132B] mb-1.5">
+              <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
                 Feed Content (CSV or JSON)
               </label>
               <textarea
@@ -1086,13 +999,13 @@ export default function AdminSuppliersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">
                   Amos Mann Dropship Catalog Importer
                 </h3>
               </div>
               <button
                 onClick={() => setImportUrlModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1105,12 +1018,12 @@ export default function AdminSuppliersPage() {
                 onClick={() => setImportMode("sitemap")}
                 className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
                   importMode === "sitemap"
-                    ? "border-[#C89B3C] text-[#0B132B]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#0B132B]"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5 text-[#C89B3C]" />
-                <span>⚡ Auto-Discover Live Sitemap ({sitemapData?.totalInSitemap || 310} SKUs)</span>
+                <span>Auto-Discover Live Sitemap ({sitemapData?.totalInSitemap || 310} SKUs)</span>
               </button>
 
               <button
@@ -1118,12 +1031,12 @@ export default function AdminSuppliersPage() {
                 onClick={() => setImportMode("manual")}
                 className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
                   importMode === "manual"
-                    ? "border-[#C89B3C] text-[#0B132B]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#0B132B]"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
                 }`}
               >
                 <ListPlus className="w-3.5 h-3.5 text-[#C89B3C]" />
-                <span>🔗 Paste URLs (Single or Multiple)</span>
+                <span>Paste URLs (Single or Multiple)</span>
               </button>
             </div>
 
@@ -1134,7 +1047,7 @@ export default function AdminSuppliersPage() {
                 <div className="grid grid-cols-3 gap-2 bg-[#FAF8F5] p-3 rounded-lg border border-[#E8E2D5] text-center text-xs">
                   <div>
                     <div className="text-[11px] text-[#4F6D7A]">Live on Supplier Site</div>
-                    <div className="font-serif font-bold text-base text-[#0B132B]">
+                    <div className="font-serif font-bold text-base text-[#00072D]">
                       {sitemapData ? sitemapData.totalInSitemap : "310"} Products
                     </div>
                   </div>
@@ -1177,14 +1090,14 @@ export default function AdminSuppliersPage() {
                           .map((p) => p.url);
                         setSelectedSitemapUrls(available);
                       }}
-                      className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#0B132B]"
+                      className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
                     >
                       Select All New
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedSitemapUrls([])}
-                      className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#0B132B]"
+                      className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
                     >
                       Clear
                     </button>
@@ -1239,13 +1152,13 @@ export default function AdminSuppliersPage() {
                                 className="rounded text-[#C89B3C] focus:ring-[#C89B3C]"
                               />
                               <div className="truncate">
-                                <div className="font-medium text-[#0B132B] truncate">{cleanName}</div>
+                                <div className="font-medium text-[#00072D] truncate">{cleanName}</div>
                                 <div className="text-[10px] text-[#7A8B99] truncate font-mono">{p.url}</div>
                               </div>
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F4F1EA] text-[#0B132B]">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F4F1EA] text-[#00072D]">
                                 {p.category_label}
                               </span>
                               {p.is_imported ? (
@@ -1265,7 +1178,7 @@ export default function AdminSuppliersPage() {
                 {/* Batch Options */}
                 <div className="grid grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#0B132B] mb-1">
+                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
                       Target Store Category
                     </label>
                     <select
@@ -1282,17 +1195,27 @@ export default function AdminSuppliersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-[#0B132B] mb-1">
-                      UK White-Glove Delivery Tier
+                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
+                      Store Delivery Option
                     </label>
                     <select
                       value={newAmosDeliveryTier}
                       onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
                     >
-                      <option value="two_man_white_glove">Two-Man White Glove (£45)</option>
-                      <option value="pallet">Pallet Delivery (£30)</option>
-                      <option value="standard_parcel">Standard Parcel (£15)</option>
+                      {dynamicDeliveryOptions.length > 0 ? (
+                        dynamicDeliveryOptions.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -1342,7 +1265,7 @@ export default function AdminSuppliersPage() {
                 </p>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#0B132B] mb-1.5">
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
                     Amos Mann URLs (One per line or single URL)
                   </label>
                   <textarea
@@ -1357,7 +1280,7 @@ export default function AdminSuppliersPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-[#0B132B] mb-1.5">
+                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
                       Category
                     </label>
                     <select
@@ -1374,17 +1297,27 @@ export default function AdminSuppliersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-[#0B132B] mb-1.5">
-                      UK Delivery Tier
+                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                      Store Delivery Option
                     </label>
                     <select
                       value={newAmosDeliveryTier}
                       onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
                     >
-                      <option value="two_man_white_glove">Two-Man White Glove (£45)</option>
-                      <option value="pallet">Pallet Delivery (£30)</option>
-                      <option value="standard_parcel">Standard Parcel (£15)</option>
+                      {dynamicDeliveryOptions.length > 0 ? (
+                        dynamicDeliveryOptions.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
@@ -1412,6 +1345,654 @@ export default function AdminSuppliersPage() {
                   </button>
                 </div>
               </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* SUPPLIER SKU & FEED ITEM INSPECTOR MODAL */}
+      {feedInspectorOpen && inspectSupplier && !uploadModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white border border-[#E8E2D5] rounded-2xl w-full max-w-4xl p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#FAF8F5] border border-[#E8E2D5] flex items-center justify-center">
+                  <Building2 className="w-4 h-4 text-[#C89B3C]" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-[#00072D]">
+                    {inspectSupplier.name} — Live Catalog Feed
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-[#4F6D7A]">
+                    <span>{inspectSupplier.location}</span>
+                    <span>•</span>
+                    <span>Lead Time: {inspectSupplier.lead_time_days} days</span>
+                    <span>•</span>
+                    <span className="font-semibold text-[#00072D]">{feedItems.length} SKUs Mapped</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Reconcile button for live suppliers */}
+                {inspectSupplier.code === "amos_mann_furniture" && (
+                  <button
+                    onClick={handleAmosMannSync}
+                    disabled={amosMannSyncing}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${amosMannSyncing ? "animate-spin" : ""}`} />
+                    <span>{amosMannSyncing ? "Reconciling..." : "Reconcile Live Now"}</span>
+                  </button>
+                )}
+
+                {inspectSupplier.code === "furniture_to_go" && (
+                  <button
+                    onClick={handleFtgSync}
+                    disabled={ftgSyncing}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00072D] hover:bg-slate-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#C89B3C] ${ftgSyncing ? "animate-spin" : ""}`} />
+                    <span>{ftgSyncing ? "Reconciling..." : "Live Reconcile Now"}</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setFeedInspectorOpen(false);
+                    setInspectSupplier(null);
+                  }}
+                  className="p-1 text-[#4F6D7A] hover:text-[#00072D]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter & Search */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
+                <input
+                  type="text"
+                  placeholder="Filter by SKU or product title..."
+                  value={feedSearch}
+                  onChange={(e) => setFeedSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C]"
+                />
+              </div>
+
+              {inspectSupplier.code === "amos_mann_furniture" && (
+                <div className="flex border border-[#E8E2D5] rounded-lg overflow-hidden text-xs">
+                  <button
+                    onClick={() => setActiveModalTab("items")}
+                    className={`px-3 py-1.5 font-medium ${
+                      activeModalTab === "items" ? "bg-[#00072D] text-white" : "bg-white text-[#4F6D7A] hover:bg-slate-50"
+                    }`}
+                  >
+                    Items ({filteredFeedItems.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveModalTab("logs")}
+                    className={`px-3 py-1.5 font-medium ${
+                      activeModalTab === "logs" ? "bg-[#00072D] text-white" : "bg-white text-[#4F6D7A] hover:bg-slate-50"
+                    }`}
+                  >
+                    Sync Logs ({amosMannLogs.length})
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto min-h-[300px] border border-[#E8E2D5] rounded-xl bg-white">
+              {loadingFeedItems ? (
+                <div className="p-12 text-center text-xs text-[#7A8B99] flex flex-col items-center justify-center gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-[#C89B3C]" />
+                  <span>Loading live catalog feed data...</span>
+                </div>
+              ) : activeModalTab === "logs" ? (
+                <div className="divide-y divide-[#E8E2D5]">
+                  {amosMannLogs.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-[#7A8B99]">No reconcile logs recorded yet.</div>
+                  ) : (
+                    amosMannLogs.map((log) => (
+                      <div key={log.id} className="p-3 text-xs flex items-center justify-between hover:bg-slate-50">
+                        <div>
+                          <div className="font-semibold text-[#00072D] flex items-center gap-2">
+                            <span>Trigger: {log.trigger_type.toUpperCase()}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                              {log.status}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-[#7A8B99] mt-0.5">
+                            {new Date(log.created_at).toLocaleString("en-GB")} • {log.duration_ms}ms
+                          </div>
+                        </div>
+                        <div className="text-right text-[11px]">
+                          <div>Scanned: <strong>{log.items_scanned}</strong> items</div>
+                          <div className="text-amber-700">Updated: <strong>{log.prices_updated}</strong> prices, <strong>{log.stock_updated}</strong> stock</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ) : filteredFeedItems.length === 0 ? (
+                <div className="p-12 text-center text-xs text-[#7A8B99]">
+                  No SKUs found matching &quot;{feedSearch}&quot;.
+                </div>
+              ) : (
+                <div>
+                  <div className="p-3 bg-amber-50/70 border-b border-amber-200/80 flex items-center justify-between text-[11px] text-[#00072D]">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>
+                        <strong>Unified Pricing Engine:</strong> Landed Cost = Trade Cost + Supplier Carriage &bull; Retail = Landed Cost &times; (1 + Margin) &times; 1.20 UK VAT &bull; <em>Free UK Mainland Delivery</em> badged storewide.
+                      </span>
+                    </div>
+                    <span className="font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                      Zero Margin Loss Protected
+                    </span>
+                  </div>
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="bg-[#FAF8F5] border-b border-[#E8E2D5] text-[11px] font-semibold text-[#4F6D7A]">
+                        <th className="py-2.5 px-3">Product / SKU</th>
+                        <th className="py-2.5 px-3">Trade Cost</th>
+                        <th className="py-2.5 px-3">Supplier Carriage</th>
+                        <th className="py-2.5 px-3">Landed Cost</th>
+                        <th className="py-2.5 px-3">Retail (inc VAT)</th>
+                        <th className="py-2.5 px-3">Margin</th>
+                        <th className="py-2.5 px-3">Stock Level</th>
+                        <th className="py-2.5 px-3">Last Synced</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#E8E2D5]">
+                      {filteredFeedItems.map((item) => {
+                        const tradeGbp = (item.cost_price_pennies / 100).toFixed(2);
+                        const carriagePennies = item.shipping_cost_pennies || 0;
+                        const carriageGbp = carriagePennies > 0 ? `£${(carriagePennies / 100).toFixed(2)}` : "£0.00 (Incl.)";
+                        const landedGbp = ((item.cost_price_pennies + carriagePennies) / 100).toFixed(2);
+                        const retailGbp = (item.retail_price_pennies / 100).toFixed(2);
+                        const inStock = item.stock_level > 0;
+                        return (
+                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-2.5 px-3">
+                              <div className="font-medium text-[#00072D] max-w-xs truncate">{item.title}</div>
+                              <div className="text-[10px] font-mono text-[#7A8B99] flex items-center gap-1.5">
+                                <span>SKU: {item.supplier_sku}</span>
+                                {item.source_url && (
+                                  <a
+                                    href={item.source_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[#C89B3C] hover:underline inline-flex items-center gap-0.5"
+                                  >
+                                    <span>Source</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[#00072D]">£{tradeGbp}</td>
+                            <td className="py-2.5 px-3 font-mono text-slate-600">{carriageGbp}</td>
+                            <td className="py-2.5 px-3 font-mono font-semibold text-[#00072D]">£{landedGbp}</td>
+                            <td className="py-2.5 px-3 font-mono font-semibold text-emerald-900">£{retailGbp}</td>
+                            <td className="py-2.5 px-3">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                {item.markup_percentage || "40"}%
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {inStock ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                                  In Stock ({item.stock_level})
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-rose-100 text-rose-800">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                                  Out of Stock
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-[10px] text-[#7A8B99]">
+                              {item.last_synced_at ? new Date(item.last_synced_at).toLocaleDateString("en-GB") : "Live"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-[#E8E2D5] text-xs text-[#4F6D7A]">
+              <span>Showing {filteredFeedItems.length} of {feedItems.length} mapped items</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFeedInspectorOpen(false);
+                  setInspectSupplier(null);
+                }}
+                className="px-4 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] text-[#00072D] rounded-lg text-xs font-medium border border-[#E8E2D5]"
+              >
+                Close Inspector
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FURNITURE TO GO AUTO-IMPORT & SITEMAP BATCH CATALOG MODAL */}
+      {ftgImportModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white border border-[#E8E2D5] rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-[#C89B3C]" />
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">
+                  Furniture To Go Dropship Catalog Importer
+                </h3>
+              </div>
+              <button
+                onClick={() => setFtgImportModalOpen(false)}
+                className="text-[#4F6D7A] hover:text-[#00072D]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Mode Switch Tabs */}
+            <div className="flex border-b border-[#E8E2D5] gap-2">
+              <button
+                type="button"
+                onClick={() => setFtgImportMode("sitemap")}
+                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                  ftgImportMode === "sitemap"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#C89B3C]" />
+                <span>Auto-Discover Live Sitemap ({ftgCatalogData?.totalInSitemap || 1876} SKUs)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFtgImportMode("manual")}
+                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                  ftgImportMode === "manual"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                }`}
+              >
+                <ListPlus className="w-3.5 h-3.5 text-[#C89B3C]" />
+                <span>Paste URLs (Single or Multiple)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFtgImportMode("sync")}
+                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                  ftgImportMode === "sync"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 text-[#C89B3C]" />
+                <span>Automated Sync</span>
+              </button>
+            </div>
+
+            {/* TAB 1: SITEMAP AUTO-DISCOVERY */}
+            {ftgImportMode === "sitemap" && (
+              <div className="flex-1 flex flex-col overflow-hidden space-y-3">
+                {/* Stats Bar */}
+                <div className="grid grid-cols-3 gap-2 bg-[#FAF8F5] p-3 rounded-lg border border-[#E8E2D5] text-center text-xs">
+                  <div>
+                    <div className="text-[11px] text-[#4F6D7A]">Live on Supplier Site</div>
+                    <div className="font-serif font-bold text-base text-[#00072D]">
+                      {ftgCatalogData ? ftgCatalogData.totalInSitemap : "1,876"} Products
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-emerald-700">Already in Catalog</div>
+                    <div className="font-serif font-bold text-base text-emerald-800">
+                      {ftgCatalogData ? ftgCatalogData.alreadyImportedCount : "—"} SKUs
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[11px] text-[#C89B3C]">Available to Import</div>
+                    <div className="font-serif font-bold text-base text-[#C89B3C]">
+                      {ftgCatalogData ? ftgCatalogData.availableToImportCount : "—"} New
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="relative flex-1 w-full">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
+                    <input
+                      type="text"
+                      placeholder="Filter by product name or slug..."
+                      value={ftgSearch}
+                      onChange={(e) => setFtgSearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const available = (ftgCatalogData?.products || [])
+                          .filter((p) => !p.is_imported)
+                          .filter((p) =>
+                            ftgSearch
+                              ? (p.title + " " + p.slug).toLowerCase().includes(ftgSearch.toLowerCase())
+                              : true
+                          )
+                          .map((p) => p.url);
+                        setSelectedFtgUrls(available);
+                      }}
+                      className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
+                    >
+                      Select All New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFtgUrls([])}
+                      className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {/* Product List Scroll Area */}
+                <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-56 bg-white">
+                  {loadingFtgCatalog ? (
+                    <div className="p-8 text-center text-xs text-[#7A8B99] flex items-center justify-center gap-2">
+                      <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
+                      <span>Scanning live furniture-to-go.co.uk sitemap...</span>
+                    </div>
+                  ) : !ftgCatalogData || ftgCatalogData.products.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-[#7A8B99]">
+                      No products found.
+                    </div>
+                  ) : (
+                    ftgCatalogData.products
+                      .filter((p) =>
+                        ftgSearch
+                          ? (p.title + " " + p.slug).toLowerCase().includes(ftgSearch.toLowerCase())
+                          : true
+                      )
+                      .map((p) => {
+                        const isSelected = selectedFtgUrls.includes(p.url);
+                        return (
+                          <label
+                            key={p.url}
+                            className={`flex items-center justify-between p-2.5 hover:bg-slate-50 cursor-pointer text-xs transition-colors ${
+                              p.is_imported ? "bg-slate-50/60 opacity-60" : isSelected ? "bg-amber-50/50" : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                disabled={p.is_imported}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedFtgUrls((prev) => [...prev, p.url]);
+                                  } else {
+                                    setSelectedFtgUrls((prev) => prev.filter((u) => u !== p.url));
+                                  }
+                                }}
+                                className="rounded text-[#C89B3C] focus:ring-[#C89B3C]"
+                              />
+                              <div className="truncate">
+                                <div className="font-medium text-[#00072D] truncate">{p.title}</div>
+                                <div className="text-[10px] text-[#7A8B99] truncate font-mono">{p.url}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F4F1EA] text-[#00072D]">
+                                {p.category_label}
+                              </span>
+                              {p.is_imported ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                  <Check className="w-3 h-3" /> Already Imported
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-[#C89B3C] font-medium">Ready</span>
+                              )}
+                            </div>
+                          </label>
+                        );
+                      })
+                  )}
+                </div>
+
+                {/* Batch Options */}
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
+                      Target Store Category
+                    </label>
+                    <select
+                      value={newFtgCategory}
+                      onChange={(e) => setNewFtgCategory(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D]"
+                    >
+                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
+                      <option value="cat_living">Living & Tables</option>
+                      <option value="cat_dining">Dining Tables & Chairs</option>
+                      <option value="cat_sofas">Sofas & Lounges</option>
+                      <option value="cat_armchairs">Accent Armchairs</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
+                      Store Delivery Option
+                    </label>
+                    <select
+                      value={newFtgDeliveryTier}
+                      onChange={(e) => setNewFtgDeliveryTier(e.target.value)}
+                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D] bg-white text-[#00072D] font-medium"
+                    >
+                      {dynamicDeliveryOptions.length > 0 ? (
+                        dynamicDeliveryOptions.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-[#E8E2D5]">
+                  <div className="text-xs text-[#4F6D7A]">
+                    <strong>{selectedFtgUrls.length}</strong> products selected
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFtgImportModalOpen(false)}
+                      className="px-3.5 py-1.5 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleBatchImportFtg}
+                      disabled={importingFtg || selectedFtgUrls.length === 0}
+                      className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                    >
+                      {importingFtg ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {importingFtg
+                          ? `Extracting (${selectedFtgUrls.length})...`
+                          : `Batch Import (${selectedFtgUrls.length}) Products`}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: MANUAL URL(S) PASTE */}
+            {ftgImportMode === "manual" && (
+              <form onSubmit={handleImportFtgUrl} className="space-y-4">
+                <p className="text-xs text-[#4F6D7A]">
+                  Paste one or more Furniture To Go URLs (one per line). The engine will extract live CDN images, dimensions, trade prices, calculate retail prices with 20% VAT, and add them to your catalog.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                    Furniture To Go URLs (One per line or single URL)
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="https://furniture-to-go.co.uk/chelsea-bedroom-2-drawer-bedside.html&#10;https://furniture-to-go.co.uk/paris-2-door-1-drawer-wardrobe-in-white.html"
+                    value={newFtgUrl}
+                    onChange={(e) => setNewFtgUrl(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                      Category
+                    </label>
+                    <select
+                      value={newFtgCategory}
+                      onChange={(e) => setNewFtgCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                    >
+                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
+                      <option value="cat_living">Living & Tables</option>
+                      <option value="cat_dining">Dining Tables & Chairs</option>
+                      <option value="cat_sofas">Sofas & Lounges</option>
+                      <option value="cat_armchairs">Accent Armchairs</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                      Store Delivery Option
+                    </label>
+                    <select
+                      value={newFtgDeliveryTier}
+                      onChange={(e) => setNewFtgDeliveryTier(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
+                    >
+                      {dynamicDeliveryOptions.length > 0 ? (
+                        dynamicDeliveryOptions.map((opt) => (
+                          <option key={opt.id} value={opt.id}>
+                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D5]">
+                  <button
+                    type="button"
+                    onClick={() => setFtgImportModalOpen(false)}
+                    className="px-4 py-2 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={importingFtg || !newFtgUrl.trim()}
+                    className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    {importingFtg ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3.5 h-3.5" />
+                    )}
+                    <span>{importingFtg ? "Extracting & Importing..." : "Extract & Add to Catalog"}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* TAB 3: AUTOMATED SYNC SETTINGS */}
+            {ftgImportMode === "sync" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-[#FAF8F5] border border-[#E8E2D5] rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-[#C89B3C]" />
+                      <span className="font-semibold text-xs text-[#00072D]">Background Auto-Reconciliation</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                      ACTIVE (Every 6h)
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#4F6D7A]">
+                    Automated background cron runs periodic crawls of your active Furniture To Go items to protect wholesale margins and verify warehouse inventory.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-white p-2.5 rounded-lg border border-[#E8E2D5]">
+                      <div className="text-[10px] text-[#7A8B99]">Margin Guard Floor</div>
+                      <div className="font-semibold text-[#00072D]">35% Net Minimum</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-lg border border-[#E8E2D5]">
+                      <div className="text-[10px] text-[#7A8B99]">UK VAT Calculation</div>
+                      <div className="font-semibold text-[#00072D]">Strict 20% Included</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs text-[#4F6D7A]">Need to refresh catalog right now?</span>
+                  <button
+                    type="button"
+                    onClick={handleFtgSync}
+                    disabled={ftgSyncing}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#00072D] hover:bg-slate-800 text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-[#C89B3C] ${ftgSyncing ? "animate-spin" : ""}`} />
+                    <span>{ftgSyncing ? "Reconciling Live..." : "Trigger Live FTG Reconcile Now"}</span>
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>

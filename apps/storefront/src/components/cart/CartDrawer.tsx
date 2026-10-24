@@ -6,6 +6,7 @@ import Image from "next/image";
 import { X, Trash2, Plus, Minus, Truck, ShieldCheck, ArrowRight, ShoppingBag } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatGBP } from "@san-furniture/types";
+import { usePageSections } from "@/lib/cms";
 
 export function CartDrawer() {
   const {
@@ -21,6 +22,15 @@ export function CartDrawer() {
     freeDeliveryProgressPercent,
     hasFreeDelivery,
   } = useCart();
+
+  const { getSection } = usePageSections("cart");
+  const guaranteesSection = getSection("cart_trust_guarantees", {
+    guarantees: [
+      { badge: "Checked", label: "UK Quality Inspected" },
+      { badge: "Delivery", label: "Free Mainland UK" },
+      { badge: "Pricing", label: "Zero Hidden Fees" },
+    ],
+  });
 
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -48,8 +58,6 @@ export function CartDrawer() {
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const klarnaMonthlyPennies = Math.round(subtotalPennies / 3);
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -90,35 +98,20 @@ export function CartDrawer() {
             </button>
           </div>
 
-          {/* Free 2-Man White Glove Delivery Progress Meter */}
-          <div className="px-5 py-3.5 bg-sand-200/60 border-b border-sand-200">
-            <div className="flex items-center justify-between text-xs mb-1.5 font-medium">
-              <span className="flex items-center gap-1.5 text-navy-900">
-                <Truck className="w-4 h-4 text-brass-600" />
-                {hasFreeDelivery ? (
-                  <span className="text-forest-700 font-semibold">
-                    UK Free 2-Man Delivery unlocked!
-                  </span>
-                ) : (
-                  <span>
-                    Add{" "}
-                    <strong className="text-navy-950">
-                      {formatGBP(freeDeliveryRemainingPennies)}
-                    </strong>{" "}
-                    for Free White Glove Delivery
-                  </span>
-                )}
+          {/* Free UK Mainland Delivery Banner */}
+          <div className="px-5 py-3.5 bg-forest-50/70 border-b border-forest-200">
+            <div className="flex items-center justify-between text-xs font-medium">
+              <span className="flex items-center gap-1.5 text-forest-900 font-semibold">
+                <Truck className="w-4 h-4 text-forest-700" />
+                <span>Free UK Mainland Delivery Unlocked</span>
               </span>
-              <span className="text-navy-600">{freeDeliveryProgressPercent}%</span>
+              <span className="text-[11px] font-bold text-forest-700 bg-forest-100 px-2 py-0.5 rounded border border-forest-200">
+                100% FREE
+              </span>
             </div>
-            <div className="w-full bg-sand-300 h-2 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 rounded-full ${
-                  hasFreeDelivery ? "bg-forest-600" : "bg-brass-500"
-                }`}
-                style={{ width: `${freeDeliveryProgressPercent}%` }}
-              />
-            </div>
+            <p className="text-[11px] text-forest-800 mt-1">
+              Complimentary direct delivery on all orders across Mainland UK.
+            </p>
           </div>
 
           {/* Items List */}
@@ -151,6 +144,8 @@ export function CartDrawer() {
                     <img
                       src={item.product.thumbnailUrl}
                       alt={item.product.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -246,11 +241,7 @@ export function CartDrawer() {
                 <div className="flex justify-between text-navy-600">
                   <span>Delivery</span>
                   <span>
-                    {hasFreeDelivery ? (
-                      <span className="text-forest-700 font-semibold">FREE</span>
-                    ) : (
-                      "Calculated at checkout"
-                    )}
+                    <span className="text-forest-700 font-semibold">FREE (Mainland UK)</span>
                   </span>
                 </div>
                 <div className="pt-2 border-t border-sand-300 flex justify-between items-baseline font-bold text-navy-950 text-base">
@@ -259,17 +250,6 @@ export function CartDrawer() {
                     {formatGBP(subtotalPennies)}
                   </span>
                 </div>
-              </div>
-
-              {/* Klarna Badge */}
-              <div className="p-2.5 rounded-lg bg-pink-50/80 border border-pink-200 flex items-center justify-between text-[11px] text-pink-950 font-medium">
-                <span className="flex items-center gap-1.5">
-                  <span className="font-bold text-pink-600 tracking-wider">Klarna.</span>
-                  <span>Pay in 3 of {formatGBP(klarnaMonthlyPennies)}/mo</span>
-                </span>
-                <span className="text-[10px] text-pink-700 underline cursor-pointer">
-                  Learn more
-                </span>
               </div>
 
               {/* Action Buttons */}
@@ -283,16 +263,19 @@ export function CartDrawer() {
               </Link>
 
               {/* Trust Badges */}
-              <div className="flex items-center justify-center gap-4 text-[10px] text-navy-600 pt-1">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-forest-600" />
-                  BS 5852 Certified
-                </span>
-                <span>•</span>
-                <span>14-Day UK Returns</span>
-                <span>•</span>
-                <span>10-Yr Frame Guarantee</span>
-              </div>
+              {guaranteesSection.isEnabled && (
+                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10px] text-navy-600 pt-1">
+                  {guaranteesSection.content.guarantees.map((g: any, idx: number) => (
+                    <React.Fragment key={idx}>
+                      {idx > 0 && <span className="opacity-40">•</span>}
+                      <span className="flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-forest-600 shrink-0" />
+                        <span className="font-semibold text-navy-900">{g.badge}</span> {g.label}
+                      </span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -10,11 +10,11 @@
 | :--- | :--- | :--- |
 | **Storefront** | **Next.js 15 (App Router, React 19, TypeScript)** | SSR/ISR for sub-second TTFB, 100/100 Core Web Vitals, dynamic OpenGraph/JSON-LD, Server Actions for checkout safety. Unmatched ecosystem for AI code generation. |
 | **Styling & UI** | **Tailwind CSS + shadcn/ui + Lucide Icons + Framer Motion** | Ultra-clean design system tokens, responsive mobile-first layouts, zero CSS bloat, smooth micro-interactions, accessible keyboard navigation. |
-| **Commerce Engine** | **Medusa v2 (Headless Commerce, TypeScript)** | Modern, modular open-source Node.js commerce backend. Native support for multi-currency, carts, orders, inventory, promotions, and custom modules (supplier sync, margin rules). |
-| **Admin Control Panel** | **Medusa Admin v2 (React + Vite Extension Framework)** | Extensible point-to-point dashboard with custom widgets, UI extensions, and endpoints for supplier logs, SEO manager, and security IP jail. |
-| **Database** | **PostgreSQL 16** | Native support for JSONB attributes (furniture dimensions, materials), `pg_trgm` fuzzy search, partial indexes, and time-series partitioning. |
+| **Commerce Engine** | **Custom Node.js API (TypeScript / JavaScript)** | Project-owned commerce and admin API backed by MySQL, with explicit routes for catalog, orders, supplier sync, and operational workflows. |
+| **Admin Control Panel** | **Next.js Admin App** | Project-owned admin routes and APIs for content, catalog, supplier operations, SEO, and security management. |
+| **Database** | **MySQL 8 / MariaDB (XAMPP)** | Canonical InnoDB schema and transactional catalog/order storage; local development connects to port 3306. |
 | **Cache & Async Queue** | **Redis + BullMQ** | High-throughput supplier feed ingestion, scheduled price/stock reconciliations, async webhook processing, and sliding-window rate limiting. |
-| **Instant Search** | **Meilisearch** | Sub-50ms typo-tolerant search, faceted filtering (dimensions, color, material, assembly status, price range), zero load on PostgreSQL. |
+| **Instant Search** | **Meilisearch** | Typo-tolerant search and faceted filtering without fuzzy-search load on MySQL. |
 | **Payments (UK)** | **Stripe (Payment Element) + PayPal Business** | Comprehensive UK payments: Visa/Mastercard, Apple Pay, Google Pay, **Klarna**, **Clearpay**, Pay by Bank (Open Banking). Idempotent webhooks. |
 | **UK Delivery & Postal** | **Ideal Postcodes / getAddress.io API + Custom Zone Matrix** | UK PAF address lookup, automated surcharge calculation for Scottish Highlands/Islands, Northern Ireland, Isle of Wight/Man. |
 | **Feeds & Marketing** | **Google Merchant API + Meta Catalog Feed + CAPI** | Automated RSS 2.0 / JSON product feeds, dynamic stock updates, Facebook Conversions API for high data match quality. |
@@ -30,13 +30,13 @@ graph TD
     Client[Customer / Mobile / Desktop Browser] -->|HTTPS / Turnstile / WAF| CF[Cloudflare CDN & Edge Security]
     CF -->|Cached Assets & SSR Pages| NextStorefront[Next.js 15 Storefront App]
     NextStorefront -->|Instant Faceted Search| Meili[Meilisearch Engine]
-    NextStorefront -->|REST / GraphQL API| MedusaBackend[Medusa v2 Commerce Core]
+    NextStorefront -->|REST API| CommerceBackend[Custom Node.js Commerce API]
     
-    AdminUser[Store Admin / Ops Lead] -->|2FA / Passkey / IP Allowlist| MedusaAdmin[Point-to-Point Admin Panel]
-    MedusaAdmin --> MedusaBackend
+    AdminUser[Store Admin / Ops Lead] -->|Admin UI| StoreAdmin[Next.js Admin Panel]
+    StoreAdmin --> CommerceBackend
     
-    MedusaBackend -->|Connection Pool PgBouncer| PG[(PostgreSQL 16 Database)]
-    MedusaBackend -->|Cache / Sessions / IP Lock| Redis[(Redis Cluster)]
+    CommerceBackend -->|mysql2 connection pool| MySQL[(MySQL 8 / MariaDB on XAMPP)]
+    CommerceBackend -->|Cache / Sessions / IP Lock| Redis[(Redis)]
     
     subgraph Async & Background Workers (BullMQ)
         Redis --> Worker[BullMQ Worker Service]
@@ -50,89 +50,20 @@ graph TD
     subgraph Payments & Logistics
         NextStorefront -->|Direct Card / Klarna / Apple Pay| StripeGateway[Stripe UK]
         NextStorefront -->|PayPal Checkout| PayPalGateway[PayPal UK]
-        MedusaBackend -->|Postcode Verification| UKAddressAPI[Ideal Postcodes / PAF]
+        CommerceBackend -->|Postcode Verification| UKAddressAPI[Ideal Postcodes / PAF]
     end
 ```
 
 ---
 
-## 3. Database Architecture & Indexing Strategy (PostgreSQL)
+## 3. Database Architecture & Indexing Strategy (MySQL 8 / MariaDB)
 
-Furniture e-commerce queries are heavily faceted and filtered by dimensions, stock status, category, and price range. Applying the **ESR (Equality, Sort, Range)** rule guarantees sub-millisecond execution.
+The canonical schema and sample data are maintained in `database/san_furniture.sql` for MySQL 8 / MariaDB on XAMPP. The active backend connects through `mysql2` using the root `.env` values `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD`. PostgreSQL and Medusa are not supported in this project.
 
-### Key Schema Extensions & Indexes
-
-```sql
--- Enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
--- 1. Furniture Specialized Product Attributes Table
-CREATE TABLE IF NOT EXISTS furniture_specs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    product_id VARCHAR(255) NOT NULL UNIQUE,
-    width_cm NUMERIC(6, 2) NOT NULL,
-    height_cm NUMERIC(6, 2) NOT NULL,
-    depth_cm NUMERIC(6, 2) NOT NULL,
-    seat_height_cm NUMERIC(6, 2),
-    weight_kg NUMERIC(6, 2) NOT NULL,
-    material VARCHAR(100) NOT NULL,
-    color VARCHAR(100) NOT NULL,
-    assembly_required BOOLEAN DEFAULT FALSE,
-    fire_safety_compliant BOOLEAN DEFAULT TRUE, -- UK Furniture & Furnishings Fire Safety Regs 1988
-    delivery_type VARCHAR(50) NOT NULL DEFAULT 'standard_parcel', -- 'standard_parcel', 'pallet', 'two_man_white_glove'
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 2. Supplier Dropship Inventory Link
-CREATE TABLE IF NOT EXISTS supplier_feed_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    supplier_id VARCHAR(100) NOT NULL,
-    supplier_sku VARCHAR(255) NOT NULL,
-    internal_product_id VARCHAR(255) NOT NULL,
-    cost_price_pennies INT NOT NULL, -- Stored in pence (e.g. £100.00 = 10000)
-    shipping_cost_pennies INT NOT NULL DEFAULT 0,
-    markup_percentage NUMERIC(5, 2) NOT NULL DEFAULT 35.00,
-    retail_price_pennies INT NOT NULL,
-    stock_level INT NOT NULL DEFAULT 0,
-    lead_time_days INT NOT NULL DEFAULT 3,
-    last_synced_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(supplier_id, supplier_sku)
-);
-
--- 3. Security IP Jail & Brute Force Tracker
-CREATE TABLE IF NOT EXISTS security_ip_jail (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    ip_address INET NOT NULL UNIQUE,
-    failed_attempts INT NOT NULL DEFAULT 1,
-    locked_until TIMESTAMPTZ,
-    reason VARCHAR(255) NOT NULL,
-    is_permanent BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. ESR Composite Indexes for Storefront Catalog Filtering
--- Query Pattern: WHERE status = 'published' AND category_id = :id AND price BETWEEN :min AND :max ORDER BY created_at DESC
-CREATE INDEX idx_products_cat_status_created_price 
-ON product (category_id, status, created_at DESC, price);
-
--- 5. Partial Filtered Index for Live Products (Saves ~70% index buffer RAM)
-CREATE INDEX idx_published_furniture 
-ON product (id, handle, title) 
-WHERE status = 'published' AND deleted_at IS NULL;
-
--- 6. GIN Trigram Fuzzy Search Index on Titles & Handles
-CREATE INDEX idx_product_title_trgm 
-ON product USING gin (title gin_trgm_ops);
-
--- 7. Supplier Feed Sync Lookup Index
-CREATE INDEX idx_supplier_sku_sync 
-ON supplier_feed_items (supplier_id, supplier_sku);
-```
-
----
+- Store money as integer GBP pennies and furniture measurements in centimetres/kilograms.
+- Use InnoDB foreign keys and indexes that match measured query patterns. The canonical product catalog index is `idx_prod_cat_status_price` on `(category_id, status, price_pennies)`; the supplier reconciliation key is `uniq_supplier_sku` on `(supplier_id, supplier_sku)`.
+- Check real plans with MySQL `EXPLAIN`. MySQL does not support PostgreSQL partial indexes or GIN trigram indexes; use Meilisearch for typo-tolerant/fuzzy search.
+- Keep SQL parameterized and never apply schema or seed scripts to an existing database without confirming the intended operation and backup.
 
 ## 4. Phase-by-Phase AI Implementation Plan
 
@@ -141,7 +72,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 ```
 [x] Phase 0: Project Foundation & UK Specifications (Setup & Rules)
 [x] Phase 1: Monorepo Skeleton & Docker Infrastructure
-[x] Phase 2: Furniture Data Models, Postgres Schema & ESR Indexing
+[x] Phase 2: Furniture Data Models, MySQL Schema & Indexing
 [x] Phase 3: Dropshipping & Automated Supplier Sync Engine
 [x] Phase 4: Modern High-Conversion Storefront UI (Next.js 15)
 [x] Phase 5: UK Multi-Payment & Postcode-Tier Logistics Engine
@@ -154,7 +85,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 [x] Phase 12: Enterprise Authentication & Multi-Role RBAC (Admin & Customer Portal)
 [x] Phase 13: Dedicated Admin Suite 2.0 (Isolated Layout & Full Database CRUD)
 [x] Phase 14: Customer Account Portal & Self-Service Order Tracking
-[x] Phase 15: HMRC-Compliant UK VAT Invoicing & Financial Accounting Export
+[x] Phase 15: Statutory UK VAT Invoicing & Financial Accounting Export
 [x] Phase 16: Customer Reviews Moderation & Social Proof Engine
 [x] Phase 17: Promotions, Coupon Vouchers & Seasonal Sales Rules Engine
 [x] Phase 18: Full Administrative Operations Suite & Governance (Settings, Suppliers EDI, Logistics, Security IP Jail, Syndicated Marketing, Audit Trail)
@@ -186,62 +117,62 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 ---
 
 ### Phase 1: Monorepo Skeleton & Docker Infrastructure
-**Objective**: Stand up a containerized development environment with PostgreSQL, Redis, Meilisearch, Next.js storefront, and Medusa backend.
+**Objective**: Run the XAMPP MySQL database alongside Redis, Meilisearch, the Next.js storefront, and the custom Node.js backend.
 
 - **Directory Structure**:
   ```
   san-furniture/
   ├── apps/
   │   ├── storefront/          # Next.js 15 App Router
-  │   └── backend/             # Medusa v2 Commerce & Admin
+  │   └── backend/             # Custom Node.js Commerce API
   ├── packages/
   │   ├── types/               # Shared TypeScript schemas (Zod)
   │   └── config/              # Shared Tailwind, ESLint, TS configs
-  ├── docker-compose.yml       # Postgres 16, Redis 7, Meilisearch
+  ├── docker-compose.yml       # Redis 7, Meilisearch (MySQL runs in XAMPP)
   ├── .env.example
   └── package.json
   ```
-- **Verification**: `docker compose up -d` boots Postgres, Redis, and Meilisearch with 0 health check failures.
+- **Verification**: `docker compose up -d` boots Redis and Meilisearch; confirm MySQL is running in XAMPP.
 
 > **AI Prompt for Phase 1**:
 > ```text
 > Act as a DevOps and Full-Stack Engineer. Scaffold the monorepo for SAN Furniture using Turborepo or npm workspaces:
 > 1. Root package.json with workspaces for apps/storefront and apps/backend.
 > 2. docker-compose.yml containing:
->    - PostgreSQL 16 on port 5432 with health check.
+>    - XAMPP MySQL/MariaDB on port 3306 (configured through `.env`; not managed by Docker).
 >    - Redis 7 on port 6379 with persistent volume.
 >    - Meilisearch on port 7700 with master key configured.
-> 3. Standardized .env.example with placeholders for database URLs, Stripe UK keys, Resend API key, and Cloudflare credentials.
-> 4. apps/backend initialized with Medusa v2 starter and apps/storefront initialized with Next.js 15 App Router, TypeScript, and Tailwind CSS.
+> 3. Standardized .env.example with MySQL DB_* settings and placeholders for Stripe UK keys, Resend API key, and Cloudflare credentials.
+> 4. apps/backend initialized as the project-owned Node.js API and apps/storefront initialized with Next.js 15 App Router, TypeScript, and Tailwind CSS.
 > Verify that all workspaces build without TypeScript or linting errors.
 > ```
 
 ---
 
-### Phase 2: Furniture Data Models, Postgres Schema & ESR Indexing
+### Phase 2: Furniture Data Models, MySQL Schema & Indexing
 **Objective**: Build rich furniture product models, category trees, variant attributes, and database indexes.
 
 - **Deliverables**:
-  1. Extended Medusa schema or custom Drizzle/Prisma schema:
+  1. Extend the canonical MySQL schema (`database/san_furniture.sql`) and shared TypeScript/Zod models:
      - Dimensions (width, depth, height, seat height in cm).
      - Weight (kg), boxed package dimensions for courier calculation.
      - Materials (Solid Oak, Velvet, Bouclé, Linen, Walnut).
      - UK Fire Safety compliance badge (`compliant`, `BS 5852 standard`).
      - Delivery classification (`parcel_courier`, `heavy_pallet`, `two_man_white_glove`).
-  2. SQL migration script implementing the ESR composite indexing, GIN trigram indexes, and partial indexes from Section 3.
+  2. MySQL schema and measured composite indexes, maintained in `database/san_furniture.sql`.
   3. Seed script with 50 realistic UK furniture items (chests, corner sofas, dining tables, velvet armchairs) with accurate dimensions and UK GTINs.
 
 > **AI Prompt for Phase 2**:
 > ```text
-> Act as a Principal Database Architect. Build the furniture product data modeling and PostgreSQL schema for SAN Furniture:
+> Act as a Principal Database Architect. Align the furniture product data model with the canonical MySQL schema for SAN Furniture:
 > 1. Define TypeScript types and Zod schemas in packages/types for furniture attributes: dimensions (W/D/H in cm), weight_kg, material, finish, assembly_required, fire_safety_certificate, delivery_class (parcel, pallet, 2-man).
-> 2. Create the Medusa v2 custom module/entity migrations for these furniture specs.
-> 3. Write a raw PostgreSQL migration file that creates:
->    - ESR composite index for category, published status, created_at, and price.
->    - Partial index for live products WHERE status = 'published' AND deleted_at IS NULL.
->    - GIN trigram search index on product titles.
+> 2. Keep furniture specifications and supplier entities compatible with the MySQL schema and active Node.js backend.
+> 3. Maintain MySQL DDL in the canonical schema and add indexes only after verifying query plans with EXPLAIN:
+>    - The catalog composite index for category, status, and price.
+>    - Supplier SKU lookup and other measured query indexes.
+>    - Meilisearch for typo-tolerant fuzzy product search.
 > 4. Create a seed script that populates the database with 50 high-ticket UK furniture items with full specifications.
-> Run EXPLAIN ANALYZE on a sample faceted search query to verify index usage (0 Seq Scans).
+> Run MySQL EXPLAIN on a sample faceted-search query and document any filesort or table scan before proposing index changes.
 > ```
 
 ---
@@ -347,7 +278,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 > **AI Prompt for Phase 6**:
 > ```text
 > Act as a Digital Marketing & API Engineer. Implement the Google Shopping and Meta Catalog Feed engines:
-> 1. Create a streaming XML feed route in Next.js/Medusa at /api/feeds/google-merchant.xml that outputs Google Merchant Center compliant XML:
+> 1. Create a streaming XML feed route in the custom API at /api/feeds/google-merchant.xml that outputs Google Merchant Center compliant XML:
 >    - Maps furniture dimensions, materials, and colors into Google custom attributes.
 >    - Correctly sets g:availability, g:price with GBP suffix, g:gtin/mpn, and g:shipping tags.
 >    - Streams responses with Redis caching (1 hour TTL) to handle 20,000+ SKUs with zero memory spikes.
@@ -407,10 +338,10 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 > **AI Prompt for Phase 8**:
 > ```text
 > Act as an Application Security (AppSec) Engineer. Build the enterprise security infrastructure for SAN Furniture:
-> 1. Implement a Redis sliding-window rate limiter middleware in Next.js / Medusa using sliding log or token bucket algorithm.
+> 1. Implement a Redis sliding-window rate limiter middleware in the Node.js backend using a sliding log or token bucket algorithm.
 > 2. Build the BruteForceDefenseService:
 >    - Track failed login attempts per IP and username.
->    - Automatically trigger IP lockout after 5 failed attempts, writing to PostgreSQL security_ip_jail.
+>    - Automatically trigger IP lockout after 5 failed attempts, writing to the MySQL security_ip_jail table.
 >    - Block requests from jailed IPs before invoking route handlers.
 > 3. Configure hardened HTTP security headers (Strict CSP, HSTS, X-Content-Type-Options: nosniff, X-Frame-Options: DENY).
 > 4. Integrate Cloudflare Turnstile token validation on all sensitive POST routes (login, register, contact, payment submit).
@@ -436,8 +367,8 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 
 > **AI Prompt for Phase 9**:
 > ```text
-> Act as a Full-Stack Product Architect. Implement the Point-to-Point Admin Control Suite inside Medusa Admin v2:
-> 1. Create custom UI routes and widgets in Medusa Admin for:
+> Act as a Full-Stack Product Architect. Implement the Point-to-Point Admin Control Suite in the Next.js admin app and custom backend:
+> 1. Create custom admin UI routes and widgets for:
 >    - Supplier & Margin Config: UI to edit category markup percentages and test margin calculations.
 >    - UK Postcode Zone Rates: Data table to edit shipping fees and surcharges for Scottish Highlands, Islands, and Northern Ireland.
 >    - Security Center: Table displaying security_ip_jail records with IP address, failed attempts count, reason, and an 'Unblock IP' action button.
@@ -449,12 +380,12 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 ---
 
 ### Phase 10: Performance Optimization & Sub-Millisecond Database Tuning
-**Objective**: Guarantee sub-second page loads across the UK, optimize PostgreSQL query plans, and achieve 95+ Core Web Vitals.
+**Objective**: Guarantee sub-second page loads across the UK, optimize MySQL query plans, and achieve 95+ Core Web Vitals.
 
 - **Checklist**:
-  1. Profile all storefront SQL queries using `EXPLAIN (ANALYZE, BUFFERS)` to eliminate all table sequential scans (`Seq Scan`).
-  2. Configure PgBouncer connection pooling to handle high concurrent traffic spikes during sales events.
-  3. Tune PostgreSQL server settings (`shared_buffers = 25% RAM`, `effective_cache_size = 75% RAM`, `work_mem = 16MB`, `random_page_cost = 1.1` for SSDs).
+  1. Profile storefront queries with MySQL `EXPLAIN` and measure query latency before changing indexes.
+  2. Configure and size the `mysql2` connection pool for the expected workload.
+  3. Tune MySQL InnoDB settings against the actual XAMPP host memory and workload; validate changes with measured MySQL metrics.
   4. Implement Stale-While-Revalidate and Next.js ISR (Incremental Static Regeneration) on category and product routes.
   5. Configure Cloudflare Cache Rules to cache static assets and product images at edge points of presence across London, Manchester, and Edinburgh.
 
@@ -478,7 +409,7 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
   - [x] **Logistics**: UK Mainland standard free shipping applied (£500+ threshold); Scottish Highlands postcode applies £49 regional surcharge correctly (Verified).
   - [x] **Security**: 5+ failed logins from test IP triggers automatic IP lockout and 403 Forbidden; Turnstile blocks automated bot form submissions; Sliding window rate limiting enforced (Verified).
   - [x] **SEO & Feeds**: Google Merchant XML validates with 0 errors with full Google namespace; Meta RFC 4180 CSV & CAPI SHA-256 PII hashing verified; Schema.org Rich Results tests pass for Product, Offer, BreadcrumbList, Organization, and FAQPage.
-  - [x] **Database & Performance**: ESR composite indexes, GIN trigram fuzzy search, NVMe PostgreSQL tuning, and sub-millisecond cache engine verified.
+  - [x] **Database & Performance**: MySQL composite indexes, Meilisearch fuzzy search, and cache behavior verified; tune further only from production measurements.
   - [x] **Operations Control Suite**: Point-to-point Admin dashboard with sales analytics, logistics surcharges, category margins, 1-click IP jail release, and immutable audit logging.
 
 ---
@@ -532,12 +463,12 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 
 ---
 
-### Phase 15: HMRC-Compliant UK VAT Invoicing & Financial Accounting Export
-**Objective**: Automatically generate PDF and printable invoices complying with UK HMRC Value Added Tax Act 1994 and provide clean CSV/Excel exports for UK accounting software (Xero, QuickBooks).
+### Phase 15: Statutory UK VAT Invoicing & Financial Accounting Export
+**Objective**: Automatically generate PDF and printable invoices complying with the UK Value Added Tax Act 1994 and provide clean CSV/Excel exports for UK accounting software (Xero, QuickBooks).
 
 - **Mandatory UK VAT Invoice Fields**:
   - SAN Furniture Ltd company registration number and registered office address (London, UK).
-  - Valid UK VAT Registration Number (e.g. `GB 438 9123 76`).
+  - Valid UK VAT Registration Number (e.g. `N/A`).
   - Invoice date, tax point (time of supply), and unique serial invoice number.
   - Itemized breakdown: Net cost, 20% VAT rate, VAT amount in GBP, and Gross total.
   - Automated generation upon checkout completion; instant download from `/admin/orders/[id]` and customer portal.
@@ -570,17 +501,17 @@ This roadmap is split into continuous batch phases. Each phase provides exact de
 
 - **Completed Administrative Modules**:
   1. **Core Architecture & System Settings (`/admin/settings`)**:
-     - UK Legal Entity & HMRC VAT Registration (Company No: `14289123`, VAT Reg: `GB 438 9123 76`, Mayfair London address).
+     - UK Legal Entity & VAT Registration (Company No: `N/A`, VAT Reg: `N/A`, Mainland UK Logistics).
      - Delivery spend thresholds (£500 free threshold, £49 pallet base, £99 2-man white glove, £49 Scottish Highlands surcharge).
      - Dropship EDI auto-dispatch toggle & 30% floor markup protection.
-     - UK Payment Gateway credentials (Stripe live/test, Klarna Merchant ID `K1482910_GB`).
+     - UK Payment Gateway credentials (Stripe live/test, Klarna Merchant ID `N/A`).
      - Brute force lockout & IP jail configuration (5 strikes, 15m duration).
   2. **Dropship Suppliers & EDI Network (`/admin/suppliers`)**:
      - UK wholesale manufacturers directory (`UK Craft Sofas & Upholstery Works`, `Nordic Living UK Importers`, `Cotswold Solid Oak Joinery`).
      - Live stock catalog mapping, lead time metrics, and one-click manual/automated EDI sync (`POST /api/admin/suppliers/sync`).
   3. **Logistics & Regional Postcode Surcharge Matrix (`/admin/logistics`)**:
      - Inline management of Mainland UK vs Highlands/Islands postal zones (`postcode_zones`).
-     - Real-time surcharge penny edits, delivery tier breakdown, and BS 5852 compliance flags.
+     - Real-time surcharge penny edits, delivery tier breakdown, and quality check flags.
   4. **Cyber Defense & IP Jail Operations (`/admin/security`)**:
      - Real-time view of locked offender IP addresses (`security_ip_jail`).
      - 1-click IP pardon (`POST /api/security/unblock`) and manual IP ban modal (`POST /api/security/block`).

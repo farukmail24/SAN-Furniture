@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 
 const DB_CONFIG = {
@@ -146,7 +147,7 @@ async function seedDropshipSuppliers() {
         doorway_clearance_min_cm: 50,
         delivery_tier: "standard_parcel",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852: Part 1: 1979",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 2
       },
       feed: {
@@ -188,7 +189,7 @@ async function seedDropshipSuppliers() {
         doorway_clearance_min_cm: 70,
         delivery_tier: "two_man_white_glove",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852: Part 1: 1979",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 3
       },
       feed: {
@@ -230,7 +231,7 @@ async function seedDropshipSuppliers() {
         doorway_clearance_min_cm: 60,
         delivery_tier: "standard_parcel",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852: Part 1: 1979",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 2
       },
       feed: {
@@ -272,7 +273,7 @@ async function seedDropshipSuppliers() {
         doorway_clearance_min_cm: 65,
         delivery_tier: "two_man_white_glove",
         fire_safety_compliant: 1,
-        fire_safety_standard: "BS 5852: Part 1: 1979",
+        fire_safety_standard: "UK Quality Checked",
         lead_time_days: 3
       },
       feed: {

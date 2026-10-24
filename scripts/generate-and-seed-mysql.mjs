@@ -49,7 +49,7 @@ CREATE TABLE \`products\` (
   \`status\` ENUM('published','draft','out_of_stock') NOT NULL DEFAULT 'published',
   \`price_pennies\` INT NOT NULL COMMENT 'Price in GBP integer pennies (e.g. £1299.00 = 129900)',
   \`compare_at_price_pennies\` INT DEFAULT NULL,
-  \`vat_rate_percent\` DECIMAL(5,2) NOT NULL DEFAULT 20.00 COMMENT 'HMRC UK Standard VAT (20%)',
+  \`vat_rate_percent\` DECIMAL(5,2) NOT NULL DEFAULT 20.00 COMMENT 'UK Standard VAT (20%)',
   \`gtin_barcode\` VARCHAR(64) DEFAULT NULL,
   \`thumbnail_url\` VARCHAR(512) NOT NULL,
   \`images_json\` LONGTEXT DEFAULT NULL COMMENT 'JSON array of high-res image URLs',
@@ -80,7 +80,7 @@ CREATE TABLE \`furniture_specs\` (
   \`doorway_clearance_min_cm\` DECIMAL(6,2) NOT NULL DEFAULT 76.20 COMMENT 'UK Standard Doorway Clearance (30 inches)',
   \`delivery_tier\` ENUM('standard_parcel','pallet','two_man_white_glove') NOT NULL DEFAULT 'standard_parcel',
   \`fire_safety_compliant\` TINYINT(1) NOT NULL DEFAULT 1 COMMENT 'UK Furniture and Furnishings Fire Safety Regs 1988',
-  \`fire_safety_standard\` VARCHAR(100) NOT NULL DEFAULT 'BS 5852: Part 1: 1979',
+  \`fire_safety_standard\` VARCHAR(100) NOT NULL DEFAULT 'UK Quality Checked',
   \`fire_safety_cert\` VARCHAR(100) NOT NULL DEFAULT 'BS-LON-2026-CERT',
   \`lead_time_days\` INT NOT NULL DEFAULT 7,
   \`created_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -219,20 +219,20 @@ INSERT INTO \`products\` (\`id\`, \`title\`, \`handle\`, \`subtitle\`, \`descrip
 
 -- FURNITURE SPECIFICATIONS
 INSERT INTO \`furniture_specs\` (\`id\`, \`product_id\`, \`width_cm\`, \`height_cm\`, \`depth_cm\`, \`seat_height_cm\`, \`seat_depth_cm\`, \`arm_height_cm\`, \`weight_kg\`, \`material\`, \`frame_material\`, \`color\`, \`assembly_required\`, \`assembly_time_mins\`, \`doorway_clearance_min_cm\`, \`delivery_tier\`, \`fire_safety_compliant\`, \`fire_safety_standard\`, \`fire_safety_cert\`, \`lead_time_days\`) VALUES
-('spec_sofa_001', 'prod_sofa_001', 218.00, 84.00, 98.00, 45.00, 64.00, 62.00, 68.00, 'boucle', 'solid_oak', 'Oat Cream', 0, NULL, 75.00, 'two_man_white_glove', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-001', 7),
-('spec_sofa_002', 'prod_sofa_002', 295.00, 82.00, 165.00, 44.00, 68.00, NULL, 110.00, 'velvet', 'engineered_hardwood', 'Forest Green', 1, 15, 72.00, 'two_man_white_glove', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-002', 10),
-('spec_sofa_003', 'prod_sofa_003', 165.00, 80.00, 92.00, 46.00, 58.00, 60.00, 46.00, 'linen', 'solid_oak', 'Natural Flax', 0, NULL, 70.00, 'two_man_white_glove', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-003', 5),
-('spec_chair_001', 'prod_chair_001', 82.00, 76.00, 80.00, 43.00, 56.00, 58.00, 24.00, 'boucle', 'steel', 'Chalk White', 0, NULL, 65.00, 'standard_parcel', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-004', 3),
-('spec_chair_002', 'prod_chair_002', 88.00, 102.00, 90.00, 47.00, 55.00, 64.00, 32.00, 'leather', 'solid_oak', 'Cognac Tan', 1, 10, 68.00, 'pallet', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-005', 5),
-('spec_dining_001', 'prod_dining_001', 240.00, 76.00, 100.00, NULL, NULL, NULL, 92.00, 'solid_oak', 'solid_oak', 'Natural Oiled Oak', 1, 25, 76.20, 'pallet', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-006', 7),
-('spec_dining_002', 'prod_dining_002', 180.00, 76.00, 95.00, NULL, NULL, NULL, 86.00, 'walnut', 'solid_oak', 'Smoked Walnut', 1, 20, 76.20, 'pallet', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-007', 7),
-('spec_table_001', 'prod_table_001', 110.00, 38.00, 110.00, NULL, NULL, NULL, 64.00, 'travertine', 'steel', 'Beige Travertine', 0, NULL, 70.00, 'pallet', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-008', 5),
-('spec_bed_001', 'prod_bed_001', 162.00, 135.00, 215.00, NULL, NULL, NULL, 88.00, 'velvet', 'solid_oak', 'Charcoal Slate', 1, 45, 72.00, 'two_man_white_glove', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-051', 7),
-('spec_bed_002', 'prod_bed_002', 158.00, 110.00, 212.00, NULL, NULL, NULL, 56.00, 'none', 'solid_oak', 'Natural White Oak', 1, 30, 68.00, 'two_man_white_glove', 1, 'BS 5852: Exempt (Solid Timber)', 'WOOD-EXEMPT-052', 7),
-('spec_chair_003', 'prod_chair_003', 72.00, 80.00, 84.00, 42.00, NULL, NULL, 19.00, 'leather', 'steel', 'Cognac Tan', 0, NULL, 65.00, 'standard_parcel', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-053', 3),
-('spec_table_002', 'prod_table_002', 120.00, 82.00, 36.00, NULL, NULL, NULL, 38.00, 'none', 'brass', 'Calacatta Viola & Gold Brass', 1, 15, 70.00, 'pallet', 1, 'BS 5852: Exempt (Stone & Brass)', 'STONE-EXEMPT-054', 5),
-('spec_dining_003', 'prod_dining_003', 52.00, 86.00, 56.00, 48.00, NULL, NULL, 14.00, 'linen', 'solid_oak', 'Natural Oak & Oatmeal', 0, NULL, 60.00, 'standard_parcel', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-055', 3),
-('spec_sofa_004', 'prod_sofa_004', 310.00, 85.00, 105.00, 44.00, 72.00, NULL, 98.00, 'chenille', 'engineered_hardwood', 'Warm Taupe', 1, 20, 75.00, 'two_man_white_glove', 1, 'BS 5852: Part 1: 1979', 'BS-LON-2026-056', 10);
+('spec_sofa_001', 'prod_sofa_001', 218.00, 84.00, 98.00, 45.00, 64.00, 62.00, 68.00, 'boucle', 'solid_oak', 'Oat Cream', 0, NULL, 75.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-LON-2026-001', 7),
+('spec_sofa_002', 'prod_sofa_002', 295.00, 82.00, 165.00, 44.00, 68.00, NULL, 110.00, 'velvet', 'engineered_hardwood', 'Forest Green', 1, 15, 72.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-LON-2026-002', 10),
+('spec_sofa_003', 'prod_sofa_003', 165.00, 80.00, 92.00, 46.00, 58.00, 60.00, 46.00, 'linen', 'solid_oak', 'Natural Flax', 0, NULL, 70.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-LON-2026-003', 5),
+('spec_chair_001', 'prod_chair_001', 82.00, 76.00, 80.00, 43.00, 56.00, 58.00, 24.00, 'boucle', 'steel', 'Chalk White', 0, NULL, 65.00, 'standard_parcel', 1, 'UK Quality Checked', 'SAN-LON-2026-004', 3),
+('spec_chair_002', 'prod_chair_002', 88.00, 102.00, 90.00, 47.00, 55.00, 64.00, 32.00, 'leather', 'solid_oak', 'Cognac Tan', 1, 10, 68.00, 'pallet', 1, 'UK Quality Checked', 'SAN-LON-2026-005', 5),
+('spec_dining_001', 'prod_dining_001', 240.00, 76.00, 100.00, NULL, NULL, NULL, 92.00, 'solid_oak', 'solid_oak', 'Natural Oiled Oak', 1, 25, 76.20, 'pallet', 1, 'UK Quality Checked', 'SAN-LON-2026-006', 7),
+('spec_dining_002', 'prod_dining_002', 180.00, 76.00, 95.00, NULL, NULL, NULL, 86.00, 'walnut', 'solid_oak', 'Smoked Walnut', 1, 20, 76.20, 'pallet', 1, 'UK Quality Checked', 'SAN-LON-2026-007', 7),
+('spec_table_001', 'prod_table_001', 110.00, 38.00, 110.00, NULL, NULL, NULL, 64.00, 'travertine', 'steel', 'Beige Travertine', 0, NULL, 70.00, 'pallet', 1, 'UK Quality Checked', 'SAN-LON-2026-008', 5),
+('spec_bed_001', 'prod_bed_001', 162.00, 135.00, 215.00, NULL, NULL, NULL, 88.00, 'velvet', 'solid_oak', 'Charcoal Slate', 1, 45, 72.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-LON-2026-051', 7),
+('spec_bed_002', 'prod_bed_002', 158.00, 110.00, 212.00, NULL, NULL, NULL, 56.00, 'none', 'solid_oak', 'Natural White Oak', 1, 30, 68.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-EXEMPT-052', 7),
+('spec_chair_003', 'prod_chair_003', 72.00, 80.00, 84.00, 42.00, NULL, NULL, 19.00, 'leather', 'steel', 'Cognac Tan', 0, NULL, 65.00, 'standard_parcel', 1, 'UK Quality Checked', 'SAN-LON-2026-053', 3),
+('spec_table_002', 'prod_table_002', 120.00, 82.00, 36.00, NULL, NULL, NULL, 38.00, 'none', 'brass', 'Calacatta Viola & Gold Brass', 1, 15, 70.00, 'pallet', 1, 'UK Quality Checked', 'SAN-EXEMPT-054', 5),
+('spec_dining_003', 'prod_dining_003', 52.00, 86.00, 56.00, 48.00, NULL, NULL, 14.00, 'linen', 'solid_oak', 'Natural Oak & Oatmeal', 0, NULL, 60.00, 'standard_parcel', 1, 'UK Quality Checked', 'SAN-LON-2026-055', 3),
+('spec_sofa_004', 'prod_sofa_004', 310.00, 85.00, 105.00, 44.00, 72.00, NULL, 98.00, 'chenille', 'engineered_hardwood', 'Warm Taupe', 1, 20, 75.00, 'two_man_white_glove', 1, 'UK Quality Checked', 'SAN-LON-2026-056', 10);
 
 -- SUPPLIER DROPSHIP FEEDS
 INSERT INTO \`supplier_feed_items\` (\`id\`, \`supplier_id\`, \`supplier_sku\`, \`product_id\`, \`cost_price_pennies\`, \`shipping_cost_pennies\`, \`markup_percentage\`, \`retail_price_pennies\`, \`stock_level\`, \`lead_time_days\`) VALUES

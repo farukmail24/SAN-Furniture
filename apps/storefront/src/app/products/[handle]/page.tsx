@@ -23,6 +23,7 @@ import { PostcodeEstimator } from "@/components/product/PostcodeEstimator";
 import { ProductActions } from "@/components/product/ProductActions";
 import { formatGBP } from "@san-furniture/types";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/motion/MotionWrapper";
+import { getLiveSections } from "@/lib/cms-server";
 
 interface ProductPageProps {
   params: Promise<{
@@ -30,12 +31,7 @@ interface ProductPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  const products = await getLiveProducts();
-  return products.map((product) => ({
-    handle: product.handle,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { handle } = await params;
@@ -74,24 +70,29 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
-  const product = await getLiveProductByHandle(handle);
+  const [product, cmsSections] = await Promise.all([
+    getLiveProductByHandle(handle),
+    getLiveSections("product_detail"),
+  ]);
 
   if (!product) {
     notFound();
   }
 
   const category = CATALOG_CATEGORIES.find((c) => c.id === product.categoryId);
-  const categoryProducts = await getLiveProductsByCategory(product.categoryId);
+  const categoryProducts = (await getLiveProductsByCategory(product.categoryId)) || [];
   const relatedProducts = categoryProducts
     .filter((p) => p.id !== product.id)
     .slice(0, 4);
+
+  const valueBadges = cmsSections?.["pdp_value_badges"]?.content?.badges;
 
   // Schema.org JSON-LD Structured Data
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.title,
-    image: product.images,
+    image: Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.thumbnailUrl],
     description: product.description,
     sku: product.id,
     gtin13: product.gtinBarcode,
@@ -104,7 +105,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       "@type": "Offer",
       url: `https://sanfurniture.com/products/${product.handle}`,
       priceCurrency: "GBP",
-      price: (product.pricePennies / 100).toFixed(2),
+      price: (Number(product.pricePennies || 0) / 100).toFixed(2),
       priceValidUntil: "2027-12-31",
       availability:
         product.status === "published"
@@ -126,7 +127,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         "@type": "OfferShippingDetails",
         shippingRate: {
           "@type": "MonetaryAmount",
-          value: product.pricePennies >= 50000 ? "0.00" : "49.00",
+          value: "0.00",
           currency: "GBP",
         },
         shippingDestination: {
@@ -173,26 +174,30 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         </div>
       </nav>
 
-      {/* Main Product Hero Grid */}
+      {/* Main Product Hero Grid (50% Image Gallery, 50% Product Info & Actions) */}
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-          {/* Left Column: Image Gallery (7 cols on lg) */}
-          <ScrollReveal direction="scale" duration={0.55} className="lg:col-span-7">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-start">
+          {/* Left Column: Image Gallery (50% width on lg) */}
+          <ScrollReveal direction="scale" duration={0.55} className="w-full">
             <ProductGallery
               images={
                 product.thumbnailUrl
                   ? [
                       product.thumbnailUrl,
-                      ...(product.images || []).filter((img) => img && img !== product.thumbnailUrl),
+                      ...(Array.isArray(product.images) ? product.images : []).filter(
+                        (img) => img && typeof img === "string" && img !== product.thumbnailUrl
+                      ),
                     ]
-                  : product.images || []
+                  : Array.isArray(product.images)
+                  ? product.images
+                  : []
               }
               title={product.title}
             />
           </ScrollReveal>
 
-          {/* Right Column: Title, Subtitle, Price & Actions (5 cols on lg) */}
-          <ScrollReveal direction="up" delay={0.08} duration={0.55} className="lg:col-span-5 space-y-6">
+          {/* Right Column: Title, Subtitle, Price & Actions (50% width on lg) */}
+          <ScrollReveal direction="up" delay={0.08} duration={0.55} className="w-full space-y-6">
             <div>
               {/* Category & Status Pill */}
               <div className="flex items-center gap-2 mb-2">
@@ -213,12 +218,14 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 {product.title}
               </h1>
               <p className="text-xs sm:text-sm text-navy-600 leading-relaxed font-medium">
-                {product.subtitle}
+                {(product.subtitle || "")
+                  .replace(/Official\s+Amos\s+Mann\s+UK\s+Furniture/gi, "SAN Furniture Luxury Collection")
+                  .replace(/Amos\s+Mann('s)?/gi, "SAN Furniture's")}
               </p>
             </div>
 
             {/* Product Actions Component (Pricing, Swatches, Add to Cart, Klarna, Guarantees) */}
-            <ProductActions product={product} />
+            <ProductActions product={product} valueBadges={valueBadges} />
 
             {/* Description Summary */}
             <div className="pt-4 border-t border-sand-200">
@@ -265,7 +272,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           </div>
         </div>
 
-        {/* Detailed Specifications & UK Regulatory Compliance Table */}
+        {/* Detailed Specifications & Furniture Quality Table */}
         <div className="mt-14 pt-10 border-t border-sand-200">
           <h2 className="font-display text-xl sm:text-2xl font-bold text-navy-950 mb-6">
             Full Product Specifications
@@ -301,28 +308,28 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-sand-200">
-                <span className="text-navy-500">UK Fire Safety Standard</span>
-                <span className="font-semibold text-forest-800 flex items-center gap-1">
-                  <FileCheck2 className="w-3.5 h-3.5" />
-                  {product.specs?.fire_safety?.standard || "BS 5852 / UK Statutory Timber Compliance"}
+                <span className="text-navy-500">Packaging & Protection</span>
+                <span className="font-semibold text-navy-950 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-forest-700" />
+                  Reinforced Flat-Pack Protective Box
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
-                <span className="text-navy-500">Fire Certificate Reference</span>
-                <span className="font-mono font-semibold text-navy-950">
-                  {product.specs?.fire_safety?.certificate_ref || "BS-UK-STATUTORY"}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-sand-200">
-                <span className="text-navy-500">Regulatory Fire Label Attached</span>
+                <span className="text-navy-500">Care & Maintenance</span>
                 <span className="font-semibold text-navy-950">
-                  {product.specs?.fire_safety?.label_attached ? "Yes (UK Statutory)" : "Exempt"}
+                  Wipe clean with a soft dry cloth
+                </span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-sand-200">
+                <span className="text-navy-500">Fulfillment Method</span>
+                <span className="font-semibold text-navy-950">
+                  Direct Mainland Dispatch
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-sand-200">
                 <span className="text-navy-500">GTIN-13 Barcode</span>
                 <span className="font-mono font-semibold text-navy-950">
-                  {product.gtinBarcode}
+                  {product.gtinBarcode || product.id}
                 </span>
               </div>
             </div>
@@ -355,13 +362,15 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                 <StaggerItem key={item.id}>
                   <Link
                     href={`/products/${item.handle}`}
-                    prefetch={true}
-                    className="group rounded-xl border border-sand-200 bg-sand-50 overflow-hidden hover:shadow-lg transition-all block h-full"
+                    prefetch={false}
+                    className="group rounded-xl border border-sand-200 bg-sand-50 overflow-hidden hover:shadow-lg transition-[box-shadow,border-color] duration-300 block h-full"
                   >
                   <div className="relative aspect-[4/3] bg-sand-200 overflow-hidden">
                     <img
-                      src={item.thumbnailUrl}
+                      src={item.thumbnailUrl || "/SanFurnitureLogo.png"}
                       alt={item.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   </div>

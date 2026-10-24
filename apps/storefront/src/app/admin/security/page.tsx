@@ -17,7 +17,7 @@ import {
   Activity
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface JailedIP {
   id: string;
@@ -30,9 +30,8 @@ interface JailedIP {
 }
 
 export default function AdminSecurityPage() {
-  const cachedJail = getCachedData<{ jailedIps: JailedIP[] }>(apiUrl("/api/security/ip-jail"));
-  const [jailedIps, setJailedIps] = useState<JailedIP[]>(() => cachedJail?.jailedIps || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedJail?.jailedIps?.length);
+  const [jailedIps, setJailedIps] = useState<JailedIP[]>([]);
+  const [loading, setLoading] = useState(true);
   const [unblockingIp, setUnblockingIp] = useState<string | null>(null);
   const [newIp, setNewIp] = useState("");
   const [newReason, setNewReason] = useState("");
@@ -122,7 +121,7 @@ export default function AdminSecurityPage() {
             <ShieldAlert className="w-4 h-4" />
             <span>Cyber Defense & Zero-Trust WAF</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-[#0B132B]">
+          <h1 className="text-2xl sm:text-3xl font-serif text-[#00072D]">
             Security Operations & IP Jail
           </h1>
           <p className="text-sm text-[#4F6D7A] mt-1">
@@ -132,7 +131,7 @@ export default function AdminSecurityPage() {
 
         <button
           onClick={fetchJail}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-md text-xs font-semibold transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-md text-xs font-semibold transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh Jail Status</span>
@@ -159,7 +158,7 @@ export default function AdminSecurityPage() {
 
       {/* Security Defense Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#0B132B] text-white p-5 rounded-xl border border-navy-800 shadow-sm">
+        <div className="bg-[#00072D] text-white p-5 rounded-xl border border-navy-800 shadow-sm">
           <div className="flex items-center justify-between text-xs text-sand-300 uppercase tracking-wider font-semibold">
             <span>Currently Jailed IPs</span>
             <Lock className="w-4 h-4 text-rose-400" />
@@ -177,7 +176,7 @@ export default function AdminSecurityPage() {
             <span>Sliding Window Rate Limits</span>
             <Activity className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             5 / 15m
           </div>
           <div className="text-xs text-[#4F6D7A] mt-1">
@@ -190,7 +189,7 @@ export default function AdminSecurityPage() {
             <span>Cryptography Standard</span>
             <ShieldCheck className="w-4 h-4 text-[#C89B3C]" />
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             PBKDF2 / SHA-512
           </div>
           <div className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
@@ -201,7 +200,7 @@ export default function AdminSecurityPage() {
 
       {/* Manual Ban Form */}
       <div className="bg-white p-5 rounded-xl border border-[#E8E2D5] shadow-sm">
-        <h2 className="text-sm font-semibold text-[#0B132B] uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-[#00072D] uppercase tracking-wider mb-3 flex items-center gap-2">
           <Plus className="w-4 h-4 text-[#C89B3C]" />
           Manual IP Lockout / Blacklist
         </h2>
@@ -212,14 +211,14 @@ export default function AdminSecurityPage() {
             placeholder="IP Address (e.g. 192.168.1.100 or 203.0.113.195)"
             value={newIp}
             onChange={(e) => setNewIp(e.target.value)}
-            className="flex-1 px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B] focus:outline-none focus:ring-2 focus:ring-[#0B132B]"
+            className="flex-1 px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-[#00072D]"
           />
           <input
             type="text"
             placeholder="Lockout Reason (e.g. Malicious SQL injection probe)"
             value={newReason}
             onChange={(e) => setNewReason(e.target.value)}
-            className="flex-1 px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B] focus:outline-none focus:ring-2 focus:ring-[#0B132B]"
+            className="flex-1 px-3.5 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-[#00072D]"
           />
           <button
             type="submit"
@@ -234,7 +233,7 @@ export default function AdminSecurityPage() {
       {/* IP Jail Table */}
       <div className="bg-white rounded-xl border border-[#E8E2D5] shadow-sm overflow-hidden">
         <div className="p-5 border-b border-[#E8E2D5] flex items-center justify-between">
-          <h2 className="text-base font-serif font-bold text-[#0B132B] flex items-center gap-2">
+          <h2 className="text-base font-serif font-bold text-[#00072D] flex items-center gap-2">
             <Terminal className="w-4 h-4 text-rose-600" />
             Active Jailed IP Addresses
           </h2>
@@ -255,7 +254,7 @@ export default function AdminSecurityPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#FAF8F5] text-[#0B132B] text-xs uppercase font-semibold border-b border-[#E8E2D5]">
+              <thead className="bg-[#FAF8F5] text-[#00072D] text-xs uppercase font-semibold border-b border-[#E8E2D5]">
                 <tr>
                   <th className="py-3 px-4">Offender IP</th>
                   <th className="py-3 px-4">Violations / Strikes</th>
@@ -272,7 +271,7 @@ export default function AdminSecurityPage() {
                       {j.ip_address}
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs font-semibold text-[#0B132B]">
+                    <td className="py-3.5 px-4 text-xs font-semibold text-[#00072D]">
                       {j.strike_count} strikes
                     </td>
 
@@ -280,7 +279,7 @@ export default function AdminSecurityPage() {
                       {j.reason || "Automated threshold exceeded"}
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs text-[#0B132B]">
+                    <td className="py-3.5 px-4 text-xs text-[#00072D]">
                       {j.is_permanent ? (
                         <span className="text-rose-600 font-semibold">PERMANENT LOCK</span>
                       ) : (

@@ -4,17 +4,17 @@
 
 :root {
   --background: #FAF8F5;
-  --foreground: #070D1E;
+  --foreground: #00072D;
   --card: #F4F1EA;
-  --card-foreground: #070D1E;
-  --primary: #0B132B;
+  --card-foreground: #00072D;
+  --primary: #00072D;
   --primary-foreground: #FAF8F5;
   --secondary: #E8E2D5;
-  --secondary-foreground: #0B132B;
+  --secondary-foreground: #00072D;
   --muted: #E8E2D5;
   --muted-foreground: #4F6D7A;
   --accent: #C89B3C;
-  --accent-foreground: #070D1E;
+  --accent-foreground: #00072D;
   --border: #E8E2D5;
   --input: #E8E2D5;
   --ring: #C89B3C;
@@ -63,6 +63,69 @@
   animation: scaleIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+@keyframes indeterminateProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-indeterminate-progress {
+  animation: indeterminateProgress 1.4s ease-in-out infinite;
+}
+
+/* Facebook-style silky shimmer skeleton wave */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(
+    90deg,
+    #e8e2d5 0%,
+    #f4f1ea 35%,
+    #faf8f5 50%,
+    #f4f1ea 65%,
+    #e8e2d5 100%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.shimmer-skeleton-dark {
+  background: linear-gradient(
+    90deg,
+    #0f172a 0%,
+    #1e293b 35%,
+    #334155 50%,
+    #1e293b 65%,
+    #0f172a 100%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.shimmer-skeleton-subtle {
+  background: linear-gradient(
+    90deg,
+    rgba(232, 226, 213, 0.5) 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(232, 226, 213, 0.5) 100%
+  );
+  background-size: 250% 100%;
+  animation: shimmer 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 /* Touch & tap tactile responsiveness without mobile gray flashes */
 a, button {
   -webkit-tap-highlight-color: transparent;
@@ -74,6 +137,11 @@ a, button {
 }
 .active-press:active {
   transform: scale(0.98);
+}
+
+/* Modals & full-screen overlays must never inherit space-y sibling margins */
+div.fixed.inset-0 {
+  margin: 0 !important;
 }
 
 /* Custom scrollbar hiding utilities */
@@ -121,8 +189,13 @@ a, button {
   }
 }
 
-/* Dedicated Print Layout for Order Receipts */
+/* Dedicated Print Layout for Order Receipts & Carrier Manifests */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
   /* Suppress all website chrome, sticky headers, bottom docks, navigations, footers & action buttons */
   header,
   footer,
@@ -130,15 +203,33 @@ a, button {
   aside,
   .no-print,
   #nprogress,
-  [data-no-print="true"] {
+  [data-no-print="true"],
+  [data-support-widget],
+  .support-widget,
+  [aria-label*="Support"],
+  [title*="Support"] {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
-  /* Reset body and main backgrounds for clean paper print */
+  /* Universal reset to pure white paper background across all wrappers and divs */
+  html,
+  body,
+  #__next,
+  [data-nextjs-scroll-focus-boundary],
+  div,
+  main,
+  section,
+  article {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #00072D !important;
+  }
+
   html,
   body {
-    background: #ffffff !important;
-    color: #070D1E !important;
     margin: 0 !important;
     padding: 0 !important;
     -webkit-print-color-adjust: exact !important;
@@ -160,15 +251,38 @@ a, button {
     max-width: 100% !important;
   }
 
-  .print-receipt-card {
-    border: 1px solid #e2e8f0 !important;
+  .print-receipt-card,
+  .print-manifest-sheet,
+  .print-invoice-sheet {
+    border: none !important;
     box-shadow: none !important;
     background: #ffffff !important;
-    padding: 20px !important;
+    padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .print-manifest-sheet table,
+  .print-invoice-sheet table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .print-manifest-sheet th,
+  .print-invoice-sheet th {
+    background-color: #f8fafc !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  .print-manifest-sheet td,
+  .print-invoice-sheet td {
+    border-bottom: 1px solid #e2e8f0 !important;
   }
 }
+

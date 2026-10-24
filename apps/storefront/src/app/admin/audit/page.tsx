@@ -15,6 +15,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { fetchWithSwr } from "@/lib/api-cache";
 
 interface AuditLog {
   id: string;
@@ -34,11 +35,15 @@ export default function AdminAuditPage() {
 
   const fetchLogs = async () => {
     try {
-      const res = await fetch(apiUrl("/api/admin/audit?limit=100"));
-      const data = await res.json();
-      if (data.logs) {
-        setLogs(data.logs);
-      }
+      await fetchWithSwr<{ logs: AuditLog[] }>(
+        apiUrl("/api/admin/audit?limit=100"),
+        (data) => {
+          if (data && data.logs) {
+            setLogs(data.logs);
+            setLoading(false);
+          }
+        }
+      );
     } catch (err) {
       console.error("Failed to load audit logs:", err);
     } finally {
@@ -77,7 +82,7 @@ export default function AdminAuditPage() {
             <History className="w-4 h-4" />
             <span>Governance & Immutable Audit Trail</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-serif text-[#0B132B]">
+          <h1 className="text-2xl sm:text-3xl font-serif text-[#00072D]">
             Administrative Operations Log
           </h1>
           <p className="text-sm text-[#4F6D7A] mt-1">
@@ -87,7 +92,7 @@ export default function AdminAuditPage() {
 
         <button
           onClick={fetchLogs}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-md text-xs font-semibold transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-md text-xs font-semibold transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh Audit Trail</span>
@@ -103,7 +108,7 @@ export default function AdminAuditPage() {
             placeholder="Search by staff actor, action name, resource, or IP address..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B] focus:outline-none focus:ring-2 focus:ring-[#0B132B]"
+            className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-[#00072D]"
           />
         </div>
       </div>
@@ -111,7 +116,7 @@ export default function AdminAuditPage() {
       {/* Audit Logs Table */}
       <div className="bg-white rounded-xl border border-[#E8E2D5] shadow-sm overflow-hidden">
         <div className="p-4 bg-[#FAF8F5] border-b border-[#E8E2D5] flex items-center justify-between text-xs text-[#4F6D7A]">
-          <span className="font-semibold text-[#0B132B]">
+          <span className="font-semibold text-[#00072D]">
             Showing {filteredLogs.length} Records
           </span>
           <span>Preserved under GDPR Article 32 & UK Data Protection Act 2018</span>
@@ -128,7 +133,7 @@ export default function AdminAuditPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-[#FAF8F5] text-[#0B132B] text-xs uppercase font-semibold border-b border-[#E8E2D5]">
+              <thead className="bg-[#FAF8F5] text-[#00072D] text-xs uppercase font-semibold border-b border-[#E8E2D5]">
                 <tr>
                   <th className="py-3 px-4">Timestamp (UTC)</th>
                   <th className="py-3 px-4">Staff Actor</th>
@@ -147,11 +152,11 @@ export default function AdminAuditPage() {
                         onClick={() => setExpandedId(isExpanded ? null : log.id)}
                         className="hover:bg-slate-50/60 transition-colors cursor-pointer"
                       >
-                        <td className="py-3.5 px-4 text-xs font-mono text-[#0B132B] whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-xs font-mono text-[#00072D] whitespace-nowrap">
                           {new Date(log.created_at).toLocaleString("en-GB")}
                         </td>
 
-                        <td className="py-3.5 px-4 text-xs font-medium text-[#0B132B]">
+                        <td className="py-3.5 px-4 text-xs font-medium text-[#00072D]">
                           <div className="flex items-center gap-1.5">
                             <User className="w-3.5 h-3.5 text-[#C89B3C]" />
                             <span>{log.actor}</span>
@@ -179,7 +184,7 @@ export default function AdminAuditPage() {
                         <td className="py-3.5 px-4 text-right">
                           <button
                             type="button"
-                            className="p-1 text-[#4F6D7A] hover:text-[#0B132B]"
+                            className="p-1 text-[#4F6D7A] hover:text-[#00072D]"
                           >
                             {isExpanded ? (
                               <ChevronDown className="w-4 h-4" />
@@ -193,11 +198,11 @@ export default function AdminAuditPage() {
                       {isExpanded && (
                         <tr className="bg-[#FAF8F5]/80">
                           <td colSpan={6} className="p-4 border-b border-[#E8E2D5]">
-                            <div className="text-xs font-mono text-[#0B132B] space-y-1">
+                            <div className="text-xs font-mono text-[#00072D] space-y-1">
                               <div className="text-[#4F6D7A] font-semibold mb-1">
                                 Event Payload (Raw JSON):
                               </div>
-                              <pre className="p-3 bg-white border border-[#E8E2D5] rounded-lg overflow-x-auto text-[11px] text-[#0B132B]">
+                              <pre className="p-3 bg-white border border-[#E8E2D5] rounded-lg overflow-x-auto text-[11px] text-[#00072D]">
                                 {(() => {
                                   try {
                                     return JSON.stringify(JSON.parse(log.details_json || "{}"), null, 2);

@@ -12,7 +12,7 @@ export const LUXURY_EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * 1. PageTransition
  * Wraps page content to provide an unmistakable, graceful entrance when a route is mounted.
- * Distinct 750ms duration with subtle lift and scale.
+ * Keeps route changes from shifting the page while content loads.
  */
 export function PageTransition({
   children,
@@ -23,10 +23,9 @@ export function PageTransition({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 28, scale: 0.99 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -16, scale: 0.99 }}
-      transition={{ duration: 0.75, ease: LUXURY_EASE }}
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: LUXURY_EASE }}
       className={className}
     >
       {children}
@@ -37,7 +36,7 @@ export function PageTransition({
 /**
  * 2. ScrollReveal
  * Distinct, visible scroll-triggered animations.
- * Moves 48px with 850ms duration so every section entrance is clearly perceived.
+ * Uses a restrained entrance so sections remain visually stable while appearing.
  */
 interface ScrollRevealProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
@@ -53,8 +52,8 @@ export function ScrollReveal({
   children,
   direction = "up",
   delay = 0,
-  duration = 0.85,
-  distance = 48,
+  duration = 0.65,
+  distance = 12,
   className = "",
   once = true,
   ...props
@@ -62,25 +61,23 @@ export function ScrollReveal({
   const getInitialPosition = () => {
     switch (direction) {
       case "up":
-        return { opacity: 0, y: distance };
+        return { opacity: 0.94, y: 0 };
       case "down":
-        return { opacity: 0, y: -distance };
+        return { opacity: 0.94, y: 0 };
       case "left":
-        return { opacity: 0, x: distance };
+        return { opacity: 0.94, x: distance };
       case "right":
-        return { opacity: 0, x: -distance };
+        return { opacity: 0.94, x: -distance };
       case "scale":
-        return { opacity: 0, scale: 0.90, y: 28 };
+        return { opacity: 0.94, y: 0 };
       case "fade":
       default:
-        return { opacity: 0 };
+        return { opacity: 0.94 };
     }
   };
 
   const getTargetPosition = () => {
     switch (direction) {
-      case "scale":
-        return { opacity: 1, scale: 1, y: 0 };
       default:
         return { opacity: 1, x: 0, y: 0 };
     }
@@ -90,11 +87,17 @@ export function ScrollReveal({
     <motion.div
       initial={getInitialPosition()}
       whileInView={getTargetPosition()}
-      viewport={{ once, margin: "-30px", amount: 0.15 }}
+      viewport={{ once, amount: 0.12 }}
       transition={{
         duration,
         delay,
-        ease: LUXURY_EASE,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      style={{
+        willChange: "transform, opacity",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
+        ...props.style,
       }}
       className={className}
       {...props}
@@ -106,18 +109,14 @@ export function ScrollReveal({
 
 /**
  * 3. StaggerContainer & StaggerItem
- * Creates a clear, noticeable domino/cascading entrance animation for product grids,
- * room categories, and customer reviews.
- * Stagger time of 140ms per item ensures sequential animation is unmistakable.
+ * Smoothly reveals product cards in sequence without shifting their layout.
  */
 export const staggerItemVariants: Variants = {
-  hidden: { opacity: 0, y: 48, scale: 0.94 },
+  hidden: { opacity: 0.92 },
   visible: {
     opacity: 1,
-    y: 0,
-    scale: 1,
     transition: {
-      duration: 0.8,
+      duration: 0.5,
       ease: LUXURY_EASE,
     },
   },
@@ -126,8 +125,8 @@ export const staggerItemVariants: Variants = {
 export function StaggerContainer({
   children,
   className = "",
-  delay = 0.05,
-  stagger = 0.14,
+  delay = 0,
+  stagger = 0.045,
   once = true,
 }: {
   children: React.ReactNode;
@@ -139,7 +138,7 @@ export function StaggerContainer({
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0 },
+        hidden: { opacity: 1 },
         visible: {
           opacity: 1,
           transition: {
@@ -150,7 +149,7 @@ export function StaggerContainer({
       }}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once, margin: "-30px", amount: 0.1 }}
+      viewport={{ once, amount: 0.05 }}
       className={className}
     >
       {children}
@@ -161,12 +160,20 @@ export function StaggerContainer({
 export function StaggerItem({
   children,
   className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+  style,
+  ...props
+}: HTMLMotionProps<"div">) {
   return (
-    <motion.div variants={staggerItemVariants} className={className}>
+    <motion.div
+      variants={staggerItemVariants}
+      initial={{ opacity: 0.92 }}
+      style={{
+        willChange: "opacity",
+        ...style,
+      }}
+      className={className}
+      {...props}
+    >
       {children}
     </motion.div>
   );

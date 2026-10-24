@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -25,17 +25,19 @@ import {
   Mail,
   PackageCheck,
   Check,
-  X,
-  Smartphone,
-  KeyRound,
   Building,
+  User,
+  Copy,
+  Plus,
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { apiUrl } from "@/lib/api-config";
 import { classifyUKPostcode, formatGBP, calculateNetAndVat, type UKPostcodeZone } from "@san-furniture/types";
+import { usePageSections } from "@/lib/cms";
+import { OrderCelebration } from "@/components/checkout/OrderCelebration";
 
 // Delivery Tier definitions
-type DeliveryTierId = "standard_2man" | "white_glove_assembly" | "priority_saturday";
+type DeliveryTierId = string;
 
 interface DeliveryTierOption {
   id: DeliveryTierId;
@@ -44,7 +46,20 @@ interface DeliveryTierOption {
   baseFeePennies: number;
   timeframe: string;
   badge?: string;
+  isActive?: boolean;
+  sortOrder?: number;
 }
+
+const DEFAULT_FALLBACK_DELIVERY: DeliveryTierOption = {
+  id: "del_opt_001",
+  name: "Free UK Mainland Delivery",
+  description: "Complimentary room of choice delivery across mainland UK. Direct from SAN Central Distribution Hub with a 2-hour pre-delivery booking call.",
+  baseFeePennies: 0,
+  timeframe: "3 - 7 business days",
+  badge: "FREE DELIVERY",
+  isActive: true,
+  sortOrder: 1,
+};
 
 interface ConfirmedOrderDetails {
   orderId: string;
@@ -87,25 +102,162 @@ export default function CheckoutPage() {
     clearCart,
   } = useCart();
 
-  // Delivery Address State
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [addressLine1, setAddressLine1] = useState("");
-  const [addressLine2, setAddressLine2] = useState("");
-  const [city, setCity] = useState("");
-  const [postcode, setPostcode] = useState("");
+  const { getSection } = usePageSections("checkout");
+  const headerBadge = getSection("checkout_header_badge", {
+    badge_text: "Safe & Secure UK Checkout",
+    guarantee_text: "Direct Mainland Dispatch • 100% Transit Insured • UK Quality Checked",
+    ssl_note: "256-bit SSL Bank-Grade Encryption",
+  });
 
-  // Dedicated Delivery Options State
-  const [selectedDeliveryTier, setSelectedDeliveryTier] = useState<DeliveryTierId>("standard_2man");
+  // 1. Account / Contact State
+  const [accountFirstName, setAccountFirstName] = useState("");
+  const [accountLastName, setAccountLastName] = useState("");
+  const [accountUsername, setAccountUsername] = useState("");
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountPhone, setAccountPhone] = useState("");
+  const [createAccount, setCreateAccount] = useState(false);
+  const [accountPassword, setAccountPassword] = useState("");
 
-  // Billing Address State
-  const [billingSameAsDelivery, setBillingSameAsDelivery] = useState(true);
-  const [billingName, setBillingName] = useState("");
-  const [billingAddressLine1, setBillingAddressLine1] = useState("");
-  const [billingAddressLine2, setBillingAddressLine2] = useState("");
+  // 2. Billing Address State
+  const [billingFirstName, setBillingFirstName] = useState("");
+  const [billingLastName, setBillingLastName] = useState("");
+  const [billingCompany, setBillingCompany] = useState("");
+  const [billingAddress1, setBillingAddress1] = useState("");
+  const [billingAddress2, setBillingAddress2] = useState("");
   const [billingCity, setBillingCity] = useState("");
   const [billingPostcode, setBillingPostcode] = useState("");
+  const [billingCountry, setBillingCountry] = useState("United Kingdom");
+  const [billingState, setBillingState] = useState("");
+  const [billingEmail, setBillingEmail] = useState("");
+  const [billingPhone, setBillingPhone] = useState("");
+
+  // 3. Shipping Address State
+  const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
+  const [shippingFirstName, setShippingFirstName] = useState("");
+  const [shippingLastName, setShippingLastName] = useState("");
+  const [shippingCompany, setShippingCompany] = useState("");
+  const [shippingAddress1, setShippingAddress1] = useState("");
+  const [shippingAddress2, setShippingAddress2] = useState("");
+  const [shippingCity, setShippingCity] = useState("");
+  const [shippingPostcode, setShippingPostcode] = useState("");
+  const [shippingCountry, setShippingCountry] = useState("United Kingdom");
+  const [shippingState, setShippingState] = useState("");
+
+  // Copy Account -> Billing
+  const handleCopyAccountToBilling = () => {
+    if (accountFirstName) setBillingFirstName(accountFirstName);
+    if (accountLastName) setBillingLastName(accountLastName);
+    if (accountEmail) setBillingEmail(accountEmail);
+    if (accountPhone) setBillingPhone(accountPhone);
+  };
+
+  // Copy Billing -> Shipping
+  const handleCopyBillingToShipping = () => {
+    setShippingFirstName(billingFirstName || accountFirstName);
+    setShippingLastName(billingLastName || accountLastName);
+    setShippingCompany(billingCompany);
+    setShippingAddress1(billingAddress1);
+    setShippingAddress2(billingAddress2);
+    setShippingCity(billingCity);
+    setShippingPostcode(billingPostcode);
+    setShippingCountry(billingCountry || "United Kingdom");
+    setShippingState(billingState);
+  };
+
+  interface SavedPaymentMethod {
+    id: string;
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+    cardholder_name: string;
+    is_default: number;
+  }
+
+  // Saved cards state & 1-click re-use
+  const [savedCards, setSavedCards] = useState<SavedPaymentMethod[]>([]);
+  const [selectedSavedCardId, setSelectedSavedCardId] = useState<string>("");
+  const [paymentMode, setPaymentMode] = useState<"saved" | "new">("new");
+  const [savedCardCvc, setSavedCardCvc] = useState("123");
+  const [isLoadingSavedCards, setIsLoadingSavedCards] = useState(false);
+  const [loggedInCustomer, setLoggedInCustomer] = useState<any>(null);
+
+  // Auto-fill logged in user on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const rawUser = localStorage.getItem("san_customer_user");
+      if (rawUser) {
+        const u = JSON.parse(rawUser);
+        setLoggedInCustomer(u);
+        if (u.firstName) setAccountFirstName(u.firstName);
+        if (u.lastName) setAccountLastName(u.lastName);
+        if (u.username) setAccountUsername(u.username);
+        if (u.email) setAccountEmail(u.email);
+        if (u.phone) setAccountPhone(u.phone);
+
+        // Pre-fill billing with account
+        setBillingFirstName(u.firstName || "");
+        setBillingLastName(u.lastName || "");
+        setBillingEmail(u.email || "");
+        setBillingPhone(u.phone || "");
+
+        if (u.addresses && u.addresses.length > 0) {
+          const def = u.addresses.find((a: any) => a.is_default_delivery) || u.addresses[0];
+          if (def) {
+            setBillingAddress1(def.address_line1 || "");
+            setBillingAddress2(def.address_line2 || "");
+            setBillingCity(def.city || "");
+            setBillingPostcode(def.postcode || "");
+            setBillingState(def.county || "");
+            setBillingCompany(def.company || "");
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Fetch saved payment instruments dynamically for instant 1-click reuse
+  useEffect(() => {
+    const targetEmail = accountEmail.trim() || billingEmail.trim() || loggedInCustomer?.email;
+    if (!targetEmail) return;
+
+    let isCancelled = false;
+    setIsLoadingSavedCards(true);
+    fetch(apiUrl(`/api/customer/payment-methods?email=${encodeURIComponent(targetEmail)}&customerId=${encodeURIComponent(loggedInCustomer?.id || "")}`))
+      .then((r) => r.json())
+      .then((data) => {
+        if (isCancelled) return;
+        if (data.success && Array.isArray(data.paymentMethods) && data.paymentMethods.length > 0) {
+          setSavedCards(data.paymentMethods);
+          const def = data.paymentMethods.find((c: SavedPaymentMethod) => c.is_default) || data.paymentMethods[0];
+          setSelectedSavedCardId(def.id);
+          setPaymentMode("saved");
+        } else {
+          setSavedCards([]);
+          setPaymentMode("new");
+        }
+      })
+      .catch((err) => console.error("Error loading saved cards:", err))
+      .finally(() => {
+        if (!isCancelled) setIsLoadingSavedCards(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [accountEmail, billingEmail, loggedInCustomer?.id, loggedInCustomer?.email]);
+
+  // Hydration state tracking
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Dedicated Delivery Options State (Defaults to primary active tier)
+  const [selectedDeliveryTier, setSelectedDeliveryTier] = useState<DeliveryTierId>("del_opt_001");
 
   // Payment Selection: Sole processor is Credit / Debit Card (Stripe UK Gateway)
   const paymentMethod = "card";
@@ -115,95 +267,238 @@ export default function CheckoutPage() {
   const [cardNumber, setCardNumber] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCvc, setCardCvc] = useState("");
+  const [saveCardForFuture, setSaveCardForFuture] = useState(false);
 
   // Postcode lookup state
   const [isLookingUpPostcode, setIsLookingUpPostcode] = useState(false);
   const [lookupMessage, setLookupMessage] = useState<{ text: string; isError?: boolean } | null>(null);
 
-  // Dedicated Payment Gateway Modal & SCA State
-  const [isGatewayModalOpen, setIsGatewayModalOpen] = useState(false);
-  const [paymentIntent, setPaymentIntent] = useState<{
-    paymentIntentId: string;
-    clientSecret: string;
-    amountPennies: number;
-    formattedAmount: string;
-  } | null>(null);
+  // Order & Payment submission state
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [scaOtp, setScaOtp] = useState("123456");
-  const [gatewayError, setGatewayError] = useState<string | null>(null);
-
-  // Order submission state
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [checkoutStepState, setCheckoutStepState] = useState<"idle" | "authorizing" | "securing" | "confirmed">("idle");
+  const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrderDetails | null>(null);
 
-  // UK Postcode Logistics Zone Classification
-  const logisticsZone = useMemo<UKPostcodeZone>(() => {
-    if (!postcode || postcode.trim().length < 2) return "zone_1_mainland";
-    return classifyUKPostcode(postcode.trim());
-  }, [postcode]);
+  // Pre-warm checkout compilation & endpoints during idle time (ensures instant sub-second order confirm)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const prewarm = async () => {
+      try {
+        fetch(apiUrl("/api/shipping/options"), { method: "GET" }).catch(() => {});
+        fetch(apiUrl("/api/checkout/create-payment-intent"), { method: "OPTIONS" }).catch(() => {});
+        fetch(apiUrl("/api/checkout/confirm-payment"), { method: "OPTIONS" }).catch(() => {});
+        fetch(apiUrl("/api/checkout/create-order"), { method: "OPTIONS" }).catch(() => {});
+      } catch {}
+    };
+    if ("requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(prewarm, { timeout: 1200 });
+    } else {
+      setTimeout(prewarm, 400);
+    }
+  }, []);
 
-  // Delivery options with dynamic calculations
-  const deliveryOptions = useMemo<DeliveryTierOption[]>(() => {
-    const isMainland = logisticsZone === "zone_1_mainland";
-    const freeMainlandStandard = hasFreeDelivery && isMainland;
+  // Active Postcode for logistics calculation
+  const activePostcode = (shippingSameAsBilling ? billingPostcode : (shippingPostcode || billingPostcode)).trim().toUpperCase();
 
-    return [
-      {
-        id: "standard_2man",
-        name: "Standard 2-Man Room of Choice Delivery",
-        description: "Delivered into room of choice on ground floor or via lift. Dedicated Leicester fleet with pre-delivery 2-hour window call.",
-        baseFeePennies: freeMainlandStandard ? 0 : 4900,
-        timeframe: isMainland ? "3 - 7 business days" : "5 - 10 business days",
-        badge: freeMainlandStandard ? "FREE (Orders £500+)" : undefined,
-      },
-      {
-        id: "white_glove_assembly",
-        name: "White Glove Delivery & Packaging Disposal",
-        description: "Delivered into any room (up to 3rd floor). Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.",
-        baseFeePennies: freeMainlandStandard ? 2900 : 7800, // £29 upgrade
-        timeframe: isMainland ? "3 - 7 business days" : "5 - 10 business days",
-        badge: "Recommended for Sofas & Wardrobes",
-      },
-      {
-        id: "priority_saturday",
-        name: "Priority Saturday / Weekend White Glove Delivery",
-        description: "Guaranteed Saturday delivery slot with priority loading at Amos Mann Leicester Hub and live driver SMS GPS tracking.",
-        baseFeePennies: freeMainlandStandard ? 4900 : 9800, // £49 upgrade
-        timeframe: "Guaranteed Weekend Slot",
-        badge: "Fastest Weekend Slot",
-      },
-    ];
-  }, [logisticsZone, hasFreeDelivery]);
+  // Dynamic UK Logistics State (Connected to MySQL postcode_zones and system_settings)
+  interface DynamicLogisticsState {
+    zoneCode: string;
+    zoneName: string;
+    isDeliverable: boolean;
+    surchargePennies: number;
+    leadTimeExtraDays: number;
+    errorMessage: string | null;
+  }
 
-  // Selected Delivery Option
-  const currentDeliveryOption = useMemo(() => {
-    return deliveryOptions.find((d) => d.id === selectedDeliveryTier) || deliveryOptions[0];
+  const [logisticsData, setLogisticsData] = useState<DynamicLogisticsState>({
+    zoneCode: "mainland_uk",
+    zoneName: "UK Mainland Standard Delivery",
+    isDeliverable: true,
+    surchargePennies: 0,
+    leadTimeExtraDays: 0,
+    errorMessage: null,
+  });
+
+  // Dynamic delivery options with live tiers from backend (Initializes with guaranteed active tier)
+  const [deliveryOptions, setDeliveryOptions] = useState<DeliveryTierOption[]>([
+    DEFAULT_FALLBACK_DELIVERY,
+  ]);
+
+  // Load active delivery options immediately on mount from backend database
+  useEffect(() => {
+    let isCancelled = false;
+    const loadInitialOptions = async () => {
+      try {
+        const res = await fetch(apiUrl("/api/shipping/options"));
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isCancelled) return;
+        const rawList = Array.isArray(data?.deliveryOptions)
+          ? data.deliveryOptions
+          : Array.isArray(data?.options)
+          ? data.options
+          : [];
+        // Strictly filter out any inactive delivery tiers
+        const activeOnly: DeliveryTierOption[] = rawList.filter(
+          (o: any) => o && o.isActive !== false && o.id
+        );
+        if (activeOnly.length > 0) {
+          setDeliveryOptions(activeOnly);
+          setSelectedDeliveryTier((prev) => {
+            const exists = activeOnly.some((o: DeliveryTierOption) => o.id === prev);
+            return exists ? prev : (activeOnly[0]?.id || DEFAULT_FALLBACK_DELIVERY.id);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load initial delivery options:", err);
+      }
+    };
+    loadInitialOptions();
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Synchronize Delivery Rates & Zone Surcharges dynamically from MySQL postcode_zones & system_settings
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchShipping = async () => {
+      if (!activePostcode || activePostcode.length < 2) {
+        setLogisticsData({
+          zoneCode: "mainland_uk",
+          zoneName: "UK Mainland Standard Delivery",
+          isDeliverable: true,
+          surchargePennies: 0,
+          leadTimeExtraDays: 0,
+          errorMessage: null,
+        });
+        return;
+      }
+      try {
+        const res = await fetch(apiUrl("/api/shipping/calculate"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postcode: activePostcode,
+            subtotalPennies: Number(subtotalPennies) || 0,
+          }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (isCancelled) return;
+
+        const deliverable = data.deliverable !== false && data.is_deliverable !== false;
+        setLogisticsData({
+          zoneCode: data.zone || "mainland_uk",
+          zoneName: data.zoneName || "UK Delivery",
+          isDeliverable: deliverable,
+          surchargePennies: deliverable ? (Number(data.surchargePennies) || 0) : 0,
+          leadTimeExtraDays: Number(data.leadTimeExtraDays) || 0,
+          errorMessage: !deliverable
+            ? (data.error || data.message || "Delivery to this destination is currently suspended.")
+            : null,
+        });
+
+        const rawList = Array.isArray(data?.deliveryOptions)
+          ? data.deliveryOptions
+          : Array.isArray(data?.options)
+          ? data.options
+          : [];
+        // Strictly filter out any inactive delivery tiers
+        const activeOnly: DeliveryTierOption[] = rawList.filter(
+          (o: any) => o && o.isActive !== false && o.id
+        );
+        if (activeOnly.length > 0) {
+          setDeliveryOptions(activeOnly);
+          setSelectedDeliveryTier((prev) => {
+            const exists = activeOnly.some((o: DeliveryTierOption) => o.id === prev);
+            return exists ? prev : (activeOnly[0]?.id || DEFAULT_FALLBACK_DELIVERY.id);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to query live shipping calculate:", err);
+      }
+    };
+
+    const timer = setTimeout(fetchShipping, 250);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activePostcode, subtotalPennies]);
+
+  const hasEnteredPostcode = !!activePostcode && activePostcode.length >= 2;
+  const isOutsideDeliveryArea = hasEnteredPostcode && !logisticsData.isDeliverable;
+
+  // Selected Delivery Option (Guaranteed never undefined)
+  const currentDeliveryOption = useMemo<DeliveryTierOption>(() => {
+    if (!deliveryOptions || deliveryOptions.length === 0) {
+      return DEFAULT_FALLBACK_DELIVERY;
+    }
+    const match = deliveryOptions.find((d) => d && d.id === selectedDeliveryTier);
+    return match || deliveryOptions[0] || DEFAULT_FALLBACK_DELIVERY;
   }, [deliveryOptions, selectedDeliveryTier]);
 
-  // Postcode regional surcharge calculation
-  const postcodeSurchargePennies = useMemo(() => {
-    if (logisticsZone === "zone_2_scottish_highlands") return 4900;
-    if (logisticsZone === "zone_3_scottish_islands") return 6900;
-    if (logisticsZone === "zone_4_northern_ireland") return 5900;
-    return 0;
-  }, [logisticsZone]);
-
-  const totalShippingPennies = currentDeliveryOption.baseFeePennies + postcodeSurchargePennies;
-  const grandTotalPennies = subtotalPennies + totalShippingPennies;
+  // Dynamic Postcode regional surcharge calculation
+  const postcodeSurchargePennies = isOutsideDeliveryArea ? 0 : (Number(logisticsData?.surchargePennies) || 0);
+  const baseDeliveryPennies = isOutsideDeliveryArea ? 0 : (Number(currentDeliveryOption?.baseFeePennies) || 0);
+  const totalShippingPennies = baseDeliveryPennies + postcodeSurchargePennies;
+  const grandTotalPennies = (Number(subtotalPennies) || 0) + totalShippingPennies;
   const overallVatBreakdown = calculateNetAndVat(grandTotalPennies);
+
+  // Quick helper to autofill demo customer details for dev & test
+  const handleFillDemoDetails = () => {
+    let activeEmail = "eleanor.vance@gmail.com";
+    let activeFirst = "Lady Eleanor";
+    let activeLast = "Vance";
+    let activePhone = "+44 7700 900123";
+
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("san_customer_user");
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u.email) activeEmail = u.email;
+          if (u.firstName) activeFirst = u.firstName;
+          if (u.lastName) activeLast = u.lastName;
+          if (u.phone) activePhone = u.phone;
+        }
+      } catch {}
+    }
+
+    setAccountFirstName(activeFirst);
+    setAccountLastName(activeLast);
+    setAccountUsername(activeFirst.toLowerCase().replace(/\s+/g, "_"));
+    setAccountEmail(activeEmail);
+    setAccountPhone(activePhone);
+    setBillingFirstName(activeFirst);
+    setBillingLastName(activeLast);
+    setBillingCompany("Kensington Manor Ltd");
+    setBillingAddress1("10 Downing Street");
+    setBillingAddress2("Apartment 4B");
+    setBillingCity("London");
+    setBillingPostcode("SW1A 2AA");
+    setBillingState("Greater London");
+    setBillingCountry("United Kingdom");
+    setBillingEmail(activeEmail);
+    setBillingPhone(activePhone);
+  };
 
   // Quick helper to autofill demo test card
   const handleFillTestCard = () => {
-    setCardholderName(name.trim() || "Lady Eleanor Vance");
+    const fullName = `${billingFirstName || accountFirstName || "Lady Eleanor"} ${billingLastName || accountLastName || "Vance"}`.trim();
+    setCardholderName(fullName);
     setCardNumber("4242 4242 4242 4242");
     setCardExpiry("12/28");
     setCardCvc("123");
   };
 
   // Live UK Postcode Lookup via Backend API
-  const handleAddressLookup = async () => {
-    const clean = postcode.toUpperCase().replace(/\s+/g, "");
+  const handleAddressLookup = async (target: "billing" | "shipping" = "billing") => {
+    const rawPostcode = target === "billing" ? billingPostcode : shippingPostcode;
+    const clean = rawPostcode.toUpperCase().replace(/\s+/g, "");
     if (!clean) {
       setLookupMessage({ text: "Please enter a UK postcode first.", isError: true });
       return;
@@ -217,13 +512,29 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (res.ok && data.valid) {
-        setPostcode(data.postcode);
-        if (!city || city === "London") setCity(data.city);
-        if (!addressLine1 && data.sampleAddress) setAddressLine1(data.sampleAddress);
-        setLookupMessage({
-          text: `Verified UK Address: ${data.city} (${data.zone === "zone_1_mainland" ? "Mainland 2-Man Logistics Hub" : "Regional Surcharge Zone"}). Transit: ${data.estimatedDays}`,
-          isError: false,
-        });
+        if (target === "billing") {
+          setBillingPostcode(data.postcode);
+          if (data.city) setBillingCity(data.city);
+          if (data.county) setBillingState(data.county);
+          if (!billingAddress1 && data.sampleAddress) setBillingAddress1(data.sampleAddress);
+        } else {
+          setShippingPostcode(data.postcode);
+          if (data.city) setShippingCity(data.city);
+          if (data.county) setShippingState(data.county);
+          if (!shippingAddress1 && data.sampleAddress) setShippingAddress1(data.sampleAddress);
+        }
+
+        if (data.deliverable === false) {
+          setLookupMessage({
+            text: data.message || "Delivery to this address is currently unavailable. Please provide a valid UK Mainland delivery address.",
+            isError: true,
+          });
+        } else {
+          setLookupMessage({
+            text: `Verified UK Address: ${data.city} (${data.zoneName}). ${data.surchargePennies > 0 ? `Regional surcharge: ${formatGBP(data.surchargePennies)}.` : "Eligible for Free Standard Delivery."} Transit: ${data.estimatedDays}`,
+            isError: false,
+          });
+        }
       } else {
         setLookupMessage({
           text: data.error || "Postcode not recognized. Please check or enter address manually.",
@@ -231,9 +542,8 @@ export default function CheckoutPage() {
         });
       }
     } catch {
-      setCity("London");
       setLookupMessage({
-        text: `Address verified for UK postcode ${postcode.toUpperCase()}`,
+        text: `Address recorded for UK postcode ${clean}.`,
         isError: false,
       });
     } finally {
@@ -241,86 +551,169 @@ export default function CheckoutPage() {
     }
   };
 
-  // Step 1: Open Official Dedicated Payment Gateway Modal
-  const handleInitiatePaymentGateway = async (e: React.FormEvent) => {
+  // Professional 1-Step Checkout: Seamless Card Payment & Order Confirmation
+  const handlePlaceOrderAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    setGatewayError(null);
 
-    // Validate delivery fields
-    if (!name.trim() || !email.trim() || !addressLine1.trim() || !postcode.trim() || !phone.trim() || !city.trim()) {
-      setSubmitError("Please fill in all required delivery fields (Full Name, Email, UK Phone, Address Line 1, Town/City, and UK Postcode).");
+    // Validate Account fields
+    const effAccountFirstName = accountFirstName.trim() || billingFirstName.trim();
+    const effAccountLastName = accountLastName.trim() || billingLastName.trim();
+    const effEmail = accountEmail.trim() || billingEmail.trim();
+    const effPhone = accountPhone.trim() || billingPhone.trim();
+
+    if (!effAccountFirstName || !effAccountLastName || !effEmail || !effPhone) {
+      setSubmitError("Please fill in your Account / Contact details (First Name, Last Name, Email, and UK Phone Number).");
       return;
     }
 
-    // Validate billing fields if separate
-    if (!billingSameAsDelivery) {
-      if (!billingAddressLine1.trim() || !billingCity.trim() || !billingPostcode.trim()) {
-        setSubmitError("Please fill in all required billing address fields.");
+    // Validate Password if account creation is requested
+    if (createAccount && (!accountPassword || accountPassword.length < 6)) {
+      setSubmitError("Password must be at least 6 characters long to create your customer account.");
+      return;
+    }
+
+    // Validate Billing Address fields
+    if (!billingAddress1.trim() || !billingCity.trim() || !billingPostcode.trim()) {
+      setSubmitError("Please fill in all required Billing Address fields (Address Line 1, Town/City, and UK Postcode).");
+      return;
+    }
+
+    // Validate Shipping Address fields if separate
+    if (!shippingSameAsBilling) {
+      if (!shippingAddress1.trim() || !shippingCity.trim() || !shippingPostcode.trim()) {
+        setSubmitError("Please fill in all required Shipping Address fields (Address Line 1, Town/City, and UK Postcode).");
         return;
       }
+    }
+
+    // Validate delivery availability
+    if (isOutsideDeliveryArea) {
+      setSubmitError(logisticsData.errorMessage || "Delivery to your entered destination is currently suspended. Please provide a valid UK Mainland delivery address to proceed.");
+      return;
     }
 
     // Validate card fields if card selected
     if (paymentMethod === "card") {
-      if (!cardNumber.trim() || !cardExpiry.trim() || !cardCvc.trim()) {
-        setSubmitError("Please enter your card number, expiry date (MM/YY), and security CVC code (or click '⚡ Fill Demo Test Card').");
-        return;
+      if (paymentMode === "saved") {
+        if (!selectedSavedCardId) {
+          setSubmitError("Please select a saved card to complete your order.");
+          return;
+        }
+        if (!savedCardCvc.trim() || savedCardCvc.trim().length < 3) {
+          setSubmitError("Please enter your card's security CVC / CVV code (3 or 4 digits).");
+          return;
+        }
+      } else {
+        const cleanCard = cardNumber.replace(/\s+/g, "");
+        if (!cleanCard || cleanCard.length < 13) {
+          setSubmitError("Please enter a valid credit or debit card number.");
+          return;
+        }
+        if (!cardExpiry.trim() || cardExpiry.length < 4) {
+          setSubmitError("Please enter a valid card expiry date (MM/YY).");
+          return;
+        }
+        if (!cardCvc.trim() || cardCvc.length < 3) {
+          setSubmitError("Please enter your card's security CVC / CVV code.");
+          return;
+        }
       }
     }
 
     setIsProcessingPayment(true);
+    setIsSubmittingOrder(true);
+    setCheckoutStepState("authorizing");
 
     try {
-      // Create official Payment Intent with backend
-      const res = await fetch(apiUrl("/api/checkout/create-payment-intent"), {
+      // 1. Initiate Payment Intent with backend
+      const intentRes = await fetch(apiUrl("/api/checkout/create-payment-intent"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountPennies: grandTotalPennies,
           customer: {
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone.trim(),
+            id: loggedInCustomer?.id || undefined,
+            name: `${effAccountFirstName} ${effAccountLastName}`.trim(),
+            firstName: effAccountFirstName,
+            lastName: effAccountLastName,
+            username: accountUsername.trim() || undefined,
+            email: effEmail,
+            phone: effPhone,
+            postcode: activePostcode,
+          },
+          shippingAddress: {
+            firstName: shippingSameAsBilling ? effAccountFirstName : (shippingFirstName.trim() || effAccountFirstName),
+            lastName: shippingSameAsBilling ? effAccountLastName : (shippingLastName.trim() || effAccountLastName),
+            company: shippingSameAsBilling ? billingCompany.trim() : shippingCompany.trim(),
+            addressLine1: shippingSameAsBilling ? billingAddress1.trim() : shippingAddress1.trim(),
+            addressLine2: shippingSameAsBilling ? billingAddress2.trim() : shippingAddress2.trim(),
+            city: shippingSameAsBilling ? billingCity.trim() : shippingCity.trim(),
+            state: shippingSameAsBilling ? billingState.trim() : shippingState.trim(),
+            postcode: activePostcode,
+            country: shippingSameAsBilling ? billingCountry : shippingCountry,
+          },
+          billingAddress: {
+            firstName: billingFirstName.trim() || effAccountFirstName,
+            lastName: billingLastName.trim() || effAccountLastName,
+            company: billingCompany.trim(),
+            addressLine1: billingAddress1.trim(),
+            addressLine2: billingAddress2.trim(),
+            city: billingCity.trim(),
+            state: billingState.trim(),
+            postcode: billingPostcode.trim().toUpperCase(),
+            country: billingCountry || "United Kingdom",
+            email: billingEmail.trim() || effEmail,
+            phone: billingPhone.trim() || effPhone,
           },
           paymentMethod,
           deliveryTier: selectedDeliveryTier,
+          items: items.map((it) => ({
+            productId: it?.product?.id || it?.id || "unknown_item",
+            quantity: Math.max(1, Number(it?.quantity) || 1),
+            pricePennies: Number(it?.product?.pricePennies) || 0,
+            title: it?.product?.title || "Handcrafted Furniture Item",
+          })),
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to initiate payment gateway intent.");
+      const intentData = await intentRes.json();
+      if (!intentRes.ok || !intentData.success) {
+        throw new Error(intentData.error || "Failed to initiate payment gateway intent.");
       }
 
-      setPaymentIntent(data);
-      setIsGatewayModalOpen(true);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error initiating payment gateway.";
-      setSubmitError(msg);
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
+      // Active card details resolution (saved card 1-click vs new card entry)
+      const activeSavedCard = savedCards.find((c) => c.id === selectedSavedCardId);
+      const activeCardDetails = paymentMode === "saved" && activeSavedCard
+        ? {
+            cardNumber: `•••• •••• •••• ${activeSavedCard.last4}`,
+            cardholderName: activeSavedCard.cardholder_name || `${effAccountFirstName} ${effAccountLastName}`.trim(),
+            cardExpiry: `${String(activeSavedCard.exp_month).padStart(2, "0")}/${String(activeSavedCard.exp_year).slice(-2)}`,
+            cardCvc: savedCardCvc.trim(),
+            isSavedCard: true,
+            savedCardId: activeSavedCard.id,
+            brand: activeSavedCard.brand,
+            last4: activeSavedCard.last4,
+            saveCardForFuture: false,
+          }
+        : {
+            cardNumber: cardNumber.replace(/\s+/g, ""),
+            cardholderName: cardholderName.trim() || `${effAccountFirstName} ${effAccountLastName}`.trim(),
+            cardExpiry: cardExpiry.trim(),
+            cardCvc: cardCvc.trim(),
+            isSavedCard: false,
+            saveCardForFuture: Boolean(saveCardForFuture),
+          };
 
-  // Step 2: Confirm Payment in Gateway Modal and ONLY THEN Place Order!
-  const handleConfirmGatewayPayment = async () => {
-    if (!paymentIntent) return;
-    setIsProcessingPayment(true);
-    setGatewayError(null);
-
-    try {
-      // 1. Authorize & Confirm with official payment gateway
+      // 2. Authorize & Confirm payment via Gateway directly (seamless, zero disruptive popups)
       const confirmRes = await fetch(apiUrl("/api/checkout/confirm-payment"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          paymentIntentId: paymentIntent.paymentIntentId,
+          paymentIntentId: intentData.paymentIntentId,
           paymentMethod,
-          paymentDetails: {
-            cardNumber: cardNumber.slice(-4),
-            scaOtp,
-          },
+          saveCardForFuture: activeCardDetails.saveCardForFuture,
+          paymentDetails: activeCardDetails,
           amountPennies: grandTotalPennies,
         }),
       });
@@ -330,63 +723,87 @@ export default function CheckoutPage() {
         throw new Error(confirmData.error || "Payment authorization failed with issuer. Please verify and try again.");
       }
 
-      // 2. ONLY AFTER Payment is Verified/Succeeded: Submit Order to Database & Dispatch B2B PO!
-      setIsSubmittingOrder(true);
+      setCheckoutStepState("securing");
 
-      const resolvedBilling = billingSameAsDelivery
+      // 3. Persist Order to Database & Dispatch B2B Purchase Order
+      const resolvedShipping = shippingSameAsBilling
         ? {
-            name: name.trim(),
-            addressLine1: addressLine1.trim(),
-            addressLine2: addressLine2.trim(),
-            city: city.trim(),
-            postcode: postcode.trim(),
-            country: "United Kingdom",
+            firstName: billingFirstName || effAccountFirstName,
+            lastName: billingLastName || effAccountLastName,
+            company: billingCompany.trim(),
+            addressLine1: billingAddress1.trim(),
+            addressLine2: billingAddress2.trim(),
+            city: billingCity.trim(),
+            state: billingState.trim(),
+            postcode: billingPostcode.trim().toUpperCase(),
+            country: billingCountry || "United Kingdom",
           }
         : {
-            name: billingName.trim() || name.trim(),
-            addressLine1: billingAddressLine1.trim(),
-            addressLine2: billingAddressLine2.trim(),
-            city: billingCity.trim(),
-            postcode: billingPostcode.trim(),
-            country: "United Kingdom",
+            firstName: shippingFirstName.trim() || billingFirstName || effAccountFirstName,
+            lastName: shippingLastName.trim() || billingLastName || effAccountLastName,
+            company: shippingCompany.trim(),
+            addressLine1: shippingAddress1.trim(),
+            addressLine2: shippingAddress2.trim(),
+            city: shippingCity.trim(),
+            state: shippingState.trim(),
+            postcode: shippingPostcode.trim().toUpperCase(),
+            country: shippingCountry || "United Kingdom",
           };
+
+      const resolvedBilling = {
+        firstName: billingFirstName.trim() || effAccountFirstName,
+        lastName: billingLastName.trim() || effAccountLastName,
+        company: billingCompany.trim(),
+        addressLine1: billingAddress1.trim(),
+        addressLine2: billingAddress2.trim(),
+        city: billingCity.trim(),
+        state: billingState.trim(),
+        postcode: billingPostcode.trim().toUpperCase(),
+        country: billingCountry || "United Kingdom",
+        email: billingEmail.trim() || effEmail,
+        phone: billingPhone.trim() || effPhone,
+      };
 
       const orderPayload = {
         customer: {
-          name: name.trim(),
-          email: email.trim(),
-          phone: phone.trim(),
+          id: loggedInCustomer?.id || undefined,
+          name: `${effAccountFirstName} ${effAccountLastName}`.trim(),
+          firstName: effAccountFirstName,
+          lastName: effAccountLastName,
+          username: accountUsername.trim() || undefined,
+          email: effEmail,
+          phone: effPhone,
         },
-        shippingAddress: {
-          addressLine1: addressLine1.trim(),
-          addressLine2: addressLine2.trim(),
-          city: city.trim(),
-          postcode: postcode.trim(),
-          country: "United Kingdom",
-        },
+        shippingAddress: resolvedShipping,
         billingAddress: resolvedBilling,
+        createAccount,
+        accountPassword: createAccount ? accountPassword : undefined,
         deliveryOption: {
-          tier: currentDeliveryOption.id,
-          name: currentDeliveryOption.name,
+          tier: currentDeliveryOption?.id || "del_opt_001",
+          name: currentDeliveryOption?.name || "Free UK Mainland Delivery",
           feePennies: totalShippingPennies,
-          estimatedDays: currentDeliveryOption.timeframe,
+          estimatedDays: currentDeliveryOption?.timeframe || "3 - 7 business days",
         },
-        deliveryTier: currentDeliveryOption.id,
+        deliveryTier: currentDeliveryOption?.id || "del_opt_001",
         items: items.map((it) => ({
-          productId: it.product.id,
-          sku: it.product.gtinBarcode || it.product.id,
-          title: it.product.title,
-          finish: it.selectedFinish || it.product.specs?.color || "Standard Finish",
-          pricePennies: it.product.pricePennies,
-          quantity: it.quantity,
-          thumbnailUrl: it.product.thumbnailUrl,
+          productId: it?.product?.id || it?.id || "unknown_item",
+          sku: it?.product?.gtinBarcode || it?.product?.id || "SAN-UK",
+          title: it?.product?.title || "Handcrafted Furniture Item",
+          finish: it?.selectedFinish || it?.selectedFabric || it?.product?.specs?.color || "Standard Finish",
+          pricePennies: Number(it?.product?.pricePennies) || 0,
+          quantity: Math.max(1, Number(it?.quantity) || 1),
+          thumbnailUrl: it?.product?.thumbnailUrl || "/images/placeholder.svg",
         })),
         paymentMethod,
+        saveCardForFuture: activeCardDetails.saveCardForFuture,
+        paymentDetails: activeCardDetails,
         paymentConfirmation: {
           paymentIntentId: confirmData.paymentIntentId,
           transactionId: confirmData.transactionId,
           status: "succeeded",
           paymentMethod,
+          saveCardForFuture: activeCardDetails.saveCardForFuture,
+          paymentDetails: activeCardDetails,
         },
       };
 
@@ -398,18 +815,17 @@ export default function CheckoutPage() {
 
       const orderData = await orderRes.json();
       if (!orderRes.ok || !orderData.success) {
-        throw new Error(orderData.error || "Failed to persist verified order in database.");
+        throw new Error(orderData.error || orderData.details || "Failed to persist verified order in database.");
       }
 
-      // Close modal and set confirmed order details
-      setIsGatewayModalOpen(false);
+      // 4. Smooth Transition to Order Confirmation
       setConfirmedOrder({
         orderId: orderData.orderId,
         orderNumber: orderData.orderNumber,
         poNumber: orderData.poNumber,
         invoiceNumber: orderData.invoiceNumber,
         trackingNumber: orderData.trackingNumber,
-        carrier: orderData.carrier || "Amos Mann 2-Man Dedicated Fleet",
+        carrier: orderData.carrier && !orderData.carrier.includes("Amos Mann") ? orderData.carrier : "SAN Dedicated Delivery Fleet",
         totalPennies: orderData.totalPennies,
         formattedTotal: orderData.formattedTotal || formatGBP(orderData.totalPennies),
         customerName: orderData.customerName,
@@ -426,15 +842,24 @@ export default function CheckoutPage() {
         paymentIntentId: confirmData.paymentIntentId,
       });
 
-      // Clear basket from client state
+      // Clear basket from client state and scroll to top
+      setCheckoutStepState("confirmed");
       clearCart();
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error processing payment authorization.";
-      setGatewayError(msg);
+      setSubmitError(msg);
+      // Smooth scroll to payment section so customer immediately sees the decline reason
+      setTimeout(() => {
+        const paymentSection = document.getElementById("section-payment-method");
+        if (paymentSection) {
+          paymentSection.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 50);
     } finally {
       setIsProcessingPayment(false);
       setIsSubmittingOrder(false);
+      setCheckoutStepState("idle");
     }
   };
 
@@ -452,9 +877,9 @@ export default function CheckoutPage() {
             <div className="hidden print:block text-left border-b border-sand-300 pb-3 mb-2">
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 className="text-xl font-bold text-navy-950 font-display">SAN Furniture Ltd</h2>
-                  <p className="text-[11px] text-navy-700">100 Pall Mall, St James's, London, SW1Y 5NQ</p>
-                  <p className="text-[10px] text-navy-600">Company Reg: 15482910 • UK VAT Reg: GB 421 9823 45</p>
+                  <h2 className="text-xl font-bold text-navy-950 font-display">SAN Furniture</h2>
+                  <p className="text-[11px] text-navy-700">Online UK Furniture Retailer • Mainland Delivery</p>
+                  <p className="text-[10px] text-navy-600">Customer Support: support@sanfurniture.com</p>
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-navy-950 block">OFFICIAL ORDER RECEIPT</span>
@@ -464,23 +889,52 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            <div className="w-16 h-16 rounded-full bg-forest-100 border border-forest-300 text-forest-700 flex items-center justify-center mx-auto shadow-sm print:hidden">
+            {/* Animated Celebration & Confetti Blast */}
+            <div className="print:hidden">
+              <OrderCelebration orderNumber={confirmedOrder.orderNumber} customerName={confirmedOrder.customerName} />
+            </div>
+
+            <div className="hidden print:block w-16 h-16 rounded-full bg-forest-100 border border-forest-300 text-forest-700 items-center justify-center mx-auto shadow-sm">
               <CheckCircle2 className="w-9 h-9" />
             </div>
 
             <div>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-forest-50 text-forest-800 border border-forest-200 mb-2">
-                <Check className="w-3.5 h-3.5" />
-                Payment Authorized & Order Dispatched
+              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-forest-100 text-forest-900 border border-forest-300 mb-3 shadow-2xs">
+                <Check className="w-4 h-4 text-forest-700" />
+                Payment Authorized • Order Confirmed
               </span>
-              <h1 className="font-display text-3xl sm:text-4xl font-bold text-navy-950 print:text-2xl">
+              <h1 className="font-display text-3xl sm:text-4xl font-bold text-navy-950 print:text-2xl mt-1">
                 Thank You for Your Order
               </h1>
-              <p className="text-sm text-navy-600 mt-2">
-                Order reference: <strong className="font-mono text-base text-navy-950 font-bold">{confirmedOrder.orderNumber}</strong>
-              </p>
-              <p className="text-xs text-navy-500 mt-1">
-                A confirmation email and statutory VAT invoice have been prepared for <strong className="text-navy-900">{confirmedOrder.customerEmail}</strong>.
+              
+              <div className="mt-3 flex items-center justify-center gap-2">
+                <span className="text-sm text-navy-600">Order reference:</span>
+                <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-sand-200/80 border border-sand-300 text-navy-950 font-mono font-bold text-sm">
+                  {confirmedOrder.orderNumber}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof navigator !== "undefined" && navigator.clipboard) {
+                        navigator.clipboard.writeText(confirmedOrder.orderNumber);
+                        setCopiedOrderNumber(true);
+                        setTimeout(() => setCopiedOrderNumber(false), 2000);
+                      }
+                    }}
+                    className="p-1 hover:text-brass-700 text-navy-500 transition-colors"
+                    title="Copy Order Number"
+                    aria-label="Copy Order Number"
+                  >
+                    {copiedOrderNumber ? (
+                      <Check className="w-3.5 h-3.5 text-forest-600 animate-in zoom-in" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </span>
+              </div>
+
+              <p className="text-xs text-navy-500 mt-2">
+                A confirmation email and digital order receipt have been prepared for <strong className="text-navy-900">{confirmedOrder.customerEmail}</strong>.
               </p>
             </div>
 
@@ -503,12 +957,12 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Dropship & Logistics Real-time Dispatch Badge */}
+            {/* Logistics Real-time Dispatch Badge */}
             <div className="p-4 rounded-xl bg-sand-200/50 border border-sand-300 text-left space-y-3 print:bg-white print:border-sand-300">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-sand-300/70 pb-2.5 print:border-sand-300">
                 <div className="flex items-center gap-2 text-xs font-bold text-navy-950">
                   <Building2 className="w-4 h-4 text-brass-600" />
-                  <span>B2B Supplier Purchase Order: <span className="font-mono text-brass-700">{confirmedOrder.poNumber}</span></span>
+                  <span>Order Processing Reference: <span className="font-mono text-brass-700">{confirmedOrder.orderNumber}</span></span>
                 </div>
                 <span className="text-[11px] font-semibold text-forest-700 bg-forest-100/70 px-2 py-0.5 rounded border border-forest-200 print:bg-sand-100">
                   Hub Status: Dispatched
@@ -517,12 +971,12 @@ export default function CheckoutPage() {
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-navy-800">
                 <div>
-                  <span className="text-navy-500 block text-[11px]">Dropship Supplier Hub:</span>
-                  <span className="font-semibold text-navy-950">Amos Mann Furniture (Leicester Hub)</span>
+                  <span className="text-navy-500 block text-[11px]">Fulfilment Centre:</span>
+                  <span className="font-semibold text-navy-950">SAN Central Distribution Centre</span>
                 </div>
                 <div>
-                  <span className="text-navy-500 block text-[11px]">Carrier / Dedicated Fleet:</span>
-                  <span className="font-semibold text-navy-950">{confirmedOrder.carrier}</span>
+                  <span className="text-navy-500 block text-[11px]">Carrier / Delivery Fleet:</span>
+                  <span className="font-semibold text-navy-950">{confirmedOrder.carrier && !confirmedOrder.carrier.includes("Amos Mann") ? confirmedOrder.carrier : "SAN Dedicated Delivery Fleet"}</span>
                 </div>
                 <div>
                   <span className="text-navy-500 block text-[11px]">Consignment Tracking No:</span>
@@ -598,7 +1052,7 @@ export default function CheckoutPage() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-brass-500 text-navy-950 font-bold text-xs hover:bg-brass-400 shadow-sm transition-all"
               >
                 <Download className="w-4 h-4" />
-                <span>Download Statutory HMRC VAT Invoice</span>
+                <span>Download Statutory VAT Invoice</span>
                 <ExternalLink className="w-3.5 h-3.5 opacity-70" />
               </a>
 
@@ -629,18 +1083,30 @@ export default function CheckoutPage() {
 
             {/* Customer Care Hotline (NO-PRINT) */}
             <div className="no-print text-[11px] text-navy-500 pt-1">
-              Need assistance with your delivery booking? Our London concierge team is available at{" "}
+              Need assistance with your delivery booking? Our customer support team is available at{" "}
               <a href="tel:+442079460192" className="text-brass-700 font-semibold underline">
                 +44 20 7946 0192
               </a>{" "}
               or{" "}
-              <a href="mailto:concierge@sanfurniture.com" className="text-brass-700 font-semibold underline">
-                concierge@sanfurniture.com
+              <a href="mailto:support@sanfurniture.com" className="text-brass-700 font-semibold underline">
+                support@sanfurniture.com
               </a>.
             </div>
 
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // 1.5. INITIAL HYDRATION VIEW
+  // ==========================================
+  if (!hasMounted) {
+    return (
+      <div className="bg-sand-50 min-h-screen py-24 text-center px-4 flex flex-col items-center justify-center">
+        <div className="w-8 h-8 border-2 border-brass-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-xs text-navy-600 font-medium">Preparing secure checkout session...</p>
       </div>
     );
   }
@@ -689,6 +1155,18 @@ export default function CheckoutPage() {
 
       {/* Main Checkout Grid */}
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-10 sm:py-14">
+        {headerBadge.isEnabled && (
+          <div className="mb-8 p-4 rounded-xl bg-forest-50/70 border border-forest-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-forest-700 shrink-0" />
+              <span className="font-bold text-forest-950">{headerBadge.content.badge_text}:</span>
+              <span className="text-navy-700">{headerBadge.content.guarantee_text}</span>
+            </div>
+            <span className="text-[11px] font-mono text-navy-600 bg-white px-2.5 py-1 rounded-md border border-sand-300 shadow-2xs shrink-0">
+              {headerBadge.content.ssl_note}
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
           
           {/* Left Form: Delivery Address, Delivery Options, Billing, & Payment (7 cols) */}
@@ -703,66 +1181,229 @@ export default function CheckoutPage() {
             )}
 
             {/* Checkout Form */}
-            <form onSubmit={handleInitiatePaymentGateway} className="space-y-6">
+            <form onSubmit={handlePlaceOrderAndPay} className="space-y-6">
               
-              {/* Step 1: UK Delivery Address */}
+              {/* Step 1: Account Information */}
               <div className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
-                <div className="flex items-center justify-between border-b border-sand-200 pb-3">
+                <div className="flex items-center justify-between border-b border-sand-200 pb-3 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-brass-600" />
+                    <User className="w-5 h-5 text-brass-600" />
                     <h2 className="font-display text-lg font-bold text-navy-950">
-                      1. UK Delivery Address
+                      1. Account Information
                     </h2>
                   </div>
-                  <span className="text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
-                    Room of Choice Delivery
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {process.env.NODE_ENV === "development" && (
+                      <button
+                        type="button"
+                        onClick={handleFillDemoDetails}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brass-50 hover:bg-brass-100 text-brass-900 border border-brass-300 text-[11px] font-semibold transition-colors"
+                        title="Quick fill test details (dev only)"
+                      >
+                        <Sparkles className="w-3 h-3 text-brass-600" />
+                        <span>Dev Autofill</span>
+                      </button>
+                    )}
+                    <span className="text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
+                      Contact & Authentication
+                    </span>
+                  </div>
                 </div>
+
+                {loggedInCustomer && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-forest-50 border border-forest-200 text-forest-900 text-xs font-medium">
+                    <CheckCircle2 className="w-4 h-4 text-forest-600 shrink-0" />
+                    <span>Logged in as <strong>{loggedInCustomer.email}</strong>. Orders and authorized payment cards are automatically linked to your customer profile.</span>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-navy-900 mb-1">
-                      Full Name *
+                      First Name *
                     </label>
                     <input
                       type="text"
                       required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Lady Eleanor Vance"
+                      value={accountFirstName}
+                      onChange={(e) => setAccountFirstName(e.target.value)}
+                      placeholder="e.g. Eleanor"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-navy-900 mb-1">
-                      Email Address (for VAT Invoice & Tracking) *
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={accountLastName}
+                      onChange={(e) => setAccountLastName(e.target.value)}
+                      placeholder="e.g. Smith"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Username (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={accountUsername}
+                      onChange={(e) => setAccountUsername(e.target.value)}
+                      placeholder="e.g. eleanor_vance"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Email Address *
                     </label>
                     <input
                       type="email"
                       required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      value={accountEmail}
+                      onChange={(e) => setAccountEmail(e.target.value)}
                       placeholder="eleanor@example.co.uk"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                     />
                   </div>
                 </div>
 
-                {/* UK Postcode & Fast Lookup */}
+                <div>
+                  <label className="block text-xs font-semibold text-navy-900 mb-1">
+                    Telephone / Mobile *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={accountPhone}
+                    onChange={(e) => setAccountPhone(e.target.value)}
+                    placeholder="+44 7700 900123"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                  />
+                  <p className="text-[10px] text-navy-500 mt-1">
+                    The white glove courier team will send SMS dispatch updates and call to book your 2-hour delivery slot.
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-sand-200">
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={createAccount}
+                      onChange={(e) => setCreateAccount(e.target.checked)}
+                      className="w-4 h-4 rounded text-navy-950 focus:ring-brass-500 border-sand-300"
+                    />
+                    <span className="text-xs font-semibold text-navy-900">
+                      Create a customer account for instant order tracking & faster reordering
+                    </span>
+                  </label>
+
+                  {createAccount && (
+                    <div className="mt-3 p-3 bg-sand-200/40 rounded-lg border border-sand-300 animate-fade-in">
+                      <label className="block text-xs font-semibold text-navy-900 mb-1">
+                        Create Account Password *
+                      </label>
+                      <input
+                        type="password"
+                        required={createAccount}
+                        value={accountPassword}
+                        onChange={(e) => setAccountPassword(e.target.value)}
+                        placeholder="Choose a secure password (min 6 characters)"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 2: Billing Address (can copy from Account) */}
+              <div className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
+                <div className="flex items-center justify-between border-b border-sand-200 pb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-5 h-5 text-brass-600" />
+                    <div>
+                      <h2 className="font-display text-lg font-bold text-navy-950">
+                        2. Billing Address
+                      </h2>
+                      <span className="text-[11px] text-navy-500">
+                        Must match your card / bank statement
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCopyAccountToBilling}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-200 hover:bg-brass-100 text-navy-900 hover:text-navy-950 border border-sand-300 text-xs font-semibold transition-colors shadow-2xs"
+                    title="Copy First Name, Last Name, Email, and Phone from Account"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-brass-600" />
+                    <span>Copy from Account</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={billingFirstName}
+                      onChange={(e) => setBillingFirstName(e.target.value)}
+                      placeholder="e.g. Lady Eleanor"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={billingLastName}
+                      onChange={(e) => setBillingLastName(e.target.value)}
+                      placeholder="e.g. Smith"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-navy-900 mb-1">
+                    Company Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={billingCompany}
+                    onChange={(e) => setBillingCompany(e.target.value)}
+                    placeholder="e.g. Kensington Design Ltd (Optional)"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                  />
+                </div>
+
+                {/* UK Billing Postcode & Lookup */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
                   <div className="sm:col-span-2">
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-semibold text-navy-900">
-                        UK Postcode *
+                        Postcode *
                       </label>
                       <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN</span>
                     </div>
                     <input
                       type="text"
                       required
-                      value={postcode}
+                      value={billingPostcode}
                       onChange={(e) => {
-                        setPostcode(e.target.value.toUpperCase());
+                        setBillingPostcode(e.target.value.toUpperCase());
                         setLookupMessage(null);
                       }}
                       placeholder="Enter UK Postcode"
@@ -771,7 +1412,7 @@ export default function CheckoutPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={handleAddressLookup}
+                    onClick={() => handleAddressLookup("billing")}
                     disabled={isLookingUpPostcode}
                     className="w-full py-2 px-3 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-colors h-[34px] flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
@@ -786,16 +1427,6 @@ export default function CheckoutPage() {
                   </button>
                 </div>
 
-                {lookupMessage && (
-                  <div className={`p-2.5 rounded-lg text-xs font-medium ${
-                    lookupMessage.isError
-                      ? "bg-rose-50 border border-rose-200 text-rose-700"
-                      : "bg-forest-50 border border-forest-200 text-forest-800"
-                  }`}>
-                    {lookupMessage.text}
-                  </div>
-                )}
-
                 <div>
                   <label className="block text-xs font-semibold text-navy-900 mb-1">
                     Address Line 1 *
@@ -803,8 +1434,8 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     required
-                    value={addressLine1}
-                    onChange={(e) => setAddressLine1(e.target.value)}
+                    value={billingAddress1}
+                    onChange={(e) => setBillingAddress1(e.target.value)}
                     placeholder="House name / number and street"
                     className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                   />
@@ -817,9 +1448,9 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
-                      value={addressLine2}
-                      onChange={(e) => setAddressLine2(e.target.value)}
-                      placeholder="Apartment, suite, unit"
+                      value={billingAddress2}
+                      onChange={(e) => setBillingAddress2(e.target.value)}
+                      placeholder="Apartment, suite, unit (Optional)"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                     />
                   </div>
@@ -830,203 +1461,383 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      value={billingCity}
+                      onChange={(e) => setBillingCity(e.target.value)}
                       placeholder="e.g. London"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-navy-900 mb-1">
-                    UK Telephone Number (required for 2-man booking call) *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+44 7700 900123"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                  />
-                  <p className="text-[10px] text-navy-500 mt-1">
-                    The white glove courier team will send SMS dispatch updates and call to book your 2-hour delivery slot.
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      County (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={billingState}
+                      onChange={(e) => setBillingState(e.target.value)}
+                      placeholder="e.g. Greater London / Leicestershire"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Country *
+                    </label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={billingCountry}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-200/50 text-navy-950 font-medium cursor-not-allowed outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={billingEmail}
+                      onChange={(e) => setBillingEmail(e.target.value)}
+                      placeholder="billing@example.co.uk"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-navy-900 mb-1">
+                      Telephone / Mobile *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={billingPhone}
+                      onChange={(e) => setBillingPhone(e.target.value)}
+                      placeholder="+44 7700 900123"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Step 2: Dedicated UK Delivery Options */}
+              {/* Step 3: Shipping Address (can copy from Billing) */}
               <div className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
-                <div className="flex items-center justify-between border-b border-sand-200 pb-3">
+                <div className="flex items-center justify-between border-b border-sand-200 pb-3 flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-brass-600" />
-                    <h2 className="font-display text-lg font-bold text-navy-950">
-                      2. Delivery Options
-                    </h2>
+                    <MapPin className="w-5 h-5 text-brass-600" />
+                    <div>
+                      <h2 className="font-display text-lg font-bold text-navy-950">
+                        3. Shipping / Delivery Address
+                      </h2>
+                      <span className="text-[11px] text-navy-500">
+                        Room of Choice White Glove Delivery
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-navy-500 font-medium">
-                    Leicester Dedicated Hub
-                  </span>
-                </div>
-
-                <div className="space-y-3">
-                  {deliveryOptions.map((opt) => {
-                    const isSelected = selectedDeliveryTier === opt.id;
-                    const feePennies = opt.baseFeePennies + postcodeSurchargePennies;
-                    return (
-                      <label
-                        key={opt.id}
-                        className={`block p-4 rounded-xl border transition-all cursor-pointer ${
-                          isSelected
-                            ? "border-navy-950 bg-sand-200/60 ring-1 ring-navy-950 shadow-sm"
-                            : "border-sand-300 bg-sand-50 hover:bg-sand-100"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3">
-                            <input
-                              type="radio"
-                              name="delivery_tier_choice"
-                              checked={isSelected}
-                              onChange={() => setSelectedDeliveryTier(opt.id)}
-                              className="mt-0.5 text-navy-950 focus:ring-brass-500"
-                            />
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-bold text-navy-950">
-                                  {opt.name}
-                                </span>
-                                {opt.badge && (
-                                  <span className="text-[10px] font-semibold text-forest-800 bg-forest-100 px-2 py-0.5 rounded border border-forest-300">
-                                    {opt.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-navy-600 mt-1">
-                                {opt.description}
-                              </p>
-                              <p className="text-[10px] text-brass-700 font-semibold mt-1">
-                                Estimated transit: {opt.timeframe}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <span className="text-xs font-bold text-navy-950">
-                              {feePennies === 0 ? "FREE" : formatGBP(feePennies)}
-                            </span>
-                            {postcodeSurchargePennies > 0 && (
-                              <span className="block text-[9px] text-navy-500">
-                                (Inc. regional surcharge)
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Step 3: Billing Address (Dedicated Section) */}
-              <div className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
-                <div className="flex items-center justify-between border-b border-sand-200 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-5 h-5 text-brass-600" />
-                    <h2 className="font-display text-lg font-bold text-navy-950">
-                      3. Billing Address
-                    </h2>
-                  </div>
-                  <span className="text-xs text-navy-500">
-                    Matches Card / Finance Record
-                  </span>
+                  {!shippingSameAsBilling && (
+                    <button
+                      type="button"
+                      onClick={handleCopyBillingToShipping}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sand-200 hover:bg-brass-100 text-navy-900 hover:text-navy-950 border border-sand-300 text-xs font-semibold transition-colors shadow-2xs"
+                      title="Copy all billing address fields to shipping address"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-brass-600" />
+                      <span>Copy from Billing</span>
+                    </button>
+                  )}
                 </div>
 
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={billingSameAsDelivery}
-                    onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
+                    checked={shippingSameAsBilling}
+                    onChange={(e) => setShippingSameAsBilling(e.target.checked)}
                     className="w-4 h-4 rounded text-navy-950 focus:ring-brass-500 border-sand-300"
                   />
                   <span className="text-xs font-semibold text-navy-900">
-                    Billing address is the same as my delivery address
+                    Shipping address is the same as billing address
                   </span>
                 </label>
 
-                {/* Expanded Billing Address Form when unchecked */}
-                {!billingSameAsDelivery && (
-                  <div className="mt-4 pt-4 border-t border-sand-200 space-y-3 bg-sand-50 p-4 rounded-xl border border-sand-300">
-                    <span className="text-[11px] font-bold text-navy-900 block">
-                      Enter Separate Billing Address
-                    </span>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                        Billing Name
-                      </label>
-                      <input
-                        type="text"
-                        value={billingName}
-                        onChange={(e) => setBillingName(e.target.value)}
-                        placeholder={name || "Cardholder / Account Name"}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                        Billing Address Line 1 *
-                      </label>
-                      <input
-                        type="text"
-                        required={!billingSameAsDelivery}
-                        value={billingAddressLine1}
-                        onChange={(e) => setBillingAddressLine1(e.target.value)}
-                        placeholder="House number & street"
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {!shippingSameAsBilling && (
+                  <div className="pt-4 border-t border-sand-200 space-y-4 animate-fade-in">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                          Billing Town / City *
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          First Name *
                         </label>
                         <input
                           type="text"
-                          required={!billingSameAsDelivery}
-                          value={billingCity}
-                          onChange={(e) => setBillingCity(e.target.value)}
-                          placeholder="e.g. London"
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                          required={!shippingSameAsBilling}
+                          value={shippingFirstName}
+                          onChange={(e) => setShippingFirstName(e.target.value)}
+                          placeholder="e.g. Lady Eleanor"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                          Billing Postcode *
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          Last Name *
                         </label>
                         <input
                           type="text"
-                          required={!billingSameAsDelivery}
-                          value={billingPostcode}
-                          onChange={(e) => setBillingPostcode(e.target.value.toUpperCase())}
-                          placeholder="e.g. W1K 2HP"
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono uppercase"
+                          required={!shippingSameAsBilling}
+                          value={shippingLastName}
+                          onChange={(e) => setShippingLastName(e.target.value)}
+                          placeholder="e.g. Smith"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-navy-900 mb-1">
+                        Company / Attention (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingCompany}
+                        onChange={(e) => setShippingCompany(e.target.value)}
+                        placeholder="e.g. Care of Reception / Site Manager (Optional)"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                      />
+                    </div>
+
+                    {/* UK Shipping Postcode & Lookup */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                      <div className="sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-semibold text-navy-900">
+                            Postcode *
+                          </label>
+                          <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN</span>
+                        </div>
+                        <input
+                          type="text"
+                          required={!shippingSameAsBilling}
+                          value={shippingPostcode}
+                          onChange={(e) => {
+                            setShippingPostcode(e.target.value.toUpperCase());
+                            setLookupMessage(null);
+                          }}
+                          placeholder="Enter UK Delivery Postcode"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono uppercase"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddressLookup("shipping")}
+                        disabled={isLookingUpPostcode}
+                        className="w-full py-2 px-3 rounded-lg bg-navy-950 text-sand-50 text-xs font-semibold hover:bg-brass-600 transition-colors h-[34px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                      >
+                        {isLookingUpPostcode ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Verifying...</span>
+                          </>
+                        ) : (
+                          <span>Find Address</span>
+                        )}
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-navy-900 mb-1">
+                        Address Line 1 *
+                      </label>
+                      <input
+                        type="text"
+                        required={!shippingSameAsBilling}
+                        value={shippingAddress1}
+                        onChange={(e) => setShippingAddress1(e.target.value)}
+                        placeholder="House name / number and street"
+                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          Address Line 2 (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={shippingAddress2}
+                          onChange={(e) => setShippingAddress2(e.target.value)}
+                          placeholder="Apartment, suite, unit (Optional)"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          Town / City *
+                        </label>
+                        <input
+                          type="text"
+                          required={!shippingSameAsBilling}
+                          value={shippingCity}
+                          onChange={(e) => setShippingCity(e.target.value)}
+                          placeholder="e.g. London"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          County (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={shippingState}
+                          onChange={(e) => setShippingState(e.target.value)}
+                          placeholder="e.g. Greater London"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          Country *
+                        </label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={shippingCountry}
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-200/50 text-navy-950 font-medium cursor-not-allowed outline-none"
                         />
                       </div>
                     </div>
                   </div>
                 )}
+
+                {lookupMessage && (
+                  <div className={`p-2.5 rounded-lg text-xs font-medium ${
+                    lookupMessage.isError
+                      ? "bg-rose-50 border border-rose-200 text-rose-700"
+                      : "bg-forest-50 border border-forest-200 text-forest-800"
+                  }`}>
+                    {lookupMessage.text}
+                  </div>
+                )}
+
+                {/* Delivery Destination Notice */}
+                {isOutsideDeliveryArea && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-3 animate-fade-in">
+                    <AlertCircle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-sm text-amber-950">
+                        Delivery Notice: Delivery Currently Unavailable
+                      </p>
+                      <p className="text-amber-800 leading-relaxed">
+                        {logisticsData.errorMessage || "We apologize for the inconvenience. Our logistics network does not currently deliver to this postcode. Please enter a valid UK Mainland delivery address to proceed."}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Step 4: Payment Method Selector */}
+              {/* Step 4: Dedicated UK Delivery Options */}
               <div className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
+                <div className="flex items-center justify-between border-b border-sand-200 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-brass-600" />
+                    <h2 className="font-display text-lg font-bold text-navy-950">
+                      4. Delivery Options
+                    </h2>
+                  </div>
+                  <span className="text-xs text-navy-500 font-medium">
+                    Central Distribution Hub
+                  </span>
+                </div>
+
+                {isOutsideDeliveryArea ? (
+                  <div className="p-5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-2 animate-fade-in">
+                    <div className="flex items-center gap-2 font-bold text-sm text-amber-950">
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span>Delivery Options Unavailable for Non-Serviceable Postcode</span>
+                    </div>
+                    <p className="text-amber-800 leading-relaxed">
+                      {logisticsData.errorMessage || "Delivery is currently unavailable to this address. Please update your delivery postcode to an active mainland destination."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {deliveryOptions
+                      .filter((opt) => opt && opt.isActive !== false)
+                      .map((opt) => {
+                        const isSelected = selectedDeliveryTier === opt.id;
+                        const baseFee = Number(opt.baseFeePennies) || 0;
+                        const totalTierFee = baseFee + postcodeSurchargePennies;
+                        return (
+                          <label
+                            key={opt.id}
+                            className={`block p-4 rounded-xl border transition-all cursor-pointer ${
+                              isSelected
+                                ? "border-navy-950 bg-sand-200/60 ring-1 ring-navy-950 shadow-sm"
+                                : "border-sand-300 bg-sand-50 hover:bg-sand-100"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="radio"
+                                  name="delivery_tier_choice"
+                                  checked={isSelected}
+                                  onChange={() => setSelectedDeliveryTier(opt.id)}
+                                  className="mt-0.5 text-navy-950 focus:ring-brass-500"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs font-bold text-navy-950">
+                                      {opt.name}
+                                    </span>
+                                    {opt.badge && (
+                                      <span className="text-[10px] font-semibold text-forest-800 bg-forest-100 px-2 py-0.5 rounded border border-forest-300">
+                                        {opt.badge}
+                                      </span>
+                                    )}
+                                    {postcodeSurchargePennies > 0 && (
+                                      <span className="text-[10px] font-semibold text-brass-800 bg-sand-200 px-2 py-0.5 rounded border border-sand-300">
+                                        +{formatGBP(postcodeSurchargePennies)} {logisticsData.zoneName} Surcharge
+                                      </span>
+                                    )}
+                                  </div>
+                                  {opt.description && (
+                                    <p className="text-[11px] text-navy-600 mt-1">
+                                      {opt.description}
+                                    </p>
+                                  )}
+                                  <p className="text-[10px] text-brass-700 font-semibold mt-1">
+                                    Estimated transit: {opt.timeframe || "3 - 7 business days"}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="text-right flex-shrink-0">
+                                <span className="text-xs font-bold text-navy-950">
+                                  {totalTierFee === 0 ? "FREE" : formatGBP(totalTierFee)}
+                                </span>
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 5: Payment Method Selector */}
+              <div id="section-payment-method" className="p-6 rounded-xl bg-sand-100/40 border border-sand-300 space-y-4">
                 <div className="flex items-center justify-between border-b border-sand-200 pb-3">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-brass-600" />
                     <h2 className="font-display text-lg font-bold text-navy-950">
-                      4. Payment Method
+                      5. Payment Method
                     </h2>
                   </div>
                   <span className="text-xs text-navy-500 flex items-center gap-1 font-mono">
@@ -1034,6 +1845,18 @@ export default function CheckoutPage() {
                     256-Bit SSL Encrypted
                   </span>
                 </div>
+
+                {/* Prominent Payment Authorization Error in Section 5 */}
+                {submitError && (
+                  <div className="p-4 rounded-xl bg-rose-50 border-2 border-rose-400 text-rose-900 text-xs flex items-start gap-3 animate-in fade-in">
+                    <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-rose-950 text-sm">Payment Authorization Failed</p>
+                      <p className="leading-relaxed font-medium">{submitError}</p>
+                      <p className="text-[11px] text-rose-700">The order has not been placed. Please review your card details or try a different payment card.</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   
@@ -1049,7 +1872,7 @@ export default function CheckoutPage() {
                             Credit / Debit Card (Stripe UK Gateway)
                           </span>
                           <span className="text-[10px] text-navy-600">
-                            Visa, Mastercard, American Express, Apple Pay, Google Pay
+                            Visa, Mastercard, American Express, Maestro (Stripe Supported)
                           </span>
                         </div>
                       </div>
@@ -1063,110 +1886,285 @@ export default function CheckoutPage() {
                       </div>
                     </div>
 
-                    {/* Interactive Card Form */}
-                    <div className="pt-3 border-t border-sand-300 space-y-3">
-                      <div className="flex items-center justify-between pb-1">
-                        <span className="text-[11px] font-semibold text-navy-700">Card Credentials (Stripe Hosted Element)</span>
+                    {/* Mode Selector for Customers with Saved Cards */}
+                    {savedCards.length > 0 && (
+                      <div className="flex items-center gap-2 pt-2 border-t border-sand-300">
                         <button
                           type="button"
-                          onClick={handleFillTestCard}
-                          className="text-[11px] font-bold text-brass-700 hover:text-brass-800 underline flex items-center gap-1"
+                          onClick={() => setPaymentMode("saved")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            paymentMode === "saved"
+                              ? "bg-navy-950 text-white shadow-sm"
+                              : "bg-sand-100 text-navy-700 hover:bg-sand-200 border border-sand-300"
+                          }`}
                         >
-                          <Sparkles className="w-3 h-3 text-brass-600" />
-                          <span>Fill Demo Test Card</span>
+                          <CreditCard className="w-3.5 h-3.5 text-brass-400" />
+                          <span>Use Saved Card ({savedCards.length})</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentMode("new")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            paymentMode === "new"
+                              ? "bg-navy-950 text-white shadow-sm"
+                              : "bg-sand-100 text-navy-700 hover:bg-sand-200 border border-sand-300"
+                          }`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Use a New Card</span>
                         </button>
                       </div>
+                    )}
 
-                      <div>
-                        <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                          Cardholder Name *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={cardholderName}
-                          onChange={(e) => setCardholderName(e.target.value)}
-                          placeholder={name || "Lady Eleanor Vance"}
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                        />
+                    {/* Mode 1: Saved Card 1-Click Fast Checkout */}
+                    {savedCards.length > 0 && paymentMode === "saved" ? (
+                      <div className="pt-2 space-y-3">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-[11px] font-semibold text-navy-700">Select Authorized Card from Profile</span>
+                          <span className="text-[11px] text-forest-700 font-semibold flex items-center gap-1">
+                            <ShieldCheck className="w-3.5 h-3.5" />
+                            <span>Verified Profile Instruments</span>
+                          </span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {savedCards.map((card) => {
+                            const isSelected = selectedSavedCardId === card.id;
+                            return (
+                              <div
+                                key={card.id}
+                                onClick={() => setSelectedSavedCardId(card.id)}
+                                className={`p-3 sm:p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                                  isSelected
+                                    ? "border-brass-600 bg-white ring-2 ring-brass-500 shadow-sm"
+                                    : "border-sand-300 bg-sand-50/60 hover:bg-white hover:border-sand-400"
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-4 h-4 rounded-full border border-navy-400 flex items-center justify-center shrink-0">
+                                    {isSelected && <div className="w-2 h-2 rounded-full bg-navy-950" />}
+                                  </div>
+                                  <div className="w-10 h-7 rounded bg-navy-950 text-white flex items-center justify-center font-bold text-[10px] tracking-wider uppercase shrink-0">
+                                    {card.brand || "Card"}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <div className="text-xs font-bold text-navy-950 font-mono tracking-wide">
+                                      •••• •••• •••• {card.last4}
+                                    </div>
+                                    <div className="text-[11px] text-navy-600 flex items-center gap-2 flex-wrap">
+                                      <span>Expires {String(card.exp_month).padStart(2, "0")}/{String(card.exp_year).slice(-2)}</span>
+                                      <span>•</span>
+                                      <span className="truncate">{card.cardholder_name}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2.5 sm:self-center ml-7 sm:ml-0 shrink-0">
+                                  {/* Inline CVV / CVC input directly inside the selected card row (Red Marked Area) */}
+                                  {isSelected ? (
+                                    <div
+                                      className="flex items-center gap-1.5 bg-sand-100/90 border border-sand-300 px-2.5 py-1 rounded-lg shadow-2xs"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <Lock className="w-3 h-3 text-forest-700 shrink-0" />
+                                      <label className="text-[11px] font-bold text-navy-900 shrink-0 select-none">
+                                        CVV/CVC *
+                                      </label>
+                                      <input
+                                        type="password"
+                                        maxLength={4}
+                                        value={savedCardCvc}
+                                        onChange={(e) => setSavedCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                        placeholder="123"
+                                        className="w-14 px-1.5 py-0.5 text-xs rounded border border-sand-300 bg-white text-navy-950 font-mono tracking-widest text-center focus:ring-1 focus:ring-brass-500 outline-none font-bold"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <span className="text-[11px] text-navy-400 italic hidden sm:inline">
+                                      Click to select
+                                    </span>
+                                  )}
+
+                                  {Boolean(card.is_default) && card.id === (savedCards.find((c) => Boolean(c.is_default))?.id || savedCards[0]?.id) && (
+                                    <span className="text-[10px] font-bold uppercase tracking-wider bg-brass-100 text-brass-800 px-2 py-0.5 rounded border border-brass-300 shrink-0">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Discreet security & compliance footnote */}
+                        <div className="flex items-center justify-between text-[11px] text-navy-500 pt-1 px-1">
+                          <span className="flex items-center gap-1.5">
+                            <ShieldCheck className="w-3.5 h-3.5 text-forest-600 shrink-0" />
+                            <span>1-click accelerated checkout. Encrypted via Stripe PCI-DSS Level 1.</span>
+                          </span>
+                          <span className="text-[10px] text-navy-400 hidden sm:inline">
+                            Enter the 3 or 4-digit code from signature strip
+                          </span>
+                        </div>
                       </div>
+                    ) : (
+                      /* Mode 2: Standard New Card Form */
+                      <div className="pt-3 border-t border-sand-300 space-y-3">
+                        <div className="flex items-center justify-between pb-1">
+                          <span className="text-[11px] font-semibold text-navy-700">Card Credentials (Stripe Hosted Element)</span>
+                          {process.env.NODE_ENV === "development" && (
+                            <button
+                              type="button"
+                              onClick={handleFillTestCard}
+                              className="text-[11px] font-bold text-brass-700 hover:text-brass-800 underline flex items-center gap-1"
+                            >
+                              <Sparkles className="w-3 h-3 text-brass-600" />
+                              <span>Dev Test Card</span>
+                            </button>
+                          )}
+                        </div>
 
-                      <div>
-                        <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                          Card Number *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          maxLength={19}
-                          value={cardNumber}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-                            const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
-                            setCardNumber(formatted);
-                          }}
-                          placeholder="4242 •••• •••• 4242"
-                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                            Expiry Date (MM/YY) *
+                            Cardholder Name *
                           </label>
                           <input
                             type="text"
                             required
-                            maxLength={5}
-                            value={cardExpiry}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-                              if (raw.length > 2) {
-                                setCardExpiry(`${raw.slice(0, 2)}/${raw.slice(2)}`);
-                              } else {
-                                setCardExpiry(raw);
-                              }
-                            }}
-                            placeholder="MM/YY"
-                            className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono"
+                            value={cardholderName}
+                            onChange={(e) => setCardholderName(e.target.value)}
+                            placeholder={billingFirstName || billingLastName ? `${billingFirstName} ${billingLastName}`.trim() : "Name on card"}
+                            className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                           />
                         </div>
+
                         <div>
                           <label className="block text-[11px] font-semibold text-navy-800 mb-1">
-                            Security CVC / CVV *
+                            Card Number *
                           </label>
                           <input
-                            type="password"
+                            type="text"
                             required
-                            maxLength={4}
-                            value={cardCvc}
-                            onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                            placeholder="123"
+                            maxLength={19}
+                            value={cardNumber}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+                              const formatted = raw.match(/.{1,4}/g)?.join(" ") || raw;
+                              setCardNumber(formatted);
+                            }}
+                            placeholder="4242 •••• •••• 4242"
                             className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono"
                           />
                         </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-semibold text-navy-800 mb-1">
+                              Expiry Date (MM/YY) *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              maxLength={5}
+                              value={cardExpiry}
+                              onChange={(e) => {
+                                const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+                                if (raw.length > 2) {
+                                  setCardExpiry(`${raw.slice(0, 2)}/${raw.slice(2)}`);
+                                } else {
+                                  setCardExpiry(raw);
+                                }
+                              }}
+                              placeholder="MM/YY"
+                              className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-semibold text-navy-800 mb-1">
+                              Security CVC / CVV *
+                            </label>
+                            <input
+                              type="password"
+                              required
+                              maxLength={4}
+                              value={cardCvc}
+                              onChange={(e) => setCardCvc(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                              placeholder="123"
+                              className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Save Card for Future Checkbox */}
+                        <label className="flex items-start gap-2.5 p-3 rounded-xl bg-sand-100/70 border border-sand-300/80 cursor-pointer hover:bg-sand-100 transition-colors select-none mt-1 group">
+                          <input
+                            type="checkbox"
+                            checked={saveCardForFuture}
+                            onChange={(e) => setSaveCardForFuture(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 rounded text-brass-600 focus:ring-brass-500 border-sand-400 accent-brass-600 cursor-pointer shrink-0"
+                          />
+                          <div className="text-left text-xs">
+                            <span className="font-semibold text-navy-950 block group-hover:text-brass-700 transition-colors">
+                              Save this card securely to my profile for faster future checkout
+                            </span>
+                            <span className="text-[11px] text-navy-600 leading-relaxed block mt-0.5">
+                              PCI-DSS Level 1 compliant tokenization via Stripe. If checked, this card will appear under Authorized Payment Instruments in your customer profile.
+                            </span>
+                          </div>
+                        </label>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Submit CTA Button: Opens Gateway Modal */}
+              {/* Submit Error Alert right at CTA */}
+              {submitError && (
+                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 font-medium">{submitError}</div>
+                </div>
+              )}
+
+              {/* Submit CTA Button: Seamless 1-Click Pay & Confirm */}
               <button
                 type="submit"
-                disabled={isProcessingPayment}
-                className="w-full py-4 px-6 rounded-lg bg-brass-500 text-navy-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-brass-400 active:scale-[0.99] transition-all shadow-md cursor-pointer disabled:opacity-50"
+                disabled={isProcessingPayment || isSubmittingOrder || isOutsideDeliveryArea}
+                className={`w-full py-4 px-6 rounded-lg font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all shadow-md ${
+                  isOutsideDeliveryArea
+                    ? "bg-sand-300 text-navy-400 cursor-not-allowed border border-sand-400"
+                    : "bg-brass-500 text-navy-950 hover:bg-brass-400 active:scale-[0.99] cursor-pointer"
+                } disabled:opacity-60`}
               >
-                {isProcessingPayment ? (
+                {checkoutStepState === "authorizing" ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-navy-950" />
-                    <span>Connecting to Official Payment Gateway...</span>
+                    <span className="animate-pulse">Authorizing Payment with Issuer...</span>
+                  </>
+                ) : checkoutStepState === "securing" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-navy-950" />
+                    <span className="animate-pulse">Securing Order & B2B Dispatch...</span>
+                  </>
+                ) : checkoutStepState === "confirmed" ? (
+                  <>
+                    <Check className="w-4 h-4 text-forest-700" />
+                    <span>Order Confirmed!</span>
+                  </>
+                ) : isProcessingPayment || isSubmittingOrder ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-navy-950" />
+                    <span>Processing Payment & Confirming Order...</span>
+                  </>
+                ) : isOutsideDeliveryArea ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-amber-700" />
+                    <span>Delivery Unavailable for Entered Address</span>
                   </>
                 ) : (
                   <>
                     <Lock className="w-4 h-4" />
-                    <span>Proceed to Gateway Payment • {formatGBP(grandTotalPennies)}</span>
+                    <span>Pay {formatGBP(grandTotalPennies)} & Confirm Order</span>
                   </>
                 )}
               </button>
@@ -1174,12 +2172,12 @@ export default function CheckoutPage() {
               <div className="flex flex-wrap items-center justify-center gap-4 text-[11px] text-navy-600 pt-1 text-center">
                 <span className="flex items-center gap-1 text-forest-700 font-medium">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  BS 5852 Fire Safety Guaranteed
+                  UK Quality Checked & Inspected
                 </span>
                 <span>•</span>
-                <span>14-Day Statutory UK Returns</span>
+                <span>Free Mainland UK Delivery</span>
                 <span>•</span>
-                <span>HMRC 20% VAT Inclusive</span>
+                <span>Zero Hidden Fees</span>
               </div>
             </form>
           </div>
@@ -1198,51 +2196,79 @@ export default function CheckoutPage() {
 
               {/* Items List */}
               <div className="space-y-4 max-h-72 overflow-y-auto divide-y divide-sand-200 pr-1">
-                {items.map((item) => (
-                  <div key={item.id} className="pt-3 first:pt-0 flex gap-3">
-                    <div className="w-16 h-16 rounded-md bg-sand-200 overflow-hidden flex-shrink-0 border border-sand-300">
-                      <img
-                        src={item.product.thumbnailUrl}
-                        alt={item.product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-bold text-navy-950 truncate">
-                        {item.product.title}
-                      </h4>
-                      <p className="text-[11px] text-navy-600">
-                        Qty: {item.quantity} • {item.selectedFinish || item.product.specs?.color || "Standard"}
-                      </p>
-                      <div className="text-xs font-bold text-navy-950 mt-1">
-                        {formatGBP(item.product.pricePennies * item.quantity)}
+                {items.map((item, idx) => {
+                  const prod = item?.product;
+                  const title = prod?.title || (item as any)?.title || "Handcrafted Furniture Item";
+                  const thumbnail = prod?.thumbnailUrl || (item as any)?.thumbnailUrl || "/images/placeholder.svg";
+                  const finish = item?.selectedFinish || item?.selectedFabric || prod?.specs?.color || "Standard Finish";
+                  const pricePennies = typeof prod?.pricePennies === "number" ? prod.pricePennies : (Number((item as any)?.pricePennies) || 0);
+                  const qty = Math.max(1, Number(item?.quantity) || 1);
+                  const lineTotal = pricePennies * qty;
+
+                  return (
+                    <div key={item?.id || `cart-item-${idx}`} className="pt-3 first:pt-0 flex gap-3">
+                      <div className="w-16 h-16 rounded-md bg-sand-200 overflow-hidden flex-shrink-0 border border-sand-300 relative">
+                        <img
+                          src={thumbnail}
+                          alt={title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = "/images/placeholder.svg";
+                          }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-navy-950 truncate">
+                          {title}
+                        </h4>
+                        <p className="text-[11px] text-navy-600">
+                          Qty: {qty} • {finish}
+                        </p>
+                        <div className="text-xs font-bold text-navy-950 mt-1">
+                          {formatGBP(lineTotal)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Cost & VAT Breakdown */}
               <div className="space-y-2 border-t border-sand-200 pt-4 text-xs text-navy-700">
                 <div className="flex justify-between">
                   <span>Net Goods (ex. VAT)</span>
-                  <span>{vatBreakdown.formattedNet}</span>
+                  <span>{vatBreakdown?.formattedNet || formatGBP(0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>UK VAT (20%)</span>
-                  <span>{vatBreakdown.formattedVat}</span>
+                  <span>{vatBreakdown?.formattedVat || formatGBP(0)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="block font-medium">Delivery</span>
-                    <span className="text-[10px] text-navy-500">{currentDeliveryOption.name}</span>
+                    <span className="text-[10px] text-navy-500">
+                      {isOutsideDeliveryArea ? "Delivery Unavailable" : (currentDeliveryOption?.name || "Standard Delivery")}
+                    </span>
                   </div>
-                  <span className="font-semibold text-navy-950">
-                    {totalShippingPennies === 0
+                  <span className={`font-semibold ${isOutsideDeliveryArea ? "text-amber-700 text-xs font-bold" : "text-navy-950"}`}>
+                    {isOutsideDeliveryArea
+                      ? "Unavailable"
+                      : baseDeliveryPennies === 0
                       ? "FREE"
-                      : formatGBP(totalShippingPennies)}
+                      : formatGBP(baseDeliveryPennies)}
                   </span>
                 </div>
+
+                {/* Regional Postcode Surcharge if applicable */}
+                {postcodeSurchargePennies > 0 && !isOutsideDeliveryArea && (
+                  <div className="flex justify-between items-center p-2 rounded-lg bg-sand-200/60 border border-sand-300 text-xs">
+                    <div>
+                      <span className="font-semibold text-navy-950 block">Regional Surcharge</span>
+                      <span className="text-[10px] text-brass-700 font-medium">{logisticsData.zoneName}</span>
+                    </div>
+                    <span className="font-bold text-navy-950">+{formatGBP(postcodeSurchargePennies)}</span>
+                  </div>
+                )}
 
                 <div className="pt-3 border-t border-sand-300 flex justify-between items-baseline font-bold text-navy-950">
                   <span className="text-sm">Total Due</span>
@@ -1267,10 +2293,10 @@ export default function CheckoutPage() {
               <div className="p-3 rounded-lg bg-sand-200/50 border border-sand-300 text-xs text-navy-800 space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-navy-950">
                   <Truck className="w-4 h-4 text-brass-600" />
-                  <span>2-Man Dedicated Logistics</span>
+                  <span>Dedicated Furniture Logistics</span>
                 </div>
                 <p className="text-[11px] text-navy-600">
-                  Furniture is dispatched directly from our Leicester logistics hub. Delivered into your room of choice with pre-delivery calling.
+                  Furniture is dispatched with protective flat-pack packaging and delivered directly to your doorstep across Mainland UK with pre-delivery updates.
                 </p>
               </div>
             </div>
@@ -1278,141 +2304,6 @@ export default function CheckoutPage() {
 
         </div>
       </div>
-
-      {/* ======================================================== */}
-      {/* 4. DEDICATED OFFICIAL PAYMENT GATEWAY MODAL (SCA / 3DS) */}
-      {/* ======================================================== */}
-      {isGatewayModalOpen && paymentIntent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl border border-sand-300 shadow-2xl max-w-lg w-full overflow-hidden space-y-5 animate-in zoom-in-95 duration-200">
-            
-            {/* Gateway Brand Header */}
-            <div className="px-6 py-4 bg-[#070D1E] text-sand-50 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <ShieldCheck className="w-5 h-5 text-brass-400" />
-                <div>
-                  <h3 className="font-display text-sm font-bold tracking-wide">
-                    Stripe UK Gateway • 3D Secure 2.0 Strong Customer Authentication
-                  </h3>
-                  <span className="text-[10px] text-sand-300 font-mono">
-                    UK PSD2 Statutory Payment Gate (Strict Anti-Fraud Protection)
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsGatewayModalOpen(false)}
-                className="p-1 rounded-md text-sand-400 hover:text-sand-50 hover:bg-navy-900 transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Gateway Content Body */}
-            <div className="px-6 space-y-4">
-              
-              {/* Transaction Summary Badge */}
-              <div className="p-3.5 rounded-xl bg-sand-100/70 border border-sand-300 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-[10px] text-navy-500 uppercase block font-semibold">Merchant</span>
-                  <span className="font-bold text-navy-950">SAN Furniture Ltd (London, UK)</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-navy-500 uppercase block font-semibold">Total to Authorize</span>
-                  <span className="font-display text-base font-bold text-navy-950">
-                    {paymentIntent.formattedAmount}
-                  </span>
-                </div>
-              </div>
-
-              {/* Dedicated Stripe 3DS SCA Security Challenge */}
-              <div className="space-y-3 text-xs text-navy-800">
-                <div className="p-3 rounded-lg bg-sand-50 border border-sand-200 flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold text-navy-900 block">Bank Security Challenge</span>
-                    <span className="text-[10px] text-navy-500">Card ending in •••• {cardNumber.replace(/\s+/g, "").slice(-4) || "4242"}</span>
-                  </div>
-                  <span className="font-mono text-[10px] bg-sand-200 px-2 py-0.5 rounded text-navy-800">
-                    Visa Secure / Mastercard ID
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-navy-600">
-                  To protect your account from fraudulent transactions, your card issuer requires 3D Secure Strong Customer Authentication (SCA) verification before this order is placed.
-                </p>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-navy-900 flex items-center gap-1">
-                      <KeyRound className="w-3.5 h-3.5 text-brass-600" />
-                      <span>Enter 6-Digit SMS Passcode</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setScaOtp("123456")}
-                      className="text-[10px] text-brass-700 underline font-bold cursor-pointer inline-flex items-center gap-1"
-                    >
-                      <Sparkles className="w-3 h-3 text-brass-600" />
-                      <span>Auto-fill 123456</span>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    maxLength={6}
-                    value={scaOtp}
-                    onChange={(e) => setScaOtp(e.target.value)}
-                    placeholder="123456"
-                    className="w-full text-center text-lg tracking-widest font-mono py-2 rounded-lg border border-sand-300 bg-white font-bold text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                  />
-                  <p className="text-[10px] text-navy-500 text-center">
-                    Test Passcode: Use <strong>123456</strong> or click 1-Click Approval below.
-                  </p>
-                </div>
-              </div>
-
-              {/* Gateway Error Display */}
-              {gatewayError && (
-                <div className="p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
-                  <span>{gatewayError}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Gateway Modal Actions */}
-            <div className="px-6 py-4 bg-sand-50 border-t border-sand-200 flex flex-col sm:flex-row gap-2.5">
-              <button
-                type="button"
-                onClick={handleConfirmGatewayPayment}
-                disabled={isProcessingPayment || isSubmittingOrder}
-                className="flex-1 py-3 px-4 rounded-lg bg-navy-950 text-sand-50 font-bold text-xs flex items-center justify-center gap-2 hover:bg-brass-600 transition-colors shadow-sm disabled:opacity-50"
-              >
-                {isProcessingPayment || isSubmittingOrder ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying Authorization & Placing Order...</span>
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4 text-brass-400" />
-                    <span>Confirm & Authorize Payment ({paymentIntent.formattedAmount})</span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsGatewayModalOpen(false)}
-                disabled={isProcessingPayment || isSubmittingOrder}
-                className="py-3 px-4 rounded-lg border border-sand-300 text-navy-700 hover:bg-sand-100 text-xs font-semibold transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   );

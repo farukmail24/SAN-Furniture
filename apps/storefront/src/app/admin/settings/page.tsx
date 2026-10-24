@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Settings,
   Building,
@@ -33,7 +34,8 @@ import {
   Package,
   Eye,
   EyeOff,
-  Key
+  Key,
+  Sliders
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
@@ -47,17 +49,17 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettingsMap>({
     // Branding
     site_name: "SAN Furniture",
-    site_tagline: "Handcrafted Luxury Living • British Excellence",
+    site_tagline: "Contemporary Living • Exceptional Quality Furniture",
     site_logo_light: "/SanFurnitureLogo.png",
     site_logo_dark: "/San-Furniture-Logo-Dark.png",
     site_favicon: "/favicon.ico",
-    // Legal & Company
-    company_name: "SAN Furniture UK Ltd",
-    company_number: "14289123",
-    vat_number: "GB 438 9123 76",
-    registered_address: "48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom",
-    support_email: "concierge@sanfurniture.com",
-    support_phone: "+44 (0) 20 7946 0912",
+    // Storefront Profile
+    company_name: "SAN Furniture",
+    company_number: "",
+    vat_number: "",
+    registered_address: "United Kingdom",
+    support_email: "support@sanfurniture.com",
+    support_phone: "+44 20 7946 0192",
     // Logistics
     free_shipping_threshold_pennies: "50000",
     standard_delivery_fee_pennies: "4900",
@@ -67,6 +69,7 @@ export default function AdminSettingsPage() {
     dropship_auto_dispatch: "true",
     dropship_min_margin_percent: "30",
     // Email SMTP
+    email_notifications_enabled: "false",
     smtp_provider: "smtp",
     smtp_host: "smtp.mailgun.org",
     smtp_port: "587",
@@ -76,6 +79,7 @@ export default function AdminSettingsPage() {
     smtp_from_email: "orders@sanfurniture.com",
     smtp_from_name: "SAN Furniture Concierge",
     // SMS Gateway
+    sms_notifications_enabled: "false",
     sms_provider: "twilio",
     sms_account_sid: "AC_SAN_FURNITURE_LIVE_001",
     sms_auth_token: "••••••••••••••••••••••••",
@@ -275,9 +279,13 @@ export default function AdminSettingsPage() {
     setErrorMsg(null);
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
       const res = await fetch(apiUrl("/api/admin/settings"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ settings })
       });
       const data = await res.json();
@@ -335,10 +343,15 @@ export default function AdminSettingsPage() {
   const handleTestStripe = async () => {
     setTestingStripe(true);
     setStripeTestResult(null);
+    setErrorMsg(null);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
       const res = await fetch(apiUrl("/api/admin/settings/test-stripe"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           stripe_publishable_key: settings.stripe_publishable_key,
           stripe_secret_key: settings.stripe_secret_key,
@@ -347,7 +360,7 @@ export default function AdminSettingsPage() {
       });
       const data = await res.json();
       setStripeTestResult(data);
-      if (res.ok) {
+      if (res.ok && data.success) {
         setSuccessMsg(data.message || "Stripe UK Gateway credentials verified successfully!");
         setTimeout(() => setSuccessMsg(null), 5000);
       } else {
@@ -383,7 +396,7 @@ export default function AdminSettingsPage() {
             System Configuration &amp; Settings
           </h1>
           <p className="text-xs text-navy-600 mt-1">
-            Manage Branding &amp; Logos &bull; HMRC VAT Credentials &bull; Email (SMTP) &bull; SMS Gateway &bull; Dropship Automation
+            Manage Branding &amp; Logos &bull; VAT &amp; Legal Credentials &bull; Email (SMTP) &bull; SMS Gateway &bull; Dropship Automation
           </p>
         </div>
 
@@ -437,7 +450,7 @@ export default function AdminSettingsPage() {
           }`}
         >
           <Building className={`w-3.5 h-3.5 ${activeTab === "legal" ? "text-brass-400" : "text-navy-500"}`} />
-          <span>HMRC VAT &amp; Legal</span>
+          <span>VAT &amp; Legal</span>
         </button>
 
         <button
@@ -542,7 +555,7 @@ export default function AdminSettingsPage() {
                 <span>Store Identity, Logos &amp; Favicon</span>
               </h2>
               <p className="text-xs text-navy-600 mt-1">
-                Configure your luxury brand marks across light mode, dark mode, browser tabs, and HMRC invoices.
+                Configure your luxury brand marks across light mode, dark mode, browser tabs, and VAT invoices.
               </p>
             </div>
 
@@ -660,15 +673,42 @@ export default function AdminSettingsPage() {
                 />
               </div>
             </div>
+
+            {/* Direct Link to Header Sticky Navigation Controls */}
+            <div className="p-4 sm:p-5 rounded-xl bg-white border border-brass-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-[#00072D] text-brass-400 shrink-0">
+                  <Sliders className="w-5 h-5 text-brass-400" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-navy-950 flex items-center gap-2">
+                    <span>Header Sticky Navigation &amp; Pinning Controls</span>
+                    <span className="text-[10px] bg-brass-100 text-brass-800 font-semibold px-2 py-0.5 rounded border border-brass-200">
+                      Storefront Layout
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-navy-600 mt-0.5">
+                    Configure whether the storefront top navigation bar stays sticky/pinned, uses smart reveal, or collapses the top announcement bar on scroll.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/admin/pages?tab=header"
+                className="px-4 py-2 rounded-xl bg-[#00072D] hover:bg-brass-700 text-sand-50 text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+              >
+                <span>Configure Sticky Controls</span>
+                <ArrowRight className="w-3.5 h-3.5 text-brass-400" />
+              </Link>
+            </div>
           </div>
         )}
 
-        {/* TAB 2: LEGAL & HMRC VAT */}
+        {/* TAB 2: LEGAL & VAT */}
         {activeTab === "legal" && (
           <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
             <h2 className="text-base font-bold text-navy-950 flex items-center gap-2">
               <Building className="w-5 h-5 text-brass-600" />
-              <span>UK Legal Entity &amp; HMRC VAT Registration</span>
+              <span>UK Legal Entity &amp; VAT Registration</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -690,7 +730,7 @@ export default function AdminSettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1">HMRC VAT Number</label>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">VAT Registration Number</label>
                 <input
                   type="text"
                   value={settings.vat_number}
@@ -756,6 +796,43 @@ export default function AdminSettingsPage() {
                 <Send className="w-3.5 h-3.5 text-brass-400" />
                 <span>{testingEmail ? "Sending Test Email..." : "Send Test Verification Email"}</span>
               </button>
+            </div>
+
+            {/* Master Activation Toggle */}
+            <div className={`p-4 rounded-xl border transition-all ${
+              settings.email_notifications_enabled === "true"
+                ? "bg-emerald-50/70 border-emerald-300"
+                : "bg-sand-100/70 border-sand-300"
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-navy-950 uppercase tracking-wider">
+                      Master Email Trigger
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      settings.email_notifications_enabled === "true"
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : "bg-sand-200 text-navy-600 border border-sand-300"
+                    }`}>
+                      {settings.email_notifications_enabled === "true" ? "● Active & Transmitting" : "○ Disabled (Calls Bypassed)"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-navy-600">
+                    When enabled, transactional emails (Welcome, Order Confirmation, Dispatched, Cancelled) are dispatched automatically. When disabled, the system bypasses all email calls with zero latency.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={settings.email_notifications_enabled === "true"}
+                    onChange={(e) => handleChange("email_notifications_enabled", e.target.checked ? "true" : "false")}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-sand-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sand-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -878,6 +955,43 @@ export default function AdminSettingsPage() {
                 <Send className="w-3.5 h-3.5 text-brass-400" />
                 <span>{testingSms ? "Sending Test SMS..." : "Send Test 2-Man Alert SMS"}</span>
               </button>
+            </div>
+
+            {/* Master Activation Toggle */}
+            <div className={`p-4 rounded-xl border transition-all ${
+              settings.sms_notifications_enabled === "true"
+                ? "bg-emerald-50/70 border-emerald-300"
+                : "bg-sand-100/70 border-sand-300"
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-navy-950 uppercase tracking-wider">
+                      Master SMS Trigger
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      settings.sms_notifications_enabled === "true"
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : "bg-sand-200 text-navy-600 border border-sand-300"
+                    }`}>
+                      {settings.sms_notifications_enabled === "true" ? "● Active & Transmitting" : "○ Disabled (Calls Bypassed)"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-navy-600">
+                    When enabled, customer mobile SMS alerts (Welcome, Dispatch, Delivery, Cancellations) are sent via Twilio. When disabled, all SMS calls are immediately bypassed without making external API calls.
+                  </p>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={settings.sms_notifications_enabled === "true"}
+                    onChange={(e) => handleChange("sms_notifications_enabled", e.target.checked ? "true" : "false")}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-sand-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-sand-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                </label>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1264,7 +1378,7 @@ export default function AdminSettingsPage() {
                   Stripe UK Gateway Credentials &amp; Terminal
                 </h2>
                 <p className="text-xs text-sand-300 max-w-xl">
-                  Dedicated payment gateway for SAN Furniture. Processes Visa, Mastercard, American Express, Apple Pay, and Google Pay with UK PSD2 Strong Customer Authentication and automated dropship purchase order dispatch.
+                  Dedicated payment gateway for SAN Furniture. Processes Visa, Mastercard, American Express, and Maestro with UK PSD2 Strong Customer Authentication and automated dropship purchase order dispatch.
                 </p>
               </div>
 
@@ -1530,7 +1644,7 @@ export default function AdminSettingsPage() {
                   className="w-full px-3 py-2 bg-sand-200/70 border border-sand-300 rounded-lg text-xs font-bold text-navy-800 cursor-not-allowed"
                 />
                 <p className="text-[10px] text-navy-500 mt-1">
-                  Locked to GBP pennies adhering to UK statutory e-commerce guidelines.
+                  Locked to GBP pennies adhering to UK e-commerce guidelines.
                 </p>
               </div>
             </div>
@@ -1606,7 +1720,7 @@ export default function AdminSettingsPage() {
         {activeTab === "storage" && (
           <div className="space-y-6">
             {/* Header Showcase Card */}
-            <div className="bg-gradient-to-br from-navy-950 via-[#0B132B] to-[#1C2541] rounded-2xl p-6 sm:p-8 text-sand-50 shadow-xl border border-navy-800">
+            <div className="bg-gradient-to-br from-navy-950 via-[#00072D] to-[#1C2541] rounded-2xl p-6 sm:p-8 text-sand-50 shadow-xl border border-navy-800">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brass-500/20 text-brass-300 border border-brass-500/30 text-xs font-semibold uppercase tracking-wider mb-3">
@@ -1777,7 +1891,7 @@ export default function AdminSettingsPage() {
 
               <div className="space-y-3 pt-2">
                 {/* Linux / cPanel */}
-                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                <div className="bg-[#00072D] rounded-xl p-4 border border-navy-800 text-sand-100">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-400" />
@@ -1798,7 +1912,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 {/* Windows CMD */}
-                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                <div className="bg-[#00072D] rounded-xl p-4 border border-navy-800 text-sand-100">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-blue-400" />
@@ -1819,7 +1933,7 @@ export default function AdminSettingsPage() {
                 </div>
 
                 {/* Laravel Artisan Style */}
-                <div className="bg-[#070D1E] rounded-xl p-4 border border-navy-800 text-sand-100">
+                <div className="bg-[#00072D] rounded-xl p-4 border border-navy-800 text-sand-100">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-bold text-sand-300 flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-rose-400" />

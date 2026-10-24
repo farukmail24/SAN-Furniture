@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface AdminUserRecord {
   id: string;
@@ -31,9 +31,8 @@ interface AdminUserRecord {
 }
 
 export default function AdminUsersPage() {
-  const cachedUsers = getCachedData<{ users: AdminUserRecord[] }>(apiUrl("/api/admin/users"));
-  const [users, setUsers] = useState<AdminUserRecord[]>(() => cachedUsers?.users || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedUsers?.users?.length);
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [toastMsg, setToastMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Modals state
@@ -177,11 +176,11 @@ export default function AdminUsersPage() {
       header: "Staff Member & Email",
       cell: (row) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#0B132B] text-[#C89B3C] flex items-center justify-center font-bold text-xs uppercase shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#00072D] text-[#C89B3C] flex items-center justify-center font-bold text-xs uppercase shrink-0">
             {row.full_name.charAt(0)}
           </div>
           <div className="min-w-0">
-            <div className="font-semibold text-[#0B132B] truncate">{row.full_name}</div>
+            <div className="font-semibold text-[#00072D] truncate">{row.full_name}</div>
             <div className="text-[11px] text-[#4F6D7A] flex items-center gap-1">
               <Mail className="w-3 h-3 text-[#C89B3C]" />
               <span className="truncate">{row.email}</span>
@@ -294,7 +293,7 @@ export default function AdminUsersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Staff Accounts
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {users.length} Users
           </div>
           <div className="text-xs text-emerald-700 font-medium mt-1">
@@ -306,7 +305,7 @@ export default function AdminUsersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Super Administrators
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             {users.filter((u) => u.role === "super_admin").length} Principals
           </div>
           <div className="text-xs text-[#4F6D7A] mt-1">Full database & system access</div>
@@ -316,7 +315,7 @@ export default function AdminUsersPage() {
           <div className="text-xs uppercase tracking-wider font-semibold text-[#4F6D7A]">
             Staff Security Guard
           </div>
-          <div className="text-3xl font-serif text-[#0B132B] mt-2">
+          <div className="text-3xl font-serif text-[#00072D] mt-2">
             PBKDF2-512
           </div>
           <div className="text-xs text-emerald-700 font-medium mt-1">
@@ -340,7 +339,7 @@ export default function AdminUsersPage() {
           <button
             type="button"
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0B132B] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#00072D] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
           >
             <UserPlus className="w-4 h-4 text-[#C89B3C]" />
             <span>Invite New Staff</span>
@@ -355,12 +354,12 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Invite New Staff Member</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Invite New Staff Member</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -368,35 +367,35 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Full Name *</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="Sophie Mercer"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Company Email *</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Company Email *</label>
                 <input
                   type="email"
                   required
                   value={formEmail}
                   onChange={(e) => setFormEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="sophie.mercer@sanfurniture.com"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Assigned Role</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Assigned Role</label>
                 <select
                   value={formRole}
                   onChange={(e) => setFormRole(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 >
                   <option value="catalog_manager">Catalog Manager (Products, Categories, Media)</option>
                   <option value="logistics_operator">Logistics Operator (Orders, Shipping, Tracking)</option>
@@ -406,13 +405,13 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Temporary Password *</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Temporary Password *</label>
                 <input
                   type="password"
                   required
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="Minimum 8 characters"
                 />
               </div>
@@ -428,7 +427,7 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Inviting..." : "Create Staff Account"}
                 </button>
@@ -445,12 +444,12 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2">
                 <Edit2 className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#0B132B]">Edit Staff Permissions</h3>
+                <h3 className="font-serif font-bold text-lg text-[#00072D]">Edit Staff Permissions</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingUser(null)}
-                className="text-[#4F6D7A] hover:text-[#0B132B]"
+                className="text-[#4F6D7A] hover:text-[#00072D]"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -458,7 +457,7 @@ export default function AdminUsersPage() {
 
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Full Name</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Full Name</label>
                 <input
                   type="text"
                   required
@@ -466,18 +465,18 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, full_name: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Role</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Role</label>
                 <select
                   value={editingUser.role}
                   onChange={(e) =>
                     setEditingUser({ ...editingUser, role: e.target.value })
                   }
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                 >
                   <option value="catalog_manager">Catalog Manager</option>
                   <option value="logistics_operator">Logistics Operator</option>
@@ -487,7 +486,7 @@ export default function AdminUsersPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">Status</label>
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">Status</label>
                 <button
                   type="button"
                   onClick={() =>
@@ -504,14 +503,14 @@ export default function AdminUsersPage() {
               </div>
 
               <div className="pt-2 border-t border-[#E8E2D5]">
-                <label className="block text-xs font-semibold text-[#0B132B] mb-1">
+                <label className="block text-xs font-semibold text-[#00072D] mb-1">
                   Reset Password (Leave blank to keep current)
                 </label>
                 <input
                   type="password"
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B]"
+                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
                   placeholder="New password if resetting"
                 />
               </div>
@@ -527,7 +526,7 @@ export default function AdminUsersPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-6 py-2 rounded-lg bg-[#0B132B] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
+                  className="px-6 py-2 rounded-lg bg-[#00072D] hover:bg-[#1C2541] text-white text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? "Updating..." : "Update Staff User"}
                 </button>

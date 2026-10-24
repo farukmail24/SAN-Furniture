@@ -50,7 +50,7 @@ export async function GET() {
       <g:material>${escapeXml(p.specs.material)}</g:material>
       <g:color>${escapeXml(p.specs.color)}</g:color>
       <g:custom_label_0>${escapeXml(p.specs.delivery_tier)}</g:custom_label_0>
-      <g:custom_label_1>BS 5852 Fire Safety Verified</g:custom_label_1>
+      <g:custom_label_1>UK Quality Checked</g:custom_label_1>
       <g:custom_label_2>${p.pricePennies >= 50000 ? "Free Delivery Eligible" : "Standard Freight"}</g:custom_label_2>
     </item>`;
     })
@@ -61,7 +61,7 @@ export async function GET() {
   <channel>
     <title>SAN Furniture UK Product Feed</title>
     <link>${baseUrl}</link>
-    <description>Luxury British Handcrafted Sofas, Dining Sets and Accent Furniture</description>
+    <description>Curated Modern Sofas, Dining Sets and Home Accent Furniture</description>
 ${itemsXml}
   </channel>
 </rss>`;

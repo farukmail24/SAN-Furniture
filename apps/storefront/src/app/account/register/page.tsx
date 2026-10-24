@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, User, MapPin, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { Mail, Lock, User, Phone, MapPin, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [postcode, setPostcode] = useState("");
@@ -21,6 +22,22 @@ export default function CustomerRegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+      setError("Please fill in all mandatory fields.");
+      return;
+    }
+
+    if (!phone.trim()) {
+      setError("Mobile phone number is required for account creation and delivery coordination.");
+      return;
+    }
+
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
+    if (cleanPhone.length < 10) {
+      setError("Please enter a valid UK mobile or phone number (minimum 10 digits).");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -31,6 +48,7 @@ export default function CustomerRegisterPage() {
         body: JSON.stringify({
           firstName,
           lastName,
+          username,
           email,
           password,
           postcode,
@@ -40,7 +58,19 @@ export default function CustomerRegisterPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+      } else {
+        const text = await res.text().catch(() => "");
+        data = { error: text || `Registration server responded with status ${res.status}` };
+      }
+
       if (!res.ok) {
         throw new Error(data.error || "Registration failed");
       }
@@ -69,7 +99,7 @@ export default function CustomerRegisterPage() {
             Create Your UK Client Account
           </h1>
           <p className="text-xs text-navy-600 mt-2">
-            Enjoy complimentary 2-man room-of-choice delivery updates, saved UK addresses, and express checkout.
+            Enjoy complimentary room-of-choice delivery updates, saved UK addresses, and express checkout.
           </p>
         </div>
 
@@ -84,7 +114,7 @@ export default function CustomerRegisterPage() {
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">First Name</label>
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">First Name <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <User className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -99,36 +129,52 @@ export default function CustomerRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Last Name</label>
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Last Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Vance"
+                  placeholder="Smith"
                   className="w-full px-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-navy-900 mb-1.5">Email Address</label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="eleanor.vance@example.co.uk"
-                  className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Password (Min 8 chars)</label>
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Email Address <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="eleanor.vance@example.co.uk"
+                    className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Username (Optional)</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="eleanor_vance"
+                    className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Password (Min 8 chars) <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
@@ -144,14 +190,23 @@ export default function CustomerRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Phone Number (Optional)</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+44 7700 900123"
-                  className="w-full px-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
-                />
+                <label className="block text-xs font-semibold text-navy-900 mb-1.5">
+                  Mobile / Phone Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+44 7123 456789"
+                    className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
+                  />
+                </div>
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Required for 2-man room-of-choice delivery scheduling &amp; SMS alerts.
+                </p>
               </div>
             </div>
 

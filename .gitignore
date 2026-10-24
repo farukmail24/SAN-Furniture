@@ -1,13 +1,25 @@
 node_modules/
-dist/
+/dist/
+!packages/types/dist/
+!packages/types/dist/**
+!apps/backend/dist/
+!apps/backend/dist/**
 .next/
+**/.next/
+tmp/
+**/tmp/
 .turbo/
 build/
 *.log
 .env
-.env.local
+.env*.local
+.env.production
+.env.development
 .DS_Store
 Thumbs.db
 Dropship Suppliers/
 *.zip
+*.tar.gz
 *.tsbuildinfo
+scratch/
+coverage/

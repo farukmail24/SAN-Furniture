@@ -45,19 +45,17 @@ export interface VATInvoiceData {
 }
 
 export class VatInvoiceGenerator {
-  public static readonly COMPANY_VAT_NUMBER = "GB 421 9823 45";
-  public static readonly COMPANY_CRN = "15482910";
-  public static readonly COMPANY_NAME = "SAN Furniture Ltd";
+  public static readonly COMPANY_VAT_NUMBER = "";
+  public static readonly COMPANY_CRN = "";
+  public static readonly COMPANY_NAME = "SAN Furniture";
   public static readonly COMPANY_ADDRESS = [
-    "100 Pall Mall",
-    "St James's",
-    "London",
-    "SW1Y 5NQ",
-    "United Kingdom",
+    "Online UK Furniture Retailer",
+    "Mainland United Kingdom",
+    "support@sanfurniture.com",
   ];
 
   /**
-   * Generate UK HMRC compliant VAT invoice structure
+   * Generate UK compliant VAT invoice structure
    */
   public generateInvoice(
     invoiceSeq: number,
@@ -142,12 +140,12 @@ export class VatInvoiceGenerator {
     <div>
       <div class="company-title">${invoice.companyName}</div>
       <div>${invoice.companyAddress.join(", ")}</div>
-      <div class="vat-badge">UK VAT REG NO: ${invoice.companyVatNumber}</div>
+      <div class="vat-badge">SAN Furniture Official Order Receipt</div>
     </div>
     <div style="text-align: right;">
-      <h2 style="margin: 0; color: #0B132B;">TAX INVOICE</h2>
+      <h2 style="margin: 0; color: #0B132B;">ORDER INVOICE</h2>
       <div><strong>Invoice #:</strong> ${invoice.invoiceNumber}</div>
-      <div><strong>Tax Point / Date:</strong> ${invoice.taxPointDate}</div>
+      <div><strong>Date:</strong> ${invoice.taxPointDate}</div>
     </div>
   </div>
 
@@ -203,7 +201,7 @@ export class VatInvoiceGenerator {
       </tr>`
           : `<tr>
         <td style="font-family: monospace; color: #4F6D7A;">SHIPPING-FREE</td>
-        <td><strong>Free 2-Man White Glove Delivery (Order &gt; £500)</strong></td>
+        <td><strong>Free White Glove Delivery (Order &gt; £500)</strong></td>
         <td class="text-right">1</td>
         <td class="text-right">£0.00</td>
         <td class="text-right"><strong>FREE</strong></td>
@@ -215,18 +213,18 @@ export class VatInvoiceGenerator {
   <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 24px; gap: 24px;">
     <div style="flex: 1; max-width: 380px; background: #F8F6F0; border: 1px solid #E8E2D5; border-radius: 6px; padding: 14px 18px; font-size: 11px; color: #4F6D7A; line-height: 1.6;">
       <strong style="color: #0B132B; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">
-        UK Statutory Tax Breakdown (HMRC VAT)
+        UK Order &amp; Pricing Breakdown
       </strong>
       <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
-        <span>Taxable Net Goods &amp; Logistics:</span>
+        <span>Goods &amp; Logistics Subtotal:</span>
         <strong style="color: #070D1E;">${invoice.breakdown.formattedNet}</strong>
       </div>
       <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-        <span>UK VAT @ Standard Rate (20%):</span>
+        <span>Tax Breakdown Portion:</span>
         <strong style="color: #070D1E;">${invoice.breakdown.formattedVat}</strong>
       </div>
       <div style="border-top: 1px dashed #D5CEBF; padding-top: 5px; font-size: 10px; color: #64748B;">
-        Note: All product &amp; delivery prices above already include 20% UK VAT. The VAT amount shown here is the statutory tax portion included in your total payment, not an additional charge.
+        Note: All product &amp; delivery prices shown above are final with zero additional hidden fees at checkout.
       </div>
     </div>
 
@@ -244,14 +242,14 @@ export class VatInvoiceGenerator {
         <span>${invoice.breakdown.formattedGross}</span>
       </div>
       <div style="text-align: right; font-size: 11px; color: #4F6D7A; margin-top: 4px;">
-        (Includes 20% UK VAT of ${invoice.breakdown.formattedVat})
+        (Total payable for order)
       </div>
     </div>
   </div>
 
   <div class="footer">
-    ${invoice.companyName} • Registered in England &amp; Wales No. ${invoice.companyRegistrationNumber} • VAT No. ${invoice.companyVatNumber}<br/>
-    This document constitutes an official UK VAT Invoice under the Value Added Tax Act 1994.
+    ${invoice.companyName} • Online UK Furniture Retailer • Customer Support: support@sanfurniture.com<br/>
+    Thank you for choosing SAN Furniture. All orders are packed in secure protective packaging and dispatched across Mainland UK.
   </div>
 </body>
 </html>`;

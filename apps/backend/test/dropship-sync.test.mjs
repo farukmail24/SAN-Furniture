@@ -248,3 +248,30 @@ test("Order Fulfillment Dispatcher: Creates PO and ingests tracking webhook", as
   assert.equal(webhookResponse.record.trackingNumber, "AXL-882910394GB");
   assert.equal(webhookResponse.record.courierName, "ArrowXL 2-Man");
 });
+
+test("Unified Dropship Pricing Formula: Computes Landed Cost + 40% Margin + 20% VAT with Free UK Delivery guarantee", async () => {
+  const { amosMannExtractor } = await import("../src/modules/dropship/services/amos-mann-extractor.mjs");
+  const { furnitureToGoExtractor } = await import("../src/modules/dropship/services/furniture-to-go-extractor.mjs");
+
+  // Case 1: Amos Mann Standard Parcel (Trade £70.00 + Carriage £19.95)
+  // Landed = £89.95. Net Retail = £89.95 * 1.40 = £125.93. Gross Retail (inc 20% VAT) = £125.93 * 1.20 = £151.12
+  const amosStandard = amosMannExtractor.calculateRetailPrice(7000, 1995, 40);
+  assert.equal(amosStandard.landedCost, 8995);
+  assert.equal(amosStandard.netRetail, 12593);
+  assert.equal(amosStandard.retailPricePennies, 15112); // £151.12
+  assert.equal(amosStandard.compareAtPennies, 18890); // £188.90
+
+  // Case 2: Amos Mann Pallet Wardrobe (Trade £239.00 + Carriage £69.00)
+  // Landed = £308.00. Net Retail = £308.00 * 1.40 = £431.20. Gross Retail = £431.20 * 1.20 = £517.44
+  const amosPallet = amosMannExtractor.calculateRetailPrice(23900, 6900, 40);
+  assert.equal(amosPallet.landedCost, 30800);
+  assert.equal(amosPallet.netRetail, 43120);
+  assert.equal(amosPallet.retailPricePennies, 51744); // £517.44
+
+  // Case 3: Furniture To Go (FTG includes UK Mainland Home Delivery in trade price = £0.00 carriage)
+  // Trade £100.00 + Carriage £0.00. Landed = £100.00. Net Retail = £100.00 * 1.40 = £140.00. Gross Retail = £140.00 * 1.20 = £168.00
+  const ftgItem = furnitureToGoExtractor.calculateRetailPrice(10000, 0, 40);
+  assert.equal(ftgItem.landedCost, 10000);
+  assert.equal(ftgItem.netRetail, 14000);
+  assert.equal(ftgItem.retailPricePennies, 16800); // £168.00
+});

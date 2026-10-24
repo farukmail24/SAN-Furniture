@@ -6,9 +6,9 @@ const brandTokens = {
       50: '#F0F4F8',
       600: '#4F6D7A',
       700: '#3A506B',
-      800: '#1C2541',
-      900: '#0B132B',
-      950: '#070D1E',
+      800: '#0B1742',
+      900: '#00072D',
+      950: '#00072D',
     },
     sand: {
       50: '#FAF8F5',
@@ -30,6 +30,19 @@ const brandTokens = {
       700: '#2D6A4F',
       800: '#1F4B37',
     },
+    forest: {
+      50: '#F0FDF4',
+      100: '#DCFCE7',
+      200: '#BBF7D0',
+      300: '#86EFAC',
+      400: '#4ADE80',
+      500: '#22C55E',
+      600: '#16A34A',
+      700: '#15803D',
+      800: '#166534',
+      900: '#14532D',
+      950: '#052E16',
+    },
     terracotta: {
       400: '#E07A5F',
       500: '#C85A32',
@@ -49,10 +62,10 @@ const brandTokens = {
     '3xl': '24px',
   },
   boxShadow: {
-    ambient: '0 4px 20px -2px rgba(11, 19, 43, 0.05)',
-    card: '0 8px 24px -4px rgba(11, 19, 43, 0.08)',
-    elevation: '0 16px 36px -6px rgba(11, 19, 43, 0.12)',
-    drawer: '0 24px 64px -12px rgba(7, 13, 30, 0.25)',
+    ambient: '0 4px 20px -2px rgba(0, 7, 45, 0.05)',
+    card: '0 8px 24px -4px rgba(0, 7, 45, 0.08)',
+    elevation: '0 16px 36px -6px rgba(0, 7, 45, 0.12)',
+    drawer: '0 24px 64px -12px rgba(0, 7, 45, 0.25)',
   },
 };
 
@@ -85,6 +98,7 @@ const config: Config = {
         sand: brandTokens.colors.sand,
         brass: brandTokens.colors.brass,
         sage: brandTokens.colors.sage,
+        forest: brandTokens.colors.forest,
         terracotta: brandTokens.colors.terracotta,
       },
       fontFamily: {

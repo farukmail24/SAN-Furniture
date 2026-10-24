@@ -59,7 +59,7 @@ export class MetaCatalogFeedGenerator {
           this.escapeCsv(p.specs.material),
           this.escapeCsv(p.specs.color),
           this.escapeCsv(p.specs.delivery_tier),
-          "BS 5852 Certified",
+          "UK Quality Checked",
         ].join(",");
       });
 

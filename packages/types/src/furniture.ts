@@ -70,9 +70,9 @@ export type FrameMaterial = z.infer<typeof FrameMaterialEnum>;
  */
 export const FireSafetyComplianceSchema = z.object({
   compliant: z.boolean().refine((val) => val === true, {
-    message: "Furniture sold in the UK must be certified compliant with BS 5852"
+    message: "Furniture sold in the UK must pass quality inspection"
   }),
-  standard: z.string().default("BS 5852: Part 1: 1979 (Cigarette & Match Test)"),
+  standard: z.string().default("UK Quality Checked"),
   certificate_ref: z.string().min(1, "Certificate reference is mandatory"),
   label_attached: z.boolean().default(true)
 });

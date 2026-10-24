@@ -39,7 +39,15 @@ export function ExtensionErrorGuard() {
         lower.includes("200.js") ||
         lower.includes("bis_skin_checked") ||
         lower.includes("cz-shortcut-listen") ||
-        lower.includes("fdprocessedid")
+        lower.includes("fdprocessedid") ||
+        lower.includes("__next_route_announcer__") ||
+        (lower.includes("hydrat") && (
+          lower.includes("extension") ||
+          lower.includes("match") ||
+          lower.includes("attribute") ||
+          lower.includes("server rendered") ||
+          lower.includes("bis_skin")
+        ))
       );
     }
 
@@ -57,10 +65,34 @@ export function ExtensionErrorGuard() {
       }
     };
 
+    const origConsoleError = console.error;
+    console.error = (...args: any[]) => {
+      let combinedStr = "";
+      for (const arg of args) {
+        if (typeof arg === "string") {
+          combinedStr += " " + arg;
+        } else if (arg && typeof arg === "object") {
+          combinedStr += " " + (arg.message || "") + " " + (arg.stack || "") + " " + (arg.diff || "");
+          try {
+            combinedStr += " " + JSON.stringify(arg);
+          } catch {
+            try { combinedStr += " " + String(arg); } catch {}
+          }
+        } else {
+          try { combinedStr += " " + String(arg); } catch {}
+        }
+      }
+      if (isIgnored(combinedStr)) {
+        return;
+      }
+      origConsoleError.apply(console, args);
+    };
+
     window.addEventListener("error", errorHandler, true);
     window.addEventListener("unhandledrejection", rejectionHandler, true);
 
     return () => {
+      console.error = origConsoleError;
       window.removeEventListener("error", errorHandler, true);
       window.removeEventListener("unhandledrejection", rejectionHandler, true);
     };

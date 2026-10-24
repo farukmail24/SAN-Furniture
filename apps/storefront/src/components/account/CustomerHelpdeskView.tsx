@@ -481,9 +481,9 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
                     className="w-full p-2.5 rounded-xl border border-sand-300 bg-white text-navy-950 focus:outline-none"
                   >
                     <option value="general">General Inquiries</option>
-                    <option value="delivery">2-Man Delivery &amp; Slots</option>
+                    <option value="delivery">Delivery &amp; Time Slots</option>
                     <option value="damaged_item">Transit Damage Claim</option>
-                    <option value="product_inquiry">Fabric Swatch / Product Spec</option>
+                    <option value="product_inquiry">Product Specifications &amp; Dimensions</option>
                     <option value="assembly_help">Assembly Support</option>
                     <option value="return_refund">Return or Refund Request</option>
                   </select>

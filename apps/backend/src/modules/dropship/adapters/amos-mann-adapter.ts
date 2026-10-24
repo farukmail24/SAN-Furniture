@@ -207,8 +207,8 @@ SPECIAL INSTRUCTIONS:
 ${poData.notes || "Please include SAN Furniture white-label delivery note. Contact customer 30 minutes prior to delivery arrival."}
 
 ============================================================
-Authorized by SAN Furniture UK Operations Desk
-48 Grosvenor Square, Mayfair, London W1K 2HP
+Authorized by SAN Furniture Operations Desk
+Mainland United Kingdom • support@sanfurniture.com
 ============================================================
 `.trim();
   }

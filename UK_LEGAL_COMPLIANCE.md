@@ -45,10 +45,10 @@ Governs distance selling (online sales) to UK consumers, mandating clear pre-con
 
 ---
 
-## 3. Pricing & Tax Transparency (Consumer Rights Act 2015 & HMRC)
+## 3. Pricing & Tax Transparency (Consumer Rights Act 2015 & Value Added Tax Act 1994)
 
 1. **VAT Inclusive Pricing**:
-   - Under the Consumer Protection from Unfair Trading Regulations 2008 and HMRC guidelines, all prices displayed to UK consumers must clearly include the standard **20% UK VAT**.
+   - Under the Consumer Protection from Unfair Trading Regulations 2008 and statutory guidelines, all prices displayed to UK consumers must clearly include the standard **20% UK VAT**.
    - Hidden delivery fees at checkout are illegal: delivery fees or thresholds must be clearly stated on product pages before the customer enters the checkout funnel.
 2. **VAT Invoicing**:
    - A valid VAT invoice must be issued for all B2C and B2B transactions upon request, detailing:
@@ -76,7 +76,7 @@ The **Data Protection Act 2018 (UK GDPR)** and the **Privacy and Electronic Comm
 3. **Data Subject Rights**:
    - Automated workflows to support:
      - Right to Access (export all orders and personal data).
-     - Right to Erasure / "To Be Forgotten" (anonymize customer records while preserving required 6-year HMRC accounting invoices).
+     - Right to Erasure / "To Be Forgotten" (anonymize customer records while preserving required 6-year statutory accounting invoices).
 4. **ICO Registration**:
    - The operating UK company must register as a data controller with the **Information Commissioner's Office (ICO)** and display the registration number in the Privacy Policy.
 

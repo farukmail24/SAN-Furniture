@@ -26,12 +26,11 @@ import {
 } from "lucide-react";
 import { MediaAsset } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 export default function AdminMediaPage() {
-  const cachedMedia = getCachedData<{ media: MediaAsset[] }>(apiUrl("/api/admin/media"));
-  const [mediaList, setMediaList] = useState<MediaAsset[]>(() => cachedMedia?.media || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedMedia?.media?.length);
+  const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
@@ -287,7 +286,7 @@ export default function AdminMediaPage() {
                     <option value="dining">Dining Furniture</option>
                     <option value="beds">Luxury Beds</option>
                     <option value="tables">Coffee &amp; Side Tables</option>
-                    <option value="fabric">Fabric Swatches</option>
+                    <option value="fabric">Material & Texture</option>
                     <option value="logo">Brand Logos</option>
                   </select>
                 </div>
@@ -341,7 +340,7 @@ export default function AdminMediaPage() {
             <option value="dining">Dining</option>
             <option value="beds">Beds</option>
             <option value="tables">Tables</option>
-            <option value="fabric">Fabric Swatches</option>
+            <option value="fabric">Material & Texture</option>
             <option value="logo">Logos &amp; Branding</option>
           </select>
 

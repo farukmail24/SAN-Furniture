@@ -8,6 +8,7 @@ import {
   Trash2,
   Edit3,
   CheckCircle2,
+  ShieldCheck,
   Flame,
   Truck,
   ExternalLink,
@@ -24,7 +25,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface ProductItem {
   id: string;
@@ -63,13 +64,10 @@ interface CategoryOption {
 }
 
 export default function AdminProductsPage() {
-  const cachedProds = getCachedData<{ products: ProductItem[] }>(apiUrl("/api/admin/products"));
-  const cachedCats = getCachedData<{ categories: CategoryOption[] }>(apiUrl("/api/admin/categories"));
-
   const [mounted, setMounted] = useState(false);
-  const [products, setProducts] = useState<ProductItem[]>(() => cachedProds?.products || []);
-  const [categories, setCategories] = useState<CategoryOption[]>(() => cachedCats?.categories || []);
-  const [loading, setLoading] = useState<boolean>(() => !cachedProds?.products?.length);
+  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // View Modal state
@@ -153,22 +151,52 @@ export default function AdminProductsPage() {
   // Fetch products & categories from backend with instant SWR cache
   const fetchProducts = async () => {
     try {
+      setLoading(true);
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
       fetchWithSwr(
         apiUrl("/api/admin/products"),
-        (data: any, isCached) => {
-          if (data.products) {
+        (data: any) => {
+          if (Array.isArray(data?.products)) {
             setProducts(data.products);
             setLoading(false);
           }
         }
-      ).finally(() => setLoading(false));
+      )
+        .catch(async () => {
+          try {
+            const directRes = await fetch(apiUrl("/api/admin/products"), {
+              headers: authHeaders,
+              cache: "no-store",
+            });
+            if (directRes.ok) {
+              const directData = await directRes.json();
+              if (Array.isArray(directData?.products)) {
+                setProducts(directData.products);
+              }
+            }
+          } catch {}
+        })
+        .finally(() => setLoading(false));
 
       fetchWithSwr(
         apiUrl("/api/admin/categories"),
         (data: any) => {
-          if (data.categories) setCategories(data.categories);
+          if (Array.isArray(data?.categories)) setCategories(data.categories);
         }
-      );
+      ).catch(async () => {
+        try {
+          const catRes = await fetch(apiUrl("/api/admin/categories"), {
+            headers: authHeaders,
+            cache: "no-store",
+          });
+          if (catRes.ok) {
+            const catData = await catRes.json();
+            if (Array.isArray(catData?.categories)) setCategories(catData.categories);
+          }
+        } catch {}
+      });
     } catch (err) {
       console.error("Failed to fetch products:", err);
       setLoading(false);
@@ -179,6 +207,14 @@ export default function AdminProductsPage() {
     setMounted(true);
     fetchProducts();
   }, []);
+
+  const clearProductCaches = () => {
+    invalidateCache("/api/admin/products");
+    invalidateCache(apiUrl("/api/admin/products"));
+    invalidateCache("/api/products");
+    invalidateCache(apiUrl("/api/products"));
+    fetch(apiUrl("/api/products/cache/invalidate")).catch(() => {});
+  };
 
   // Handle Single Delete Product
   const handleDeleteProduct = async (productId: string, title: string) => {
@@ -191,7 +227,7 @@ export default function AdminProductsPage() {
 
       if (!res.ok) throw new Error("Failed to delete");
 
-      invalidateCache("/api/admin/products");
+      clearProductCaches();
       setSuccessMessage(`Product "${title}" deleted from database.`);
       setProducts((prev) => prev.filter((p) => p.id !== productId));
       setTimeout(() => setSuccessMessage(null), 3500);
@@ -207,6 +243,7 @@ export default function AdminProductsPage() {
       for (const id of selectedIds) {
         await fetch(apiUrl(`/api/admin/products/${id}`), { method: "DELETE" });
       }
+      clearProductCaches();
       setSuccessMessage(`Successfully deleted ${selectedIds.length} items from database.`);
       await fetchProducts();
       setTimeout(() => setSuccessMessage(null), 3500);
@@ -354,11 +391,11 @@ export default function AdminProductsPage() {
       },
       {
         key: "fire_safety_compliant",
-        header: "UK Fire Safety",
+        header: "Quality Check",
         cell: (p) => (
           <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
-            <Flame className="w-3 h-3 text-emerald-600" />
-            BS 5852
+            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+            Passed
           </span>
         ),
       },
@@ -396,15 +433,6 @@ export default function AdminProductsPage() {
     ],
     [categories]
   );
-
-  if (!mounted) {
-    return (
-      <div className="p-12 text-center text-xs text-navy-600">
-        <Package className="w-8 h-8 text-brass-600 mx-auto animate-pulse mb-2" />
-        <p>Loading SAN Furniture inventory...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 antialiased" suppressHydrationWarning>
@@ -457,7 +485,7 @@ export default function AdminProductsPage() {
           <p className="text-2xl font-display font-bold text-brass-700 mt-1">{categories.length}</p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
-          <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">BS 5852 Compliant</span>
+          <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Quality Checked</span>
           <p className="text-2xl font-display font-bold text-emerald-700 mt-1">100%</p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
@@ -634,22 +662,22 @@ export default function AdminProductsPage() {
                     </div>
                   )}
 
-                  {/* UK Fire Safety Card */}
+                  {/* UK Quality Check Card */}
                   <div className="p-4 rounded-xl bg-emerald-50/80 border border-emerald-200/90 flex items-start gap-3 shadow-xs">
                     <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700 flex-shrink-0">
-                      <Flame className="w-5 h-5" />
+                      <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-xs text-emerald-950">
-                          BS 5852 UK Fire Safety Certified
+                          UK Quality Checked &amp; Inspected
                         </h4>
                         <span className="text-[10px] font-bold uppercase bg-emerald-200/80 text-emerald-900 px-1.5 py-0.2 rounded">
-                          Reg 1988
+                          Verified
                         </span>
                       </div>
                       <p className="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
-                        Adheres strictly to UK Furniture and Furnishings (Fire Safety) Regulations 1988 with certified cigarette and match resistant upholstery.
+                        Full structural integrity check, heavy-duty joinery, and durable protective packaging applied prior to dispatch.
                       </p>
                     </div>
                   </div>
@@ -812,7 +840,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div className="pt-2 border-t border-sand-200/70 flex items-center justify-between text-[11px] text-navy-600">
-                      <span>UK VAT (20% Net HMRC calculation):</span>
+                      <span>UK VAT (20% Net calculation):</span>
                       <span className="font-mono font-semibold text-navy-900">
                         {formatGBP(Math.round(viewingProduct.price_pennies - viewingProduct.price_pennies / 1.2))}
                       </span>

@@ -17,11 +17,11 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "SAN Furniture | Luxury Furniture Crafted for British Living",
   description:
-    "Discover handcrafted sofas, solid oak dining sets, and bespoke bouclé accent chairs. Enjoy free 2-man white glove delivery across the UK and Klarna interest-free financing.",
+    "Discover premium wardrobes, dining sets, chest of drawers, and living room collections. Reliable tracked delivery across the UK Mainland.",
   metadataBase: new URL("https://sanfurniture.com"),
   openGraph: {
     title: "SAN Furniture | Luxury Furniture Crafted for British Living",
-    description: "Premium UK furniture dropshipping with 2-man white glove delivery.",
+    description: "Premium UK furniture collection with dedicated British home delivery.",
     url: "https://sanfurniture.com",
     siteName: "SAN Furniture",
     locale: "en_GB",
@@ -33,59 +33,49 @@ export const metadata: Metadata = {
   },
 };
 
-import { Suspense } from "react";
-import Script from "next/script";
+import React from "react";
 import { StorefrontShell } from "@/components/layout/StorefrontShell";
-import { ExtensionErrorGuard } from "@/components/common/ExtensionErrorGuard";
-import { TopProgressBar } from "@/components/common/TopProgressBar";
+import { getLiveSections } from "@/lib/cms-server";
+import { getLiveProducts } from "@/lib/catalog";
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [initialSections, initialProducts] = await Promise.all([
+    getLiveSections("all", { fresh: true }),
+    getLiveProducts(),
+  ]);
+
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
       <head>
         <script
-          id="extension-hydration-shield"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                if (typeof window === 'undefined') return;
-                var origError = window.console.error;
-                window.console.error = function() {
-                  var str = '';
-                  for (var i = 0; i < arguments.length; i++) {
-                    var a = arguments[i];
-                    if (typeof a === 'string') str += ' ' + a;
-                    else if (a && a.message) str += ' ' + a.message;
-                    else if (a && a.stack) str += ' ' + a.stack;
+                function handleChunkError(e) {
+                  var msg = (e && (e.message || (e.reason && (e.reason.message || String(e.reason))) || String(e))) || '';
+                  if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1) {
+                    var key = 'san_chunk_reload';
+                    var last = parseInt(sessionStorage.getItem(key) || '0', 10);
+                    var now = Date.now();
+                    if (now - last > 8000) {
+                      sessionStorage.setItem(key, String(now));
+                      window.location.reload();
+                    }
                   }
-                  var lower = str.toLowerCase();
-                  if (
-                    lower.indexOf('bis_skin_checked') !== -1 ||
-                    lower.indexOf('cz-shortcut-listen') !== -1 ||
-                    lower.indexOf('fdprocessedid') !== -1 ||
-                    lower.indexOf('__next_route_announcer__') !== -1 ||
-                    (lower.indexOf('hydrat') !== -1 && (lower.indexOf('extension') !== -1 || lower.indexOf('match') !== -1 || lower.indexOf('attribute') !== -1 || lower.indexOf('server rendered') !== -1))
-                  ) {
-                    return;
-                  }
-                  return origError.apply(window.console, arguments);
-                };
+                }
+                window.addEventListener('error', handleChunkError);
+                window.addEventListener('unhandledrejection', handleChunkError);
               })();
             `,
           }}
         />
       </head>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
-        <Script src="/extension-shield.js" strategy="beforeInteractive" />
-        <Suspense fallback={null}>
-          <TopProgressBar />
-        </Suspense>
-        <ExtensionErrorGuard />
-        <StorefrontShell>{children}</StorefrontShell>
+        <StorefrontShell initialSections={initialSections} initialProducts={initialProducts}>{children}</StorefrontShell>
       </body>
     </html>
   );

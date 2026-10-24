@@ -2,10 +2,10 @@
 export const brandTokens = {
   colors: {
     navy: {
-      950: '#070D1E', // Ultra-deep background
-      900: '#0B132B', // Brand Primary
-      800: '#1C2541', // Secondary Navy
-      700: '#3A506B',
+      950: '#00072D', // Ultra-deep brand dark blue
+      900: '#00072D', // Brand Primary
+      800: '#0B1742', // Secondary Navy
+      700: '#2A3B5C',
       600: '#4F6D7A',
       50: '#F0F4F8'
     },
@@ -28,6 +28,19 @@ export const brandTokens = {
       600: '#3D8B68',
       700: '#2D6A4F', // Trust & Compliance
       800: '#1F4B37'
+    },
+    forest: {
+      50: '#F0FDF4',
+      100: '#DCFCE7',
+      200: '#BBF7D0',
+      300: '#86EFAC',
+      400: '#4ADE80',
+      500: '#22C55E',
+      600: '#16A34A',
+      700: '#15803D',
+      800: '#166534',
+      900: '#14532D',
+      950: '#052E16',
     }
   },
   fontFamily: {

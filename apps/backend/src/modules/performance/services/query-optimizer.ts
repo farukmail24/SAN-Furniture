@@ -1,85 +1,72 @@
-export interface PostgresTuningConfig {
-  sharedBuffers: string;
-  effectiveCacheSize: string;
-  workMem: string;
-  maintenanceWorkMem: string;
-  minWalSize: string;
-  maxWalSize: string;
-  checkpointCompletionTarget: number;
-  walBuffers: string;
-  defaultStatisticsTarget: number;
-  randomPageCost: number;
-  effectiveIoConcurrency: number;
+export interface MySqlTuningConfig {
+  innodbBufferPoolSize: string;
+  innodbLogBufferSize: string;
   maxConnections: number;
 }
 
+export interface QueryIndexCompatibility {
+  compatible: boolean;
+  recommendedIndex: string;
+  rationale: string;
+}
+
 export class QueryOptimizerService {
-  /**
-   * Compute optimized PostgreSQL configuration based on system RAM (in GB)
-   */
-  public generatePostgresTuning(totalRamGb = 8): PostgresTuningConfig {
-    const sharedBuffersMb = Math.round(totalRamGb * 1024 * 0.25); // 25% of RAM
-    const effectiveCacheSizeMb = Math.round(totalRamGb * 1024 * 0.75); // 75% of RAM
-    const workMemMb = 16; // 16MB per connection work memory
-    const maintenanceWorkMemMb = Math.min(1024, Math.round(totalRamGb * 1024 * 0.0625));
+  public generateMySqlTuning(totalRamGb = 8): MySqlTuningConfig {
+    const bufferPoolMb = Math.round(totalRamGb * 1024 * 0.7);
 
     return {
-      sharedBuffers: `${sharedBuffersMb}MB`,
-      effectiveCacheSize: `${effectiveCacheSizeMb}MB`,
-      workMem: `${workMemMb}MB`,
-      maintenanceWorkMem: `${maintenanceWorkMemMb}MB`,
-      minWalSize: "1GB",
-      maxWalSize: "4GB",
-      checkpointCompletionTarget: 0.9,
-      walBuffers: "16MB",
-      defaultStatisticsTarget: 100,
-      randomPageCost: 1.1, // Optimized for fast NVMe/SSD storage (vs 4.0 HDD default)
-      effectiveIoConcurrency: 200,
+      innodbBufferPoolSize: `${bufferPoolMb}MB`,
+      innodbLogBufferSize: "64MB",
       maxConnections: 100,
     };
   }
 
-  /**
-   * Audit query pattern against composite and partial indexes
-   */
-  public verifyQueryIndexCompatibility(querySql: string): {
-    compatible: boolean;
-    recommendedIndex: string;
-    rationale: string;
-  } {
+  public verifyQueryIndexCompatibility(querySql: string): QueryIndexCompatibility {
     const normalized = querySql.toLowerCase();
 
-    // Check 1: Category + Status + Price filter pattern
-    if (normalized.includes("category_id") && normalized.includes("status") && normalized.includes("price")) {
+    if (
+      normalized.includes("category_id") &&
+      normalized.includes("status") &&
+      normalized.includes("price_pennies")
+    ) {
       return {
         compatible: true,
-        recommendedIndex: "idx_products_cat_status_created_price",
-        rationale: "ESR (Equality, Sort, Range) composite index ensures sub-millisecond execution without temporary disk sorting.",
+        recommendedIndex: "idx_prod_cat_status_price",
+        rationale: "Matches the category_id, status, price_pennies composite index in the MySQL schema.",
       };
     }
 
-    // Check 2: Fuzzy search pattern
-    if (normalized.includes("like") || normalized.includes("%") || normalized.includes("similarity")) {
+    if (
+      normalized.includes("supplier_id") &&
+      normalized.includes("supplier_sku")
+    ) {
       return {
         compatible: true,
-        recommendedIndex: "idx_product_title_trgm",
-        rationale: "GIN Trigram index eliminates sequential table scans during search-as-you-type autocomplete.",
+        recommendedIndex: "uniq_supplier_sku",
+        rationale: "Matches the supplier_id, supplier_sku unique index in the MySQL schema.",
       };
     }
 
-    // Check 3: Active published product lookup
-    if (normalized.includes("status = 'published'") || normalized.includes('status = "published"')) {
+    if (normalized.includes("like") || normalized.includes("%")) {
       return {
         compatible: true,
-        recommendedIndex: "idx_published_furniture",
-        rationale: "Partial index reduces memory overhead by indexing only active, non-deleted inventory.",
+        recommendedIndex: "Meilisearch",
+        rationale: "Use Meilisearch for typo-tolerant/fuzzy catalog search rather than relying on a database-specific trigram index.",
+      };
+    }
+
+    if (normalized.includes("status")) {
+      return {
+        compatible: false,
+        recommendedIndex: "idx_products_status",
+        rationale: "The current MySQL schema has no status-leading index for this query pattern.",
       };
     }
 
     return {
       compatible: true,
-      recommendedIndex: "idx_products_active",
-      rationale: "Standard primary key or active product index utilized.",
+      recommendedIndex: "PRIMARY",
+      rationale: "Use the primary key for direct record lookups.",
     };
   }
 }

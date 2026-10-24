@@ -4,44 +4,38 @@ import assert from "node:assert/strict";
 import { QueryOptimizerService } from "../dist/src/modules/performance/services/query-optimizer.js";
 import { PerformanceCacheManager } from "../dist/src/modules/performance/services/cache-manager.js";
 
-test("QueryOptimizerService: Computes PostgreSQL NVMe production tuning parameters", () => {
+test("QueryOptimizerService: Computes MySQL InnoDB tuning recommendations", () => {
   const optimizer = new QueryOptimizerService();
 
-  const config8Gb = optimizer.generatePostgresTuning(8);
-  assert.equal(config8Gb.sharedBuffers, "2048MB"); // 25%
-  assert.equal(config8Gb.effectiveCacheSize, "6144MB"); // 75%
-  assert.equal(config8Gb.randomPageCost, 1.1); // Fast SSD cost
-  assert.equal(config8Gb.checkpointCompletionTarget, 0.9);
-  assert.equal(config8Gb.effectiveIoConcurrency, 200);
+  const config8Gb = optimizer.generateMySqlTuning(8);
+  assert.equal(config8Gb.innodbBufferPoolSize, "5734MB");
+  assert.equal(config8Gb.innodbLogBufferSize, "64MB");
+  assert.equal(config8Gb.maxConnections, 100);
 
-  const config16Gb = optimizer.generatePostgresTuning(16);
-  assert.equal(config16Gb.sharedBuffers, "4096MB");
-  assert.equal(config16Gb.effectiveCacheSize, "12288MB");
+  const config16Gb = optimizer.generateMySqlTuning(16);
+  assert.equal(config16Gb.innodbBufferPoolSize, "11469MB");
 });
 
-test("QueryOptimizerService: Verifies ESR and GIN Trigram index matching", () => {
+test("QueryOptimizerService: Verifies MySQL indexes and Meilisearch fuzzy search", () => {
   const optimizer = new QueryOptimizerService();
 
-  // ESR query
-  const esrCheck = optimizer.verifyQueryIndexCompatibility(
-    "SELECT * FROM product WHERE category_id = 'cat_sofas' AND status = 'published' AND price BETWEEN 50000 AND 150000"
+  const catalogCheck = optimizer.verifyQueryIndexCompatibility(
+    "SELECT * FROM products WHERE category_id = ? AND status = ? AND price_pennies BETWEEN ? AND ?"
   );
-  assert.equal(esrCheck.compatible, true);
-  assert.equal(esrCheck.recommendedIndex, "idx_products_cat_status_created_price");
+  assert.equal(catalogCheck.compatible, true);
+  assert.equal(catalogCheck.recommendedIndex, "idx_prod_cat_status_price");
 
-  // Fuzzy Search query
-  const trgmCheck = optimizer.verifyQueryIndexCompatibility(
+  const fuzzyCheck = optimizer.verifyQueryIndexCompatibility(
     "SELECT * FROM product WHERE title LIKE '%boucle%'"
   );
-  assert.equal(trgmCheck.compatible, true);
-  assert.equal(trgmCheck.recommendedIndex, "idx_product_title_trgm");
+  assert.equal(fuzzyCheck.compatible, true);
+  assert.equal(fuzzyCheck.recommendedIndex, "Meilisearch");
 
-  // Partial Index active products query
-  const partialCheck = optimizer.verifyQueryIndexCompatibility(
+  const statusOnlyCheck = optimizer.verifyQueryIndexCompatibility(
     "SELECT id, handle FROM product WHERE status = 'published'"
   );
-  assert.equal(partialCheck.compatible, true);
-  assert.equal(partialCheck.recommendedIndex, "idx_published_furniture");
+  assert.equal(statusOnlyCheck.compatible, false);
+  assert.equal(statusOnlyCheck.recommendedIndex, "idx_products_status");
 });
 
 test("PerformanceCacheManager: Evaluates cache hits, misses, TTL, and pattern invalidation", async () => {

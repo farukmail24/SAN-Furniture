@@ -64,3 +64,20 @@ export const DEFAULT_SECURITY_RATE_LIMITS: Record<string, z.infer<typeof RateLim
     action_on_breach: "throttle"
   }
 };
+
+/**
+ * Customer Registration Schema
+ * Mobile / telephone number is strictly required for delivery scheduling and account verification.
+ */
+export const CustomerRegistrationSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required"),
+  lastName: z.string().trim().min(1, "Last name is required"),
+  username: z.string().trim().optional(),
+  email: z.string().trim().email("Valid email address is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  phone: z.string().trim().min(10, "Mobile or telephone number is required (min 10 digits)"),
+  addressLine1: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  postcode: z.string().trim().optional()
+});
+export type CustomerRegistration = z.infer<typeof CustomerRegistrationSchema>;

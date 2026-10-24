@@ -22,13 +22,13 @@ npm run typecheck            # Run TypeScript typecheck across packages & apps
 npm run lint                 # Run ESLint across apps
 npm test                     # Run unit tests (Vitest)
 
-# Docker Services
-docker compose up -d         # Start PostgreSQL, Redis, Meilisearch
+# Docker Services (MySQL runs locally through XAMPP)
+docker compose up -d         # Start Redis and Meilisearch
 docker compose ps            # Check health status of containers
-docker compose down          # Stop containers
+docker compose down          # Stop Redis and Meilisearch
 
 # Development
-npm run dev                  # Start both Storefront (Next.js) & Backend (Medusa) in dev mode
+npm run dev                  # Start both Storefront (Next.js) & custom Node.js backend
 ```
 
 ---
@@ -36,8 +36,8 @@ npm run dev                  # Start both Storefront (Next.js) & Backend (Medusa
 ## 3. Technology Stack & Key Conventions
 
 - **Storefront**: Next.js 15 App Router, React 19, TypeScript, Tailwind CSS, shadcn/ui, Lucide Icons, Framer Motion.
-- **Backend**: Medusa v2, Node.js, BullMQ, Redis.
-- **Database**: PostgreSQL 16 with `pg_trgm` and `uuid-ossp`.
+- **Backend**: Custom Node.js commerce API, BullMQ, Redis.
+- **Database**: MySQL 8 / MariaDB only, accessed through `mysql2`; local development uses XAMPP on port 3306.
 - **Search**: Meilisearch client.
 - **Validation**: Zod (all schemas strictly defined in `packages/types`).
 - **Security**: Argon2id for password hashing, Redis sliding-window rate limit, Cloudflare Turnstile token verification.
@@ -57,8 +57,8 @@ npm run dev                  # Start both Storefront (Next.js) & Backend (Medusa
 
 ---
 
-## 5. PostgreSQL Indexing Rules (ESR)
+## 5. MySQL Indexing Rules
 
-- Composite Indexes MUST follow the **ESR Rule**: **E**quality first (`status = 'published'`), **S**ort second (`created_at DESC`), **R**ange last (`price BETWEEN min AND max`).
-- Always use Partial Indexes for active catalog items (`WHERE status = 'published' AND deleted_at IS NULL`).
+- Indexes must match measured MySQL query patterns and be checked with `EXPLAIN`; do not use PostgreSQL-only partial or GIN indexes.
+- Use MySQL `FULLTEXT` where suitable or Meilisearch for fuzzy catalog search.
 - Never perform raw string concatenation in SQL queries. Always use parameterized queries.

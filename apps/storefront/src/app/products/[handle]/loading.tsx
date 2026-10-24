@@ -4,13 +4,13 @@ export default function ProductDetailLoading() {
   return (
     <div className="bg-sand-50 min-h-screen">
       {/* Breadcrumb Skeleton */}
-      <div className="border-b border-sand-200 bg-sand-100/50 py-3">
+      <div className="border-b border-sand-200 bg-sand-100/50 py-3.5">
         <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 flex items-center gap-2">
-          <div className="h-3 w-12 bg-sand-200 rounded animate-pulse" />
-          <div className="h-3 w-3 bg-sand-200 rounded animate-pulse" />
-          <div className="h-3 w-16 bg-sand-200 rounded animate-pulse" />
-          <div className="h-3 w-3 bg-sand-200 rounded animate-pulse" />
-          <div className="h-3 w-36 bg-sand-200 rounded animate-pulse" />
+          <div className="h-3.5 w-12 rounded shimmer-skeleton" />
+          <div className="h-3.5 w-3 rounded-full shimmer-skeleton" />
+          <div className="h-3.5 w-16 rounded shimmer-skeleton" />
+          <div className="h-3.5 w-3 rounded-full shimmer-skeleton" />
+          <div className="h-3.5 w-36 rounded shimmer-skeleton" />
         </div>
       </div>
 
@@ -20,10 +20,10 @@ export default function ProductDetailLoading() {
           
           {/* Left Gallery Skeleton (7 cols) */}
           <div className="lg:col-span-7 space-y-4">
-            <div className="w-full aspect-[4/3] rounded-2xl bg-sand-200/80 animate-pulse border border-sand-300" />
+            <div className="w-full aspect-[4/3] rounded-2xl shimmer-skeleton border border-sand-200" />
             <div className="flex gap-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="w-20 h-20 rounded-lg bg-sand-200 animate-pulse border border-sand-300" />
+                <div key={i} className="w-20 h-20 rounded-lg shimmer-skeleton border border-sand-200" />
               ))}
             </div>
           </div>
@@ -31,18 +31,18 @@ export default function ProductDetailLoading() {
           {/* Right Product Details Skeleton (5 cols) */}
           <div className="lg:col-span-5 space-y-6">
             <div className="space-y-3">
-              <div className="h-4 w-32 bg-sand-200 rounded animate-pulse" />
-              <div className="h-8 w-4/5 bg-sand-200 rounded-lg animate-pulse" />
-              <div className="h-5 w-28 bg-sand-200 rounded animate-pulse" />
+              <div className="h-4 w-32 rounded-full shimmer-skeleton" />
+              <div className="h-8 w-4/5 rounded-lg shimmer-skeleton" />
+              <div className="h-6 w-28 rounded shimmer-skeleton" />
             </div>
 
-            <div className="p-4 rounded-xl bg-sand-100/60 border border-sand-200 space-y-2 animate-pulse">
-              <div className="h-4 w-1/2 bg-sand-200 rounded" />
-              <div className="h-3 w-3/4 bg-sand-200 rounded" />
+            <div className="p-4 rounded-xl bg-white border border-sand-200 space-y-2.5 shadow-xs">
+              <div className="h-4 w-1/2 rounded shimmer-skeleton" />
+              <div className="h-3 w-3/4 rounded shimmer-skeleton" />
             </div>
 
-            <div className="h-12 w-full rounded-xl bg-sand-200 animate-pulse" />
-            <div className="h-12 w-full rounded-xl bg-sand-200 animate-pulse" />
+            <div className="h-12 w-full rounded-xl shimmer-skeleton" />
+            <div className="h-12 w-full rounded-xl shimmer-skeleton" />
           </div>
 
         </div>

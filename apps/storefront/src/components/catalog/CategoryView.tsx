@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Filter, X, ChevronDown, Truck, ShieldCheck, Sparkles, SlidersHorizontal } from "lucide-react";
 import { type CatalogProduct, type ProductCategory } from "@/lib/catalog";
 import { formatGBP } from "@san-furniture/types";
@@ -15,7 +14,6 @@ interface CategoryViewProps {
 }
 
 export function CategoryView({ category, initialProducts, allCategories }: CategoryViewProps) {
-  const router = useRouter();
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedDeliveryTiers, setSelectedDeliveryTiers] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
@@ -262,7 +260,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                     className="rounded border-sand-300 text-navy-950 focus:ring-brass-500"
                   />
                   <span>
-                    {tier === "two_man_white_glove" && "2-Man White Glove (Room of Choice)"}
+                    {tier === "two_man_white_glove" && "White Glove (Room of Choice)"}
                     {tier === "pallet" && "Pallet Freight (Kerbside)"}
                     {tier === "standard_parcel" && "Standard Parcel Courier"}
                   </span>
@@ -271,14 +269,14 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
             </div>
           </div>
 
-          {/* 100% Fire Safety Certified Banner */}
+          {/* Quality Checked Furniture Banner */}
           <div className="p-4 rounded-xl bg-sand-100 border border-sand-200 text-xs space-y-1.5">
             <div className="flex items-center gap-1.5 text-sage-700 font-semibold">
               <ShieldCheck className="w-4 h-4 text-brass-600" />
-              <span>BS 5852 Certified</span>
+              <span>UK Quality Checked</span>
             </div>
             <p className="text-navy-600 text-[11px] leading-relaxed">
-              Every upholstered sofa and armchair strictly satisfies UK Furniture & Furnishings Fire Safety Regulations 1988.
+              Rigorous structural durability, robust joinery, and protective packaging on every order.
             </p>
           </div>
         </aside>
@@ -325,7 +323,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                   key={t}
                   className="inline-flex items-center gap-1.5 px-3 py-1 bg-sand-100 border border-sand-300 rounded-full text-xs text-navy-800"
                 >
-                  {t === "two_man_white_glove" ? "2-Man Delivery" : t}
+                  {t === "two_man_white_glove" ? "White Glove Delivery" : t}
                   <button type="button" onClick={() => toggleDeliveryTier(t)} aria-label="Remove filter">
                     <X className="w-3 h-3 text-navy-500 hover:text-navy-950" />
                   </button>
@@ -364,33 +362,30 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
             >
               {filteredProducts.map((product) => {
-                const klarnaMonthly = Math.round(product.pricePennies / 3);
-
                 return (
                   <StaggerItem key={product.id}>
                     <article
-                      className="group flex flex-col rounded-2xl overflow-hidden bg-sand-100/80 border border-sand-200/90 hover:border-sand-300 transition-all shadow-sm hover:shadow-card active:scale-[0.99] h-full"
+                      className="group flex flex-col rounded-2xl overflow-hidden bg-sand-100/80 border border-sand-200/90 hover:border-sand-300 transition-[box-shadow,border-color] duration-300 shadow-sm hover:shadow-card active:scale-[0.99] h-full"
                     >
                     {/* Product Image */}
                     <Link
                       href={`/products/${product.handle}`}
-                      prefetch={true}
-                      onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
-                      onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
+                      prefetch={false}
                       className="relative block aspect-[4/3] bg-sand-200 overflow-hidden"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={product.thumbnailUrl}
                         alt={product.title}
+                        decoding="async"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                         loading="lazy"
                       />
                       {/* Delivery Badge */}
                       <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1 shadow-ambient">
                         <Truck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-brass-400" />
-                        <span className="truncate max-w-[70px] sm:max-w-none">
-                          {product.specs.delivery_tier === "two_man_white_glove" ? "White Glove" : "UK Courier"}
+                        <span className="truncate max-w-[85px] sm:max-w-none">
+                          {product.specs.delivery_tier === "two_man_white_glove" ? "Free White Glove" : "Free UK Delivery"}
                         </span>
                       </span>
                     </Link>
@@ -406,9 +401,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                         <h3 className="font-display font-bold text-xs sm:text-base text-navy-950 group-hover:text-brass-600 transition-colors line-clamp-1">
                           <Link
                             href={`/products/${product.handle}`}
-                            prefetch={true}
-                            onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
-                            onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
+                            prefetch={false}
                           >
                             {product.title}
                           </Link>
@@ -432,18 +425,16 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
                           )}
                         </div>
 
-                        {/* Klarna / Clearpay installment banner */}
-                        <div className="text-[9px] sm:text-[11px] text-navy-700 bg-sand-50 p-1 sm:p-1.5 rounded border border-sand-200/80 flex items-center justify-between">
-                          <span className="truncate">3 × <strong>{formatGBP(klarnaMonthly)}</strong></span>
-                          <span className="font-bold text-pink-600 text-[9px] sm:text-[10px] shrink-0 ml-1">Klarna</span>
+                        {/* Quality & VAT reassurance badge */}
+                        <div className="text-[9px] sm:text-[11px] text-forest-800 bg-forest-50/70 p-1 sm:p-1.5 rounded border border-forest-200/80 flex items-center justify-between">
+                          <span className="truncate font-medium">UK Quality Assured</span>
+                          <span className="font-semibold text-[9px] sm:text-[10px] shrink-0 ml-1">20% VAT Incl.</span>
                         </div>
 
                         {/* CTA Link */}
                         <Link
                           href={`/products/${product.handle}`}
-                          prefetch={true}
-                          onMouseEnter={() => router.prefetch(`/products/${product.handle}`)}
-                          onTouchStart={() => router.prefetch(`/products/${product.handle}`)}
+                          prefetch={false}
                           className="mt-2 block w-full text-center py-1.5 sm:py-2 rounded-lg bg-navy-950 hover:bg-navy-900 active:scale-95 text-sand-50 text-[11px] sm:text-xs font-semibold transition-all shadow-sm"
                         >
                           View Piece

@@ -7,6 +7,71 @@
 (function () {
   if (typeof window === "undefined") return;
 
+  // 1. Proactively block extension attributes from being set on DOM elements
+  var blockedAttrs = ["bis_skin_checked", "cz-shortcut-listen", "fdprocessedid"];
+  
+  var origSetAttr = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, val) {
+    if (name && blockedAttrs.indexOf(String(name).toLowerCase()) !== -1) return;
+    return origSetAttr.apply(this, arguments);
+  };
+
+  var origSetAttrNS = Element.prototype.setAttributeNS;
+  Element.prototype.setAttributeNS = function (ns, name, val) {
+    if (name && blockedAttrs.indexOf(String(name).toLowerCase()) !== -1) return;
+    return origSetAttrNS.apply(this, arguments);
+  };
+
+  if (Element.prototype.toggleAttribute) {
+    var origToggle = Element.prototype.toggleAttribute;
+    Element.prototype.toggleAttribute = function (name, force) {
+      if (name && blockedAttrs.indexOf(String(name).toLowerCase()) !== -1) return false;
+      return origToggle.apply(this, arguments);
+    };
+  }
+
+  try {
+    Object.defineProperty(Element.prototype, "bis_skin_checked", {
+      get: function () { return undefined; },
+      set: function () { /* drop silently */ },
+      configurable: true
+    });
+  } catch (e) {}
+
+  function cleanExtensionAttrs() {
+    try {
+      var els = document.querySelectorAll("[bis_skin_checked], [cz-shortcut-listen], [fdprocessedid]");
+      for (var i = 0; i < els.length; i++) {
+        els[i].removeAttribute("bis_skin_checked");
+        els[i].removeAttribute("cz-shortcut-listen");
+        els[i].removeAttribute("fdprocessedid");
+      }
+    } catch (e) {}
+  }
+  cleanExtensionAttrs();
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", cleanExtensionAttrs);
+  }
+
+  try {
+    var observer = new MutationObserver(function (mutations) {
+      for (var i = 0; i < mutations.length; i++) {
+        var m = mutations[i];
+        if (m.type === "attributes") {
+          var attr = m.attributeName ? m.attributeName.toLowerCase() : "";
+          if (blockedAttrs.indexOf(attr) !== -1) {
+            m.target.removeAttribute(m.attributeName);
+          }
+        }
+      }
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: blockedAttrs
+    });
+  } catch (e) {}
+
   function isIgnored(val) {
     if (!val) return false;
     var str = "";

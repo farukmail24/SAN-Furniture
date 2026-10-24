@@ -44,14 +44,15 @@ export function MobileAppDock() {
   return (
     <nav
       aria-label="Mobile Application Navigation Dock"
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-sand-50/92 backdrop-blur-xl border-t border-sand-300/80 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 transition-all"
+      data-no-print="true"
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-sand-50/92 backdrop-blur-xl border-t border-sand-300/80 shadow-[0_-4px_24px_rgba(15,23,42,0.08)] pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-1.5 transition-all no-print print:hidden"
     >
       <div className="max-w-md mx-auto px-4 flex items-center justify-between">
         
         {/* 1. Home Tab */}
         <Link
           href="/"
-          prefetch={true}
+          prefetch={false}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 transition-all active:scale-90 select-none ${
             isHomeActive ? "text-navy-950 font-bold" : "text-navy-600 hover:text-navy-900 font-medium"
           }`}
@@ -68,7 +69,7 @@ export function MobileAppDock() {
         {/* 2. Catalog / Explore Tab */}
         <Link
           href="/catalog"
-          prefetch={true}
+          prefetch={false}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 transition-all active:scale-90 select-none ${
             isCatalogActive ? "text-navy-950 font-bold" : "text-navy-600 hover:text-navy-900 font-medium"
           }`}
@@ -116,7 +117,7 @@ export function MobileAppDock() {
         {/* 5. Account / Client Portal Tab */}
         <Link
           href={mounted && isLoggedIn ? "/account" : "/account/login"}
-          prefetch={true}
+          prefetch={false}
           className={`flex flex-col items-center justify-center flex-1 py-1 px-1 transition-all active:scale-90 select-none ${
             isAccountActive ? "text-navy-950 font-bold" : "text-navy-600 hover:text-navy-900 font-medium"
           }`}

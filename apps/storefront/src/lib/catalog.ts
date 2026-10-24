@@ -11,6 +11,7 @@ import { apiUrl } from "@/lib/api-config";
 
 export interface CatalogProduct {
   id: string;
+  createdAt?: string;
   title: string;
   handle: string;
   subtitle: string;
@@ -105,29 +106,33 @@ export const CATALOG_PRODUCTS: CatalogProduct[] = [];
 let inMemoryLiveProducts: CatalogProduct[] = [];
 let lastLiveFetchTimestamp = 0;
 const CACHE_TTL_MS = 30000; // 30 seconds
-let isBackgroundSyncing = false;
+let catalogSyncPromise: Promise<CatalogProduct[]> | null = null;
 
-async function syncCatalogCacheInBackground(): Promise<CatalogProduct[]> {
-  if (isBackgroundSyncing) return inMemoryLiveProducts;
-  isBackgroundSyncing = true;
-  try {
-    const res = await fetch(apiUrl("/api/products"), {
-      signal: AbortSignal.timeout(4000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.products)) {
-        inMemoryLiveProducts = data.products.filter((p: CatalogProduct) => p.status === "published");
-        lastLiveFetchTimestamp = Date.now();
-        return inMemoryLiveProducts;
+function syncCatalogCacheInBackground(): Promise<CatalogProduct[]> {
+  if (catalogSyncPromise) return catalogSyncPromise;
+
+  catalogSyncPromise = Promise.resolve().then(async () => {
+    try {
+      const res = await fetch(apiUrl("/api/products"), {
+        next: { revalidate: 30 },
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.products)) {
+          inMemoryLiveProducts = data.products.filter((p: CatalogProduct) => p.status === "published");
+          lastLiveFetchTimestamp = Date.now();
+        }
       }
+    } catch (err) {
+      console.warn("Catalog sync warning:", err);
+    } finally {
+      catalogSyncPromise = null;
     }
-  } catch (err) {
-    console.warn("Catalog sync warning:", err);
-  } finally {
-    isBackgroundSyncing = false;
-  }
-  return inMemoryLiveProducts;
+    return inMemoryLiveProducts;
+  });
+
+  return catalogSyncPromise;
 }
 
 /**
@@ -135,6 +140,20 @@ async function syncCatalogCacheInBackground(): Promise<CatalogProduct[]> {
  * Uses warm memory cache sourced strictly from MySQL database
  */
 export async function getLiveProducts(): Promise<CatalogProduct[]> {
+  if (typeof window === "undefined") {
+    try {
+      const { fetchLiveProductsFromDb } = await import("./catalog-server");
+      const dbProducts = await fetchLiveProductsFromDb();
+      if (dbProducts && dbProducts.length > 0) {
+        inMemoryLiveProducts = dbProducts;
+        lastLiveFetchTimestamp = Date.now();
+        return dbProducts;
+      }
+    } catch (err) {
+      console.warn("Direct DB products fetch in catalog.ts:", err);
+    }
+  }
+
   const now = Date.now();
   if (inMemoryLiveProducts.length > 0 && now - lastLiveFetchTimestamp < CACHE_TTL_MS) {
     return inMemoryLiveProducts;
@@ -164,12 +183,27 @@ let inMemoryLiveCategories: ProductCategory[] = [...CATALOG_CATEGORIES];
 let lastCategoryFetchTimestamp = 0;
 
 export async function getLiveCategories(): Promise<ProductCategory[]> {
+  if (typeof window === "undefined") {
+    try {
+      const { fetchLiveCategoriesFromDb } = await import("./catalog-server");
+      const dbCategories = await fetchLiveCategoriesFromDb();
+      if (dbCategories && dbCategories.length > 0) {
+        inMemoryLiveCategories = dbCategories;
+        lastCategoryFetchTimestamp = Date.now();
+        return dbCategories;
+      }
+    } catch {}
+  }
+
   const now = Date.now();
   if (inMemoryLiveCategories.length > 0 && now - lastCategoryFetchTimestamp < CACHE_TTL_MS) {
     return inMemoryLiveCategories;
   }
   try {
-    const res = await fetch(apiUrl("/api/categories"), { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(apiUrl("/api/categories"), {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(3000),
+    });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data.categories) && data.categories.length > 0) {
@@ -201,6 +235,7 @@ export async function getLiveProductByHandle(handle: string): Promise<CatalogPro
   // Direct fallback to API in case product was just imported
   try {
     const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(handle)}`), {
+      next: { revalidate: 30 },
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {

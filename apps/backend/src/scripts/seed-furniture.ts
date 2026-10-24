@@ -91,7 +91,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: false,
       doorway_clearance_min_cm: 75.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-001", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-001", label_attached: true },
       lead_time_days: 7
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-KEN-OAT-3S", costPricePennies: 68000, carriageCostPennies: 4500, stockLevel: 12 }
@@ -123,7 +123,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_time_mins: 15,
       doorway_clearance_min_cm: 72.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-002", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-002", label_attached: true },
       lead_time_days: 10
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-BEL-FOR-LHC", costPricePennies: 115000, carriageCostPennies: 6500, stockLevel: 6 }
@@ -153,7 +153,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: false,
       doorway_clearance_min_cm: 70.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-003", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-003", label_attached: true },
       lead_time_days: 5
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-MAY-LIN-2S", costPricePennies: 46000, carriageCostPennies: 3500, stockLevel: 15 }
@@ -182,7 +182,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: false,
       doorway_clearance_min_cm: 80.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-004", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-004", label_attached: true },
       lead_time_days: 8
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-COT-CH-4S", costPricePennies: 86000, carriageCostPennies: 5000, stockLevel: 8 }
@@ -212,7 +212,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: false,
       doorway_clearance_min_cm: 75.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-005", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-005", label_attached: true },
       lead_time_days: 12
     },
     supplier: { supplierId: "uk_heritage_leather", supplierSku: "HERIT-RCH-COG-3S", costPricePennies: 129000, carriageCostPennies: 5500, stockLevel: 5 }
@@ -243,7 +243,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_time_mins: 20,
       doorway_clearance_min_cm: 78.0,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-006", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-006", label_attached: true },
       lead_time_days: 14
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-HMP-CRV-SEC", costPricePennies: 154000, carriageCostPennies: 7500, stockLevel: 4 }
@@ -271,7 +271,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Rust Terracotta",
       assembly_required: false,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-007", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-007", label_attached: true },
       lead_time_days: 6
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-CHL-DB-RST", costPricePennies: 62000, carriageCostPennies: 4000, stockLevel: 9 }
@@ -299,7 +299,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Washed Chalk",
       assembly_required: false,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-008", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-008", label_attached: true },
       lead_time_days: 7
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-OXF-SLP-3S", costPricePennies: 76000, carriageCostPennies: 4500, stockLevel: 11 }
@@ -329,7 +329,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 15,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-009", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-009", label_attached: true },
       lead_time_days: 6
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-BLM-REV-NVY", costPricePennies: 72000, carriageCostPennies: 5000, stockLevel: 10 }
@@ -358,7 +358,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 20,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-010", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-010", label_attached: true },
       lead_time_days: 12
     },
     supplier: { supplierId: "uk_heirloom_sofas", supplierSku: "HEIR-SOH-MOD-MSS", costPricePennies: 142000, carriageCostPennies: 7000, stockLevel: 5 }
@@ -391,7 +391,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Cream",
       assembly_required: false,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-011", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-011", label_attached: true },
       lead_time_days: 4
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-REG-SWV-CRM", costPricePennies: 28000, carriageCostPennies: 2500, stockLevel: 22 }
@@ -419,7 +419,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Saddle Tan",
       assembly_required: false,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-012", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-012", label_attached: true },
       lead_time_days: 5
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-FTZ-WAL-SAD", costPricePennies: 39000, carriageCostPennies: 2500, stockLevel: 14 }
@@ -448,7 +448,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Oat Herringbone",
       assembly_required: false,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-013", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-013", label_attached: true },
       lead_time_days: 6
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-MB-WNG-HRB", costPricePennies: 36000, carriageCostPennies: 2500, stockLevel: 16 }
@@ -477,7 +477,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 10,
       delivery_tier: "standard_parcel",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-014", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-014", label_attached: true },
       lead_time_days: 3
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-PRM-OR-VLV", costPricePennies: 19500, carriageCostPennies: 1500, stockLevel: 28 }
@@ -505,7 +505,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Alabaster White",
       assembly_required: false,
       delivery_tier: "standard_parcel",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-015", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-015", label_attached: true },
       lead_time_days: 3
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-SHR-OTM-WHT", costPricePennies: 8800, carriageCostPennies: 950, stockLevel: 45 }
@@ -538,7 +538,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 20,
       delivery_tier: "pallet",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Solid Wood)", certificate_ref: "WOOD-EXEMPT-001", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Solid Wood)", certificate_ref: "WOOD-EXEMPT-001", label_attached: false },
       lead_time_days: 5
     },
     supplier: { supplierId: "uk_timber_craft", supplierSku: "TIMB-HEN-OAK-EXT", costPricePennies: 62000, carriageCostPennies: 4500, stockLevel: 18 }
@@ -567,7 +567,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 25,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Marble)", certificate_ref: "STONE-EXEMPT-001", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Marble)", certificate_ref: "STONE-EXEMPT-001", label_attached: false },
       lead_time_days: 8
     },
     supplier: { supplierId: "uk_stone_atelier", supplierSku: "STN-CAR-RND-130", costPricePennies: 89000, carriageCostPennies: 7500, stockLevel: 7 }
@@ -595,7 +595,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Natural Oak",
       assembly_required: false,
       delivery_tier: "standard_parcel",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Timber/Papercord)", certificate_ref: "WOOD-EXEMPT-002", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Timber/Papercord)", certificate_ref: "WOOD-EXEMPT-002", label_attached: false },
       lead_time_days: 3
     },
     supplier: { supplierId: "uk_timber_craft", supplierSku: "TIMB-MRL-WSH-PR", costPricePennies: 16800, carriageCostPennies: 1500, stockLevel: 32 }
@@ -624,7 +624,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 15,
       delivery_tier: "standard_parcel",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-024", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-024", label_attached: true },
       lead_time_days: 4
     },
     supplier: { supplierId: "uk_accent_studios", supplierSku: "ACC-STJ-VLV-PR", costPricePennies: 19500, carriageCostPennies: 1800, stockLevel: 24 }
@@ -657,7 +657,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 45,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-031", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-031", label_attached: true },
       lead_time_days: 7
     },
     supplier: { supplierId: "uk_slumber_beds", supplierSku: "SLUM-BAL-OTM-KNG", costPricePennies: 71000, carriageCostPennies: 5500, stockLevel: 14 }
@@ -685,7 +685,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 40,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Part 1: 1979", certificate_ref: "BS-LON-2026-032", label_attached: true },
+      fire_safety: { compliant: true, standard: "UK Quality Checked", certificate_ref: "BS-LON-2026-032", label_attached: true },
       lead_time_days: 9
     },
     supplier: { supplierId: "uk_slumber_beds", supplierSku: "SLUM-WST-WNG-SKG", costPricePennies: 88000, carriageCostPennies: 6000, stockLevel: 8 }
@@ -714,7 +714,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 60,
       delivery_tier: "two_man_white_glove",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Timber)", certificate_ref: "WOOD-EXEMPT-003", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Timber)", certificate_ref: "WOOD-EXEMPT-003", label_attached: false },
       lead_time_days: 10
     },
     supplier: { supplierId: "uk_timber_craft", supplierSku: "TIMB-GRN-WDR-3D", costPricePennies: 98000, carriageCostPennies: 7000, stockLevel: 5 }
@@ -746,7 +746,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       color: "Natural Oak",
       assembly_required: false,
       delivery_tier: "standard_parcel",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Wood)", certificate_ref: "WOOD-EXEMPT-004", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Wood)", certificate_ref: "WOOD-EXEMPT-004", label_attached: false },
       lead_time_days: 3
     },
     supplier: { supplierId: "uk_timber_craft", supplierSku: "TIMB-BAT-FLT-COF", costPricePennies: 24000, carriageCostPennies: 2000, stockLevel: 25 }
@@ -774,7 +774,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
       assembly_required: true,
       assembly_time_mins: 15,
       delivery_tier: "pallet",
-      fire_safety: { compliant: true, standard: "BS 5852: Exempt (Metal/Glass)", certificate_ref: "MET-EXEMPT-001", label_attached: false },
+      fire_safety: { compliant: true, standard: "UK Quality Checked: Exempt (Metal/Glass)", certificate_ref: "MET-EXEMPT-001", label_attached: false },
       lead_time_days: 4
     },
     supplier: { supplierId: "uk_stone_atelier", supplierSku: "STN-KNT-BRS-CNS", costPricePennies: 22000, carriageCostPennies: 2500, stockLevel: 19 }
@@ -786,14 +786,15 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
  */
 export function generateSeedSQL(): string {
   const statements: string[] = [];
+  const quote = (value: string): string => `'${value.replace(/'/g, "''")}'`;
 
   // Insert categories
   statements.push("-- Insert Product Categories");
   for (const cat of SEED_CATEGORIES) {
     statements.push(`
-INSERT INTO product_categories (id, name, handle, description, is_active)
-VALUES ('${cat.id}', '${cat.name.replace(/'/g, "''")}', '${cat.handle}', '${cat.description.replace(/'/g, "''")}', true)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
+INSERT INTO categories (id, name, handle, description)
+VALUES (${quote(cat.id)}, ${quote(cat.name)}, ${quote(cat.handle)}, ${quote(cat.description)})
+ON DUPLICATE KEY UPDATE name = VALUES(name), description = VALUES(description);
     `.trim());
   }
 
@@ -803,29 +804,29 @@ ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.desc
     const comparePrice = p.compareAtPricePennies ? p.compareAtPricePennies : "NULL";
     statements.push(`
 INSERT INTO products (
-  id, title, handle, subtitle, description, category_id, status, price_pennies, compare_at_price_pennies, vat_rate_percent, is_fire_safety_certified, gtin_barcode, thumbnail_url
+  id, title, handle, subtitle, description, category_id, status, price_pennies, compare_at_price_pennies, vat_rate_percent, gtin_barcode, thumbnail_url
 ) VALUES (
-  '${p.id}',
-  '${p.title.replace(/'/g, "''")}',
-  '${p.handle}',
-  '${p.subtitle.replace(/'/g, "''")}',
-  '${p.description.replace(/'/g, "''")}',
-  '${p.categoryId}',
-  '${p.status}',
+  ${quote(p.id)},
+  ${quote(p.title)},
+  ${quote(p.handle)},
+  ${quote(p.subtitle)},
+  ${quote(p.description)},
+  ${quote(p.categoryId)},
+  ${quote(p.status)},
   ${p.pricePennies},
   ${comparePrice},
   ${p.vatRatePercent},
-  ${p.specs.fire_safety.compliant},
-  '${p.gtinBarcode}',
-  '${p.thumbnailUrl}'
-) ON CONFLICT (id) DO UPDATE SET price_pennies = EXCLUDED.price_pennies, status = EXCLUDED.status;
+  ${quote(p.gtinBarcode)},
+  ${quote(p.thumbnailUrl)}
+) ON DUPLICATE KEY UPDATE price_pennies = VALUES(price_pennies), status = VALUES(status);
 
 INSERT INTO furniture_specs (
-  product_id, width_cm, height_cm, depth_cm, seat_height_cm, seat_depth_cm, arm_height_cm,
+  id, product_id, width_cm, height_cm, depth_cm, seat_height_cm, seat_depth_cm, arm_height_cm,
   weight_kg, material, frame_material, color, assembly_required, assembly_time_mins, doorway_clearance_min_cm,
-  delivery_tier, fire_safety_compliant, fire_safety_standard, fire_safety_certificate, lead_time_days
+  delivery_tier, fire_safety_compliant, fire_safety_standard, fire_safety_cert, lead_time_days
 ) VALUES (
-  '${p.id}',
+  ${quote(`spec_${p.id}`)},
+  ${quote(p.id)},
   ${p.specs.width_cm},
   ${p.specs.height_cm},
   ${p.specs.depth_cm},
@@ -833,32 +834,33 @@ INSERT INTO furniture_specs (
   ${p.specs.seat_depth_cm ?? "NULL"},
   ${p.specs.arm_height_cm ?? "NULL"},
   ${p.specs.weight_kg},
-  '${p.specs.material}',
-  '${p.specs.frame_material}',
-  '${p.specs.color.replace(/'/g, "''")}',
+  ${quote(p.specs.material)},
+  ${quote(p.specs.frame_material)},
+  ${quote(p.specs.color)},
   ${p.specs.assembly_required},
   ${p.specs.assembly_time_mins ?? "NULL"},
-  ${p.specs.doorway_clearance_min_cm ?? "NULL"},
-  '${p.specs.delivery_tier}',
+  ${p.specs.doorway_clearance_min_cm ?? 76.2},
+  ${quote(p.specs.delivery_tier)},
   ${p.specs.fire_safety.compliant},
-  '${p.specs.fire_safety.standard}',
-  '${p.specs.fire_safety.certificate_ref}',
+  ${quote(p.specs.fire_safety.standard)},
+  ${quote(p.specs.fire_safety.certificate_ref)},
   ${p.specs.lead_time_days}
-) ON CONFLICT (product_id) DO UPDATE SET width_cm = EXCLUDED.width_cm, delivery_tier = EXCLUDED.delivery_tier;
+) ON DUPLICATE KEY UPDATE width_cm = VALUES(width_cm), delivery_tier = VALUES(delivery_tier);
 
 INSERT INTO supplier_feed_items (
-  supplier_id, supplier_sku, internal_product_id, cost_price_pennies, shipping_cost_pennies, markup_percentage, retail_price_pennies, stock_level, lead_time_days
+  id, supplier_id, supplier_sku, product_id, cost_price_pennies, shipping_cost_pennies, markup_percentage, retail_price_pennies, stock_level, lead_time_days
 ) VALUES (
-  '${p.supplier.supplierId}',
-  '${p.supplier.supplierSku}',
-  '${p.id}',
+  ${quote(`supplier_${p.id}`)},
+  ${quote(p.supplier.supplierId)},
+  ${quote(p.supplier.supplierSku)},
+  ${quote(p.id)},
   ${p.supplier.costPricePennies},
   ${p.supplier.carriageCostPennies},
   45.0,
   ${p.pricePennies},
   ${p.supplier.stockLevel},
   ${p.specs.lead_time_days}
-) ON CONFLICT (supplier_id, supplier_sku) DO UPDATE SET stock_level = EXCLUDED.stock_level, cost_price_pennies = EXCLUDED.cost_price_pennies;
+) ON DUPLICATE KEY UPDATE stock_level = VALUES(stock_level), cost_price_pennies = VALUES(cost_price_pennies);
     `.trim());
   }
 

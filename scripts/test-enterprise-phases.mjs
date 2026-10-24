@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 
 async function runVerification() {
@@ -51,18 +52,20 @@ async function runVerification() {
 
   // 4. Test Customer Orders & 2-Man Tracking Timeline (Phase 14)
   console.log("\n4. Testing Customer Orders & 2-Man Tracking (GET /api/customer/orders)...");
-  const ordersRes = await fetch("http://localhost:9000/api/customer/orders?email=eleanor.vance@mayfair.co.uk");
+  const ordersRes = await fetch("http://localhost:9000/api/customer/orders", {
+    headers: { Authorization: `Bearer ${custData.token}` },
+  });
   const ordersData = await ordersRes.json();
   if (ordersRes.status === 200 && ordersData.orders.length > 0) {
     const firstOrder = ordersData.orders[0];
     console.log(`   ✅ Orders Retrieved: ${ordersData.orders.length} order(s). Order ${firstOrder.id} (${firstOrder.totalGbpFormatted})`);
     console.log(`   ✅ 2-Man White Glove Timeline Steps: ${firstOrder.deliveryTimeline.map(t => t.step).join(" -> ")}`);
   } else {
-    throw new Error("Customer orders failed");
+    throw new Error("Customer orders failed: " + JSON.stringify(ordersData));
   }
 
-  // 5. Test HMRC-Compliant UK VAT Invoicing (Phase 15)
-  console.log("\n5. Testing HMRC UK VAT Invoice Generation (GET /api/invoices/:id)...");
+  // 5. Test UK VAT Invoicing (Phase 15)
+  console.log("\n5. Testing UK VAT Invoice Generation (GET /api/invoices/:id)...");
   const invoiceRes = await fetch("http://localhost:9000/api/invoices/ord_001");
   const invoiceData = await invoiceRes.json();
   if (invoiceRes.status === 200 && invoiceData.invoice) {

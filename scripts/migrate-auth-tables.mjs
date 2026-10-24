@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 import crypto from "node:crypto";
 
@@ -45,6 +46,7 @@ async function run() {
     CREATE TABLE IF NOT EXISTS customers (
       id VARCHAR(36) PRIMARY KEY,
       email VARCHAR(255) NOT NULL UNIQUE,
+      username VARCHAR(100) NULL,
       password_hash VARCHAR(255) NOT NULL,
       first_name VARCHAR(100) NOT NULL,
       last_name VARCHAR(100) NOT NULL,

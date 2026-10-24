@@ -25,11 +25,11 @@ Welcome, AI Engineer. You are developing **SAN Furniture**, an ultra-premium, hi
 san-furniture/
 ├── apps/
 │   ├── storefront/              # Next.js 15 (App Router, Tailwind, TypeScript)
-│   └── backend/                 # Medusa v2 commerce engine, BullMQ, Admin extensions
+│   └── backend/                 # Node.js commerce API, MySQL, BullMQ
 ├── packages/
 │   ├── types/                   # Zod schemas & TypeScript interfaces (single source of truth)
 │   └── config/                  # Shared ESLint, Prettier, Tailwind configurations
-├── docker-compose.yml           # PostgreSQL 16, Redis 7, Meilisearch
+├── docker-compose.yml           # Redis 7, Meilisearch (MySQL runs in XAMPP)
 ├── MASTER_PLAN.md               # Master phase-by-phase implementation plan
 └── AGENTS.md                    # This file (AI instructions & rules)
 ```
@@ -38,32 +38,21 @@ san-furniture/
 
 ## 3. Technology Stack & Mandatory Libraries
 
-- **Language**: TypeScript strict mode (`"strict": true`, `"noImplicitAny": true`).
-- **Storefront**: Next.js 15 App Router, React 19, Tailwind CSS, shadcn/ui, Lucide Icons, Framer Motion.
-- **Backend**: Medusa v2, Node.js, BullMQ, Redis.
-- **Database**: PostgreSQL 16 with pg_trgm and uuid-ossp extensions.
-- **Search**: Meilisearch client.
-- **Validation**: Zod for all external inputs, webhook payloads, and environment variables.
-- **Security**: Argon2id for password hashing, Redis sliding-window for rate-limiting, Cloudflare Turnstile token verification.
-- **Testing**: Vitest for unit tests, Playwright for end-to-end checkout & logistics flows.
+- **Language**: TypeScript strict mode (`"strict": true`, `"noImplicitAny": true`) & Node.js ES Modules.
+- **Storefront**: Next.js 15 App Router, React 19, Tailwind CSS, Lucide Icons, Framer Motion.
+- **Backend Runtime**: Node.js Commerce Server (`server.mjs`) on Port 9000, with BullMQ workers.
+- **Database**: MySQL 8 / MariaDB only. Local development connects to the XAMPP service on port 3306; do not add PostgreSQL, Medusa, or PostgreSQL migrations.
+- **Validation**: Zod schemas (`packages/types`) for all domain models, furniture specs, and address lookups.
+- **Security**: PBKDF2 (100k rounds, SHA-512) / Argon2id for password hashing, sliding-window rate-limiting, Cloudflare Turnstile token verification, and automated IP Jail brute-force defense.
+- **Testing**: Built-in Node test runner (`node --test`) for unit and integration tests across domain, logistics, and E2E launch phases.
 
 ---
 
-## 4. Database Indexing & Query Rules (PostgreSQL)
+## 4. Database Indexing & Query Rules (MySQL)
 
-1. Follow the **ESR (Equality, Sort, Range)** rule for composite indexes:
-   - Place exact-match columns first (`status`, `category_id`).
-   - Place sorting columns second (`created_at DESC`, `price`).
-   - Place range filters last (`price BETWEEN min AND max`).
-2. Use **Partial Indexes** for active records:
-   ```sql
-   CREATE INDEX idx_products_active ON product (id, handle) WHERE status = 'published' AND deleted_at IS NULL;
-   ```
-3. Use **GIN Trigram Indexes** for fuzzy product search:
-   ```sql
-   CREATE INDEX idx_product_title_trgm ON product USING gin (title gin_trgm_ops);
-   ```
-4. Never perform raw string concatenation in SQL queries. Always use parameterized queries.
+1. Add indexes only for measured query patterns. For catalog filtering, lead with equality columns such as `category_id` and `status`, then account for sorting/range columns using the actual MySQL query plan.
+2. MySQL does not support PostgreSQL partial indexes or GIN trigram indexes. Use MySQL `FULLTEXT` where appropriate or Meilisearch for fuzzy product search.
+3. Never perform raw string concatenation in SQL queries. Always use parameterized queries.
 
 ---
 

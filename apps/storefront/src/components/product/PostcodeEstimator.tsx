@@ -40,7 +40,7 @@ export function PostcodeEstimator({ deliveryTier, leadTimeDays }: PostcodeEstima
   const getTierLabel = (tier: DeliveryTier) => {
     switch (tier) {
       case "two_man_white_glove":
-        return "2-Man White Glove (Room of Choice + Packaging Removal)";
+        return "White Glove Delivery (Room of Choice + Packaging Removal)";
       case "pallet":
         return "Kerbside Pallet Delivery (Protected Wooden Crate)";
       case "standard_parcel":
@@ -149,90 +149,28 @@ export function PostcodeEstimator({ deliveryTier, leadTimeDays }: PostcodeEstima
       {/* Live Result Cards */}
       {searchedZone && (
         <div className="pt-2 animate-fade-in">
-          {searchedZone === "zone_1_mainland" && (
+          {searchedZone === "zone_1_mainland" ? (
             <div className="p-3.5 rounded-lg bg-forest-50/70 border border-forest-200 text-xs space-y-1">
               <div className="flex items-center gap-1.5 font-bold text-forest-900">
                 <CheckCircle2 className="w-4 h-4 text-forest-600" />
                 <span>Zone 1: Mainland UK Delivery Available</span>
               </div>
               <p className="text-forest-800">
-                Eligible for <strong>Free 2-Man White Glove Delivery</strong> on orders over £500.
+                Eligible for <strong>Free UK Mainland Delivery</strong> on all furniture orders.
               </p>
               <div className="flex items-center gap-1 text-forest-700 font-medium pt-1">
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Estimated dispatch & delivery: {leadTimeDays} - {leadTimeDays + 3} business days.</span>
               </div>
             </div>
-          )}
-
-          {searchedZone === "zone_2_scottish_highlands" && (
-            <div className="p-3.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs space-y-1">
+          ) : (
+            <div className="p-3.5 rounded-lg bg-amber-50/90 border border-amber-300 text-xs space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                <Info className="w-4 h-4 text-amber-700" />
-                <span>Zone 2: Scottish Highlands</span>
+                <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>Delivery Notice: Outside Mainland UK</span>
               </div>
-              <p className="text-amber-900">
-                Delivery available via specialized regional freight. Standard £49 regional surcharge applies.
-              </p>
-              <div className="flex items-center gap-1 text-amber-800 font-medium pt-1">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Estimated delivery: {leadTimeDays + 3} - {leadTimeDays + 6} business days.</span>
-              </div>
-            </div>
-          )}
-
-          {searchedZone === "zone_3_scottish_islands" && (
-            <div className="p-3.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                <Info className="w-4 h-4 text-amber-700" />
-                <span>Zone 3: Scottish Offshore Islands</span>
-              </div>
-              <p className="text-amber-900">
-                Requires ferry logistics. £69 regional maritime surcharge applies.
-              </p>
-              <div className="flex items-center gap-1 text-amber-800 font-medium pt-1">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Estimated delivery: 7 - 14 business days.</span>
-              </div>
-            </div>
-          )}
-
-          {searchedZone === "zone_4_northern_ireland" && (
-            <div className="p-3.5 rounded-lg bg-blue-50/80 border border-blue-200 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-blue-950">
-                <Info className="w-4 h-4 text-blue-700" />
-                <span>Zone 4: Northern Ireland</span>
-              </div>
-              <p className="text-blue-900">
-                Irish Sea freight delivery available. £59 logistics surcharge applies at checkout.
-              </p>
-              <div className="flex items-center gap-1 text-blue-800 font-medium pt-1">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Estimated transit: 6 - 10 business days.</span>
-              </div>
-            </div>
-          )}
-
-          {searchedZone === "zone_5_uk_offshore" && (
-            <div className="p-3.5 rounded-lg bg-amber-50/80 border border-amber-200 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                <Info className="w-4 h-4 text-amber-700" />
-                <span>Zone 5: UK Offshore (Isle of Man & Scilly)</span>
-              </div>
-              <p className="text-amber-900">
-                Island transit delivery available. Surcharge calculated at checkout.
-              </p>
-            </div>
-          )}
-
-          {searchedZone === "zone_excluded" && (
-            <div className="p-3.5 rounded-lg bg-sand-200 border border-sand-300 text-xs space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-navy-950">
-                <AlertCircle className="w-4 h-4 text-navy-700" />
-                <span>Channel Islands (Jersey / Guernsey)</span>
-              </div>
-              <p className="text-navy-700">
-                Automated online checkout is not supported for Channel Islands. Please contact our concierge team for custom private logistics.
+              <p className="text-amber-900 leading-relaxed">
+                We currently do not deliver outside mainland UK (including Scottish Highlands & Islands, Northern Ireland, Isle of Man, and Channel Islands). We are currently delivering exclusively to UK Mainland addresses.
               </p>
             </div>
           )}

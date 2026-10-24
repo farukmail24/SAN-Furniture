@@ -1,16 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { apiUrl } from "@/lib/api-config";
 import {
   ShoppingBag,
+  Heart,
   Check,
   ShieldCheck,
-  RotateCcw,
-  Award,
   Truck,
   Plus,
   Minus,
-  Sparkles,
 } from "lucide-react";
 import { type CatalogProduct } from "@/lib/catalog";
 import { useCart } from "@/lib/cart-context";
@@ -18,6 +18,11 @@ import { formatGBP } from "@san-furniture/types";
 
 interface ProductActionsProps {
   product: CatalogProduct;
+  valueBadges?: Array<{
+    icon?: string;
+    title: string;
+    description: string;
+  }>;
 }
 
 // Available curated fabric shades for furniture pieces
@@ -46,7 +51,7 @@ const FABRIC_SWATCHES: Record<string, { name: string; hex: string; desc: string 
   ],
 };
 
-export function ProductActions({ product }: ProductActionsProps) {
+export function ProductActions({ product, valueBadges }: ProductActionsProps) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
@@ -87,6 +92,83 @@ export function ProductActions({ product }: ProductActionsProps) {
     return () => observer.disconnect();
   }, []);
 
+  // Wishlist state & persistence
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [wishlistToast, setWishlistToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("san_customer_user");
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        if (user?.email) {
+          fetch(apiUrl(`/api/customer/wishlist?email=${encodeURIComponent(user.email)}`))
+            .then((r) => r.json())
+            .then((data) => {
+              if (data?.wishlist && Array.isArray(data.wishlist)) {
+                setIsWishlisted(data.wishlist.some((w: any) => w.productId === product.id));
+              }
+            })
+            .catch(() => {});
+          return;
+        }
+      } catch {}
+    }
+    try {
+      const guestList = JSON.parse(localStorage.getItem("san_guest_wishlist") || "[]");
+      setIsWishlisted(guestList.includes(product.id));
+    } catch {}
+  }, [product.id]);
+
+  const handleToggleWishlist = async () => {
+    setIsWishlistLoading(true);
+    const stored = localStorage.getItem("san_customer_user");
+    let userEmail: string | null = null;
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        userEmail = user?.email || null;
+      } catch {}
+    }
+
+    try {
+      if (isWishlisted) {
+        if (userEmail) {
+          await fetch(apiUrl(`/api/customer/wishlist?id=${product.id}&email=${encodeURIComponent(userEmail)}`), {
+            method: "DELETE",
+          });
+        } else {
+          const guestList = JSON.parse(localStorage.getItem("san_guest_wishlist") || "[]");
+          localStorage.setItem("san_guest_wishlist", JSON.stringify(guestList.filter((id: string) => id !== product.id)));
+        }
+        setIsWishlisted(false);
+        setWishlistToast("Removed from your client wishlist.");
+      } else {
+        if (userEmail) {
+          await fetch(apiUrl("/api/customer/wishlist"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, productId: product.id }),
+          });
+        } else {
+          const guestList = JSON.parse(localStorage.getItem("san_guest_wishlist") || "[]");
+          if (!guestList.includes(product.id)) {
+            guestList.push(product.id);
+            localStorage.setItem("san_guest_wishlist", JSON.stringify(guestList));
+          }
+        }
+        setIsWishlisted(true);
+        setWishlistToast("Saved to your client wishlist.");
+      }
+    } catch {
+      setWishlistToast("Wishlist update failed.");
+    } finally {
+      setIsWishlistLoading(false);
+      setTimeout(() => setWishlistToast(null), 3000);
+    }
+  };
+
   const effectivePricePennies = selectedVariant
     ? (selectedVariant.price_pennies ?? (product.pricePennies + (selectedVariant.price_modifier_pennies || 0)))
     : product.pricePennies;
@@ -104,13 +186,11 @@ export function ProductActions({ product }: ProductActionsProps) {
     setTimeout(() => setIsAdded(false), 2000);
   };
 
-  const klarnaMonthlyPennies = Math.round(effectivePricePennies / 3);
-
   return (
     <div className="space-y-6">
-      {/* Price & Klarna Header */}
+      {/* Price & Assurance Header */}
       <div>
-        <div className="flex items-baseline gap-3 mb-2">
+        <div className="flex items-baseline gap-2.5 mb-2 flex-wrap">
           <span className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-navy-950">
             {formatGBP(effectivePricePennies)}
           </span>
@@ -120,20 +200,24 @@ export function ProductActions({ product }: ProductActionsProps) {
             </span>
           )}
           <span className="text-xs font-semibold text-sand-50 bg-forest-800 px-2.5 py-0.5 rounded-full">
-            UK VAT Included
+            Zero Hidden Fees
+          </span>
+          <span className="text-xs font-semibold text-forest-800 bg-forest-50 border border-forest-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+            <Truck className="w-3.5 h-3.5 text-forest-700" />
+            Free UK Mainland Delivery
           </span>
         </div>
 
-        {/* Klarna Interactive Banner */}
-        <div className="p-3 rounded-lg bg-pink-50/70 border border-pink-200/80 flex items-center justify-between text-xs text-pink-950">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-pink-600 tracking-wider">Klarna.</span>
+        {/* Secure UK Checkout & Payment Assurance Banner */}
+        <div className="p-3 rounded-xl bg-sand-100/70 border border-sand-200/90 flex items-center justify-between text-xs text-navy-800">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-forest-700 shrink-0" />
             <span>
-              Pay in 3 payments of <strong>{formatGBP(klarnaMonthlyPennies)}</strong>. 0% Interest.
+              <strong>Secure Checkout:</strong> Visa, Mastercard, Maestro & American Express via Stripe
             </span>
           </div>
-          <span className="text-[11px] text-pink-700 underline font-medium cursor-pointer">
-            Details
+          <span className="text-[11px] font-semibold text-forest-800 bg-forest-50 border border-forest-200 px-2 py-0.5 rounded shrink-0">
+            256-Bit SSL Encrypted
           </span>
         </div>
       </div>
@@ -281,36 +365,90 @@ export function ProductActions({ product }: ProductActionsProps) {
             </>
           )}
         </button>
+
+        {/* Save to Wishlist Button */}
+        <button
+          type="button"
+          onClick={handleToggleWishlist}
+          disabled={isWishlistLoading}
+          aria-label={isWishlisted ? "Remove from Sanctuary Wishlist" : "Save to Sanctuary Wishlist"}
+          className={`px-4 py-3.5 sm:py-0 rounded-lg border flex items-center justify-center transition-all ${
+            isWishlisted
+              ? "bg-red-50 border-red-300 text-red-600 shadow-sm"
+              : "bg-sand-100/60 border-sand-300 text-navy-800 hover:border-sand-400 hover:text-navy-950"
+          }`}
+          title={isWishlisted ? "Saved in Wishlist" : "Save to Wishlist"}
+        >
+          <Heart className={`w-5 h-5 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+        </button>
       </div>
 
-      {/* Guarantees & British Compliance Suite */}
-      <div className="pt-4 border-t border-sand-200 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-navy-700">
-        <div className="p-3 rounded-lg bg-sand-100/40 border border-sand-200 flex items-start gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-forest-700 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-navy-950 block">BS 5852 Certified</span>
-            <span className="text-[11px] text-navy-600">
-              Ref: {product.specs.fire_safety.certificate_ref}
-            </span>
-          </div>
+      {/* Wishlist Toast Notification */}
+      {wishlistToast && (
+        <div className="p-3 rounded-xl bg-navy-950 text-sand-50 text-xs font-semibold flex items-center justify-between shadow-lg animate-fade-in border border-sand-700">
+          <span>{wishlistToast}</span>
+          <Link href="/account?tab=wishlist" className="underline text-brass-400 font-bold hover:text-brass-300">
+            View Wishlist
+          </Link>
         </div>
+      )}
 
-        <div className="p-3 rounded-lg bg-sand-100/40 border border-sand-200 flex items-start gap-2.5">
-          <RotateCcw className="w-4 h-4 text-brass-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-navy-950 block">14-Day UK Returns</span>
-            <span className="text-[11px] text-navy-600">Statutory return guarantee</span>
-          </div>
-        </div>
+      {/* Guarantees & British Assurance Suite (Strictly 2 authentic cards: Free Mainland Delivery & UK Quality Checked) */}
+      {(() => {
+        const SAFE_BADGES = [
+          { icon: "Truck", title: "Free Mainland Delivery", description: "Direct to your door within 15 days" },
+          { icon: "ShieldCheck", title: "UK Quality Checked", description: "Rigorous structural durability" },
+        ];
 
-        <div className="p-3 rounded-lg bg-sand-100/40 border border-sand-200 flex items-start gap-2.5">
-          <Award className="w-4 h-4 text-navy-800 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold text-navy-950 block">10-Year Guarantee</span>
-            <span className="text-[11px] text-navy-600">Hardwood frame warranty</span>
+        // Filter out any 12-Month Guarantee, warranty, or returns claim
+        const rawList = Array.isArray(valueBadges) && valueBadges.length > 0 ? valueBadges : SAFE_BADGES;
+        const filteredList = rawList.filter((b: any) => {
+          const t = `${b.title || ""} ${b.description || ""} ${b.subtitle || ""}`.toLowerCase();
+          return (
+            !t.includes("warranty") &&
+            !t.includes("guarantee") &&
+            !t.includes("12-month") &&
+            !t.includes("statutory") &&
+            !t.includes("return")
+          );
+        });
+
+        const badgesToRender = (filteredList.length > 0 ? filteredList : SAFE_BADGES).map((b: any, idx: number) => {
+          const t = String(b.title || "").toLowerCase();
+          if (t.includes("tracked") || t.includes("dispatch") || t.includes("delivery")) {
+            return { icon: "Truck", title: "Free Mainland Delivery", description: "Direct to your door within 15 days" };
+          }
+          return {
+            icon: b.icon || (idx === 0 ? "Truck" : "ShieldCheck"),
+            title: b.title || SAFE_BADGES[idx]?.title || "UK Quality Checked",
+            description: b.description || b.subtitle || SAFE_BADGES[idx]?.description || "Rigorous structural durability",
+          };
+        });
+
+        const finalBadges = badgesToRender.slice(0, 2);
+        while (finalBadges.length < 2) {
+          finalBadges.push(SAFE_BADGES[finalBadges.length]);
+        }
+
+        const renderIcon = (iconName?: string) => {
+          if (iconName === "Truck") return <Truck className="w-4 h-4 text-brass-600 flex-shrink-0 mt-0.5" />;
+          return <ShieldCheck className="w-4 h-4 text-forest-700 flex-shrink-0 mt-0.5" />;
+        };
+
+        return (
+          <div className="pt-4 border-t border-sand-200 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-navy-700">
+            {finalBadges.map((b, idx) => (
+              <div key={idx} className="p-3 rounded-lg bg-sand-100/40 border border-sand-200 flex items-start gap-2.5">
+                {renderIcon(b.icon)}
+                <div>
+                  <span className="font-bold text-navy-950 block">{b.title}</span>
+                  <span className="text-[11px] text-navy-600">{b.description}</span>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Sticky Mobile Floating Island CTA Bar (Positioned above MobileAppDock) */}
       {showStickyBar && (
@@ -320,6 +458,8 @@ export function ProductActions({ product }: ProductActionsProps) {
               <img
                 src={product.thumbnailUrl}
                 alt={product.title}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -333,14 +473,28 @@ export function ProductActions({ product }: ProductActionsProps) {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="py-2.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-xs tracking-wide flex items-center gap-1.5 flex-shrink-0 hover:bg-brass-400 active:scale-95 shadow"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            <span>Add to Basket</span>
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              aria-label="Save to Wishlist"
+              className={`p-2.5 rounded-lg border transition-all ${
+                isWishlisted
+                  ? "bg-red-50 border-red-300 text-red-600"
+                  : "bg-sand-100 border-sand-300 text-navy-800"
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
+            </button>
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="py-2.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-xs tracking-wide flex items-center gap-1.5 hover:bg-brass-400 active:scale-95 shadow"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Add to Basket</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

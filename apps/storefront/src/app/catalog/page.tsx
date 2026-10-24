@@ -3,23 +3,38 @@ import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { CATALOG_CATEGORIES, getLiveProducts } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
+import { getLiveSections } from "@/lib/cms-server";
 
 export const metadata: Metadata = {
   title: "All Luxury Furniture Collections | SAN Furniture UK",
   description:
-    "Explore our complete collection of handcrafted British sofas, dining sets, accent armchairs, ottoman beds, and designer coffee tables. Delivered with 2-man white glove service.",
+    "Explore our complete collection of handcrafted British sofas, dining sets, accent armchairs, ottoman beds, and designer coffee tables. Delivered with white glove room of choice service.",
   alternates: {
     canonical: "https://sanfurniture.com/catalog",
   },
   openGraph: {
     title: "All Luxury Furniture Collections | SAN Furniture UK",
-    description: "Handcrafted British living furniture with free UK white glove delivery over £500.",
+    description: "Handcrafted British living furniture with tracked direct delivery across mainland UK.",
     url: "https://sanfurniture.com/catalog",
   },
 };
 
 export default async function CatalogPage() {
-  const liveProducts = await getLiveProducts();
+  const [liveProducts, sections] = await Promise.all([
+    getLiveProducts(),
+    getLiveSections("catalog"),
+  ]);
+
+  let catalogHeader = {
+    eyebrow: "Architectural Curations",
+    title: "The Complete Furniture Collection",
+    subtitle: "Explore our full curation of solid hardwood dining sets, textured bouclé sofas, sculptural accent chairs, and ottoman storage beds. Every piece is rigorously tested and delivered direct to your door.",
+    vat_badge: "All items include 20% UK VAT with direct delivery tracking"
+  };
+
+  if (sections?.catalog_header?.content) {
+    catalogHeader = { ...catalogHeader, ...sections.catalog_header.content };
+  }
 
   return (
     <div className="bg-sand-50 min-h-screen">
@@ -40,13 +55,13 @@ export default async function CatalogPage() {
           <div className="max-w-4xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sand-200/80 text-navy-800 text-[11px] font-semibold tracking-wider uppercase mb-3">
               <Sparkles className="w-3.5 h-3.5 text-brass-600" />
-              British Design Portfolio
+              {catalogHeader.eyebrow}
             </span>
             <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-navy-950 mb-4">
-              The Complete Furniture Collection
+              {catalogHeader.title}
             </h1>
             <p className="text-sm sm:text-base text-navy-700 leading-relaxed">
-              Explore our full curation of solid hardwood dining sets, textured bouclé sofas, sculptural accent chairs, and ottoman storage beds. Every piece is rigorously tested for UK fire compliance (BS 5852) and delivered with our white-glove two-man service.
+              {catalogHeader.subtitle}
             </p>
           </div>
         </div>

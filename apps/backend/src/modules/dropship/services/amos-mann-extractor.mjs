@@ -173,13 +173,15 @@ export class AmosMannExtractorEngine {
 
   /**
    * Compute UK Dropshipping Retail Price with 20% VAT
-   * Formula: (Trade Cost + Shipping) * (1 + Markup/100) * 1.20 VAT
+   * Landed Cost Formula: (Trade Cost + Supplier Carriage) * (1 + Markup/100) * 1.20 VAT
+   * UK Mainland customers receive Free Delivery as carriage is pre-factored into retail price.
    */
-  calculateRetailPrice(costPennies, shippingPennies, markupPercent = 45) {
-    const netRetail = Math.round((costPennies + shippingPennies) * (1 + markupPercent / 100));
+  calculateRetailPrice(costPennies, shippingPennies = 1995, markupPercent = 40) {
+    const landedCost = costPennies + (shippingPennies || 0);
+    const netRetail = Math.round(landedCost * (1 + markupPercent / 100));
     const retailPricePennies = Math.round(netRetail * 1.20);
     const compareAtPennies = Math.round(retailPricePennies * 1.25);
-    return { retailPricePennies, compareAtPennies };
+    return { retailPricePennies, compareAtPennies, netRetail, landedCost };
   }
 
   /**
@@ -223,12 +225,15 @@ export class AmosMannExtractorEngine {
         let itemChanged = false;
         const changeNotes = [];
 
-        // 1. Check for Price Change
+        // 1. Check for Price Change - incorporating supplier carriage into landed cost
         if (newCostPennies > 0 && Math.abs(newCostPennies - item.cost_price_pennies) > 0) {
+          const carriage = item.shipping_cost_pennies !== null && item.shipping_cost_pennies !== undefined
+            ? item.shipping_cost_pennies
+            : 1995;
           const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(
             newCostPennies,
-            0,
-            markup
+            carriage,
+            markup || 40
           );
 
           await pool.query(
@@ -372,26 +377,27 @@ export class AmosMannExtractorEngine {
     const tradeCostPennies = Math.round(liveData.priceGbp * 100);
 
     // Dynamic Delivery Tier & Shipping Cost Auto-Detection per product
+    // Amos Mann verified tariff:
+    // - Home Delivery to Customer (Standard Flatpack/Parcel): £19.95 (1995 pennies)
+    // - Pallet to Home (Wardrobes, large multi-box heavy pieces): £69.00 (6900 pennies)
     let shippingPennies = liveData.extractedDeliveryPennies;
     let effectiveTier = deliveryTier;
 
     if (!shippingPennies) {
       const lower = (liveData.title + " " + (liveData.description || "")).toLowerCase();
-      if (lower.includes("wardrobe") || lower.includes("sliding") || lower.includes("sofa") || (liveData.dimensions?.width_cm >= 120)) {
+      if (lower.includes("wardrobe") || lower.includes("sliding") || lower.includes("pallet") || (liveData.dimensions?.width_cm >= 160)) {
         effectiveTier = "two_man_white_glove";
-        shippingPennies = 4900; // £49.00 Two-man room of choice
-      } else if (lower.includes("sideboard") || lower.includes("dining") || lower.includes("table") || lower.includes("cupboard") || lower.includes("chest")) {
-        effectiveTier = "pallet";
-        shippingPennies = 3000; // £30.00 Pallet freight
+        shippingPennies = 6900; // £69.00 Pallet to Home (Amos Mann verified tariff)
       } else {
         effectiveTier = "standard_parcel";
-        shippingPennies = 1500; // £15.00 Standard parcel
+        shippingPennies = 1995; // £19.95 Standard Home Delivery to Customer (Amos Mann verified tariff)
       }
     }
 
-    // Note: Delivery is charged at checkout as "Home Delivery To Customer".
-    // Base retail price is calculated on Trade Cost to prevent double-charging shipping:
-    const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, 0, 45);
+    // Customer retail price incorporates Landed Cost (Trade Cost + Supplier Carriage):
+    // Formula: (Trade Cost + Supplier Carriage) * (1 + Margin%) * 1.20 UK VAT
+    // Storefront offers Free UK Mainland Delivery as shipping is pre-factored into retail price.
+    const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, shippingPennies, 40);
 
     const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_live_am_${liveData.sku}`.toLowerCase().replace(/[^a-z0-9_]/g, "_");
@@ -413,7 +419,7 @@ export class AmosMannExtractorEngine {
       productId,
       liveData.title,
       handle,
-      "Official Amos Mann UK Furniture - Dispatch Time 2-7 Business Days",
+      "SAN Furniture Luxury Collection - Dispatch Time 2-7 Business Days",
       liveData.description,
       categoryId,
       liveData.isOutOfStock ? "out_of_stock" : "published",
@@ -425,13 +431,18 @@ export class AmosMannExtractorEngine {
     ]);
 
     // 2. Insert Specs
-    const estimatedWeight = effectiveTier === "two_man_white_glove" ? 110 : (effectiveTier === "pallet" ? 65 : 20);
+    const dbDeliveryTier = (effectiveTier === "standard_parcel" || effectiveTier.includes("parcel"))
+      ? "standard_parcel"
+      : (effectiveTier === "pallet" || effectiveTier.includes("pallet"))
+      ? "pallet"
+      : "two_man_white_glove";
+    const estimatedWeight = dbDeliveryTier === "two_man_white_glove" ? 110 : (dbDeliveryTier === "pallet" ? 65 : 20);
     await pool.query(`
       INSERT INTO furniture_specs (
         id, product_id, width_cm, height_cm, depth_cm, weight_kg,
         material, frame_material, color, assembly_required,
         delivery_tier, fire_safety_compliant, fire_safety_standard, lead_time_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'engineered_hardwood', 'engineered_hardwood', ?, 1, ?, 1, 'BS 5852 / UK Statutory Timber Compliance', 5, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, 'engineered_hardwood', 'engineered_hardwood', ?, 1, ?, 1, 'UK Quality Checked', 5, NOW())
       ON DUPLICATE KEY UPDATE
         width_cm = VALUES(width_cm),
         height_cm = VALUES(height_cm),
@@ -447,7 +458,7 @@ export class AmosMannExtractorEngine {
       liveData.dimensions.depth_cm,
       estimatedWeight,
       liveData.finishColor || "Cashmere & Artisan Oak Effect",
-      effectiveTier
+      dbDeliveryTier
     ]);
 
     // 3. Insert Supplier Feed Item with source_url & extracted shipping cost
@@ -455,7 +466,7 @@ export class AmosMannExtractorEngine {
       INSERT INTO supplier_feed_items (
         id, supplier_id, supplier_sku, product_id, source_url, cost_price_pennies,
         shipping_cost_pennies, markup_percentage, retail_price_pennies, stock_level, lead_time_days, last_synced_at
-      ) VALUES (?, 'amos_mann_furniture', ?, ?, ?, ?, ?, 45.00, ?, ?, 5, NOW())
+      ) VALUES (?, 'amos_mann_furniture', ?, ?, ?, ?, ?, 40.00, ?, ?, 5, NOW())
       ON DUPLICATE KEY UPDATE
         cost_price_pennies = VALUES(cost_price_pennies),
         shipping_cost_pennies = VALUES(shipping_cost_pennies),
@@ -494,8 +505,8 @@ export class AmosMannExtractorEngine {
     );
     const [trackedItems] = await pool.query(`
       SELECT fi.supplier_sku, fi.source_url, fi.cost_price_pennies, fi.retail_price_pennies,
-             COALESCE(fi.shipping_cost_pennies, 4900) as shipping_cost_pennies,
-             COALESCE(fi.markup_percentage, 45.00) as markup_percentage,
+             COALESCE(fi.shipping_cost_pennies, 1995) as shipping_cost_pennies,
+             COALESCE(fi.markup_percentage, 40.00) as markup_percentage,
              COALESCE(fi.lead_time_days, 5) as lead_time_days,
              COALESCE(fi.stock_level, 25) as stock_level, fi.last_synced_at, p.id, p.title, p.status, p.thumbnail_url
       FROM supplier_feed_items fi

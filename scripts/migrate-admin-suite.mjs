@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 
 const DB_CONFIG = {
@@ -26,21 +27,19 @@ async function migrateAdminSuite() {
 
   // Seed default system settings if empty
   const defaultSettings = [
-    { key: "company_name", val: "SAN Furniture UK Ltd", cat: "legal", desc: "Registered UK Entity Name" },
-    { key: "company_number", val: "14289123", cat: "legal", desc: "Companies House Registration" },
-    { key: "vat_number", val: "GB 438 9123 76", cat: "legal", desc: "HMRC VAT Registration Number" },
-    { key: "registered_address", val: "48 Grosvenor Square, Mayfair, London W1K 2HP, United Kingdom", cat: "legal", desc: "Official Registered Office" },
+    { key: "company_name", val: "SAN Furniture", cat: "legal", desc: "Online Trading Brand" },
+    { key: "company_number", val: "", cat: "legal", desc: "Companies House Registration" },
+    { key: "vat_number", val: "", cat: "legal", desc: "UK VAT Registration Number" },
+    { key: "registered_address", val: "Mainland UK Logistics & Customer Support", cat: "legal", desc: "Logistics & Customer Support" },
     { key: "support_email", val: "concierge@sanfurniture.com", cat: "contact", desc: "Customer Support Email" },
-    { key: "support_phone", val: "+44 (0) 20 7946 0912", cat: "contact", desc: "Customer Phone Line" },
-    { key: "free_shipping_threshold_pennies", val: "50000", cat: "logistics", desc: "Free 2-Man delivery threshold (£500.00)" },
+    { key: "support_phone", val: "+44 20 7946 0192", cat: "contact", desc: "Customer Phone Line" },
+    { key: "free_shipping_threshold_pennies", val: "50000", cat: "logistics", desc: "Free Mainland UK Delivery threshold (£500.00)" },
     { key: "standard_delivery_fee_pennies", val: "4900", cat: "logistics", desc: "Standard parcel / pallet rate (£49.00)" },
-    { key: "white_glove_fee_pennies", val: "9900", cat: "logistics", desc: "Two-man white glove delivery fee (£99.00)" },
+    { key: "white_glove_fee_pennies", val: "9900", cat: "logistics", desc: "Room of choice delivery fee (£99.00)" },
     { key: "highlands_surcharge_pennies", val: "4900", cat: "logistics", desc: "Scottish Highlands postcodes extra surcharge (£49.00)" },
     { key: "dropship_auto_dispatch", val: "true", cat: "dropshipping", desc: "Auto-send Purchase Order EDI to UK suppliers" },
     { key: "dropship_min_margin_percent", val: "30", cat: "dropshipping", desc: "Floor markup margin safeguard %" },
     { key: "stripe_enabled", val: "true", cat: "payment", desc: "Stripe UK Credit/Debit Cards gateway" },
-    { key: "klarna_enabled", val: "true", cat: "payment", desc: "Klarna Pay in 3 / Financing gateway" },
-    { key: "klarna_merchant_id", val: "K1482910_GB", cat: "payment", desc: "Klarna UK Merchant Account" },
     { key: "ip_jail_max_failures", val: "5", cat: "security", desc: "Failed attempts before IP lockout" },
     { key: "ip_jail_duration_mins", val: "15", cat: "security", desc: "Temporary IP jail lock duration in minutes" },
   ];

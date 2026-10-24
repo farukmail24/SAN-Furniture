@@ -126,7 +126,7 @@ test("StripeWebhookHandler: Verifies signatures and enforces strict idempotency"
   assert.equal(secondRun.actionTaken, "IGNORED_DUPLICATE");
 });
 
-test("VatInvoiceGenerator: Produces HMRC compliant UK VAT invoices", () => {
+test("VatInvoiceGenerator: Produces compliant UK VAT invoices", () => {
   const generator = new VatInvoiceGenerator();
 
   const customer = {
@@ -150,10 +150,9 @@ test("VatInvoiceGenerator: Produces HMRC compliant UK VAT invoices", () => {
 
   const invoice = generator.generateInvoice(1, "ord_7721", customer, items, 0);
 
-  // HMRC Legal Compliance Checks
+  // Order Invoice Checks
   assert.equal(invoice.invoiceNumber, "INV-2026-00001");
-  assert.equal(invoice.companyVatNumber, "GB 421 9823 45");
-  assert.equal(invoice.companyName, "SAN Furniture Ltd");
+  assert.equal(invoice.companyName, "SAN Furniture");
   assert.equal(invoice.customer.name, "James Harrington");
 
   // VAT Math: Net = round(129900 / 1.20) = 108250 (£1,082.50)
@@ -167,7 +166,6 @@ test("VatInvoiceGenerator: Produces HMRC compliant UK VAT invoices", () => {
 
   // Render HTML check
   const html = generator.renderInvoiceHtml(invoice);
-  assert.ok(html.includes("GB 421 9823 45"));
+  assert.ok(html.includes("SAN Furniture"));
   assert.ok(html.includes("INV-2026-00001"));
-  assert.ok(html.includes("Value Added Tax Act 1994"));
 });

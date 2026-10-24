@@ -15,11 +15,7 @@ interface CategoryPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  return CATALOG_CATEGORIES.map((category) => ({
-    handle: category.handle,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -87,6 +83,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <img
             src={category.heroImage}
             alt={category.name}
+            fetchPriority="high"
+            decoding="async"
             className="w-full h-full object-cover filter brightness-75"
           />
         </div>
@@ -106,12 +104,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             <div className="flex flex-wrap items-center gap-4 text-xs text-sand-300 font-medium pt-2">
               <span className="flex items-center gap-1.5 text-sage-400">
                 <Truck className="w-4 h-4" />
-                Free 2-Man Delivery on orders £500+
+                Free Delivery on orders £500+
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5 text-sand-200">
                 <ShieldCheck className="w-4 h-4 text-brass-400" />
-                BS 5852 Fire Safety Verified
+                UK Quality Checked Furniture
               </span>
             </div>
           </div>

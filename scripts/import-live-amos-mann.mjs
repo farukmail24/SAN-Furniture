@@ -1,3 +1,4 @@
+import "../database/mysql-config.mjs";
 import mysql from "mysql2/promise";
 import https from "node:https";
 
@@ -215,7 +216,7 @@ async function syncLiveAmosMannProducts() {
         id, product_id, width_cm, height_cm, depth_cm, weight_kg,
         material, frame_material, color, assembly_required,
         delivery_tier, fire_safety_compliant, fire_safety_standard, lead_time_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'BS 5852 / UK Statutory Timber Compliance', 5, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, 1, 'UK Quality Checked', 5, NOW())
     `, [
       `spec_${productId}`,
       productId,

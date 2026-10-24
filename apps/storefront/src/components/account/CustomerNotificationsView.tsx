@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
   RefreshCw,
   Clock
 } from "lucide-react";
@@ -42,6 +43,14 @@ export function CustomerNotificationsView({
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 5;
+
+  const totalPages = Math.max(1, Math.ceil(notifications.length / perPage));
+  const paginatedNotifications = notifications.slice(
+    (currentPage - 1) * perPage,
+    currentPage * perPage
+  );
 
   const fetchNotifications = async () => {
     try {
@@ -51,8 +60,11 @@ export function CustomerNotificationsView({
       );
       if (res.ok) {
         const data = await res.json();
-        setNotifications(data.notifications || []);
+        const list = data.notifications || [];
+        setNotifications(list);
         setUnreadCount(Number(data.unread_count || 0));
+        // Reset or clamp page if list shrunk
+        setCurrentPage((prev) => Math.min(prev, Math.max(1, Math.ceil(list.length / perPage))));
       }
     } catch (err) {
       console.error("Failed to fetch customer notifications:", err);
@@ -107,7 +119,7 @@ export function CustomerNotificationsView({
             <span>Notifications &amp; Delivery Updates</span>
           </h2>
           <p className="text-xs text-navy-600 mt-0.5">
-            Real-time notifications regarding your 2-man delivery bookings, support replies, and order milestones.
+            Real-time notifications regarding your delivery bookings, support replies, and order milestones.
           </p>
         </div>
 
@@ -147,58 +159,112 @@ export function CustomerNotificationsView({
             <p>You have no recent delivery or order updates. Everything is up to date.</p>
           </div>
         ) : (
-          <div className="divide-y divide-sand-200">
-            {notifications.map((n) => {
-              const isUnread = !n.is_read;
-              return (
-                <div
-                  key={n.id}
-                  onClick={() => handleMarkAsRead(n.id, n.link)}
-                  className={`p-4 sm:p-5 flex items-start gap-4 transition-colors cursor-pointer ${
-                    isUnread ? "bg-sand-100/60 hover:bg-sand-100/90" : "hover:bg-sand-50"
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-sand-200 border border-sand-300 flex items-center justify-center flex-shrink-0 text-navy-900 shadow-xs">
-                    {n.type === "delivery_update" ? (
-                      <Truck className="w-5 h-5 text-forest-700" />
-                    ) : n.type === "ticket_reply" ? (
-                      <Headphones className="w-5 h-5 text-brass-700" />
-                    ) : (
-                      <ShoppingBag className="w-5 h-5 text-navy-700" />
-                    )}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="text-sm font-bold text-navy-950 flex items-center gap-2">
-                        <span>{n.title}</span>
-                        {isUnread && (
-                          <span className="w-2 h-2 rounded-full bg-brass-600 flex-shrink-0" />
-                        )}
-                      </h4>
-                      <span className="text-[11px] text-navy-400 whitespace-nowrap">
-                        {new Date(n.created_at).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
+          <>
+            <div className="divide-y divide-sand-200">
+              {paginatedNotifications.map((n) => {
+                const isUnread = !n.is_read;
+                return (
+                  <div
+                    key={n.id}
+                    onClick={() => handleMarkAsRead(n.id, n.link)}
+                    className={`p-4 sm:p-5 flex items-start gap-4 transition-colors cursor-pointer ${
+                      isUnread ? "bg-sand-100/60 hover:bg-sand-100/90" : "hover:bg-sand-50"
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-sand-200 border border-sand-300 flex items-center justify-center flex-shrink-0 text-navy-900 shadow-xs">
+                      {n.type === "delivery_update" ? (
+                        <Truck className="w-5 h-5 text-forest-700" />
+                      ) : n.type === "ticket_reply" ? (
+                        <Headphones className="w-5 h-5 text-brass-700" />
+                      ) : (
+                        <ShoppingBag className="w-5 h-5 text-navy-700" />
+                      )}
                     </div>
 
-                    <p className="text-xs text-navy-700 mt-1 leading-relaxed">{n.message}</p>
-
-                    {n.link && (
-                      <div className="mt-2 text-xs font-semibold text-brass-700 hover:text-brass-900 inline-flex items-center gap-1">
-                        <span>View Details</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-navy-950 flex items-center gap-2">
+                          <span>{n.title}</span>
+                          {isUnread && (
+                            <span className="w-2 h-2 rounded-full bg-brass-600 flex-shrink-0" />
+                          )}
+                        </h4>
+                        <span className="text-[11px] text-navy-400 whitespace-nowrap">
+                          {new Date(n.created_at).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
                       </div>
-                    )}
+
+                      <p className="text-xs text-navy-700 mt-1 leading-relaxed">{n.message}</p>
+
+                      {n.link && (
+                        <div className="mt-2 text-xs font-semibold text-brass-700 hover:text-brass-900 inline-flex items-center gap-1">
+                          <span>View Details</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </div>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="p-4 bg-sand-50 border-t border-sand-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <span className="text-navy-600 font-medium">
+                  Showing{" "}
+                  <strong className="text-navy-950">
+                    {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, notifications.length)}
+                  </strong>{" "}
+                  of <strong className="text-navy-950">{notifications.length}</strong> updates
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1.5 rounded-lg border border-sand-300 bg-white hover:bg-sand-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-navy-900 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                    <span>Previous</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          currentPage === page
+                            ? "bg-navy-950 text-sand-50 shadow-xs"
+                            : "bg-white hover:bg-sand-100 text-navy-800 border border-sand-300"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="px-3 py-1.5 rounded-lg border border-sand-300 bg-white hover:bg-sand-100 disabled:opacity-40 disabled:cursor-not-allowed font-semibold text-navy-900 transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Next</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

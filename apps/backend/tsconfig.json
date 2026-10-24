@@ -13,10 +13,8 @@
     "outDir": "./dist",
     "rootDir": "./",
     "declaration": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "medusa-config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

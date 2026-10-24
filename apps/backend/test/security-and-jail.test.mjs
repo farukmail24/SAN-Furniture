@@ -1,3 +1,4 @@
+import { CustomerRegistrationSchema } from "@san-furniture/types";
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -93,4 +94,33 @@ test("CloudflareTurnstileService: Accurately validates test tokens and handles m
   const emptyResult = await turnstile.verifyToken("");
   assert.equal(emptyResult.success, false);
   assert.ok(emptyResult.errorCodes?.includes("missing-input-response"));
+});
+
+
+test("Customer Registration Validation: Requires valid mobile phone number for UK delivery", () => {
+  const payloadMissingPhone = {
+    firstName: "Arthur",
+    lastName: "Dent",
+    email: "arthur.dent@example.co.uk",
+    password: "Password123!"
+  };
+  const missingRes = CustomerRegistrationSchema.safeParse(payloadMissingPhone);
+  assert.equal(missingRes.success, false);
+
+  const payloadShortPhone = {
+    ...payloadMissingPhone,
+    phone: "07700"
+  };
+  const shortRes = CustomerRegistrationSchema.safeParse(payloadShortPhone);
+  assert.equal(shortRes.success, false);
+
+  const payloadValid = {
+    ...payloadMissingPhone,
+    phone: "+44 7700 900123"
+  };
+  const validRes = CustomerRegistrationSchema.safeParse(payloadValid);
+  assert.equal(validRes.success, true);
+  if (validRes.success) {
+    assert.equal(validRes.data.phone, "+44 7700 900123");
+  }
 });

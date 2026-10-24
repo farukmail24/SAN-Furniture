@@ -47,7 +47,7 @@ export async function GET() {
       escapeCsv(p.specs.material),
       escapeCsv(p.specs.color),
       escapeCsv(p.specs.delivery_tier),
-      "BS 5852 Certified",
+      "UK Quality Checked",
     ].join(",");
   });
 

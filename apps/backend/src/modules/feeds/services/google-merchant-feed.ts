@@ -91,7 +91,7 @@ ${additionalImagesXml ? additionalImagesXml + "\n" : ""}\
       <g:material>${this.escapeXml(p.specs.material)}</g:material>
       <g:color>${this.escapeXml(p.specs.color)}</g:color>
       <g:custom_label_0>${this.escapeXml(p.specs.delivery_tier)}</g:custom_label_0>
-      <g:custom_label_1>BS 5852 Fire Safety Verified</g:custom_label_1>
+      <g:custom_label_1>UK Quality Checked</g:custom_label_1>
       <g:custom_label_2>${p.pricePennies >= 50000 ? "Free Delivery Eligible" : "Standard Freight"}</g:custom_label_2>
     </item>`;
       })
@@ -102,7 +102,7 @@ ${additionalImagesXml ? additionalImagesXml + "\n" : ""}\
   <channel>
     <title>SAN Furniture UK Product Feed</title>
     <link>${this.baseUrl}</link>
-    <description>Luxury British Handcrafted Sofas, Dining Sets and Accent Furniture</description>
+    <description>Curated Modern Sofas, Dining Sets and Home Accent Furniture</description>
 ${itemsXml}
   </channel>
 </rss>`;

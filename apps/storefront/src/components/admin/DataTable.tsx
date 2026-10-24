@@ -184,7 +184,7 @@ export function DataTable<T extends Record<string, any>>({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           {title && (
             <div>
-              <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#0B132B]">{title}</h2>
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#00072D]">{title}</h2>
               {subtitle && <p className="text-xs text-[#4F6D7A] mt-0.5">{subtitle}</p>}
             </div>
           )}
@@ -194,7 +194,7 @@ export function DataTable<T extends Record<string, any>>({
               <button
                 type="button"
                 onClick={onRefresh}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-lg text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-lg text-xs font-semibold transition-colors"
                 title="Refresh table data"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-[#C89B3C]" : ""}`} />
@@ -218,13 +218,13 @@ export function DataTable<T extends Record<string, any>>({
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full pl-9 pr-4 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#0B132B] focus:outline-none focus:ring-2 focus:ring-[#0B132B]"
+            className="w-full pl-9 pr-4 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-[#00072D]"
           />
         </div>
 
         {/* Selected Rows Counter & Bulk Actions */}
         {selectedIds.size > 0 && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-sand-100 rounded-lg border border-sand-300 text-xs font-semibold text-[#0B132B] animate-in fade-in">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-sand-100 rounded-lg border border-sand-300 text-xs font-semibold text-[#00072D] animate-in fade-in">
             <span>{selectedIds.size} Selected</span>
             {onBulkDelete && (
               <button
@@ -251,7 +251,7 @@ export function DataTable<T extends Record<string, any>>({
             <button
               type="button"
               onClick={() => setIsColumnDropdownOpen(!isColumnDropdownOpen)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-slate-50 text-[#0B132B] rounded-lg text-xs font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-slate-50 text-[#00072D] rounded-lg text-xs font-medium transition-colors"
             >
               <SlidersHorizontal className="w-3.5 h-3.5 text-[#C89B3C]" />
               <span>Columns</span>
@@ -260,13 +260,13 @@ export function DataTable<T extends Record<string, any>>({
 
             {isColumnDropdownOpen && (
               <div className="absolute right-0 mt-1 w-48 bg-white border border-[#E8E2D5] rounded-xl shadow-xl z-30 p-2 text-xs space-y-1 animate-in fade-in">
-                <div className="px-2 py-1 font-semibold text-[#0B132B] border-b border-[#E8E2D5] mb-1">
+                <div className="px-2 py-1 font-semibold text-[#00072D] border-b border-[#E8E2D5] mb-1">
                   Toggle Columns
                 </div>
                 {columns.map((c) => (
                   <label
                     key={c.key}
-                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-sand-50 rounded cursor-pointer text-[#0B132B]"
+                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-sand-50 rounded cursor-pointer text-[#00072D]"
                   >
                     <input
                       type="checkbox"
@@ -274,7 +274,7 @@ export function DataTable<T extends Record<string, any>>({
                       onChange={(e) =>
                         setColumnVisibility((prev) => ({ ...prev, [c.key]: e.target.checked }))
                       }
-                      className="rounded text-[#0B132B] focus:ring-[#0B132B]"
+                      className="rounded text-[#00072D] focus:ring-[#00072D]"
                     />
                     <span>{c.header}</span>
                   </label>
@@ -287,7 +287,7 @@ export function DataTable<T extends Record<string, any>>({
           <button
             type="button"
             onClick={exportToCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#0B132B] rounded-lg text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#E8E2D5] hover:bg-[#F4F1EA] text-[#00072D] rounded-lg text-xs font-medium transition-colors"
             title="Export filtered records to CSV"
           >
             <Download className="w-3.5 h-3.5 text-[#C89B3C]" />
@@ -300,7 +300,7 @@ export function DataTable<T extends Record<string, any>>({
       <div className="bg-white border border-[#E8E2D5] rounded-xl shadow-sm overflow-hidden w-full">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left text-sm divide-y divide-[#E8E2D5]">
-            <thead className="bg-[#FAF8F5] text-[#0B132B] text-xs uppercase font-semibold select-none">
+            <thead className="bg-[#FAF8F5] text-[#00072D] text-xs uppercase font-semibold select-none">
               <tr>
                 {/* Selection Checkbox Header */}
                 <th className="py-3 px-4 w-10">
@@ -309,7 +309,7 @@ export function DataTable<T extends Record<string, any>>({
                     checked={isAllSelected}
                     onChange={handleSelectAll}
                     aria-label="Select all rows on current page"
-                    className="rounded text-[#0B132B] focus:ring-[#0B132B] cursor-pointer"
+                    className="rounded text-[#00072D] focus:ring-[#00072D] cursor-pointer"
                   />
                 </th>
 
@@ -386,12 +386,12 @@ export function DataTable<T extends Record<string, any>>({
                           checked={isSelected}
                           onChange={() => handleSelectRow(id)}
                           aria-label={`Select row ${id}`}
-                          className="rounded text-[#0B132B] focus:ring-[#0B132B] cursor-pointer"
+                          className="rounded text-[#00072D] focus:ring-[#00072D] cursor-pointer"
                         />
                       </td>
 
                       {visibleColumns.map((col) => (
-                        <td key={col.key} style={{ width: col.width }} className="py-3 px-4 text-xs text-[#0B132B]">
+                        <td key={col.key} style={{ width: col.width }} className="py-3 px-4 text-xs text-[#00072D]">
                           {col.cell ? col.cell(item, index) : item[col.key] ?? "—"}
                         </td>
                       ))}
@@ -426,7 +426,7 @@ export function DataTable<T extends Record<string, any>>({
                   setPageSize(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="bg-white border border-[#E8E2D5] rounded px-2 py-1 text-xs text-[#0B132B] focus:outline-none"
+                className="bg-white border border-[#E8E2D5] rounded px-2 py-1 text-xs text-[#00072D] focus:outline-none"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
@@ -444,10 +444,10 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               className="p-1.5 rounded border border-[#E8E2D5] bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <ChevronLeft className="w-4 h-4 text-[#0B132B]" />
+              <ChevronLeft className="w-4 h-4 text-[#00072D]" />
             </button>
 
-            <span className="px-2 font-semibold text-[#0B132B]">
+            <span className="px-2 font-semibold text-[#00072D]">
               Page {currentPage} of {totalPages}
             </span>
 
@@ -457,7 +457,7 @@ export function DataTable<T extends Record<string, any>>({
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               className="p-1.5 rounded border border-[#E8E2D5] bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <ChevronRight className="w-4 h-4 text-[#0B132B]" />
+              <ChevronRight className="w-4 h-4 text-[#00072D]" />
             </button>
           </div>
         </div>

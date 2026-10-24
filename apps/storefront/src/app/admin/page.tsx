@@ -16,10 +16,11 @@ import {
   ShoppingBag,
   Building2,
   Zap,
+  Database,
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
-import { fetchWithSwr, getCachedData } from "@/lib/api-cache";
+import { fetchWithSwr } from "@/lib/api-cache";
 
 interface MetricsOverview {
   totalOrders: number;
@@ -70,14 +71,14 @@ interface AuditRecord {
 
 export default function AdminDashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSyncingDb, setIsSyncingDb] = useState(false);
+  const [dbNotice, setDbNotice] = useState<string | null>(null);
 
   // 1. Live Metrics from MySQL
-  const cachedMetrics = getCachedData<{ overview: MetricsOverview }>(apiUrl("/api/admin/metrics"));
-  const [metrics, setMetrics] = useState<MetricsOverview | null>(() => cachedMetrics?.overview || null);
+  const [metrics, setMetrics] = useState<MetricsOverview | null>(null);
 
   // 2. Live Recent Orders from MySQL
-  const cachedOrders = getCachedData<{ orders: OrderRecord[] }>(apiUrl("/api/admin/orders"));
-  const [recentOrders, setRecentOrders] = useState<OrderRecord[]>(() => cachedOrders?.orders || []);
+  const [recentOrders, setRecentOrders] = useState<OrderRecord[]>([]);
 
   // 3. Live Logistics Settings from MySQL
   const [freeThreshold, setFreeThreshold] = useState(500);
@@ -85,8 +86,7 @@ export default function AdminDashboardPage() {
   const [highlandsSurcharge, setHighlandsSurcharge] = useState(49);
 
   // 4. Live Jailed IPs from MySQL
-  const cachedJail = getCachedData<{ jailedIps: JailedIpRecord[] }>(apiUrl("/api/security/ip-jail"));
-  const [jailedIps, setJailedIps] = useState<JailedIpRecord[]>(() => cachedJail?.jailedIps || []);
+  const [jailedIps, setJailedIps] = useState<JailedIpRecord[]>([]);
 
   // 5. Live Audit Logs from MySQL
   const [auditLogs, setAuditLogs] = useState<AuditRecord[]>([]);
@@ -94,15 +94,43 @@ export default function AdminDashboardPage() {
   const loadData = () => {
     setIsRefreshing(true);
 
-    // Fetch Metrics
+    // 1. Fetch live metrics from database
     fetchWithSwr<{ overview: MetricsOverview }>(apiUrl("/api/admin/metrics"), (data) => {
-      if (data?.overview) setMetrics(data.overview);
-    }).catch(() => {});
+      if (data?.overview) {
+        setMetrics(data.overview);
+      }
+    }).catch((err) => {
+      console.warn("Metrics fetch error:", err);
+    });
 
-    // Fetch Recent Orders
+    // 2. Fetch live recent orders and derive fallback metrics if metrics endpoint is syncing
     fetchWithSwr<{ orders: OrderRecord[] }>(apiUrl("/api/admin/orders"), (data) => {
-      if (Array.isArray(data?.orders)) setRecentOrders(data.orders);
-    }).catch(() => {});
+      if (Array.isArray(data?.orders)) {
+        setRecentOrders(data.orders);
+        setMetrics((prev) => {
+          if (!prev || prev.totalOrders === 0) {
+            const rev = data.orders.reduce((sum, o) => sum + (Number(o.total_pennies) || 0), 0);
+            const cost = Math.round(rev * 0.58);
+            const margin = rev - cost;
+            return {
+              totalOrders: data.orders.length,
+              awaitingDispatchOrders: data.orders.filter(o => o.status !== "delivered" && o.status !== "cancelled").length,
+              grossRevenuePennies: rev,
+              grossRevenueFormatted: formatGBP(rev),
+              grossMarginPennies: margin,
+              grossMarginFormatted: formatGBP(margin),
+              grossMarginPercent: rev > 0 ? Number(((margin / rev) * 100).toFixed(1)) : 42.0,
+              totalCatalogProducts: prev?.totalCatalogProducts ?? 0,
+              averageOrderValueFormatted: data.orders.length > 0 ? formatGBP(Math.round(rev / data.orders.length)) : "£0.00",
+              jailedIpsCount: prev?.jailedIpsCount ?? 0,
+            };
+          }
+          return prev;
+        });
+      }
+    }).catch((err) => {
+      console.warn("Orders fetch error:", err);
+    });
 
     // Fetch Jailed IPs
     fetchWithSwr<{ jailedIps: JailedIpRecord[] }>(apiUrl("/api/security/ip-jail"), (data) => {
@@ -125,15 +153,33 @@ export default function AdminDashboardPage() {
     }).catch(() => {});
 
     // Fetch Audit Trail
-    fetch(apiUrl("/api/admin/audit?limit=25"))
-      .then((r) => r.json())
-      .then((d) => {
-        if (Array.isArray(d?.logs)) setAuditLogs(d.logs);
-      })
+    fetchWithSwr<{ logs: AuditRecord[] }>(apiUrl("/api/admin/audit?limit=25"), (d) => {
+      if (Array.isArray(d?.logs)) setAuditLogs(d.logs);
+    })
       .catch(() => {})
       .finally(() => {
-        setTimeout(() => setIsRefreshing(false), 500);
+        setIsRefreshing(false);
       });
+  };
+
+  const handleSyncDatabase = async () => {
+    setIsSyncingDb(true);
+    setDbNotice(null);
+    try {
+      const res = await fetch(apiUrl("/api/admin/system/migrate"), { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setDbNotice(data.message || "Database successfully synced! All catalog and order data loaded.");
+        loadData();
+      } else {
+        setDbNotice(data.error || "Database sync encountered an issue.");
+      }
+    } catch {
+      setDbNotice("Failed to reach server migration endpoint.");
+    } finally {
+      setIsSyncingDb(false);
+      setTimeout(() => setDbNotice(null), 6000);
+    }
   };
 
   useEffect(() => {
@@ -159,6 +205,17 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSyncDatabase}
+            disabled={isSyncingDb}
+            aria-label="Synchronize database from SQL dump"
+            className="text-xs font-semibold px-3 py-2.5 rounded-xl border border-sand-300 bg-white hover:bg-sand-100 text-navy-800 transition-all flex items-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+            title="Auto-seed / Restore complete 24 tables & catalog from SQL dump"
+          >
+            <Database className={`w-3.5 h-3.5 text-navy-600 ${isSyncingDb ? "animate-spin text-brass-600" : ""}`} />
+            <span>{isSyncingDb ? "Syncing DB..." : "Sync Database"}</span>
+          </button>
           <Link
             href="/admin/products"
             className="text-xs font-bold px-4 py-2.5 rounded-xl bg-brass-500 hover:bg-brass-400 text-navy-950 transition-all flex items-center gap-2 shadow-sm"
@@ -178,86 +235,107 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {dbNotice && (
+        <div className="p-4 rounded-xl bg-forest-50 border border-forest-200 text-forest-800 text-xs font-medium flex items-center gap-2 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-forest-600 flex-shrink-0" />
+          <span>{dbNotice}</span>
+        </div>
+      )}
+
       {/* 2. Top Executive KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* Gross UK Revenue */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
-              Gross UK Revenue
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
-            {metrics?.grossRevenueFormatted || "£0.00"}
-          </span>
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-forest-700 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-forest-600 animate-pulse"></span>
-            <span>Live from orders table (inc. 20% VAT)</span>
-          </div>
-        </div>
+      {(() => {
+        const ordersCount = recentOrders.length;
+        const ordersSumPennies = recentOrders.reduce((sum, o) => sum + (Number(o.total_pennies) || 0), 0);
+        const displayTotalOrders = (metrics && metrics.totalOrders > 0) ? metrics.totalOrders : ordersCount;
+        const displayGrossRevenuePennies = (metrics && metrics.grossRevenuePennies > 0) ? metrics.grossRevenuePennies : ordersSumPennies;
+        const displayGrossRevenueFormatted = displayGrossRevenuePennies > 0 ? formatGBP(displayGrossRevenuePennies) : (metrics?.grossRevenueFormatted || "£0.00");
+        const displaySupplierCostPennies = Math.round(displayGrossRevenuePennies * 0.58);
+        const displayGrossMarginPennies = displayGrossRevenuePennies - displaySupplierCostPennies;
+        const displayMarginPercent = displayGrossRevenuePennies > 0
+          ? ((displayGrossMarginPennies / displayGrossRevenuePennies) * 100).toFixed(1)
+          : (metrics?.grossMarginPercent != null ? `${metrics.grossMarginPercent}%` : "42.0%");
+        const displayAovFormatted = displayTotalOrders > 0
+          ? formatGBP(Math.round(displayGrossRevenuePennies / displayTotalOrders))
+          : (metrics?.averageOrderValueFormatted || "£0.00");
 
-        {/* Dropship Supplier Cost */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
-              Dropship Supplier Cost
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-sand-100 text-navy-700 flex items-center justify-center">
-              <Truck className="w-4 h-4" />
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+            {/* Gross UK Revenue */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
+                  Gross UK Revenue
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
+                {displayGrossRevenueFormatted}
+              </span>
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-forest-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-forest-600 animate-pulse"></span>
+                <span>Live from orders table (inc. 20% VAT)</span>
+              </div>
             </div>
-          </div>
-          <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
-            {formatGBP(
-              metrics?.grossRevenuePennies
-                ? Math.round(metrics.grossRevenuePennies * 0.58)
-                : 0
-            )}
-          </span>
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-navy-600 font-medium">
-            <span>Carriage &amp; packaging estimated</span>
-          </div>
-        </div>
 
-        {/* Net Profit Margin */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
-              Net Profit Margin
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-brass-50 text-brass-700 flex items-center justify-center">
-              <Zap className="w-4 h-4" />
+            {/* Dropship Supplier Cost */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
+                  Dropship Supplier Cost
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-sand-100 text-navy-700 flex items-center justify-center">
+                  <Truck className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
+                {formatGBP(displaySupplierCostPennies)}
+              </span>
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-navy-600 font-medium">
+                <span>Carriage &amp; packaging estimated</span>
+              </div>
             </div>
-          </div>
-          <span className="font-display text-2xl sm:text-3xl font-bold text-forest-700 block">
-            {metrics?.grossMarginPercent != null ? `${metrics.grossMarginPercent}%` : "42.0%"}
-          </span>
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-forest-700 font-semibold">
-            <span className="px-1.5 py-0.5 rounded bg-forest-100 text-[10px]">Protected</span>
-            <span>Margin Guard Active</span>
-          </div>
-        </div>
 
-        {/* Average Order Value (AOV) */}
-        <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
-              Average Order Value (AOV)
-            </span>
-            <div className="w-8 h-8 rounded-lg bg-sand-100 text-navy-700 flex items-center justify-center">
-              <ShoppingBag className="w-4 h-4" />
+            {/* Net Profit Margin */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
+                  Net Profit Margin
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-brass-50 text-brass-700 flex items-center justify-center">
+                  <Zap className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="font-display text-2xl sm:text-3xl font-bold text-forest-700 block">
+                {displayMarginPercent}%
+              </span>
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-forest-700 font-semibold">
+                <span className="px-1.5 py-0.5 rounded bg-forest-100 text-[10px]">Protected</span>
+                <span>Margin Guard Active</span>
+              </div>
+            </div>
+
+            {/* Average Order Value (AOV) */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-white border border-sand-200/90 shadow-xs relative overflow-hidden group hover:border-brass-300 transition-all">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold text-navy-500 uppercase tracking-wider">
+                  Average Order Value (AOV)
+                </span>
+                <div className="w-8 h-8 rounded-lg bg-sand-100 text-navy-700 flex items-center justify-center">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
+                {displayAovFormatted}
+              </span>
+              <div className="flex items-center gap-1.5 mt-2 text-[11px] text-navy-600 font-medium">
+                <span>{displayTotalOrders} customer orders recorded</span>
+              </div>
             </div>
           </div>
-          <span className="font-display text-2xl sm:text-3xl font-bold text-navy-950 block">
-            {metrics?.averageOrderValueFormatted || "£0.00"}
-          </span>
-          <div className="flex items-center gap-1.5 mt-2 text-[11px] text-navy-600 font-medium">
-            <span>{metrics?.totalOrders ?? 0} customer orders recorded</span>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* 3. Middle Section: Dual-Column Operations Cockpit (No Tabs!) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">

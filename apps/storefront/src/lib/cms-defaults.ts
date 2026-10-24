@@ -1,0 +1,811 @@
+/**
+ * SAN Furniture - Shared Static CMS Default Sections
+ * Pure server-and-client safe data constants (ZERO "use client" directive)
+ * Guaranteed resilient fallback for SSR, SSG, and Client rendering
+ */
+
+export interface SiteSection<T = Record<string, any>> {
+  id: string;
+  pageKey: string;
+  sectionKey: string;
+  sectionName: string;
+  isEnabled: boolean;
+  sortOrder: number;
+  content: T;
+  updatedAt?: string;
+}
+
+export interface MegaMenuLink {
+  label: string;
+  href: string;
+  badge?: string;
+  description?: string;
+}
+
+export interface MegaMenuColumn {
+  title: string;
+  links: MegaMenuLink[];
+}
+
+export interface MegaMenuFeaturedPromo {
+  badge?: string;
+  title: string;
+  subtitle: string;
+  image_url: string;
+  cta_label: string;
+  cta_href: string;
+}
+
+export interface MegaMenuFeaturedProduct {
+  tag?: string;
+  title: string;
+  price_str: string;
+  original_price_str?: string;
+  image_url: string;
+  href: string;
+}
+
+export interface MegaMenuTab {
+  id: string;
+  label: string;
+  href: string;
+  badge?: string;
+  columns: MegaMenuColumn[];
+  featured_promo?: MegaMenuFeaturedPromo;
+  featured_product?: MegaMenuFeaturedProduct;
+}
+
+export interface MegaMenuPerk {
+  icon: string;
+  text: string;
+}
+
+export interface MegaMenuContent {
+  tabs: MegaMenuTab[];
+  bottom_perks: MegaMenuPerk[];
+}
+
+export const DEFAULT_STOREFRONT_SECTIONS: Record<
+  string,
+  { isEnabled: boolean; sectionName: string; content: any }
+> = {
+  header_top_bar: {
+    isEnabled: true,
+    sectionName: "Top Announcement & Value Strip",
+    content: {
+      delivery_claim: "UK Mainland Delivery Direct to Your Door",
+      quality_claim: "UK Quality Checked • Free Mainland Delivery Within 15 Days",
+      payment_claim: "Secure Card Payments",
+      tax_claim: "Zero Hidden Fees",
+      support_phone: "+44 20 7946 0192",
+      show_support_phone: true,
+      banner_link: "/delivery",
+    },
+  },
+  home_hero: {
+    isEnabled: true,
+    sectionName: "Hero Showcase & Main Headline",
+    content: {
+      rating_score: "4.9/5 from 2,800+ UK Homeowners",
+      trustpilot_badge: "Trustpilot Rated Excellent",
+      headline_line1: "Bespoke Living,",
+      headline_line2: "Handcrafted for Britain.",
+      description:
+        "Discover tactile textured bouclés, solid European white oak tables, and luxury gas-lift ottoman beds. Enjoy direct UK mainland delivery and premium craftsmanship straight to your home.",
+      primary_cta_text: "Explore All Products",
+      primary_cta_link: "/catalog",
+      secondary_cta_text: "Shop By Room",
+      secondary_cta_link: "#collection-grid",
+      trust_items: [
+        { icon: "Truck", label: "UK Mainland Delivery" },
+        { icon: "ShieldCheck", label: "UK Quality Checked & Tested" },
+        { icon: "CreditCard", label: "Secure Card Checkout" },
+      ],
+      featured_badge: "Featured Masterpiece",
+      hero_product_1_id: "",
+      hero_product_2_id: "",
+      hero_product_3_id: "",
+      background_image_url: "",
+      background_image_opacity: 15,
+      background_color: "#f5f1e9",
+      background_color_opacity: 75,
+    },
+  },
+  home_trust_strip: {
+    isEnabled: true,
+    sectionName: "Trust & Assurance Cards",
+    content: {
+      cards: [
+        {
+          title: "Direct-to-Door UK Delivery",
+          description: "Specialist room-of-choice and pallet dispatch across Mainland UK.",
+          badge: "Mainland UK",
+        },
+        {
+          title: "Rigorous UK Quality Standards",
+          description: "Engineered for British living rooms with certified durability.",
+          badge: "100% Tested",
+        },
+        {
+          title: "Free Mainland Delivery",
+          description: "Complimentary direct delivery within 15 days across Mainland UK.",
+          badge: "Free Delivery",
+        },
+        {
+          title: "Safe & Encrypted Checkout",
+          description: "256-Bit SSL protected with Visa, Mastercard, American Express & Maestro.",
+          badge: "SSL Encrypted",
+        },
+      ],
+    },
+  },
+  home_catalog_filter: {
+    isEnabled: true,
+    sectionName: "Room Filter & Product Grid Header",
+    content: {
+      eyebrow: "Live Catalog Filter",
+      heading: "Shop Handcrafted British Furniture",
+      subheading_prefix: "Showing",
+      subheading_suffix: "pieces ready for UK dispatch",
+      products_per_page: 16,
+      product_sort_order: "desc",
+      show_view_more: true,
+      view_more_text: "View More",
+    },
+  },
+  home_curated_suite: {
+    isEnabled: true,
+    sectionName: "Curated Room Suite (Shop The Look)",
+    content: {
+      eyebrow: "Room Inspiration",
+      title: "Shop The Contemporary Storage & Wardrobe Suite",
+      description:
+        "A masterfully coordinated ensemble featuring our German-engineered sliding wardrobe, high-gloss tall chest of drawers, and soft-closing bedside tables.",
+      image_url:
+        "https://files.ekmcdn.com/amosmann1/images/madrid-sliding-door-wardrobe-120cm-gloss-white-2461-2461-p.png",
+      badge_text: "Curated 3-Piece Storage Suite",
+      list_title: "Pieces in this setting:",
+    },
+  },
+  home_promotions: {
+    isEnabled: true,
+    sectionName: "Special Savings & Promotional Showcase",
+    content: {
+      eyebrow: "Limited Stock Promotions",
+      heading: "Special Savings on Signature Pieces",
+      cta_text: "View all promotional offers",
+      cta_link: "/catalog",
+      badge_text: "Low UK stock",
+    },
+  },
+  home_new_arrivals: {
+    isEnabled: true,
+    sectionName: "New Arrivals Spotlight Banner",
+    content: {
+      eyebrow: "Just Arrived in Showroom",
+      heading: "New Bedroom & Occasional Additions",
+      badge_text: "NEW 2026",
+      cta_text: "Explore all new arrivals",
+      cta_link: "/catalog",
+    },
+  },
+  home_reviews: {
+    isEnabled: true,
+    sectionName: "Homeowners Reviews Heading",
+    content: {
+      eyebrow: "Real Homes & Experiences",
+      heading: "What British Homeowners Say",
+      rating_score: "4.9 / 5.0",
+      source_label: "Trustpilot & Google Customer Feedback",
+    },
+  },
+  footer_assurance: {
+    isEnabled: true,
+    sectionName: "4 Pillars of UK Customer Confidence",
+    content: {
+      pillars: [
+        {
+          icon: "Truck",
+          title: "UK Mainland Delivery",
+          description:
+            "Direct to your door with pre-delivery booking call across the UK Mainland.",
+        },
+        {
+          icon: "RotateCcw",
+          title: "Free Mainland Delivery in 15 Days",
+          description:
+            "Complimentary room-of-choice mainland delivery fulfilled directly within 15 days.",
+        },
+        {
+          icon: "Shield",
+          title: "UK Quality Assured",
+          description:
+            "High-grade materials and rigorous structural quality testing for long-lasting home durability.",
+        },
+        {
+          icon: "Sparkles",
+          title: "Secure UK Payments",
+          description:
+            "Protected 256-bit SSL encrypted checkout accepting Visa, Mastercard, Maestro and American Express via Stripe.",
+        },
+      ],
+    },
+  },
+  footer_brand_info: {
+    isEnabled: true,
+    sectionName: "Brand Story & UK Customer Care Hours",
+    content: {
+      brand_bio:
+        "Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes.",
+      support_title: "Customer Support (UK)",
+      support_hours: "Monday – Friday: 09:00 – 18:00 GMT",
+      support_email: "support@sanfurniture.com",
+      support_phone: "+44 20 7946 0192",
+      legal_note:
+        "SAN Furniture UK • Contemporary Home Living, Exceptional Quality & Free Mainland Delivery",
+    },
+  },
+  footer_payment_trust: {
+    isEnabled: true,
+    sectionName: "Payment Trust Badges & Secure Checkout",
+    content: {
+      company_number: "",
+      copyright_text: "© 2026 SAN Furniture. All rights reserved.",
+      positive_copy:
+        "SAN Furniture UK • Contemporary Home Living, Exceptional Quality & Free Mainland Delivery.",
+      accepted_methods: ["Visa", "Mastercard", "American Express", "Maestro"],
+    },
+  },
+  catalog_header: {
+    isEnabled: true,
+    sectionName: "Catalog Page Banner & Hero Text",
+    content: {
+      eyebrow: "Architectural Curations",
+      title: "The Complete Furniture Collection",
+      subtitle:
+        "Handcrafted living, dining, and bedroom pieces designed for timeless comfort and lasting British homes.",
+      vat_badge: "All items include 20% UK VAT with direct delivery tracking",
+    },
+  },
+  catalog_filter_bar: {
+    isEnabled: true,
+    sectionName: "Catalog Filters & Zero State Copy",
+    content: {
+      empty_title: "No Matching Furniture Pieces Found",
+      empty_description:
+        "We could not find any active pieces matching your current facet filters. Please clear one or more criteria to view our available British ranges.",
+      reset_button_label: "Clear All Active Filters",
+      sort_options_label: "Sort Catalog By",
+    },
+  },
+  header_main: {
+    isEnabled: true,
+    sectionName: "Header Navigation & Sticky Controls",
+    content: {
+      is_sticky: true,
+      sticky_behavior: "always", // "always" | "scroll_up" | "static"
+      hide_topbar_on_scroll: false,
+      search_placeholder: "Search sofas, solid oak dining, ottoman beds...",
+      support_cta_label: "Concierge Help",
+      hotline_label: "Direct Dispatch Line: 020 7946 0192",
+      client_portal_label: "Client Account",
+    },
+  },
+  header_mega_menu: {
+    isEnabled: true,
+    sectionName: "Desktop & Mobile Mega Menu Navigation",
+    content: {
+      tabs: [
+        {
+          id: "sofas",
+          label: "Sofas & Seating",
+          href: "/categories/sofas",
+          badge: "",
+          columns: [
+            {
+              title: "Sofas By Style",
+              links: [
+                { label: "All Sofas & Couches", href: "/categories/sofas" },
+                { label: "Corner & L-Shape Lounges", href: "/categories/sofas?style=corner", badge: "HOT" },
+                { label: "3-Seater Family Sofas", href: "/categories/sofas?seats=3" },
+                { label: "2-Seater Compact Sofas", href: "/categories/sofas?seats=2" },
+                { label: "Modular Sectionals", href: "/categories/sofas?type=modular", badge: "NEW" },
+                { label: "Luxury Sofa Beds", href: "/categories/sofas?type=sofa-bed" },
+              ],
+            },
+            {
+              title: "Chairs & Accents",
+              links: [
+                { label: "All Accent Armchairs", href: "/categories/armchairs", badge: "POPULAR" },
+                { label: "Deep-Seat Bouclé Loungers", href: "/categories/armchairs?material=boucle" },
+                { label: "Matte Velvet Snugglers", href: "/categories/armchairs?material=velvet" },
+                { label: "Storage Footstools & Poufs", href: "/categories/armchairs?type=ottoman" },
+                { label: "Sculptural Fireside Chairs", href: "/categories/armchairs" },
+              ],
+            },
+            {
+              title: "British Craft Fabrics",
+              links: [
+                { label: "Textured Bouclé Collections", href: "/categories/sofas?fabric=boucle" },
+                { label: "Stain-Resistant Matte Velvet", href: "/categories/sofas?fabric=velvet" },
+                { label: "Natural Belgian Linen", href: "/categories/sofas?fabric=linen" },
+                { label: "Supple Italian Leather", href: "/categories/sofas?fabric=leather", badge: "PREMIUM" },
+                { label: "Free Swatch Sample Service", href: "/delivery" },
+              ],
+            },
+          ],
+          featured_promo: {
+            badge: "HANDCRAFTED UK",
+            title: "The Sandringham Bouclé Sofa",
+            subtitle: "Architectural proportions with pocket-sprung comfort and hardwood frame.",
+            image_url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80",
+            cta_label: "Explore Sandringham",
+            cta_href: "/products/sandringham-large-sofa",
+          },
+          featured_product: {
+            tag: "White Glove Delivery",
+            title: "Sandringham Large Bouclé Sofa",
+            price_str: "£1,495.00",
+            image_url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80",
+            href: "/products/sandringham-large-sofa",
+          },
+        },
+        {
+          id: "living",
+          label: "Living Room",
+          href: "/categories/living-tables",
+          badge: "",
+          columns: [
+            {
+              title: "Tables & Surfaces",
+              links: [
+                { label: "All Living Tables", href: "/categories/living-tables" },
+                { label: "Statement Coffee Tables", href: "/categories/living-tables", badge: "BESTSELLER" },
+                { label: "Nesting & Side Tables", href: "/categories/living-tables?type=nesting" },
+                { label: "Architectural Console Tables", href: "/categories/living-tables?type=console" },
+                { label: "Fluted Oak Center Tables", href: "/categories/living-tables?material=oak" },
+              ],
+            },
+            {
+              title: "Storage & Desks",
+              links: [
+                { label: "High-Gloss Sideboards", href: "/categories/living-tables?type=sideboard" },
+                { label: "Media Consoles & TV Units", href: "/catalog?search=tv" },
+                { label: "Oslo Scandinavian Desks", href: "/products/oslo-scandinavian-minimalist-writing-desk", badge: "NEW" },
+                { label: "White Gloss Bookcases", href: "/products/zing-white-gloss-bookcase-2439" },
+                { label: "Madrid Tall Chest of Drawers", href: "/products/madrid-white-gloss-tall-chest-of-drawers-2429" },
+              ],
+            },
+            {
+              title: "Curated Aesthetics",
+              links: [
+                { label: "Nordic Minimalist Living", href: "/catalog?filter=scandi" },
+                { label: "Contemporary Alpine Gloss", href: "/catalog?filter=gloss" },
+                { label: "Modern European Oak", href: "/catalog?filter=oak" },
+                { label: "Compact Living Room Ideas", href: "/catalog" },
+              ],
+            },
+          ],
+          featured_promo: {
+            badge: "DANISH SERIES",
+            title: "Oslo Scandinavian Desk",
+            subtitle: "Clean architectural lines with 3 stationery drawers engineered for home working.",
+            image_url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=800&auto=format&fit=crop",
+            cta_label: "View Oslo Desk",
+            cta_href: "/products/oslo-scandinavian-minimalist-writing-desk",
+          },
+          featured_product: {
+            tag: "In Stock UK",
+            title: "Oslo Minimalist Writing Desk",
+            price_str: "£249.00",
+            image_url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=800&auto=format&fit=crop",
+            href: "/products/oslo-scandinavian-minimalist-writing-desk",
+          },
+        },
+        {
+          id: "dining",
+          label: "Dining Room",
+          href: "/categories/dining",
+          badge: "",
+          columns: [
+            {
+              title: "Dining Tables",
+              links: [
+                { label: "All Dining Tables", href: "/categories/dining" },
+                { label: "Extending Dining Tables", href: "/products/modena-extending-dining-table-high-gloss", badge: "POPULAR" },
+                { label: "6 to 8 Seater Tables", href: "/categories/dining?seats=6-8" },
+                { label: "Round Dining Tables", href: "/categories/dining?shape=round" },
+                { label: "High-Gloss Modern Tables", href: "/categories/dining?finish=gloss" },
+                { label: "Solid European Oak Tables", href: "/categories/dining?material=oak" },
+              ],
+            },
+            {
+              title: "Dining Seating",
+              links: [
+                { label: "Upholstered Dining Chairs", href: "/categories/dining?type=chairs" },
+                { label: "Velvet Dining Chairs", href: "/categories/dining?fabric=velvet" },
+                { label: "Dining Benches", href: "/categories/dining?type=benches" },
+                { label: "Breakfast Bar Stools", href: "/categories/dining?type=stools", badge: "NEW" },
+                { label: "Carver & Armchair Seating", href: "/categories/dining" },
+              ],
+            },
+            {
+              title: "Entertaining & Hosting",
+              links: [
+                { label: "Complete 6-Piece Sets", href: "/categories/dining" },
+                { label: "Stain-Resistant Family Dining", href: "/categories/dining" },
+                { label: "Compact Apartment Dining", href: "/categories/dining" },
+                { label: "Display Cabinets & Buffets", href: "/catalog?search=bookcase" },
+              ],
+            },
+          ],
+          featured_promo: {
+            badge: "GERMAN MECHANISM",
+            title: "Modena Extending Dining Table",
+            subtitle: "Seats 6 to 8 guests comfortably with smooth butterfly extension.",
+            image_url: "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=800&auto=format&fit=crop",
+            cta_label: "Explore Modena Table",
+            cta_href: "/products/modena-extending-dining-table-high-gloss",
+          },
+          featured_product: {
+            tag: "Pallet Delivery",
+            title: "Modena Extending Dining Table",
+            price_str: "£499.00",
+            image_url: "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=800&auto=format&fit=crop",
+            href: "/products/modena-extending-dining-table-high-gloss",
+          },
+        },
+        {
+          id: "bedroom",
+          label: "Bedroom",
+          href: "/categories/beds",
+          badge: "",
+          columns: [
+            {
+              title: "Beds & Mattresses",
+              links: [
+                { label: "All Beds & Headboards", href: "/categories/beds" },
+                { label: "Gas-Lift Ottoman Beds", href: "/categories/beds?type=ottoman", badge: "HOT" },
+                { label: "King Size Beds (5ft)", href: "/categories/beds?size=king" },
+                { label: "Double Beds (4ft 6in)", href: "/categories/beds?size=double" },
+                { label: "Super King Bedsteads (6ft)", href: "/categories/beds?size=super-king" },
+                { label: "Bouclé Upholstered Frames", href: "/categories/beds?material=boucle" },
+              ],
+            },
+            {
+              title: "Wardrobes & Chests",
+              links: [
+                { label: "All Bedroom Storage", href: "/categories/beds" },
+                { label: "Paris Mirrored 3-Door Wardrobe", href: "/products/paris-3-door-mirrored-wardrobe-matt-white", badge: "BESTSELLER" },
+                { label: "Copenhagen Solid Oak Chest", href: "/products/copenhagen-4-drawer-deep-chest-danish-oak" },
+                { label: "Venice Alpine White Bedside", href: "/products/venice-alpine-white-bedside-2394" },
+                { label: "Louise White Gloss Bedside", href: "/products/louise-white-gloss-bedside-table-2413" },
+                { label: "Madrid Sliding Wardrobe Drawers", href: "/products/madrid-wardrobe-internal-drawers-2428" },
+              ],
+            },
+            {
+              title: "Bedroom Collections",
+              links: [
+                { label: "Danish Oak Bedroom Suite", href: "/products/copenhagen-4-drawer-deep-chest-danish-oak" },
+                { label: "Parisian White Mirrored Range", href: "/products/paris-3-door-mirrored-wardrobe-matt-white" },
+                { label: "Contemporary Gloss Ensembles", href: "/products/louise-white-gloss-bedside-table-2413" },
+                { label: "Under-Bed Storage Solutions", href: "/categories/beds" },
+              ],
+            },
+          ],
+          featured_promo: {
+            badge: "CLASSIC DANISH",
+            title: "Paris 3-Door Mirrored Wardrobe",
+            subtitle: "Full-length bevelled mirrors with hanging rails and 2 deep bottom drawers.",
+            image_url: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=800&auto=format&fit=crop",
+            cta_label: "View Paris Wardrobe",
+            cta_href: "/products/paris-3-door-mirrored-wardrobe-matt-white",
+          },
+          featured_product: {
+            tag: "Solid Danish Oak",
+            title: "Copenhagen 4-Drawer Deep Chest",
+            price_str: "£219.00",
+            image_url: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=800&auto=format&fit=crop",
+            href: "/products/copenhagen-4-drawer-deep-chest-danish-oak",
+          },
+        },
+        {
+          id: "collections",
+          label: "Collections & Offers",
+          href: "/catalog",
+          badge: "SALE",
+          columns: [
+            {
+              title: "Featured Series",
+              links: [
+                { label: "Complete Catalog (All 38+ Pieces)", href: "/catalog" },
+                { label: "Danish Scandinavian Oak", href: "/products/copenhagen-4-drawer-deep-chest-danish-oak", badge: "HOT" },
+                { label: "Modern European High Gloss", href: "/products/modena-extending-dining-table-high-gloss" },
+                { label: "Parisian Classic Mirrored", href: "/products/paris-3-door-mirrored-wardrobe-matt-white" },
+                { label: "New Showroom Arrivals 2026", href: "/catalog?filter=new", badge: "NEW" },
+              ],
+            },
+            {
+              title: "Clearance & Savings",
+              links: [
+                { label: "Showroom Clearance Lines", href: "/catalog", badge: "UP TO 40% OFF" },
+                { label: "Bedside Table Value Multi-Packs", href: "/categories/beds" },
+                { label: "Dining Suite Packages", href: "/categories/dining" },
+                { label: "Interior Designer & Trade Orders", href: "/delivery" },
+              ],
+            },
+            {
+              title: "Customer Care & Delivery",
+              links: [
+                { label: "Mainland UK Delivery Guide", href: "/delivery" },
+                { label: "Furniture Care & Maintenance", href: "/delivery" },
+                { label: "Assembly Guides & Proportions", href: "/delivery" },
+                { label: "Customer Concierge Support", href: "/contact" },
+              ],
+            },
+          ],
+          featured_promo: {
+            badge: "SPECIAL SAVINGS",
+            title: "Showroom Seasonal Clearance",
+            subtitle: "Limited UK warehouse stock ready for direct tracked dispatch.",
+            image_url: "https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg",
+            cta_label: "Shop All Special Offers",
+            cta_href: "/catalog",
+          },
+          featured_product: {
+            tag: "Limited Stock",
+            title: "Venice Alpine White Bedside",
+            price_str: "£110.46",
+            original_price_str: "£145.00",
+            image_url: "https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg",
+            href: "/products/venice-alpine-white-bedside-2394",
+          },
+        },
+      ],
+      bottom_perks: [
+        { icon: "Truck", text: "Free Delivery Across Mainland UK on All Orders" },
+        { icon: "ShieldCheck", text: "UK Quality Checked & Durability Tested" },
+        { icon: "CreditCard", text: "Zero Hidden Fees & Secure Card Checkout" },
+      ],
+    },
+  },
+  home_newsletter: {
+    isEnabled: true,
+    sectionName: "VIP Newsletter & Private Sales",
+    content: {
+      eyebrow: "The SAN Private Circle",
+      title: "Receive £50 Off Your First Order Over £500",
+      subtitle:
+        "Join our UK private collectors list for early access to limited edition drops, seasonal showroom previews, and interior design curations.",
+      placeholder: "Enter your personal email address...",
+      button_text: "Claim Voucher",
+      disclaimer:
+        "No spam. Unsubscribe at any time. Strictly adhering to UK GDPR 2018.",
+    },
+  },
+  pdp_value_badges: {
+    isEnabled: true,
+    sectionName: "Guarantees & Reassurance Badges",
+    content: {
+      badges: [
+        {
+          icon: "Truck",
+          title: "Free Mainland Delivery",
+          subtitle: "Direct to your door within 15 days across Mainland UK",
+          description: "Direct to your door within 15 days across Mainland UK",
+        },
+        {
+          icon: "ShieldCheck",
+          title: "UK Quality Checked",
+          subtitle: "Rigorous structural durability & quality inspection",
+          description: "Rigorous structural durability & quality inspection",
+        },
+        {
+          icon: "CreditCard",
+          title: "Secure Card Checkout",
+          subtitle: "256-bit encrypted checkout via Stripe UK",
+          description: "256-bit encrypted checkout via Stripe UK",
+        },
+      ],
+    },
+  },
+  pdp_delivery_info: {
+    isEnabled: true,
+    sectionName: "Delivery Tiers & Postcode Checker Info",
+    content: {
+      box_title: "UK Delivery & Postcode Estimator",
+      free_threshold_notice:
+        "Free delivery automatically applies on all furniture orders across Mainland UK.",
+      regional_surcharge_notice:
+        "We currently do not deliver outside mainland UK (including Scottish Highlands & Islands, Northern Ireland, Isle of Man, or Channel Islands).",
+      room_of_choice_label:
+        "Delivered directly to your room of choice with packaging removal.",
+    },
+  },
+  pdp_clearance_guide: {
+    isEnabled: true,
+    sectionName: "Dimensions & Doorway Clearance Advisory",
+    content: {
+      guide_title: "Will This Fit In Your Home?",
+      clearance_tips: [
+        "Measure all doorway widths, stairwell turns, and hallway clearances before order dispatch.",
+        "Check that your ceiling height clears vertical delivery boxes if ordering tall wardrobes.",
+        "Our delivery crews can inspect access points upon arrival prior to room positioning.",
+      ],
+      helpline_prompt:
+        "Need exact box dimensions? Call our delivery dispatch desk: +44 20 7946 0192.",
+    },
+  },
+  pdp_finance_perks: {
+    isEnabled: true,
+    sectionName: "Financing Options (Klarna/Pay in 3) & Payment Badges",
+    content: {
+      financing_headline: "Spread the cost with 0% APR options",
+      financing_providers: "Klarna • Clearpay",
+      vat_included_notice:
+        "Transparent British Luxury. Zero hidden charges.",
+      security_seal_text: "256-Bit Bank Grade SSL Encrypted Checkout",
+    },
+  },
+  cart_threshold_banner: {
+    isEnabled: true,
+    sectionName: "Free Delivery Progress Bar & Messages",
+    content: {
+      threshold_amount_gbp: 500,
+      unqualified_message:
+        "Free UK Mainland Delivery on all orders!",
+      qualified_message:
+        "You have unlocked Free UK White Glove Delivery!",
+      vat_summary_label: "Inclusive Transparent UK Pricing",
+    },
+  },
+  cart_trust_guarantees: {
+    isEnabled: true,
+    sectionName: "Cart Drawer Trust Badges",
+    content: {
+      guarantees: [
+        "Mainland delivery updates sent via SMS & Email",
+        "Free Mainland Delivery within 15 days",
+        "Dedicated UK concierge assistance for assembly and care instructions",
+      ],
+      checkout_button_label: "Proceed to Secure UK Checkout",
+    },
+  },
+  checkout_header_badge: {
+    isEnabled: true,
+    sectionName: "Safe & Secure UK Checkout Banner",
+    content: {
+      banner_title: "Official SAN UK Commerce Gateway",
+      ssl_guarantee: "256-Bit Encrypted • PCI-DSS Level 1 Compliant",
+      vat_invoice_claim:
+        "A transparent digital order confirmation with full itemised breakdown will be sent upon payment confirmation.",
+    },
+  },
+  checkout_delivery_guide: {
+    isEnabled: true,
+    sectionName: "Delivery Tiers & Surcharges Guidance",
+    content: {
+      standard_tier_title: "Standard Tracked Parcel (£9.99 or Free over £100)",
+      pallet_tier_title:
+        "Heavy Goods Pallet Delivery (Free across Mainland UK)",
+      white_glove_title:
+        "Room of Choice Delivery (Free across Mainland UK)",
+      surcharge_disclaimer:
+        "Please note: Orders are currently accepted for Mainland UK addresses only. Deliveries outside Mainland UK are unavailable.",
+    },
+  },
+  about_hero: {
+    isEnabled: true,
+    sectionName: "Quality Living & Modern Furniture",
+    content: {
+      eyebrow: "Our Heritage & Philosophy",
+      title: "Modern Living, Engineered for Everyday Comfort",
+      story:
+        "Founded to deliver thoughtfully designed, high-quality home furniture directly to UK doorsteps without inflated retail markups. From sturdy dining sets to modular storage chests and elegant living furniture, every piece is built for real everyday homes.",
+      highlight_stat_1: "15,000+ Homes Furnished Across the UK",
+      highlight_stat_2: "Rigorous Structural Durability Checks",
+      highlight_stat_3: "100% Quality Inspected Prior to Dispatch",
+    },
+  },
+  about_sustainability: {
+    isEnabled: true,
+    sectionName: "FSC Timber & Ethical Sourcing",
+    content: {
+      title: "Sustainable Forestry & Responsible Materials",
+      description:
+        "We partner exclusively with certified sawmills across Europe and the UK that practice sustainable forestry under strict FSC and PEFC guidelines. Our foams are non-toxic, and our fabrics are free from hazardous fluorocarbons.",
+      bullet_1: "FSC-Certified Solid European Oak & American Walnut",
+      bullet_2: "Non-toxic high-density reflex foams",
+      bullet_3:
+        "Eco-conscious packaging with cardboard recycling collection",
+    },
+  },
+  delivery_tiers_guide: {
+    isEnabled: true,
+    sectionName: "Delivery Tiers & Service Expectations",
+    content: {
+      title: "Specialist UK Furniture Logistics",
+      lead_time_summary:
+        "Mainland UK deliveries are typically completed within 7 to 14 business days. Pre-delivery booking calls are made 48 hours prior to dispatch.",
+      tier_1_title: "1. Standard Parcel (Small Items)",
+      tier_1_desc:
+        "Tracked next-day courier delivery for lamps, cushions, stools, and care kits.",
+      tier_2_title: "2. Heavy Goods Pallet Delivery",
+      tier_2_desc:
+        "Kerbside palletized delivery for solid wood dining tables and flatpack modular storage.",
+      tier_3_title: "3. Two-Man White Glove Service",
+      tier_3_desc:
+        "Delivered into your room of choice, unpackaged, and inspected. Packaging materials are removed for recycling.",
+    },
+  },
+  returns_policy: {
+    isEnabled: true,
+    sectionName: "14-Day Returns & Collection Terms",
+    content: {
+      title: "14-Day Peace of Mind Return Policy",
+      cooling_off_notice:
+        "In full accordance with the UK Consumer Contracts Regulations 2013, you have 14 days from the date of delivery to notify us if you wish to return an item.",
+      collection_procedure:
+        "Contact our Leicester logistics desk, and we will schedule our specialist carrier to collect the piece directly from your home.",
+      condition_requirement:
+        "Items must be returned in resalable condition in original packaging. Refunds are processed within 3-5 business days upon warehouse inspection.",
+    },
+  },
+  contact_details: {
+    isEnabled: true,
+    sectionName: "Concierge Contact & Warehouse Address",
+    content: {
+      page_title: "Customer Concierge & Support Desk",
+      page_subtitle:
+        "Our UK support team is available Monday through Saturday to answer questions regarding orders, product specifications, or room dimensions.",
+      phone: "+44 (0) 20 7946 0192",
+      email: "concierge@sanfurniture.com",
+      whatsapp: "+44 7700 900821",
+      hours:
+        "Monday – Friday: 08:30 – 18:30 GMT | Saturday: 09:00 – 16:00 GMT",
+      warehouse_address:
+        "SAN Furniture Logistics Hub, Unit 4 Meridian Business Park, Leicester LE19 1RJ, United Kingdom",
+    },
+  },
+  faq_list: {
+    isEnabled: true,
+    sectionName: "Frequently Asked Questions",
+    content: {
+      faqs: [
+        {
+          question: "How long does UK delivery take?",
+          answer:
+            "Most items are dispatched directly from our UK supplier warehouses within 3-5 business days and delivered within 7-14 business days. You will receive an SMS and tracking code to select your delivery window.",
+        },
+        {
+          question:
+            "How is my furniture packaged and delivered?",
+          answer:
+            "Every piece is carefully boxed in reinforced flat-pack protective packaging with corner buffers, and dispatched directly across Mainland UK within 10-15 business days.",
+        },
+        {
+          question: "What delivery service is provided?",
+          answer:
+            "We provide free delivery across Mainland UK directly to your doorstep with pre-delivery dispatch updates.",
+        },
+        {
+          question: "Will I receive an itemised order receipt?",
+          answer:
+            "Yes, an official itemised digital order receipt with complete product codes, quantities, and order reference will be emailed upon payment confirmation.",
+        },
+      ],
+    },
+  },
+  account_welcome_banner: {
+    isEnabled: true,
+    sectionName: "Client Portal Banner & Privileges",
+    content: {
+      welcome_title: "SAN Client Portal",
+      welcome_subtitle:
+        "Manage your active furniture orders, download official order receipts, review assembly guides, and track mainland dispatches.",
+      vip_perk_badge: "UK Verified Client",
+      support_shortcut_text:
+        "Need urgent delivery rescheduling? Speak to dispatch directly via our live helpdesk.",
+    },
+  },
+};

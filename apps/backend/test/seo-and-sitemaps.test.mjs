@@ -16,7 +16,6 @@ test("SchemaOrgGenerator: Emits valid Schema.org Organization, Breadcrumbs and F
   assert.equal(org.name, "SAN Furniture");
   assert.equal(org.currenciesAccepted, "GBP");
   assert.equal(org.address.addressCountry, "GB");
-  assert.equal(org.address.postalCode, "SW1Y 5NQ");
 
   // Breadcrumbs Schema
   const breadcrumbs = generator.generateBreadcrumbSchema([

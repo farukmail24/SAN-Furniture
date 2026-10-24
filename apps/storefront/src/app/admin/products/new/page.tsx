@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Save,
   CheckCircle2,
+  ShieldCheck,
   AlertCircle,
   ImageIcon,
   Flame,
@@ -34,9 +35,21 @@ interface VariantRow {
   stockQuantity: number;
 }
 
+interface DynamicDeliveryOption {
+  id: string;
+  name: string;
+  badge?: string;
+  pricePennies?: number;
+  baseFeePennies?: number;
+  formattedPrice?: string;
+  timeframe?: string;
+  isActive?: boolean;
+}
+
 export default function AdminNewProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [deliveryOptions, setDeliveryOptions] = useState<DynamicDeliveryOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -87,12 +100,45 @@ export default function AdminNewProductPage() {
   ]);
 
   useEffect(() => {
-    fetch(apiUrl("/api/admin/categories"))
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.categories) setCategories(data.categories);
-      })
-      .catch((err) => console.error("Failed to load categories:", err));
+    async function loadData() {
+      try {
+        const [resCat, resLogistics] = await Promise.all([
+          fetch(apiUrl("/api/admin/categories")),
+          fetch(apiUrl("/api/admin/logistics")).catch(() => null),
+        ]);
+
+        const dataCat = await resCat.json();
+        if (dataCat.categories) setCategories(dataCat.categories);
+
+        if (resLogistics && resLogistics.ok) {
+          const logData = await resLogistics.json();
+          if (Array.isArray(logData?.deliveryOptions) && logData.deliveryOptions.length > 0) {
+            setDeliveryOptions(logData.deliveryOptions);
+            const activeOpt = logData.deliveryOptions.find((o: any) => o.isActive !== false) || logData.deliveryOptions[0];
+            if (activeOpt) {
+              setDeliveryTier(activeOpt.id);
+            }
+            return;
+          }
+        }
+
+        // Fallback to public shipping options
+        const resShip = await fetch(apiUrl("/api/shipping/options")).catch(() => null);
+        if (resShip && resShip.ok) {
+          const shipData = await resShip.json();
+          if (Array.isArray(shipData?.options) && shipData.options.length > 0) {
+            setDeliveryOptions(shipData.options);
+            const activeOpt = shipData.options.find((o: any) => o.isActive !== false) || shipData.options[0];
+            if (activeOpt) {
+              setDeliveryTier(activeOpt.id);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load initial form data:", err);
+      }
+    }
+    loadData();
   }, []);
 
   // Auto-generate handle
@@ -261,7 +307,7 @@ export default function AdminNewProductPage() {
             Create Luxury Furniture Record
           </h1>
           <p className="text-xs text-navy-600 mt-0.5">
-            Full Multi-Image Gallery &bull; Product Variations &bull; Direct MySQL 3306 &bull; 20% UK VAT &bull; BS 5852
+            Full Multi-Image Gallery &bull; Product Variations &bull; Direct MySQL 3306 &bull; UK Quality Checked
           </p>
         </div>
 
@@ -699,8 +745,8 @@ export default function AdminNewProductPage() {
           {/* Card 5: UK Furniture Specifications & Dimensions */}
           <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-4">
             <h2 className="text-sm font-bold text-navy-950 uppercase tracking-wider flex items-center gap-2">
-              <Flame className="w-4 h-4 text-brass-600" />
-              <span>5. Dimensions, Materials &amp; Fire Safety Specs</span>
+              <ShieldCheck className="w-4 h-4 text-brass-600" />
+              <span>5. Dimensions, Materials &amp; Quality Specs</span>
             </h2>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -773,16 +819,51 @@ export default function AdminNewProductPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1">UK Delivery Tier</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-navy-900">
+                    UK Delivery Tier &amp; Logistics System
+                  </label>
+                  <Link
+                    href="/admin/logistics"
+                    target="_blank"
+                    className="text-[10px] text-brass-700 hover:text-brass-800 font-semibold flex items-center gap-1 hover:underline"
+                    title="Manage dynamic store delivery options in Logistics"
+                  >
+                    <Truck className="w-3 h-3 text-brass-600" />
+                    <span>Manage Options</span>
+                  </Link>
+                </div>
                 <select
                   value={deliveryTier}
                   onChange={(e) => setDeliveryTier(e.target.value)}
-                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950 focus:outline-none focus:border-brass-500"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950 focus:outline-none focus:border-brass-500 font-medium"
                 >
-                  <option value="two_man_white_glove">2-Man White Glove (Room of Choice + Heavy)</option>
-                  <option value="pallet">Pallet Freight (Kerbside)</option>
-                  <option value="standard_parcel">Standard Parcel (DPD)</option>
+                  {deliveryOptions.length > 0 ? (
+                    deliveryOptions.map((opt) => {
+                      const feeStr =
+                        opt.formattedPrice ||
+                        (typeof opt.pricePennies === "number"
+                          ? opt.pricePennies === 0
+                            ? "FREE"
+                            : formatGBP(opt.pricePennies)
+                          : typeof opt.baseFeePennies === "number"
+                          ? opt.baseFeePennies === 0
+                            ? "FREE"
+                            : formatGBP(opt.baseFeePennies)
+                          : "");
+                      return (
+                        <option key={opt.id} value={opt.id}>
+                          {opt.name} {feeStr ? `(${feeStr})` : ""}{opt.badge ? ` • ${opt.badge}` : ""}
+                        </option>
+                      );
+                    })
+                  ) : (
+                    <option value="">No delivery options configured in Logistics</option>
+                  )}
                 </select>
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Synchronized dynamically with Admin Logistics options and UK postcode surcharge zones.
+                </p>
               </div>
 
               <div className="flex items-center pt-5">
@@ -793,7 +874,7 @@ export default function AdminNewProductPage() {
                     onChange={(e) => setFireSafety(e.target.checked)}
                     className="w-4 h-4 rounded text-brass-500 focus:ring-0"
                   />
-                  <span className="font-semibold">UK BS 5852 Fire Safety Compliant</span>
+                  <span className="font-semibold">UK Quality Checked</span>
                 </label>
               </div>
             </div>
@@ -878,7 +959,7 @@ export default function AdminNewProductPage() {
                     £{parseFloat(priceGbp || "0").toFixed(2)}
                   </span>
                   <span className="text-[10px] text-emerald-800 bg-emerald-100 font-semibold px-2 py-0.5 rounded-full">
-                    BS 5852
+                    Verified
                   </span>
                 </div>
 
