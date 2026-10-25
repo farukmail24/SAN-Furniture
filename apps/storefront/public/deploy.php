@@ -67,32 +67,41 @@ if ($requestMethod === 'GET') {
     $isAuthenticated = ($queryToken === $secret || $headerToken === $secret);
     $action = $_GET['action'] ?? 'status';
 
-    $htaccessFile = $projectRoot . '/.htaccess';
-    $curHtaccess = file_exists($htaccessFile) ? @file_get_contents($htaccessFile) : '';
+    $hasRealPassenger = (bool)preg_match('/^\s*PassengerAppRoot\s+/m', $curHtaccess);
 
-    $nodeBins = array_unique(array_merge(
+    // List all node binaries and environments
+    $nodeDirs = glob('/home/sansoft/nodevenv/*', GLOB_ONLYDIR) ?: [];
+    $allNodeBins = array_unique(array_merge(
+        glob('/home/sansoft/nodevenv/*/*/bin/node') ?: [],
         glob('/home/*/{nodevenv,virtualenv}/*/*/bin/node', GLOB_BRACE) ?: [],
         glob('/home/*/nodevenv/*/*/bin/node') ?: [],
-        glob('/home/*/*/*/bin/node') ?: [],
-        glob('/home/*/*/*/*/bin/node') ?: [],
         glob('/usr/local/bin/node') ?: [],
         glob('/usr/bin/node') ?: []
     ));
 
-    if ($isAuthenticated && $action === 'fix_htaccess') {
-        $nodeBin = !empty($nodeBins) ? $nodeBins[0] : '/usr/bin/node';
-        $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
-            "PassengerAppRoot \"{$projectRoot}\"\n" .
-            "PassengerBaseURI \"/\"\n" .
-            "PassengerNodejs \"{$nodeBin}\"\n" .
-            "PassengerAppType node\n" .
-            "PassengerStartupFile server.js\n" .
-            "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END\n\n";
+    $selectedNode = !empty($allNodeBins) ? $allNodeBins[0] : '/usr/bin/node';
+    // If a node binary exists specifically for sanfurniture.com, prefer it
+    foreach ($allNodeBins as $nb) {
+        if (strpos($nb, 'sanfurniture') !== false) {
+            $selectedNode = $nb;
+            break;
+        }
+    }
 
-        if (strpos($curHtaccess, 'PassengerAppRoot') === false) {
+    $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
+        "PassengerAppRoot \"{$projectRoot}\"\n" .
+        "PassengerBaseURI \"/\"\n" .
+        "PassengerNodejs \"{$selectedNode}\"\n" .
+        "PassengerAppType node\n" .
+        "PassengerStartupFile server.js\n" .
+        "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END\n\n";
+
+    if ($isAuthenticated && ($action === 'fix_htaccess' || !$hasRealPassenger)) {
+        if (!$hasRealPassenger) {
             $updatedHtaccess = $passengerBlock . $curHtaccess;
             @file_put_contents($htaccessFile, $updatedHtaccess);
             $curHtaccess = $updatedHtaccess;
+            $hasRealPassenger = true;
         }
 
         @mkdir($projectRoot . '/tmp', 0755, true);
@@ -109,9 +118,10 @@ if ($requestMethod === 'GET') {
         'authenticated' => $isAuthenticated,
         'action' => $action,
         'serverTime' => date('c'),
-        'hasPassengerAppRoot' => (strpos($curHtaccess, 'PassengerAppRoot') !== false),
-        'discoveredNodeBins' => $isAuthenticated ? $nodeBins : count($nodeBins),
-        'htaccessPreview' => $isAuthenticated ? substr($curHtaccess, 0, 500) : null,
+        'hasRealPassenger' => $hasRealPassenger,
+        'selectedNode' => $selectedNode,
+        'nodeDirs' => $nodeDirs,
+        'allNodeBins' => $allNodeBins,
         'instructions' => [
             'payloadUrl' => 'https://sanfurniture.com/deploy.php',
             'contentType' => 'application/json',
@@ -199,37 +209,37 @@ if ($githubEvent === 'push') {
         $curHtaccess = @file_get_contents($htaccessFile);
         if (preg_match('/(# DO NOT REMOVE\.\s*CLOUDLINUX PASSENGER CONFIGURATION BEGIN.*?# DO NOT REMOVE\.\s*CLOUDLINUX PASSENGER CONFIGURATION END)/s', $curHtaccess, $m)) {
             $passengerBlock = $m[1];
-        } elseif (preg_match('/(PassengerAppRoot.*)/s', $curHtaccess, $m)) {
-            $passengerBlock = $m[1];
-        }
-    }
-
-    // Auto-discover Node.js Virtual Environment if block is missing
-    if (!$passengerBlock) {
-        $possibleNodeBins = array_merge(
-            glob('/home/*/{nodevenv,virtualenv}/*/*/bin/node', GLOB_BRACE) ?: [],
-            glob('/home/*/nodevenv/*/*/bin/node') ?: [],
-            glob('/home/*/*/*/bin/node') ?: []
-        );
-        if (!empty($possibleNodeBins)) {
-            $nodeBin = $possibleNodeBins[0];
-            $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
-                "PassengerAppRoot \"{$projectRoot}\"\n" .
-                "PassengerBaseURI \"/\"\n" .
-                "PassengerNodejs \"{$nodeBin}\"\n" .
-                "PassengerAppType node\n" .
-                "PassengerStartupFile server.js\n" .
-                "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END";
         }
     }
 
     exec("git fetch origin {$branch} 2>&1", $output, $exitCode);
     exec("git reset --hard origin/{$branch} 2>&1", $output, $exitCode);
 
-    // 2. Restore CloudLinux / Passenger block to .htaccess if it was stripped
-    if ($passengerBlock && file_exists($htaccessFile)) {
+    // 2. Restore CloudLinux / Passenger block to .htaccess if it is not present
+    if (file_exists($htaccessFile)) {
         $newHtaccess = @file_get_contents($htaccessFile);
-        if (strpos($newHtaccess, 'PassengerAppRoot') === false) {
+        if (!preg_match('/^\s*PassengerAppRoot\s+/m', $newHtaccess)) {
+            if (!$passengerBlock) {
+                $allNodeBins = array_unique(array_merge(
+                    glob('/home/sansoft/nodevenv/*/*/bin/node') ?: [],
+                    glob('/usr/local/bin/node') ?: [],
+                    glob('/usr/bin/node') ?: []
+                ));
+                $selectedNode = !empty($allNodeBins) ? $allNodeBins[0] : '/usr/bin/node';
+                foreach ($allNodeBins as $nb) {
+                    if (strpos($nb, 'sanfurniture') !== false) {
+                        $selectedNode = $nb;
+                        break;
+                    }
+                }
+                $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
+                    "PassengerAppRoot \"{$projectRoot}\"\n" .
+                    "PassengerBaseURI \"/\"\n" .
+                    "PassengerNodejs \"{$selectedNode}\"\n" .
+                    "PassengerAppType node\n" .
+                    "PassengerStartupFile server.js\n" .
+                    "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END";
+            }
             @file_put_contents($htaccessFile, $passengerBlock . "\n\n" . $newHtaccess);
         }
     }
