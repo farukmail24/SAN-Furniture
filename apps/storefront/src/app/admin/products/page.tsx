@@ -839,11 +839,24 @@ export default function AdminProductsPage() {
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-sand-200/70 flex items-center justify-between text-[11px] text-navy-600">
-                      <span>UK VAT (20% Net calculation):</span>
-                      <span className="font-mono font-semibold text-navy-900">
-                        {formatGBP(Math.round(viewingProduct.price_pennies - viewingProduct.price_pennies / 1.2))}
-                      </span>
+                    <div className="pt-2 border-t border-sand-200/70 space-y-1.5 text-[11px] text-navy-600">
+                      <div className="flex items-center justify-between">
+                        <span>UK Statutory 20% VAT:</span>
+                        <span className="font-mono font-semibold text-navy-900">
+                          {formatGBP(Math.round(viewingProduct.price_pennies - viewingProduct.price_pennies / 1.2))}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Net Selling Price (ex VAT):</span>
+                        <span className="font-mono font-semibold text-navy-900">
+                          {formatGBP(Math.round(viewingProduct.price_pennies / 1.2))}
+                        </span>
+                      </div>
+                      {viewingProduct.cost_price_pennies && (
+                        <div className="p-2 rounded-lg bg-sand-100/80 text-[10px] text-navy-800 leading-relaxed border border-sand-200">
+                          <strong>Pricing Formula:</strong> Trade ({formatGBP(viewingProduct.cost_price_pennies)}) → Net Retail ({formatGBP(Math.round(viewingProduct.price_pennies / 1.2))}) + 20% VAT ({formatGBP(Math.round(viewingProduct.price_pennies - viewingProduct.price_pennies / 1.2))}) = <strong>{formatGBP(viewingProduct.price_pennies)}</strong>
+                        </div>
+                      )}
                     </div>
                   </div>
 

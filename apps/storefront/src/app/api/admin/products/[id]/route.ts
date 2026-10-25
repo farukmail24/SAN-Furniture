@@ -85,6 +85,8 @@ export async function PATCH(
       variants,
       variantsJson,
       supplierCostPennies,
+      shippingCostPennies,
+      markupPercentage,
       widthCm,
       heightCm,
       depthCm,
@@ -182,10 +184,25 @@ export async function PATCH(
       await pool.query(`UPDATE furniture_specs SET ${sFields.join(", ")} WHERE product_id = ?`, sParams);
     }
 
+    const supFields: string[] = [];
+    const supParams: any[] = [];
     if (supplierCostPennies !== undefined) {
+      supFields.push("cost_price_pennies = ?");
+      supParams.push(supplierCostPennies);
+    }
+    if (shippingCostPennies !== undefined) {
+      supFields.push("shipping_cost_pennies = ?");
+      supParams.push(shippingCostPennies);
+    }
+    if (markupPercentage !== undefined) {
+      supFields.push("markup_percentage = ?");
+      supParams.push(markupPercentage);
+    }
+    if (supFields.length > 0) {
+      supParams.push(id);
       await pool.query(
-        "UPDATE supplier_feed_items SET cost_price_pennies = ? WHERE product_id = ?",
-        [supplierCostPennies, id]
+        `UPDATE supplier_feed_items SET ${supFields.join(", ")}, last_synced_at = NOW() WHERE product_id = ?`,
+        supParams
       );
     }
 
