@@ -71,29 +71,25 @@ if ($requestMethod === 'GET') {
 
     // List all node binaries and environments
     $nodeDirs = glob('/home/sansoft/nodevenv/*', GLOB_ONLYDIR) ?: [];
-    $sanNodeFiles = glob('/home/sansoft/nodevenv/sanfurniture.com/*') ?: [];
-    $sanNodeSubFiles = glob('/home/sansoft/nodevenv/sanfurniture.com/*/*') ?: [];
-    $sanNodeBinFiles = glob('/home/sansoft/nodevenv/sanfurniture.com/*/*/node') ?: [];
+    $sanNodeStorefront = glob('/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/*') ?: [];
+    $sanNodeDeep = glob('/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/*/*') ?: [];
+    $sanNodeBin = glob('/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/*/bin/node') ?: [];
 
     $allNodeBins = array_unique(array_merge(
-        $sanNodeBinFiles,
+        $sanNodeBin,
+        glob('/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/**/bin/node') ?: [],
         glob('/home/sansoft/nodevenv/sanfurniture.com/*/bin/node') ?: [],
-        glob('/home/sansoft/nodevenv/sanfurniture.com/bin/node') ?: [],
         glob('/home/sansoft/nodevenv/*/*/bin/node') ?: [],
         glob('/usr/local/bin/node') ?: [],
         glob('/usr/bin/node') ?: []
     ));
 
-    $selectedNode = '/usr/bin/node';
+    $selectedNode = !empty($sanNodeBin) ? $sanNodeBin[0] : (!empty($allNodeBins) ? $allNodeBins[0] : '/usr/bin/node');
     foreach ($allNodeBins as $nb) {
         if (strpos($nb, 'sanfurniture') !== false) {
             $selectedNode = $nb;
             break;
         }
-    }
-    if ($selectedNode === '/usr/bin/node' && !empty($allNodeBins)) {
-        // Fall back to first available if sanfurniture not found
-        $selectedNode = reset($allNodeBins);
     }
 
     $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
@@ -128,9 +124,9 @@ if ($requestMethod === 'GET') {
         'serverTime' => date('c'),
         'hasRealPassenger' => $hasRealPassenger,
         'selectedNode' => $selectedNode,
-        'nodeDirs' => $nodeDirs,
-        'sanNodeFiles' => $sanNodeFiles,
-        'sanNodeSubFiles' => $sanNodeSubFiles,
+        'sanNodeStorefront' => $sanNodeStorefront,
+        'sanNodeDeep' => $sanNodeDeep,
+        'sanNodeBin' => $sanNodeBin,
         'allNodeBins' => $allNodeBins,
         'instructions' => [
             'payloadUrl' => 'https://sanfurniture.com/deploy.php',
@@ -230,12 +226,15 @@ if ($githubEvent === 'push') {
         $newHtaccess = @file_get_contents($htaccessFile);
         if (!preg_match('/^\s*PassengerAppRoot\s+/m', $newHtaccess)) {
             if (!$passengerBlock) {
+                $sanNodeBin = glob('/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/*/bin/node') ?: [];
                 $allNodeBins = array_unique(array_merge(
+                    $sanNodeBin,
+                    glob('/home/sansoft/nodevenv/sanfurniture.com/**/bin/node') ?: [],
                     glob('/home/sansoft/nodevenv/*/*/bin/node') ?: [],
                     glob('/usr/local/bin/node') ?: [],
                     glob('/usr/bin/node') ?: []
                 ));
-                $selectedNode = !empty($allNodeBins) ? $allNodeBins[0] : '/usr/bin/node';
+                $selectedNode = !empty($sanNodeBin) ? $sanNodeBin[0] : (!empty($allNodeBins) ? $allNodeBins[0] : '/usr/bin/node');
                 foreach ($allNodeBins as $nb) {
                     if (strpos($nb, 'sanfurniture') !== false) {
                         $selectedNode = $nb;
