@@ -177,6 +177,14 @@
       "namedRegex": "^/api/admin/suppliers/(?<nxtPid>[^/]+?)/toggle(?:/)?$"
     },
     {
+      "page": "/api/admin/suppliers/[id]/upload-feed",
+      "regex": "^/api/admin/suppliers/([^/]+?)/upload\\-feed(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/suppliers/(?<nxtPid>[^/]+?)/upload\\-feed(?:/)?$"
+    },
+    {
       "page": "/api/admin/users/[id]",
       "regex": "^/api/admin/users/([^/]+?)(?:/)?$",
       "routeKeys": {

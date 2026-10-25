@@ -488,6 +488,78 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/admin/dropship/amos-mann/import-url/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/import-url">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/amos-mann/import-url/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/amos-mann/sitemap-catalog/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/sitemap-catalog">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/amos-mann/sitemap-catalog/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/amos-mann/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/amos-mann/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/amos-mann/sync/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/sync">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/amos-mann/sync/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/furniture-to-go/import-url/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/furniture-to-go/import-url">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/furniture-to-go/import-url/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/furniture-to-go/sitemap-catalog/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/furniture-to-go/sitemap-catalog">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/furniture-to-go/sitemap-catalog/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/furniture-to-go/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/furniture-to-go/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/furniture-to-go/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/dropship/furniture-to-go/sync-catalog/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/furniture-to-go/sync-catalog">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/furniture-to-go/sync-catalog/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/admin/logistics/delivery-options/[id]/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/logistics/delivery-options/[id]">> = Specific
@@ -713,10 +785,28 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/admin/suppliers/[id]/upload-feed/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/suppliers/[id]/upload-feed">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/suppliers/[id]/upload-feed/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/admin/suppliers/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/suppliers">> = Specific
   const handler = {} as typeof import("../../src/app/api/admin/suppliers/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/suppliers/sync/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/suppliers/sync">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/suppliers/sync/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

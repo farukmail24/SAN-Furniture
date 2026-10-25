@@ -215,11 +215,20 @@ export default function AdminSuppliersPage() {
     });
   }, []);
 
+  const adminFetch = (input: string, init?: RequestInit) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    const headers = new Headers(init?.headers || {});
+    if (token && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return fetch(input, { ...init, headers });
+  };
+
   const handleTriggerSync = async (supplierId: string) => {
     setSyncingId(supplierId);
     setToastMsg(null);
     try {
-      const res = await fetch(apiUrl("/api/admin/suppliers/sync"), {
+      const res = await adminFetch(apiUrl("/api/admin/suppliers/sync"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ supplierId }),
@@ -246,7 +255,7 @@ export default function AdminSuppliersPage() {
     const targetStatus = supplier.is_active === 1 ? 0 : 1;
 
     try {
-      const res = await fetch(apiUrl(`/api/admin/suppliers/${supplier.id}/toggle`), {
+      const res = await adminFetch(apiUrl(`/api/admin/suppliers/${supplier.id}/toggle`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -295,7 +304,7 @@ export default function AdminSuppliersPage() {
       }
 
       if (endpoint) {
-        const res = await fetch(apiUrl(endpoint));
+        const res = await adminFetch(apiUrl(endpoint));
         const data = await res.json();
         setFeedItems(data.items || []);
         if (data.recentLogs) {
@@ -315,7 +324,7 @@ export default function AdminSuppliersPage() {
   const handleAmosMannSync = async () => {
     setAmosMannSyncing(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/sync"), { method: "POST" });
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/sync"), { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         setToastMsg({
@@ -342,7 +351,7 @@ export default function AdminSuppliersPage() {
     if (!newAmosUrl.trim()) return;
     setImportingUrl(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -377,11 +386,17 @@ export default function AdminSuppliersPage() {
   const fetchSitemapCatalog = async (category = "all") => {
     setLoadingSitemap(true);
     try {
-      const res = await fetch(apiUrl(`/api/admin/dropship/amos-mann/sitemap-catalog?category=${category}`));
+      const res = await adminFetch(apiUrl(`/api/admin/dropship/amos-mann/sitemap-catalog?category=${category}`));
       const data = await res.json();
-      setSitemapData(data);
-    } catch (err) {
+      if (res.ok && data) {
+        setSitemapData(data);
+      } else {
+        console.error("Failed to load Amos Mann sitemap catalog:", res.status, data);
+        setToastMsg({ type: "error", text: data?.error || `Failed to load sitemap catalog (${res.status})` });
+      }
+    } catch (err: any) {
       console.error("Failed to load sitemap catalog:", err);
+      setToastMsg({ type: "error", text: err.message || "Network error loading sitemap catalog." });
     } finally {
       setLoadingSitemap(false);
     }
@@ -391,7 +406,7 @@ export default function AdminSuppliersPage() {
     if (selectedSitemapUrls.length === 0) return;
     setImportingUrl(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -426,11 +441,17 @@ export default function AdminSuppliersPage() {
   const fetchFtgCatalog = async (category = "all") => {
     setLoadingFtgCatalog(true);
     try {
-      const res = await fetch(apiUrl(`/api/admin/dropship/furniture-to-go/sitemap-catalog?category=${category}`));
+      const res = await adminFetch(apiUrl(`/api/admin/dropship/furniture-to-go/sitemap-catalog?category=${category}`));
       const data = await res.json();
-      setFtgCatalogData(data);
-    } catch (err) {
+      if (res.ok && data) {
+        setFtgCatalogData(data);
+      } else {
+        console.error("Failed to load FTG catalog:", res.status, data);
+        setToastMsg({ type: "error", text: data?.error || `Failed to load FTG catalog (${res.status})` });
+      }
+    } catch (err: any) {
       console.error("Failed to load FTG catalog:", err);
+      setToastMsg({ type: "error", text: err.message || "Network error loading FTG catalog." });
     } finally {
       setLoadingFtgCatalog(false);
     }
@@ -441,7 +462,7 @@ export default function AdminSuppliersPage() {
     if (!newFtgUrl.trim()) return;
     setImportingFtg(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -477,7 +498,7 @@ export default function AdminSuppliersPage() {
     if (selectedFtgUrls.length === 0) return;
     setImportingFtg(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/furniture-to-go/import-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -512,7 +533,7 @@ export default function AdminSuppliersPage() {
   const handleFtgSync = async () => {
     setFtgSyncing(true);
     try {
-      const res = await fetch(apiUrl("/api/admin/dropship/furniture-to-go/sync-catalog"), { method: "POST" });
+      const res = await adminFetch(apiUrl("/api/admin/dropship/furniture-to-go/sync-catalog"), { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         setToastMsg({
@@ -538,7 +559,7 @@ export default function AdminSuppliersPage() {
     if (!inspectSupplier || !uploadContent.trim()) return;
     setUploading(true);
     try {
-      const res = await fetch(apiUrl(`/api/admin/suppliers/${inspectSupplier.id}/upload-feed`), {
+      const res = await adminFetch(apiUrl(`/api/admin/suppliers/${inspectSupplier.id}/upload-feed`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ feedContent: uploadContent }),
