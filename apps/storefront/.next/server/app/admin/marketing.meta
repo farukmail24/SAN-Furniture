@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/admin/layout,_N_T_/admin/marketing/layout,_N_T_/admin/marketing/page,_N_T_/admin/marketing"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/d44217d2aa6639dce158ed42cd01e09c82b60e535e2194a88c941181ea37fc39/$/admin/marketing",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/admin/marketing/page"
+    },
+    "isFallback": false
+  }
+}

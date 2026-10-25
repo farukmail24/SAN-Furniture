@@ -4,8 +4,10 @@ node_modules/
 !packages/types/dist/**
 !apps/backend/dist/
 !apps/backend/dist/**
-.next/
-**/.next/
+# Next.js Build Cache (Exclude 250MB+ temporary cache, retain lightweight production runtime artifacts for cPanel)
+**/.next/cache/
+**/.next/trace
+**/.next/diagnostics/
 tmp/
 **/tmp/
 .turbo/

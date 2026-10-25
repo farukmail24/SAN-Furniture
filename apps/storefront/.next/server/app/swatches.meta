@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/swatches/layout,_N_T_/swatches/page,_N_T_/swatches"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/63ecc59f467bc70169bff43e481d94fbd6ba26abd1cef600bfa993c9ae73594a/$/swatches",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/swatches/page"
+    },
+    "isFallback": false
+  }
+}
