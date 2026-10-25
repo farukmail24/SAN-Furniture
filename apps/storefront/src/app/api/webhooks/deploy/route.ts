@@ -89,10 +89,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse JSON payload
+    // Parse JSON payload (Supports both application/json and application/x-www-form-urlencoded)
     let payload: any = {};
     try {
-      payload = rawBody ? JSON.parse(rawBody) : {};
+      if (rawBody.startsWith("payload=")) {
+        const decoded = decodeURIComponent(rawBody.substring(8).replace(/\+/g, " "));
+        payload = JSON.parse(decoded);
+      } else {
+        payload = rawBody ? JSON.parse(rawBody) : {};
+      }
     } catch {
       return NextResponse.json(
         { success: false, error: "Invalid JSON payload" },

@@ -83,8 +83,12 @@ if (!$isSigValid && !$isTokenValid) {
     exit;
 }
 
-// 5. Parse JSON Payload
-$payload = json_decode($rawPayload, true);
+// 5. Parse JSON Payload (Supports both application/json and application/x-www-form-urlencoded)
+if (strpos($rawPayload, 'payload=') === 0) {
+    $payload = json_decode(urldecode(substr($rawPayload, 8)), true);
+} else {
+    $payload = json_decode($rawPayload, true);
+}
 if (json_last_error() !== JSON_ERROR_NONE && !empty($rawPayload)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'error' => 'Invalid JSON payload received']);
