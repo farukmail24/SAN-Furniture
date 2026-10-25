@@ -253,6 +253,14 @@ if ($githubEvent === 'push') {
         }
     }
 
+    // 3. Mirror all static/app chunks into static/chunks/app for 100% zero-downtime cache
+    $staticApp = $projectRoot . '/apps/storefront/.next/static/app';
+    $chunksApp = $projectRoot . '/apps/storefront/.next/static/chunks/app';
+    if (is_dir($staticApp)) {
+        if (!is_dir($chunksApp)) @mkdir($chunksApp, 0755, true);
+        @exec("cp -rn {$staticApp}/* {$chunksApp}/ 2>/dev/null || true");
+    }
+
     // Touch tmp/restart.txt to restart Phusion Passenger Node.js app on cPanel
     $restartDirs = [
         $projectRoot . '/tmp',

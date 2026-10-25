@@ -351,48 +351,55 @@ app.prepare()
           const relPath = pathname.replace("/_next/static/", "");
           const filePath = path.join(__dirname, ".next/static", relPath);
 
-          if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-            const ext = path.extname(filePath).toLowerCase();
+          const candidatePaths = [
+            filePath,
+            path.join(__dirname, ".next/static", relPath.replace(/^chunks\//, "")),
+            path.join(__dirname, ".next/static/chunks", relPath.replace(/^chunks\//, "")),
+            path.join(__dirname, ".next/static/chunks", relPath),
+          ];
+
+          let foundPath = candidatePaths.find((p) => {
+            try {
+              return fs.existsSync(p) && fs.statSync(p).isFile();
+            } catch {
+              return false;
+            }
+          });
+
+          // Resilient JS Chunk Fallback: If client asks for an older deleted hash (e.g. page-*.js, loading-*.js, layout-*.js, webpack-*.js)
+          if (!foundPath && pathname.endsWith(".js")) {
+            const fileName = path.basename(relPath);
+            const dirName = path.dirname(relPath);
+            const prefix = fileName.split("-")[0] || fileName.split(".")[0];
+
+            const searchDirs = [
+              path.join(__dirname, ".next/static", dirName),
+              path.join(__dirname, ".next/static/chunks", dirName),
+              path.join(__dirname, ".next/static", dirName.replace(/^chunks\//, "")),
+              path.join(__dirname, ".next/static/chunks", dirName.replace(/^chunks\//, "")),
+            ];
+
+            for (const d of searchDirs) {
+              try {
+                if (fs.existsSync(d) && fs.statSync(d).isDirectory()) {
+                  const candidates = fs.readdirSync(d).filter((f) => f.startsWith(prefix) && f.endsWith(".js"));
+                  if (candidates.length > 0) {
+                    foundPath = path.join(d, candidates[0]);
+                    break;
+                  }
+                }
+              } catch {}
+            }
+          }
+
+          if (foundPath) {
+            const ext = path.extname(foundPath).toLowerCase();
             res.writeHead(200, {
               "Content-Type": STATIC_MIME_TYPES[ext] || "application/octet-stream",
               "Cache-Control": "public, max-age=31536000, immutable",
             });
-            fs.createReadStream(filePath).pipe(res);
+            fs.createReadStream(foundPath).pipe(res);
             return;
-          }
-
-          // Resilient Webpack Runtime Fallback: If client asks for an older deleted Webpack hash, serve the active Webpack chunk
-          if (pathname.includes("/webpack-") && pathname.endsWith(".js")) {
-            const chunksDir = path.join(__dirname, ".next/static/chunks");
-            if (fs.existsSync(chunksDir)) {
-              const activeWebpack = fs.readdirSync(chunksDir).find(f => f.startsWith("webpack-") && f.endsWith(".js"));
-              if (activeWebpack) {
-                const activeWebpackFile = path.join(chunksDir, activeWebpack);
-                res.writeHead(200, {
-                  "Content-Type": "application/javascript; charset=utf-8",
-                  "Cache-Control": "no-cache, no-store, must-revalidate",
-                });
-                fs.createReadStream(activeWebpackFile).pipe(res);
-                return;
-              }
-            }
-          }
-
-          // Resilient App Layout Fallback: If client asks for an older deleted layout chunk, serve active layout chunk
-          if (pathname.includes("/app/layout-") && pathname.endsWith(".js")) {
-            const appChunksDir = path.join(__dirname, ".next/static/chunks/app");
-            if (fs.existsSync(appChunksDir)) {
-              const activeLayout = fs.readdirSync(appChunksDir).find(f => f.startsWith("layout-") && f.endsWith(".js"));
-              if (activeLayout) {
-                const activeLayoutFile = path.join(appChunksDir, activeLayout);
-                res.writeHead(200, {
-                  "Content-Type": "application/javascript; charset=utf-8",
-                  "Cache-Control": "no-cache, no-store, must-revalidate",
-                });
-                fs.createReadStream(activeLayoutFile).pipe(res);
-                return;
-              }
-            }
           }
 
           // Resilient CSS Fallback: If client asks for an older deleted CSS hash, serve the largest main stylesheet

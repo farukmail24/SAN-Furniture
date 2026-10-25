@@ -19,6 +19,14 @@ PassengerStartupFile server.js
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/$1 -f
     RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/$1 [L]
 
+    # Serve static chunks if requested under chunks/ but located directly in .next/static/
+    RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/$1 -f
+    RewriteRule ^_next/static/chunks/(.*)$ apps/storefront/.next/static/$1 [L]
+
+    # Serve static chunks if requested directly in .next/static/ but located in chunks/
+    RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/chunks/$1 -f
+    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/chunks/$1 [L]
+
     # Serve public directory assets directly from apps/storefront/public
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/public/$1 -f
     RewriteRule ^(.*)$ apps/storefront/public/$1 [L]
