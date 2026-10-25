@@ -152,8 +152,28 @@ if ($githubEvent === 'push') {
 
     chdir($projectRoot);
 
+    // 1. Preserve CloudLinux / Passenger block from .htaccess before git reset
+    $htaccessFile = $projectRoot . '/.htaccess';
+    $passengerBlock = null;
+    if (file_exists($htaccessFile)) {
+        $curHtaccess = @file_get_contents($htaccessFile);
+        if (preg_match('/(# DO NOT REMOVE\.\s*CLOUDLINUX PASSENGER CONFIGURATION BEGIN.*?# DO NOT REMOVE\.\s*CLOUDLINUX PASSENGER CONFIGURATION END)/s', $curHtaccess, $m)) {
+            $passengerBlock = $m[1];
+        } elseif (preg_match('/(PassengerAppRoot.*)/s', $curHtaccess, $m)) {
+            $passengerBlock = $m[1];
+        }
+    }
+
     exec("git fetch origin {$branch} 2>&1", $output, $exitCode);
     exec("git reset --hard origin/{$branch} 2>&1", $output, $exitCode);
+
+    // 2. Restore CloudLinux / Passenger block to .htaccess if it was stripped
+    if ($passengerBlock && file_exists($htaccessFile)) {
+        $newHtaccess = @file_get_contents($htaccessFile);
+        if (strpos($newHtaccess, 'PassengerAppRoot') === false) {
+            @file_put_contents($htaccessFile, $passengerBlock . "\n\n" . $newHtaccess);
+        }
+    }
 
     // Touch tmp/restart.txt to restart Phusion Passenger Node.js app on cPanel
     $restartDirs = [
