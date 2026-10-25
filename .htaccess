@@ -1,3 +1,11 @@
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN
+PassengerAppRoot "/home/sansoft/sanfurniture.com"
+PassengerBaseURI "/"
+PassengerNodejs "/home/sansoft/nodevenv/sanfurniture.com/apps/storefront/22/bin/node"
+PassengerAppType node
+PassengerStartupFile server.js
+# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END
+
 # SAN Furniture - cPanel Apache Configuration & Reverse Proxy
 <IfModule mod_rewrite.c>
     RewriteEngine On
