@@ -64,14 +64,54 @@ $queryToken = $_GET['secret'] ?? ($_GET['token'] ?? '');
 $headerToken = $_SERVER['HTTP_X_DEPLOY_SECRET'] ?? '';
 
 if ($requestMethod === 'GET') {
+    $isAuthenticated = ($queryToken === $secret || $headerToken === $secret);
+    $action = $_GET['action'] ?? 'status';
+
+    $htaccessFile = $projectRoot . '/.htaccess';
+    $curHtaccess = file_exists($htaccessFile) ? @file_get_contents($htaccessFile) : '';
+
+    $nodeBins = array_unique(array_merge(
+        glob('/home/*/{nodevenv,virtualenv}/*/*/bin/node', GLOB_BRACE) ?: [],
+        glob('/home/*/nodevenv/*/*/bin/node') ?: [],
+        glob('/home/*/*/*/bin/node') ?: [],
+        glob('/home/*/*/*/*/bin/node') ?: [],
+        glob('/usr/local/bin/node') ?: [],
+        glob('/usr/bin/node') ?: []
+    ));
+
+    if ($isAuthenticated && $action === 'fix_htaccess') {
+        $nodeBin = !empty($nodeBins) ? $nodeBins[0] : '/usr/bin/node';
+        $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
+            "PassengerAppRoot \"{$projectRoot}\"\n" .
+            "PassengerBaseURI \"/\"\n" .
+            "PassengerNodejs \"{$nodeBin}\"\n" .
+            "PassengerAppType node\n" .
+            "PassengerStartupFile server.js\n" .
+            "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END\n\n";
+
+        if (strpos($curHtaccess, 'PassengerAppRoot') === false) {
+            $updatedHtaccess = $passengerBlock . $curHtaccess;
+            @file_put_contents($htaccessFile, $updatedHtaccess);
+            $curHtaccess = $updatedHtaccess;
+        }
+
+        @mkdir($projectRoot . '/tmp', 0755, true);
+        @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted by fix_htaccess at " . date('c') . "\n");
+        @exec("passenger-config restart-app {$projectRoot} 2>&1");
+    }
+
     echo json_encode([
         'status' => 'online',
         'service' => 'SAN Furniture GitHub Auto-Deploy Webhook',
         'projectRoot' => $projectRoot,
         'supportedEvents' => ['push', 'ping'],
         'monitoredBranches' => ['master', 'main'],
-        'authenticated' => ($queryToken === $secret),
+        'authenticated' => $isAuthenticated,
+        'action' => $action,
         'serverTime' => date('c'),
+        'hasPassengerAppRoot' => (strpos($curHtaccess, 'PassengerAppRoot') !== false),
+        'discoveredNodeBins' => $isAuthenticated ? $nodeBins : count($nodeBins),
+        'htaccessPreview' => $isAuthenticated ? substr($curHtaccess, 0, 500) : null,
         'instructions' => [
             'payloadUrl' => 'https://sanfurniture.com/deploy.php',
             'contentType' => 'application/json',
