@@ -124,6 +124,43 @@ export default function AdminSettingsPage() {
   const [storageTestResult, setStorageTestResult] = useState<any>(null);
   const [copiedCmd, setCopiedCmd] = useState<string | null>(null);
 
+  // GitHub Auto-Deploy Webhook State
+  const [testingWebhook, setTestingWebhook] = useState(false);
+  const [webhookTestResult, setWebhookTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [copiedWebhook, setCopiedWebhook] = useState<string | null>(null);
+
+  const handleCopyWebhook = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedWebhook(id);
+    setTimeout(() => setCopiedWebhook(null), 2000);
+  };
+
+  const handleTestWebhook = async () => {
+    try {
+      setTestingWebhook(true);
+      setWebhookTestResult(null);
+      const res = await fetch("/api/webhooks/deploy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-github-event": "ping",
+          "x-deploy-secret": "san_furniture_auto_deploy_master_secret_2026",
+        },
+        body: JSON.stringify({ zen: "SAN Furniture Auto-Deploy Test", hook_id: 999999 }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWebhookTestResult({ success: true, message: data.message || "Webhook test passed!" });
+      } else {
+        setWebhookTestResult({ success: false, message: data.error || "Webhook test failed" });
+      }
+    } catch (err: any) {
+      setWebhookTestResult({ success: false, message: err.message || "Network error testing webhook" });
+    } finally {
+      setTestingWebhook(false);
+    }
+  };
+
   // Media picker target
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [activeLogoTarget, setActiveLogoTarget] = useState<"light" | "dark" | "favicon">("light");
@@ -1951,6 +1988,143 @@ export default function AdminSettingsPage() {
                   <pre className="text-xs font-mono text-sand-200 overflow-x-auto whitespace-pre-wrap select-all">
                     php artisan storage:link
                   </pre>
+                </div>
+              </div>
+            </div>
+
+            {/* GitHub Auto-Deploy Webhook Card */}
+            <div className="p-6 bg-sand-50 border border-sand-300 rounded-2xl shadow-sm space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-navy-950 flex items-center gap-2">
+                    <FolderGit2 className="w-4 h-4 text-emerald-600" />
+                    <span>GitHub Auto-Deploy Webhook (CI/CD)</span>
+                  </h3>
+                  <p className="text-xs text-navy-600 mt-0.5">
+                    Trigger automatic pulls &amp; cPanel Phusion Passenger reload whenever code is pushed to GitHub
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleTestWebhook}
+                  disabled={testingWebhook}
+                  className="px-3 py-1.5 rounded-lg bg-navy-950 hover:bg-navy-900 text-white font-semibold text-xs inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {testingWebhook ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5 text-brass-400" />}
+                  <span>{testingWebhook ? "Testing Webhook..." : "Test Webhook Handshake"}</span>
+                </button>
+              </div>
+
+              {webhookTestResult && (
+                <div
+                  className={`p-3.5 rounded-xl border text-xs flex items-center gap-2.5 animate-fade-in ${
+                    webhookTestResult.success
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-900 font-semibold"
+                      : "bg-red-50 border-red-200 text-red-900 font-semibold"
+                  }`}
+                >
+                  {webhookTestResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                  )}
+                  <span>{webhookTestResult.message}</span>
+                </div>
+              )}
+
+              {/* Webhook URLs Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Node.js Next.js Webhook URL */}
+                <div className="p-4 rounded-xl bg-white border border-sand-300 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-navy-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      Primary (Node.js API Route)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyWebhook("https://yourdomain.co.uk/api/webhooks/deploy", "node_url")}
+                      className="px-2 py-0.5 rounded bg-sand-100 hover:bg-sand-200 text-[11px] font-semibold text-navy-800 flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      {copiedWebhook === "node_url" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-navy-600" />}
+                      <span>{copiedWebhook === "node_url" ? "Copied" : "Copy URL"}</span>
+                    </button>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-sand-50 border border-sand-200 font-mono text-xs text-navy-950 break-all select-all">
+                    https://yourdomain.co.uk/api/webhooks/deploy
+                  </div>
+                  <span className="text-[11px] text-navy-500 block">
+                    Direct App Router endpoint with native HMAC SHA-256 verification.
+                  </span>
+                </div>
+
+                {/* PHP Webhook URL for cPanel */}
+                <div className="p-4 rounded-xl bg-white border border-sand-300 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-navy-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      cPanel Standalone (PHP Script)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyWebhook("https://yourdomain.co.uk/deploy.php", "php_url")}
+                      className="px-2 py-0.5 rounded bg-sand-100 hover:bg-sand-200 text-[11px] font-semibold text-navy-800 flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      {copiedWebhook === "php_url" ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-navy-600" />}
+                      <span>{copiedWebhook === "php_url" ? "Copied" : "Copy URL"}</span>
+                    </button>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-sand-50 border border-sand-200 font-mono text-xs text-navy-950 break-all select-all">
+                    https://yourdomain.co.uk/deploy.php
+                  </div>
+                  <span className="text-[11px] text-navy-500 block">
+                    Zero-dependency standalone script running natively under Apache/LiteSpeed.
+                  </span>
+                </div>
+              </div>
+
+              {/* Webhook Secret & GitHub Setup Form Fields */}
+              <div className="p-4 rounded-xl bg-sand-100/80 border border-sand-300 space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-bold text-navy-950 uppercase tracking-wider">
+                    GitHub Webhook Form Configuration
+                  </span>
+                  <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                    Ready to Paste into GitHub
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-2.5 rounded-lg bg-white border border-sand-200">
+                    <span className="text-[10px] uppercase font-bold text-navy-500 block">Content Type</span>
+                    <strong className="font-mono text-navy-950">application/json</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-sand-200">
+                    <span className="text-[10px] uppercase font-bold text-navy-500 block">Which events?</span>
+                    <strong className="text-navy-950">Just the push event</strong>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-white border border-sand-200">
+                    <span className="text-[10px] uppercase font-bold text-navy-500 block">SSL Verification</span>
+                    <strong className="text-emerald-700">Enable SSL verification</strong>
+                  </div>
+                </div>
+
+                {/* Secret Token Field */}
+                <div className="p-3 bg-white rounded-xl border border-sand-200 flex items-center justify-between gap-3">
+                  <div className="overflow-hidden">
+                    <span className="text-[10px] uppercase font-bold text-navy-500 block">Webhook Secret Token</span>
+                    <span className="font-mono text-xs font-bold text-navy-900 truncate block">
+                      san_furniture_auto_deploy_master_secret_2026
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyWebhook("san_furniture_auto_deploy_master_secret_2026", "secret_token")}
+                    className="px-3 py-1.5 rounded-lg bg-sand-100 hover:bg-sand-200 text-xs font-bold text-navy-900 inline-flex items-center gap-1.5 transition-colors cursor-pointer flex-shrink-0"
+                  >
+                    {copiedWebhook === "secret_token" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-navy-700" />}
+                    <span>{copiedWebhook === "secret_token" ? "Copied Secret!" : "Copy Secret"}</span>
+                  </button>
                 </div>
               </div>
             </div>
