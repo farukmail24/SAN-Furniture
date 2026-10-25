@@ -164,6 +164,25 @@ if ($githubEvent === 'push') {
         }
     }
 
+    // Auto-discover Node.js Virtual Environment if block is missing
+    if (!$passengerBlock) {
+        $possibleNodeBins = array_merge(
+            glob('/home/*/{nodevenv,virtualenv}/*/*/bin/node', GLOB_BRACE) ?: [],
+            glob('/home/*/nodevenv/*/*/bin/node') ?: [],
+            glob('/home/*/*/*/bin/node') ?: []
+        );
+        if (!empty($possibleNodeBins)) {
+            $nodeBin = $possibleNodeBins[0];
+            $passengerBlock = "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION BEGIN\n" .
+                "PassengerAppRoot \"{$projectRoot}\"\n" .
+                "PassengerBaseURI \"/\"\n" .
+                "PassengerNodejs \"{$nodeBin}\"\n" .
+                "PassengerAppType node\n" .
+                "PassengerStartupFile server.js\n" .
+                "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END";
+        }
+    }
+
     exec("git fetch origin {$branch} 2>&1", $output, $exitCode);
     exec("git reset --hard origin/{$branch} 2>&1", $output, $exitCode);
 
