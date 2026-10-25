@@ -1,29 +1,53 @@
 <?php
 /**
- * SAN Furniture - GitHub Auto-Deployment Webhook (cPanel / Apache / PHP)
+ * SAN Furniture - GitHub Auto-Deployment Webhook (Self-Contained Engine)
  *
  * Automatically pulls new commits from GitHub when pushed to 'master' or 'main'
  * and triggers Phusion Passenger Node.js app restart via tmp/restart.txt.
  *
  * GitHub Webhook Setup:
- * 1. Payload URL: https://yourdomain.co.uk/deploy.php (or https://yourdomain.co.uk/api/webhooks/deploy)
+ * 1. Payload URL: https://sanfurniture.com/deploy.php
  * 2. Content type: application/json
- * 3. Secret: san_furniture_auto_deploy_master_secret_2026 (or your custom secret in .env)
+ * 3. Secret: san_furniture_auto_deploy_master_secret_2026
  * 4. Events: Just the push event
  */
 
 header('Content-Type: application/json; charset=utf-8');
 
-// 1. Resolve Deployment Secret
+// 1. Resolve Project Root
+$possibleRoots = [
+    '/home/sansoft/sanfurniture.com',
+    dirname(dirname(__DIR__)),
+    dirname(__DIR__),
+    __DIR__
+];
+
+$projectRoot = null;
+foreach ($possibleRoots as $r) {
+    if (is_dir($r . '/.git')) {
+        $projectRoot = $r;
+        break;
+    }
+}
+if (!$projectRoot) {
+    $projectRoot = is_dir('/home/sansoft/sanfurniture.com') ? '/home/sansoft/sanfurniture.com' : dirname(dirname(__DIR__));
+}
+
+// 2. Resolve Deployment Secret
 $secret = getenv('DEPLOY_SECRET') ?: (getenv('SAN_AUTH_SECRET') ?: 'san_furniture_auto_deploy_master_secret_2026');
 
-// Also try reading from .env file if available
-$envFiles = [__DIR__ . '/.env', __DIR__ . '/apps/storefront/.env', dirname(__DIR__) . '/.env'];
+// Check .env files
+$envFiles = [
+    $projectRoot . '/.env',
+    $projectRoot . '/apps/storefront/.env',
+    __DIR__ . '/.env'
+];
 foreach ($envFiles as $ef) {
     if (file_exists($ef) && is_readable($ef)) {
         $lines = file($ef, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($lines as $line) {
-            if (strpos(trim($line), '#') === 0) continue;
+            $line = trim($line);
+            if (strpos($line, '#') === 0) continue;
             if (strpos($line, 'DEPLOY_SECRET=') === 0) {
                 $secret = trim(substr($line, strlen('DEPLOY_SECRET=')));
                 break;
@@ -34,36 +58,37 @@ foreach ($envFiles as $ef) {
     }
 }
 
-// 2. Read Raw Request Body & Headers
-$rawPayload = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
-$githubEvent = $_SERVER['HTTP_X_GITHUB_EVENT'] ?? 'push';
-$deliveryId = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? '';
-
-// Support query parameter fallback for manual testing: ?secret=... or ?token=...
+// 3. Health Check GET Request
+$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $queryToken = $_GET['secret'] ?? ($_GET['token'] ?? '');
 $headerToken = $_SERVER['HTTP_X_DEPLOY_SECRET'] ?? '';
 
-// 3. Health check GET request
-$requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($requestMethod === 'GET') {
     echo json_encode([
         'status' => 'online',
-        'service' => 'SAN Furniture GitHub Auto-Deploy Webhook (PHP Engine)',
+        'service' => 'SAN Furniture GitHub Auto-Deploy Webhook',
+        'projectRoot' => $projectRoot,
         'supportedEvents' => ['push', 'ping'],
         'monitoredBranches' => ['master', 'main'],
         'authenticated' => ($queryToken === $secret),
         'serverTime' => date('c'),
         'instructions' => [
-            'githubPayloadUrl' => '/deploy.php',
+            'payloadUrl' => 'https://sanfurniture.com/deploy.php',
             'contentType' => 'application/json',
+            'secret' => 'san_furniture_auto_deploy_master_secret_2026',
             'events' => 'Just the push event'
         ]
     ], JSON_PRETTY_PRINT);
     exit;
 }
 
-// 4. Validate GitHub HMAC SHA-256 Signature or Secret Token
+// 4. Read Raw Payload & Signature
+$rawPayload = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '';
+$githubEvent = $_SERVER['HTTP_X_GITHUB_EVENT'] ?? 'push';
+$deliveryId = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? '';
+
+// 5. Authenticate via HMAC SHA-256 OR Secret Token
 $isSigValid = false;
 if (!empty($signature) && strpos($signature, 'sha256=') === 0) {
     $expectedSig = 'sha256=' . hash_hmac('sha256', $rawPayload, $secret);
@@ -83,32 +108,27 @@ if (!$isSigValid && !$isTokenValid) {
     exit;
 }
 
-// 5. Parse JSON Payload (Supports both application/json and application/x-www-form-urlencoded)
+// 6. Parse JSON Payload (Supports application/json and application/x-www-form-urlencoded)
+$payload = [];
 if (strpos($rawPayload, 'payload=') === 0) {
     $payload = json_decode(urldecode(substr($rawPayload, 8)), true);
 } else {
     $payload = json_decode($rawPayload, true);
 }
-if (json_last_error() !== JSON_ERROR_NONE && !empty($rawPayload)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'Invalid JSON payload received']);
-    exit;
-}
 
-// 6. Handle GitHub Ping Event (initial webhook test handshake)
+// 7. Handle GitHub Ping Event
 if ($githubEvent === 'ping') {
     echo json_encode([
         'success' => true,
         'event' => 'ping',
-        'message' => 'GitHub Webhook Ping successfully acknowledged! SAN Furniture cPanel auto-deploy is active.',
-        'zen' => $payload['zen'] ?? 'Responsive dropshipping e-commerce.',
+        'message' => 'GitHub Webhook Ping acknowledged! SAN Furniture auto-deploy endpoint is online.',
         'hookId' => $payload['hook_id'] ?? null,
         'timestamp' => date('c')
     ], JSON_PRETTY_PRINT);
     exit;
 }
 
-// 7. Handle GitHub Push Event
+// 8. Handle GitHub Push Event
 if ($githubEvent === 'push') {
     $ref = $payload['ref'] ?? '';
     $branch = str_replace('refs/heads/', '', $ref);
@@ -130,15 +150,8 @@ if ($githubEvent === 'push') {
     $output = [];
     $exitCode = 0;
 
-    // Determine project root directory
-    $projectRoot = __DIR__;
-    if (!is_dir($projectRoot . '/.git') && is_dir(dirname($projectRoot) . '/.git')) {
-        $projectRoot = dirname($projectRoot);
-    }
-
     chdir($projectRoot);
 
-    // Git pull or fetch & reset
     exec("git fetch origin {$branch} 2>&1", $output, $exitCode);
     exec("git reset --hard origin/{$branch} 2>&1", $output, $exitCode);
 
@@ -178,7 +191,4 @@ if ($githubEvent === 'push') {
     exit;
 }
 
-echo json_encode([
-    'success' => true,
-    'message' => "Event '{$githubEvent}' received, no deployment action required."
-]);
+echo json_encode(['success' => true, 'message' => "Event '{$githubEvent}' received"]);
