@@ -395,13 +395,22 @@ app.prepare()
             }
           }
 
-          // Resilient CSS Fallback: If client asks for an older deleted CSS hash, serve the newest available CSS
+          // Resilient CSS Fallback: If client asks for an older deleted CSS hash, serve the largest main stylesheet
           if (pathname.endsWith(".css")) {
             const cssDir = path.join(__dirname, ".next/static/css");
             if (fs.existsSync(cssDir)) {
-              const availableCss = fs.readdirSync(cssDir).filter(f => f.endsWith(".css"));
+              const availableCss = fs.readdirSync(cssDir)
+                .filter(f => f.endsWith(".css"))
+                .map(f => {
+                  try {
+                    return { name: f, size: fs.statSync(path.join(cssDir, f)).size };
+                  } catch {
+                    return { name: f, size: 0 };
+                  }
+                })
+                .sort((a, b) => b.size - a.size);
               if (availableCss.length > 0) {
-                const latestCssFile = path.join(cssDir, availableCss[0]);
+                const latestCssFile = path.join(cssDir, availableCss[0].name);
                 res.writeHead(200, {
                   "Content-Type": "text/css; charset=utf-8",
                   "Cache-Control": "public, max-age=3600",

@@ -178,7 +178,8 @@ if ($githubEvent === 'push') {
     // Touch tmp/restart.txt to restart Phusion Passenger Node.js app on cPanel
     $restartDirs = [
         $projectRoot . '/tmp',
-        $projectRoot . '/apps/storefront/tmp'
+        $projectRoot . '/apps/storefront/tmp',
+        dirname($projectRoot) . '/tmp'
     ];
 
     $restarted = false;
@@ -192,6 +193,9 @@ if ($githubEvent === 'push') {
             $restarted = true;
         }
     }
+
+    // Try passenger-config CLI if available
+    @exec("passenger-config restart-app {$projectRoot} 2>&1");
 
     // Append to deploy.log
     $logMsg = sprintf("[%s] Branch: %s | Commit: %s | By: %s | Msg: %s\n", date('c'), $branch, $commitSha, $pusher, $commitMsg);
