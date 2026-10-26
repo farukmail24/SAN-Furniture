@@ -48,6 +48,25 @@ const nextConfig = {
     };
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: "/categories",
+        destination: "/catalog",
+        permanent: true,
+      },
+      {
+        source: "/products",
+        destination: "/catalog",
+        permanent: true,
+      },
+      {
+        source: "/collections",
+        destination: "/catalog",
+        permanent: true,
+      },
+    ];
+  },
   // Hardened response security headers
   async headers() {
     const isProd = process.env.NODE_ENV === "production";

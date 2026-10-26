@@ -41,8 +41,24 @@ export async function POST(request: Request) {
     // If body contains a nested `settings` object (from frontend { settings: { ... } }), unwrap it
     const updates = body.settings && typeof body.settings === "object" ? body.settings : body;
 
+    const SENSITIVE_SECRET_KEYS = new Set([
+      "smtp_pass",
+      "sms_auth_token",
+      "stripe_secret_key",
+      "stripe_webhook_secret",
+    ]);
+
     for (const [key, val] of Object.entries(updates)) {
       if (typeof key === "string" && key.length > 0 && typeof val !== "object" && key !== "settings") {
+        const valStr = String(val ?? "").trim();
+
+        // Guard sensitive secrets: Never overwrite with UI mask bullets or empty strings
+        if (SENSITIVE_SECRET_KEYS.has(key)) {
+          if (!valStr || valStr.includes("••••")) {
+            continue; // Keep existing persisted secret intact
+          }
+        }
+
         await pool.query(
           `INSERT INTO system_settings (setting_key, setting_value, updated_at) 
            VALUES (?, ?, NOW()) 

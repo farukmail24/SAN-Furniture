@@ -66,14 +66,14 @@ export async function PATCH(
       );
     }
 
-    // Fire-and-forget notification dispatch (guarded: immediately returns if email/sms disabled in admin)
+    // Dispatch status change notification
     const [orderRows]: any = await pool.query(
       "SELECT id, order_number, customer_email, customer_name, customer_phone FROM orders WHERE id = ? OR order_number = ? LIMIT 1",
       [id, id]
     );
     if (orderRows && orderRows.length > 0) {
       const o = orderRows[0];
-      dispatchOrderStatusChanged({
+      await dispatchOrderStatusChanged({
         orderNumber: o.order_number,
         customerName: o.customer_name,
         customerEmail: o.customer_email,
@@ -81,7 +81,7 @@ export async function PATCH(
         newStatus: status || "dispatched",
         carrier: carrier || "SAN Dedicated Delivery Fleet",
         trackingNumber: tracking_number,
-      });
+      }).catch((err) => console.warn("[Dispatch] Notification warning:", err?.message || err));
     }
 
     return NextResponse.json({

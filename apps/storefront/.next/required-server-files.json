@@ -323,7 +323,24 @@
           "destination": "http://127.0.0.1:9000/api/:path*"
         }
       ]
-    }
+    },
+    "_originalRedirects": [
+      {
+        "source": "/categories",
+        "destination": "/catalog",
+        "permanent": true
+      },
+      {
+        "source": "/products",
+        "destination": "/catalog",
+        "permanent": true
+      },
+      {
+        "source": "/collections",
+        "destination": "/catalog",
+        "permanent": true
+      }
+    ]
   },
   "appDir": "D:\\xampp\\htdocs\\SAN Furniture\\apps\\storefront",
   "relativeAppDir": "apps\\storefront",

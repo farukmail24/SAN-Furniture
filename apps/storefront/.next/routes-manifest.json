@@ -10,6 +10,24 @@
       "internal": true,
       "statusCode": 308,
       "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/categories",
+      "destination": "/catalog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/categories(?:/)?$"
+    },
+    {
+      "source": "/products",
+      "destination": "/catalog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/products(?:/)?$"
+    },
+    {
+      "source": "/collections",
+      "destination": "/catalog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/collections(?:/)?$"
     }
   ],
   "headers": [
@@ -477,10 +495,22 @@
       "namedRegex": "^/catalog(?:/)?$"
     },
     {
+      "page": "/categories",
+      "regex": "^/categories(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/categories(?:/)?$"
+    },
+    {
       "page": "/checkout",
       "regex": "^/checkout(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/checkout(?:/)?$"
+    },
+    {
+      "page": "/collections",
+      "regex": "^/collections(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/collections(?:/)?$"
     },
     {
       "page": "/contact",
@@ -505,6 +535,12 @@
       "regex": "^/privacy(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/products",
+      "regex": "^/products(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/products(?:/)?$"
     },
     {
       "page": "/returns",

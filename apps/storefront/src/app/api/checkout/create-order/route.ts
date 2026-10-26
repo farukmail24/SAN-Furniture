@@ -383,8 +383,8 @@ export async function POST(request: Request) {
 
     await connection.commit();
 
-    // Fire-and-forget notification dispatch (guarded: immediately returns if email/sms disabled in admin)
-    dispatchOrderCreated({
+    // Dispatch transactional notifications (guarded: immediately returns if email/sms disabled in admin)
+    await dispatchOrderCreated({
       orderNumber,
       customerName: customer.name,
       customerEmail: customer.email,
@@ -400,7 +400,7 @@ export async function POST(request: Request) {
         pricePennies: it.pricePennies,
         finish: it.finish,
       })),
-    });
+    }).catch((err) => console.warn("[Checkout] Order notification dispatch warning:", err?.message || err));
 
     return NextResponse.json({
       success: true,

@@ -4,10 +4,21 @@ import {
   type UpholsteryMaterial,
   type FrameMaterial,
   type ProductVariant,
+  type ProductCategory,
+  CATALOG_CATEGORIES,
+  CATEGORY_HANDLE_ALIASES,
+  normalizeCategoryHandle,
   calculateNetAndVat,
   formatGBP
 } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+
+export {
+  type ProductCategory,
+  CATALOG_CATEGORIES,
+  CATEGORY_HANDLE_ALIASES,
+  normalizeCategoryHandle
+};
 
 export interface CatalogProduct {
   id: string;
@@ -49,52 +60,6 @@ export interface CatalogProduct {
     lead_time_days: number;
   };
 }
-
-export interface ProductCategory {
-  id: string;
-  name: string;
-  handle: string;
-  description: string;
-  heroImage: string;
-}
-
-export const CATALOG_CATEGORIES: ProductCategory[] = [
-  {
-    id: "cat_sofas",
-    name: "Sofas & Corner Lounges",
-    handle: "sofas",
-    description: "Bespoke handcrafted sofas, deep-seated corner groups, and luxury chaises upholstered in durable bouclé and velvet.",
-    heroImage: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
-    id: "cat_armchairs",
-    name: "Accent Armchairs & Stools",
-    handle: "armchairs",
-    description: "Sculptural statement armchairs, reading chairs, and ergonomic occasional seating crafted for British comfort.",
-    heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
-    id: "cat_dining",
-    name: "Dining Tables & Chairs",
-    handle: "dining",
-    description: "Solid European oak, American walnut, and Italian marble dining collections engineered for intimate family gatherings.",
-    heroImage: "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
-    id: "cat_beds",
-    name: "Luxury Beds & Wardrobes",
-    handle: "beds",
-    description: "Ottoman storage beds, upholstered headboards, and solid hardwood wardrobes for serene bedroom sanctuaries.",
-    heroImage: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
-    id: "cat_living",
-    name: "Coffee & Occasional Tables",
-    handle: "living-tables",
-    description: "Fluted wood, brushed brass, and architectural stone coffee, side, and console tables.",
-    heroImage: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85"
-  }
-];
 
 // ZERO MOCK PRODUCTS: Strictly empty array. All products are sourced from live MySQL database
 export const CATALOG_PRODUCTS: CatalogProduct[] = [];
@@ -172,7 +137,11 @@ export function getProductByHandle(handle: string): CatalogProduct | undefined {
 }
 
 export function getCategoryByHandle(handle: string): ProductCategory | undefined {
-  return inMemoryLiveCategories.find((c) => c.handle === handle || c.id === handle) || CATALOG_CATEGORIES.find((c) => c.handle === handle);
+  const normalized = normalizeCategoryHandle(handle);
+  return (
+    inMemoryLiveCategories.find((c) => c.handle === normalized || c.handle === handle || c.id === handle) ||
+    CATALOG_CATEGORIES.find((c) => c.handle === normalized || c.handle === handle)
+  );
 }
 
 export function getProductsByCategory(categoryId: string): CatalogProduct[] {
@@ -224,7 +193,11 @@ export async function getLiveCategories(): Promise<ProductCategory[]> {
 
 export async function getLiveCategoryByHandle(handle: string): Promise<ProductCategory | undefined> {
   const categories = await getLiveCategories();
-  return categories.find((c) => c.handle === handle || c.id === handle);
+  const normalized = normalizeCategoryHandle(handle);
+  return (
+    categories.find((c) => c.handle === normalized || c.handle === handle || c.id === handle) ||
+    CATALOG_CATEGORIES.find((c) => c.handle === normalized || c.handle === handle)
+  );
 }
 
 export async function getLiveProductByHandle(handle: string): Promise<CatalogProduct | undefined> {

@@ -66,8 +66,8 @@ export async function POST(
       ]
     ).catch(() => {});
 
-    // Fire-and-forget notification dispatch (guarded: immediately returns if email/sms disabled in admin)
-    dispatchOrderCancelled({
+    // Dispatch cancellation notification
+    await dispatchOrderCancelled({
       orderNumber: order.order_number,
       customerName: order.customer_name,
       customerEmail: order.customer_email,
@@ -75,7 +75,7 @@ export async function POST(
       totalPennies: order.total_pennies,
       reason,
       cancelledBy,
-    });
+    }).catch((err) => console.warn("[CustomerCancel] Notification warning:", err?.message || err));
 
     return NextResponse.json({
       success: true,

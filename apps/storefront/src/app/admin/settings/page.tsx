@@ -71,21 +71,21 @@ export default function AdminSettingsPage() {
     // Email SMTP
     email_notifications_enabled: "false",
     smtp_provider: "smtp",
-    smtp_host: "smtp.mailgun.org",
-    smtp_port: "587",
-    smtp_encryption: "TLS",
-    smtp_user: "postmaster@sanfurniture.com",
-    smtp_pass: "••••••••••••••••",
-    smtp_from_email: "orders@sanfurniture.com",
-    smtp_from_name: "SAN Furniture Concierge",
+    smtp_host: "",
+    smtp_port: "465",
+    smtp_encryption: "SSL",
+    smtp_user: "",
+    smtp_pass: "",
+    smtp_from_email: "",
+    smtp_from_name: "SAN Furniture",
     // SMS Gateway
     sms_notifications_enabled: "false",
     sms_provider: "twilio",
-    sms_account_sid: "AC_SAN_FURNITURE_LIVE_001",
-    sms_auth_token: "••••••••••••••••••••••••",
+    sms_account_sid: "",
+    sms_auth_token: "",
     sms_sender_id: "SANFURNITURE",
-    sms_dispatch_enabled: "true",
-    sms_driver_alert_enabled: "true",
+    sms_dispatch_enabled: "false",
+    sms_driver_alert_enabled: "false",
     // Payment (Stripe UK Gateway Dedicated Provider)
     stripe_enabled: "true",
     stripe_mode: "test",
@@ -103,6 +103,8 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
   const [testingSms, setTestingSms] = useState(false);
+  const [testEmailRecipient, setTestEmailRecipient] = useState("");
+  const [testSmsRecipient, setTestSmsRecipient] = useState("");
   const [showStripeSecret, setShowStripeSecret] = useState(false);
   const [showWebhookSecret, setShowWebhookSecret] = useState(false);
   const [testingStripe, setTestingStripe] = useState(false);
@@ -343,15 +345,32 @@ export default function AdminSettingsPage() {
 
   const handleTestEmail = async () => {
     setTestingEmail(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      const target = testEmailRecipient.trim() || settings.support_email || settings.smtp_user || "";
+      if (!target) {
+        setErrorMsg("Please enter an email address to send the test verification email.");
+        setTestingEmail(false);
+        return;
+      }
+
       const res = await fetch(apiUrl("/api/admin/settings/test-email"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: settings.support_email }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ to: target }),
       });
-      const data = await res.json();
-      setSuccessMsg(data.message || "Test email dispatched successfully!");
-      setTimeout(() => setSuccessMsg(null), 4000);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setSuccessMsg(data.message || `Test email dispatched successfully to ${target}!`);
+        setTimeout(() => setSuccessMsg(null), 6000);
+      } else {
+        setErrorMsg(data.error || "Failed to dispatch test email. Please check your SMTP settings.");
+      }
     } catch (err: any) {
       setErrorMsg("Failed to dispatch test email: " + err.message);
     } finally {
@@ -361,15 +380,32 @@ export default function AdminSettingsPage() {
 
   const handleTestSms = async () => {
     setTestingSms(true);
+    setSuccessMsg(null);
+    setErrorMsg(null);
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      const target = testSmsRecipient.trim() || settings.support_phone || "";
+      if (!target) {
+        setErrorMsg("Please enter a destination UK mobile number (e.g. +44 7700 900123) for test SMS.");
+        setTestingSms(false);
+        return;
+      }
+
       const res = await fetch(apiUrl("/api/admin/settings/test-sms"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: settings.support_phone }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ to: target }),
       });
-      const data = await res.json();
-      setSuccessMsg(data.message || "Test SMS alert dispatched successfully!");
-      setTimeout(() => setSuccessMsg(null), 4000);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setSuccessMsg(data.message || `Test SMS alert dispatched successfully to ${target}!`);
+        setTimeout(() => setSuccessMsg(null), 6000);
+      } else {
+        setErrorMsg(data.error || "Failed to dispatch test SMS. Please check your Twilio settings.");
+      }
     } catch (err: any) {
       setErrorMsg("Failed to dispatch test SMS: " + err.message);
     } finally {
@@ -823,16 +859,35 @@ export default function AdminSettingsPage() {
                   Connect your transactional email provider to send VAT invoices, order updates, and reset links.
                 </p>
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={handleTestEmail}
-                disabled={testingEmail}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50"
-              >
-                <Send className="w-3.5 h-3.5 text-brass-400" />
-                <span>{testingEmail ? "Sending Test Email..." : "Send Test Verification Email"}</span>
-              </button>
+            {/* Test Email Bar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 bg-sand-100/70 border border-sand-200 rounded-xl">
+              <div>
+                <h3 className="text-xs font-bold text-navy-950 uppercase tracking-wider">Live SMTP Connection Diagnostic</h3>
+                <p className="text-xs text-navy-600 mt-0.5">
+                  Verify your SMTP host connection and send a live branded test dispatch.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="email"
+                  value={testEmailRecipient}
+                  onChange={(e) => setTestEmailRecipient(e.target.value)}
+                  placeholder={settings.support_email || settings.smtp_user || "Enter recipient email..."}
+                  className="px-3 py-1.5 bg-white border border-sand-300 rounded-xl text-xs text-navy-950 placeholder:text-sand-400 focus:outline-none focus:border-navy-900 w-full sm:w-60"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestEmail}
+                  disabled={testingEmail}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50 whitespace-nowrap"
+                >
+                  <Send className="w-3.5 h-3.5 text-brass-400" />
+                  <span>{testingEmail ? "Sending..." : "Send Test Email"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Master Activation Toggle */}
@@ -982,16 +1037,35 @@ export default function AdminSettingsPage() {
                   Automate SMS alerts for 2-hour pre-booked delivery slots and driver 30-minute arrival warnings.
                 </p>
               </div>
+            </div>
 
-              <button
-                type="button"
-                onClick={handleTestSms}
-                disabled={testingSms}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50"
-              >
-                <Send className="w-3.5 h-3.5 text-brass-400" />
-                <span>{testingSms ? "Sending Test SMS..." : "Send Test 2-Man Alert SMS"}</span>
-              </button>
+            {/* Test SMS Bar */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 bg-sand-100/70 border border-sand-200 rounded-xl">
+              <div>
+                <h3 className="text-xs font-bold text-navy-950 uppercase tracking-wider">Live Twilio Gateway Diagnostic</h3>
+                <p className="text-xs text-navy-600 mt-0.5">
+                  Send a live transactional SMS to verify carrier delivery routing.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <input
+                  type="tel"
+                  value={testSmsRecipient}
+                  onChange={(e) => setTestSmsRecipient(e.target.value)}
+                  placeholder={settings.support_phone || "+44 7700 900123"}
+                  className="px-3 py-1.5 bg-white border border-sand-300 rounded-xl text-xs font-mono text-navy-950 placeholder:text-sand-400 focus:outline-none focus:border-navy-900 w-full sm:w-56"
+                />
+                <button
+                  type="button"
+                  onClick={handleTestSms}
+                  disabled={testingSms}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-semibold text-xs shadow-xs transition-colors disabled:opacity-50 whitespace-nowrap"
+                >
+                  <Send className="w-3.5 h-3.5 text-brass-400" />
+                  <span>{testingSms ? "Sending..." : "Send Test SMS"}</span>
+                </button>
+              </div>
             </div>
 
             {/* Master Activation Toggle */}

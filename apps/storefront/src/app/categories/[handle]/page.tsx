@@ -13,6 +13,9 @@ interface CategoryPageProps {
   params: Promise<{
     handle: string;
   }>;
+  searchParams?: Promise<{
+    [key: string]: string | string[] | undefined;
+  }>;
 }
 
 export const dynamic = "force-dynamic";
@@ -50,8 +53,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { handle } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const category = getCategoryByHandle(handle);
 
   if (!category) {
@@ -122,6 +126,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           category={category}
           initialProducts={products}
           allCategories={CATALOG_CATEGORIES}
+          initialSearchParams={resolvedSearchParams}
         />
       </div>
     </div>

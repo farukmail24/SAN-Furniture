@@ -2,8 +2,14 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Filter, X, ChevronDown, Truck, ShieldCheck, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Filter, X, ChevronDown, Truck, ShieldCheck, Sparkles, SlidersHorizontal, Layers } from "lucide-react";
 import { type CatalogProduct, type ProductCategory } from "@/lib/catalog";
+import {
+  type FurnitureSubType,
+  resolveSubType,
+  productMatchesSubType,
+  getSubTypesWithCounts
+} from "@/lib/furniture-subtypes";
 import { formatGBP } from "@san-furniture/types";
 import { StaggerContainer, StaggerItem, ScrollReveal } from "@/components/motion/MotionWrapper";
 
@@ -11,14 +17,45 @@ interface CategoryViewProps {
   category?: ProductCategory;
   initialProducts: CatalogProduct[];
   allCategories?: ProductCategory[];
+  initialSearchParams?: Record<string, string | string[] | undefined>;
 }
 
-export function CategoryView({ category, initialProducts, allCategories }: CategoryViewProps) {
+export function CategoryView({
+  category,
+  initialProducts,
+  allCategories,
+  initialSearchParams
+}: CategoryViewProps) {
+  // Extract initial sub-type from URL search params (e.g. ?type=wardrobes)
+  const initialTypeParam =
+    typeof initialSearchParams?.type === "string"
+      ? initialSearchParams.type
+      : Array.isArray(initialSearchParams?.type)
+      ? initialSearchParams.type[0]
+      : undefined;
+
+  const [selectedSubTypeId, setSelectedSubTypeId] = useState<string | null>(() => {
+    if (!category || !initialTypeParam) return null;
+    const resolved = resolveSubType(category.id, initialTypeParam);
+    return resolved ? resolved.id : null;
+  });
+
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [selectedDeliveryTiers, setSelectedDeliveryTiers] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"featured" | "price_asc" | "price_desc">("featured");
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+
+  // Available sub-types for the current category with live item counts
+  const availableSubTypes = useMemo(() => {
+    if (!category) return [];
+    return getSubTypesWithCounts(category.id, initialProducts);
+  }, [category, initialProducts]);
+
+  const activeSubType = useMemo(() => {
+    if (!category || !selectedSubTypeId) return null;
+    return resolveSubType(category.id, selectedSubTypeId);
+  }, [category, selectedSubTypeId]);
 
   // Available filter options based on products
   const materials = useMemo(() => {
@@ -35,10 +72,29 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
     return Array.from(set);
   }, [initialProducts]);
 
+  // Synchronize URL search params smoothly on sub-type select
+  const handleSelectSubType = (subTypeId: string | null) => {
+    setSelectedSubTypeId(subTypeId);
+
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (subTypeId) {
+        url.searchParams.set("type", subTypeId);
+      } else {
+        url.searchParams.delete("type");
+      }
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
   // Filter & Sort Logic
   const filteredProducts = useMemo(() => {
     return initialProducts
       .filter((p) => {
+        // Sub-type facet filter
+        if (activeSubType && !productMatchesSubType(p, activeSubType)) {
+          return false;
+        }
         // Material filter
         if (selectedMaterials.length > 0 && !selectedMaterials.includes(p.specs.material)) {
           return false;
@@ -60,7 +116,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
         if (sortBy === "price_desc") return b.pricePennies - a.pricePennies;
         return 0; // default featured order
       });
-  }, [initialProducts, selectedMaterials, selectedDeliveryTiers, priceRange, sortBy]);
+  }, [initialProducts, activeSubType, selectedMaterials, selectedDeliveryTiers, priceRange, sortBy]);
 
   const toggleMaterial = (mat: string) => {
     setSelectedMaterials((prev) =>
@@ -75,13 +131,25 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
   };
 
   const clearAllFilters = () => {
+    setSelectedSubTypeId(null);
     setSelectedMaterials([]);
     setSelectedDeliveryTiers([]);
     setPriceRange("all");
     setSortBy("featured");
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("type");
+      window.history.replaceState(null, "", url.toString());
+    }
   };
 
-  const hasActiveFilters = selectedMaterials.length > 0 || selectedDeliveryTiers.length > 0 || priceRange !== "all";
+  const activeFilterCount =
+    (selectedSubTypeId ? 1 : 0) +
+    selectedMaterials.length +
+    selectedDeliveryTiers.length +
+    (priceRange !== "all" ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
     <div className="w-full px-0">
@@ -97,10 +165,20 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               <span className="text-navy-900 font-medium">{category.name}</span>
             </>
           )}
+          {activeSubType && (
+            <>
+              <span>/</span>
+              <span className="text-brass-700 font-semibold">{activeSubType.label}</span>
+            </>
+          )}
         </div>
 
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-navy-950">
-          {category ? category.name : "All Living Collections"}
+          {activeSubType
+            ? `${category?.name || "Collection"} — ${activeSubType.label}`
+            : category
+            ? category.name
+            : "All Living Collections"}
         </h1>
         <p className="mt-3 text-sm sm:text-base text-navy-700 max-w-2xl leading-relaxed">
           {category
@@ -108,12 +186,12 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
             : "Handcrafted British furniture designed with architectural proportions, premium fabrics, and white glove delivery."}
         </p>
 
-        {/* Quick Category Tabs */}
+        {/* Quick Room Category Tabs */}
         {allCategories && allCategories.length > 0 && (
           <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-2 scrollbar-none">
             <Link
               href="/catalog"
-              className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                 !category ? "bg-navy-950 text-sand-50" : "bg-sand-100 text-navy-800 hover:bg-sand-200"
               }`}
             >
@@ -123,15 +201,75 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               <Link
                 key={c.id}
                 href={`/categories/${c.handle}`}
-                className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                   category?.id === c.id
-                    ? "bg-navy-950 text-sand-50"
-                    : "bg-sand-100 text-navy-800 hover:bg-sand-200"
+                    ? "bg-navy-950 text-sand-50 shadow-sm"
+                    : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200/80"
                 }`}
               >
                 {c.name}
               </Link>
             ))}
+          </div>
+        )}
+
+        {/* Granular Furniture Sub-Type Filter Pills (Wardrobes, Bedside, Desks, etc.) */}
+        {availableSubTypes.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-sand-200/80">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-navy-600 flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-brass-600" />
+                Furniture Sub-Categories:
+              </span>
+              {selectedSubTypeId && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectSubType(null)}
+                  className="text-xs font-medium text-brass-700 hover:text-navy-950 underline transition-colors"
+                >
+                  View All {category ? category.name : "Pieces"} ({initialProducts.length})
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              <button
+                type="button"
+                onClick={() => handleSelectSubType(null)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+                  !selectedSubTypeId
+                    ? "bg-navy-950 text-sand-50 shadow-sm ring-1 ring-navy-950"
+                    : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200"
+                }`}
+              >
+                All Pieces ({initialProducts.length})
+              </button>
+              {availableSubTypes.map(({ subType, count }) => {
+                const isSelected = selectedSubTypeId === subType.id;
+                return (
+                  <button
+                    key={subType.id}
+                    type="button"
+                    onClick={() => handleSelectSubType(isSelected ? null : subType.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+                      isSelected
+                        ? "bg-navy-950 text-sand-50 shadow-sm ring-1 ring-navy-950"
+                        : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200"
+                    }`}
+                  >
+                    <span>{subType.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                        isSelected
+                          ? "bg-sand-50/20 text-sand-50"
+                          : "bg-sand-200 text-navy-600"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -147,7 +285,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
             className="flex items-center gap-2 text-sm font-semibold text-navy-900"
           >
             <SlidersHorizontal className="w-4 h-4 text-brass-600" />
-            Filters {hasActiveFilters && `(${selectedMaterials.length + selectedDeliveryTiers.length + (priceRange !== "all" ? 1 : 0)})`}
+            Filters {hasActiveFilters && `(${activeFilterCount})`}
           </button>
           <span className="text-xs text-navy-600 font-medium">{filteredProducts.length} Pieces</span>
         </div>
@@ -169,6 +307,56 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               </button>
             )}
           </div>
+
+          {/* Furniture Sub-Type Filter in Sidebar */}
+          {availableSubTypes.length > 0 && (
+            <div className="space-y-3 pb-6 border-b border-sand-200">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">
+                  Furniture Category
+                </h4>
+                {selectedSubTypeId && (
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSubType(null)}
+                    className="text-[11px] text-brass-700 hover:underline"
+                  >
+                    All
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2 text-xs text-navy-800">
+                <label className="flex items-center justify-between gap-2.5 cursor-pointer">
+                  <span className="flex items-center gap-2.5">
+                    <input
+                      type="radio"
+                      name="furniture_subtype"
+                      checked={!selectedSubTypeId}
+                      onChange={() => handleSelectSubType(null)}
+                      className="rounded-full text-navy-950 focus:ring-brass-500"
+                    />
+                    <span>All Types</span>
+                  </span>
+                  <span className="text-[10px] text-navy-400 font-medium">{initialProducts.length}</span>
+                </label>
+                {availableSubTypes.map(({ subType, count }) => (
+                  <label key={subType.id} className="flex items-center justify-between gap-2.5 cursor-pointer">
+                    <span className="flex items-center gap-2.5">
+                      <input
+                        type="radio"
+                        name="furniture_subtype"
+                        checked={selectedSubTypeId === subType.id}
+                        onChange={() => handleSelectSubType(subType.id)}
+                        className="rounded-full text-navy-950 focus:ring-brass-500"
+                      />
+                      <span>{subType.label}</span>
+                    </span>
+                    <span className="text-[10px] text-navy-400 font-medium">{count}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Price Range Filter */}
           <div className="space-y-3 pb-6 border-b border-sand-200">
@@ -287,6 +475,7 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
           <div className="flex items-center justify-between pb-6 mb-6 border-b border-sand-200">
             <span className="text-xs sm:text-sm text-navy-600 font-medium">
               Showing <span className="text-navy-950 font-bold">{filteredProducts.length}</span> pieces
+              {activeSubType && <span className="text-brass-700 font-semibold"> in {activeSubType.label}</span>}
             </span>
 
             {/* Sort selector */}
@@ -307,6 +496,19 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
           {/* Active Filter Badges */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2 mb-6">
+              {activeSubType && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-navy-950 text-sand-50 rounded-full text-xs font-semibold shadow-xs">
+                  <span>Category: {activeSubType.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectSubType(null)}
+                    aria-label="Remove sub-type filter"
+                    className="hover:text-brass-300"
+                  >
+                    <X className="w-3 h-3 text-sand-300 hover:text-sand-50" />
+                  </button>
+                </span>
+              )}
               {selectedMaterials.map((m) => (
                 <span
                   key={m}
@@ -341,7 +543,20 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
           )}
 
           {/* Zero Results State */}
-          {filteredProducts.length === 0 ? (
+          {initialProducts.length === 0 ? (
+            <div className="py-20 text-center bg-sand-100 rounded-2xl border border-sand-200">
+              <h3 className="font-display font-bold text-xl text-navy-950">Collection Arriving Soon</h3>
+              <p className="mt-2 text-xs sm:text-sm text-navy-600 max-w-md mx-auto">
+                Our {category?.name || "curated"} range is currently being updated with new UK showroom arrivals. Explore our complete furniture catalog to view all available pieces ready for UK dispatch.
+              </p>
+              <Link
+                href="/catalog"
+                className="mt-6 inline-block px-5 py-2.5 bg-navy-950 text-sand-50 rounded-md text-xs font-semibold hover:bg-navy-900 transition-colors shadow-sm"
+              >
+                Browse Complete Catalog
+              </Link>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="py-20 text-center bg-sand-100 rounded-2xl border border-sand-200">
               <h3 className="font-display font-bold text-xl text-navy-950">No Matching Furniture Pieces</h3>
               <p className="mt-2 text-xs sm:text-sm text-navy-600 max-w-sm mx-auto">
@@ -356,9 +571,9 @@ export function CategoryView({ category, initialProducts, allCategories }: Categ
               </button>
             </div>
           ) : (
-            /* Product Cards Grid (App-style 2-column on mobile, responsive multi-column on desktop) */
+            /* Product Cards Grid */
             <StaggerContainer
-              key={`${sortBy}-${priceRange}-${selectedMaterials.join("-")}-${selectedDeliveryTiers.join("-")}`}
+              key={`${selectedSubTypeId ?? "all"}-${sortBy}-${priceRange}-${selectedMaterials.join("-")}-${selectedDeliveryTiers.join("-")}`}
               className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
             >
               {filteredProducts.map((product) => {

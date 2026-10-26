@@ -11,7 +11,7 @@
     "build": "tsc",
     "start": "node src/server.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/amos-mann-adapter.test.mjs test/furniture-to-go-adapter.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs test/security-and-jail.test.mjs test/admin-control-suite.test.mjs test/performance-and-cache.test.mjs test/launch-verification-e2e.test.mjs"
+    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/amos-mann-adapter.test.mjs test/furniture-to-go-adapter.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs test/security-and-jail.test.mjs test/admin-control-suite.test.mjs test/performance-and-cache.test.mjs test/notifications.test.mjs test/taxonomy.test.mjs test/launch-verification-e2e.test.mjs"
   },
   "dependencies": {
     "@san-furniture/types": "file:../../packages/types",
@@ -19,10 +19,12 @@
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
     "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
+    "@types/nodemailer": "^8.0.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   }

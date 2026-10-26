@@ -26,6 +26,14 @@ import { SlidingWindowRateLimiter } from "../dist/src/modules/security/services/
 import { IpJailService } from "../dist/src/modules/security/services/ip-jail-service.js";
 import { DEFAULT_PAGE_SECTIONS } from "./modules/content/default-sections.mjs";
 import { mysqlConnectionOptions } from "../../../database/mysql-config.mjs";
+import {
+  getNotificationSettings,
+  invalidateNotificationSettingsCache,
+  sendRawEmail,
+  sendRawSms,
+  dispatchOrderStatusChanged,
+  dispatchOrderCancelled,
+} from "./modules/notifications/notifications-dispatcher.mjs";
 
 const vatInvoiceGenerator = new VatInvoiceGenerator();
 const rateLimiter = new SlidingWindowRateLimiter();
@@ -2478,6 +2486,28 @@ const server = http.createServer(async (req, res) => {
         [`log_${Date.now()}`, "admin@sanfurniture.com", "DISPATCH_2MAN_ORDER", "orders", JSON.stringify({ orderId, status, carrier, trackingNumber, deliverySlot }), req.socket.remoteAddress]
       );
 
+      // Dispatch transactional customer notification
+      try {
+        const [oRows] = await pool.query(
+          "SELECT id, order_number, customer_name, customer_email, customer_phone FROM orders WHERE id = ?",
+          [orderId]
+        );
+        if (oRows.length > 0) {
+          const ord = oRows[0];
+          await dispatchOrderStatusChanged(pool, {
+            orderNumber: ord.order_number,
+            customerName: ord.customer_name,
+            customerEmail: ord.customer_email,
+            customerPhone: ord.customer_phone,
+            newStatus: status || "dispatched",
+            carrier,
+            trackingNumber,
+          });
+        }
+      } catch (notifErr) {
+        console.warn("[Backend Dispatch] Notification dispatch warning:", notifErr.message);
+      }
+
       return sendJson(res, 200, { success: true, orderId, status, carrier, trackingNumber });
     }
 
@@ -2511,6 +2541,28 @@ const server = http.createServer(async (req, res) => {
         "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
         [`log_${Date.now()}`, "admin@sanfurniture.com", "UPDATE_ORDER_STATUS", "orders", JSON.stringify({ orderId, status, trackingNumber }), req.socket.remoteAddress]
       );
+
+      // Dispatch transactional customer notification
+      try {
+        const [oRows] = await pool.query(
+          "SELECT id, order_number, customer_name, customer_email, customer_phone FROM orders WHERE id = ?",
+          [orderId]
+        );
+        if (oRows.length > 0) {
+          const ord = oRows[0];
+          await dispatchOrderStatusChanged(pool, {
+            orderNumber: ord.order_number,
+            customerName: ord.customer_name,
+            customerEmail: ord.customer_email,
+            customerPhone: ord.customer_phone,
+            newStatus: status,
+            carrier,
+            trackingNumber,
+          });
+        }
+      } catch (notifErr) {
+        console.warn("[Backend StatusUpdate] Notification dispatch warning:", notifErr.message);
+      }
 
       return sendJson(res, 200, { success: true, orderId, status });
     }
@@ -2564,6 +2616,21 @@ const server = http.createServer(async (req, res) => {
         ]
       );
 
+      // Dispatch cancel email and SMS to customer
+      try {
+        await dispatchOrderCancelled(pool, {
+          orderNumber: order.order_number,
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          customerPhone: order.customer_phone,
+          totalPennies: order.total_pennies,
+          reason,
+          cancelledBy: "Admin Operations",
+        });
+      } catch (notifErr) {
+        console.warn("[Backend Cancel] Notification dispatch warning:", notifErr.message);
+      }
+
       return sendJson(res, 200, { success: true, orderId: order.id, status: "cancelled" });
     }
 
@@ -2598,21 +2665,79 @@ const server = http.createServer(async (req, res) => {
 
     // Settings Test Email & SMS Triggers
     if (pathname === "/api/admin/settings/test-email" && method === "POST") {
+      const authAdmin = await getAdminFromAuth(req);
+      if (!authAdmin) {
+        return sendJson(res, 401, { error: "Unauthorized" });
+      }
+
       const body = await readBody(req);
-      const targetEmail = body.to || "operations@sanfurniture.com";
-      return sendJson(res, 200, {
-        success: true,
-        message: `Official verified test delivery confirmation successfully dispatched to ${targetEmail} via configured SMTP gateway.`,
+      invalidateNotificationSettingsCache();
+      const settings = await getNotificationSettings(pool, true);
+
+      const targetEmail = body.to || authAdmin.email || settings.support_email || settings.smtp_user;
+      if (!targetEmail) {
+        return sendJson(res, 400, { error: "Recipient email is required" });
+      }
+
+      const result = await sendRawEmail(pool, {
+        to: targetEmail,
+        subject: "SAN Furniture — Live SMTP Verification Test",
+        html: `
+          <div style="font-family: sans-serif; padding: 24px; color: #1a2233;">
+            <h2 style="color: #0e1526;">SMTP Connection Verified!</h2>
+            <p>This is a live transactional test email dispatched from your <strong>SAN Furniture UK</strong> store administration console.</p>
+            <p><strong>Configured SMTP Host:</strong> ${settings.smtp_host}</p>
+            <p><strong>Port:</strong> ${settings.smtp_port} (${settings.smtp_encryption})</p>
+            <p><strong>From:</strong> ${settings.smtp_from_name || "SAN Furniture"} &lt;${settings.smtp_from_email || settings.smtp_user}&gt;</p>
+            <p style="color: #059669; font-weight: bold;">✔ All customer notifications (Registration, Order Confirmed, Dispatched, Cancelled) are now active and ready to deliver.</p>
+          </div>
+        `,
       });
+
+      if (result.success) {
+        return sendJson(res, 200, {
+          success: true,
+          message: `Test email successfully dispatched to ${targetEmail} (MessageId: ${result.messageId || "sent"})!`,
+        });
+      } else {
+        return sendJson(res, 502, {
+          success: false,
+          error: result.error || "Failed to dispatch test email via SMTP server.",
+        });
+      }
     }
 
     if (pathname === "/api/admin/settings/test-sms" && method === "POST") {
+      const authAdmin = await getAdminFromAuth(req);
+      if (!authAdmin) {
+        return sendJson(res, 401, { error: "Unauthorized" });
+      }
+
       const body = await readBody(req);
-      const targetPhone = body.to || "+44 7700 900123";
-      return sendJson(res, 200, {
-        success: true,
-        message: `2-Man Room of Choice dispatch alert test SMS dispatched to ${targetPhone} via configured gateway.`,
+      invalidateNotificationSettingsCache();
+      const settings = await getNotificationSettings(pool, true);
+
+      const targetPhone = body.to || settings.support_phone;
+      if (!targetPhone) {
+        return sendJson(res, 400, { error: "Please enter a valid UK destination telephone number for test SMS." });
+      }
+
+      const result = await sendRawSms(pool, {
+        to: targetPhone,
+        message: `SAN Furniture: Live SMS alert test verified! UK furniture notifications are connected. (SID: ${Date.now().toString().slice(-4)})`,
       });
+
+      if (result.success) {
+        return sendJson(res, 200, {
+          success: true,
+          message: `Test SMS successfully dispatched to ${targetPhone} (Twilio SID: ${result.sid})!`,
+        });
+      } else {
+        return sendJson(res, 502, {
+          success: false,
+          error: result.error || "Failed to dispatch test SMS via Twilio gateway.",
+        });
+      }
     }
 
     // Stripe UK Gateway Credential Test Trigger
@@ -2744,8 +2869,18 @@ const server = http.createServer(async (req, res) => {
       const updates = body.settings || body;
       const keys = Object.keys(updates);
 
+      const SENSITIVE_SECRET_KEYS = new Set([
+        "smtp_pass",
+        "sms_auth_token",
+        "stripe_secret_key",
+        "stripe_webhook_secret",
+      ]);
+
       for (const k of keys) {
-        const val = String(updates[k]);
+        const val = String(updates[k] ?? "").trim();
+        if (SENSITIVE_SECRET_KEYS.has(k) && (!val || val.includes("••••"))) {
+          continue; // Guard existing secrets from mask bullets
+        }
         await pool.query(
           `INSERT INTO system_settings (setting_key, setting_value)
            VALUES (?, ?)
@@ -2753,6 +2888,8 @@ const server = http.createServer(async (req, res) => {
           [k, val]
         );
       }
+
+      invalidateNotificationSettingsCache();
 
       await pool.query(
         "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",

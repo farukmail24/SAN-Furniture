@@ -266,8 +266,8 @@ export function Header({ initialProducts }: { initialProducts?: CatalogProduct[]
                 { name: "Sofas", href: "/categories/sofas" },
                 { name: "Armchairs", href: "/categories/armchairs" },
                 { name: "Dining", href: "/categories/dining" },
-                { name: "Bedroom", href: "/categories/beds" },
-                { name: "Tables", href: "/categories/living-tables" },
+                { name: "Bedroom", href: "/categories/bedroom" },
+                { name: "Living Room", href: "/categories/living-room" },
               ].map((link) => {
                 const isActive = pathname === link.href;
                 return (

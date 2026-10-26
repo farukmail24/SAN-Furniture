@@ -33,6 +33,15 @@ export const {
   extractUKPostcodeArea,
   isMainlandUKPostcode,
   resolveUKPostcodeInfo,
+  CATALOG_CATEGORIES,
+  CATEGORY_HANDLE_ALIASES,
+  normalizeCategoryHandle,
+  getCategoryByHandle,
+  FURNITURE_SUBTYPES,
+  getCategorySubTypes,
+  resolveSubType,
+  productMatchesSubType,
+  getSubTypesWithCounts,
 } = typesModule;
 
 export default typesModule;

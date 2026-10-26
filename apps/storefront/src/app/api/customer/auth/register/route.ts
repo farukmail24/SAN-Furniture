@@ -77,13 +77,13 @@ export async function POST(request: Request) {
 
     const token = signAuthToken("cust", customerId);
 
-    // Fire-and-forget notification dispatch (guarded: immediately returns if email/sms disabled in admin)
-    dispatchCustomerRegistered({
+    // Dispatch registration welcome email / SMS
+    await dispatchCustomerRegistered({
       email,
       firstName,
       lastName,
       phone,
-    });
+    }).catch((err) => console.warn("[Register] Welcome notification warning:", err?.message || err));
 
     const response = NextResponse.json({
       success: true,
