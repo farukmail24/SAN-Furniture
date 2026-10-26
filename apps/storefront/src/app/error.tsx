@@ -11,25 +11,6 @@ export default function GlobalErrorBoundary({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    // If a chunk failed to load (new deployment happened), auto-reload once to fetch new chunks
-    const isChunkError =
-      error?.name === "ChunkLoadError" ||
-      error?.message?.includes("Loading chunk") ||
-      error?.message?.includes("ChunkLoadError");
-
-    if (isChunkError && typeof window !== "undefined") {
-      const key = "san_chunk_reload_ts";
-      const last = parseInt(sessionStorage.getItem(key) || "0", 10);
-      const now = Date.now();
-      if (now - last > 10000) {
-        sessionStorage.setItem(key, String(now));
-        window.location.reload();
-        return;
-      }
-    }
-  }, [error]);
-
   return (
     <div className="min-h-[70vh] bg-sand-50 flex items-center justify-center p-6 text-center antialiased">
       <div className="max-w-md w-full bg-white border border-sand-300 rounded-2xl p-8 shadow-sm">

@@ -427,16 +427,6 @@ app.prepare()
               }
             }
           }
-
-          // Resilient JS Chunk Fallback: If client asks for a missing chunk hash from an older deploy, auto-reload cleanly
-          if (pathname.endsWith(".js") && pathname.includes("/chunks/")) {
-            res.writeHead(200, {
-              "Content-Type": "application/javascript; charset=utf-8",
-              "Cache-Control": "no-cache, no-store, must-revalidate",
-            });
-            res.end("/* resilient chunk fallback */ if (typeof window !== 'undefined') { window.location.reload(); }");
-            return;
-          }
         }
 
         // 2. Public Directory Asset Handler (e.g. /SanFurnitureLogo.png, /favicon.ico)

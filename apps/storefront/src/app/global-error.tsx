@@ -9,23 +9,6 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    const isChunkError =
-      error?.name === "ChunkLoadError" ||
-      error?.message?.includes("Loading chunk") ||
-      error?.message?.includes("ChunkLoadError");
-
-    if (isChunkError && typeof window !== "undefined") {
-      const key = "san_chunk_global_reload_ts";
-      const last = parseInt(sessionStorage.getItem(key) || "0", 10);
-      const now = Date.now();
-      if (now - last > 10000) {
-        sessionStorage.setItem(key, String(now));
-        window.location.reload();
-      }
-    }
-  }, [error]);
-
   return (
     <html lang="en">
       <body style={{ margin: 0, padding: "40px 20px", fontFamily: "system-ui, -apple-system, sans-serif", background: "#f8f6f0", textAlign: "center" }}>

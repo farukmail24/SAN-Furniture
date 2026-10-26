@@ -50,30 +50,6 @@ export default async function RootLayout({
 
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                function handleChunkError(e) {
-                  var msg = (e && (e.message || (e.reason && (e.reason.message || String(e.reason))) || String(e))) || '';
-                  if (msg.indexOf('ChunkLoadError') !== -1 || msg.indexOf('Loading chunk') !== -1) {
-                    var key = 'san_chunk_reload';
-                    var last = parseInt(sessionStorage.getItem(key) || '0', 10);
-                    var now = Date.now();
-                    if (now - last > 8000) {
-                      sessionStorage.setItem(key, String(now));
-                      window.location.reload();
-                    }
-                  }
-                }
-                window.addEventListener('error', handleChunkError);
-                window.addEventListener('unhandledrejection', handleChunkError);
-              })();
-            `,
-          }}
-        />
-      </head>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
         <StorefrontShell initialSections={initialSections} initialProducts={initialProducts}>{children}</StorefrontShell>
       </body>
