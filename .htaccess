@@ -75,7 +75,7 @@ PassengerStartupFile server.js
     </FilesMatch>
 
     # Eliminate stale caching for Admin Cockpit, Checkout, Auth, and Dynamic APIs
-    SetEnvIf Request_URI "^/(admin|api|checkout)" NOCACHE_ROUTE=1
+    SetEnvIf Request_URI "^/(admin|api|checkout|account)" NOCACHE_ROUTE=1
     Header set Cache-Control "private, no-cache, no-store, max-age=0, must-revalidate" env=NOCACHE_ROUTE
     Header set Pragma "no-cache" env=NOCACHE_ROUTE
     Header set Expires "0" env=NOCACHE_ROUTE

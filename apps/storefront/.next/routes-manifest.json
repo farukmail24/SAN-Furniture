@@ -357,6 +357,12 @@
       "namedRegex": "^/account(?:/)?$"
     },
     {
+      "page": "/account/forgot-password",
+      "regex": "^/account/forgot\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/account/forgot\\-password(?:/)?$"
+    },
+    {
       "page": "/account/login",
       "regex": "^/account/login(?:/)?$",
       "routeKeys": {},
@@ -367,6 +373,12 @@
       "regex": "^/account/register(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/account/register(?:/)?$"
+    },
+    {
+      "page": "/account/reset-password",
+      "regex": "^/account/reset\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/account/reset\\-password(?:/)?$"
     },
     {
       "page": "/admin",

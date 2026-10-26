@@ -174,6 +174,13 @@ export async function sendRawEmail(options: {
       subject: options.subject,
       text: options.text || options.subject,
       html: options.html,
+      replyTo: settings.support_email || settings.smtp_from_email || settings.smtp_user,
+      headers: {
+        "X-Priority": "1",
+        "X-MSMail-Priority": "High",
+        "Importance": "High",
+        "X-Mailer": "SAN Furniture UK Commerce Engine",
+      },
     });
 
     await recordNotificationLog({
@@ -774,3 +781,136 @@ export async function dispatchOrderCancelled(data: {
     return { error: err?.message || String(err) };
   }
 }
+
+/**
+ * 5. Customer Password Reset Request Event
+ */
+export async function dispatchCustomerPasswordReset(data: {
+  email: string;
+  firstName?: string;
+  resetUrl: string;
+  expiresInMinutes?: number;
+}): Promise<{ emailSent?: boolean; error?: string }> {
+  try {
+    const settings = await getNotificationSettings();
+    const emailOn = isEmailActive(settings);
+
+    if (!emailOn || !data.email) {
+      return { emailSent: false, error: "Email notifications are disabled or recipient is empty" };
+    }
+
+    const recipientName = data.firstName?.trim() || "Valued Client";
+    const expiryMins = data.expiresInMinutes || 60;
+
+    const html = wrapEmailHtml(
+      "Reset Your SAN Furniture Password",
+      `
+      <h2 style="font-size: 20px; color: #0e1526; margin-top: 0;">Password Reset Request</h2>
+      <p>Hello ${recipientName},</p>
+      <p>We received a request to reset the password for your <strong>SAN Furniture</strong> customer account associated with <strong>${data.email}</strong>.</p>
+      
+      <div class="card">
+        <div class="card-title">Security & Verification Notice</div>
+        <p style="margin: 0 0 8px 0;">This password reset link is cryptographically protected and valid for <strong>${expiryMins} minutes</strong>.</p>
+        <p style="margin: 0; color: #718096; font-size: 12px;">If you did not request this change, please ignore this email. Your existing password remains completely secure.</p>
+      </div>
+
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${data.resetUrl}" class="button" style="background-color: #0e1526; color: #fbf8f3 !important; font-weight: 700; padding: 14px 32px; border-radius: 8px; text-decoration: none; display: inline-block;">
+          Reset My Password
+        </a>
+      </div>
+
+      <p style="font-size: 12px; color: #718096; word-break: break-all; margin-top: 24px;">
+        If the button above does not work, copy and paste the following URL into your browser:<br/>
+        <a href="${data.resetUrl}" style="color: #0e1526;">${data.resetUrl}</a>
+      </p>
+      `
+    );
+
+    const result = await sendRawEmail({
+      to: data.email,
+      subject: "Reset Your SAN Furniture Account Password",
+      html,
+      text: `Hello ${recipientName},\n\nWe received a request to reset your password. Use the link below to set a new password (valid for ${expiryMins} minutes):\n\n${data.resetUrl}\n\nIf you did not request this, you can safely ignore this email.`,
+    });
+
+    await recordNotificationLog({
+      recipientType: "customer",
+      recipientId: data.email,
+      type: "password_reset_requested",
+      title: "Password Reset Link Dispatched",
+      message: `Password reset link sent to ${data.email}`,
+      metadata: { to: data.email, resetUrl: data.resetUrl },
+    });
+
+    return { emailSent: result.success, error: result.error };
+  } catch (err: any) {
+    console.warn("[Notifications] Password reset dispatch error:", err?.message || err);
+    return { error: err?.message || String(err) };
+  }
+}
+
+/**
+ * 6. Customer Password Changed Confirmation Event
+ */
+export async function dispatchCustomerPasswordChanged(data: {
+  email: string;
+  firstName?: string;
+}): Promise<{ emailSent?: boolean; error?: string }> {
+  try {
+    const settings = await getNotificationSettings();
+    const emailOn = isEmailActive(settings);
+
+    if (!emailOn || !data.email) {
+      return { emailSent: false };
+    }
+
+    const recipientName = data.firstName?.trim() || "Valued Client";
+    const baseUrl = getStorefrontUrl();
+
+    const html = wrapEmailHtml(
+      "Your SAN Furniture Password Was Changed",
+      `
+      <h2 style="font-size: 20px; color: #0e1526; margin-top: 0;">Password Successfully Updated</h2>
+      <p>Hello ${recipientName},</p>
+      <p>The password for your <strong>SAN Furniture</strong> account (<strong>${data.email}</strong>) has been successfully updated.</p>
+      
+      <div class="card">
+        <div class="card-title">Security Confirmation</div>
+        <p style="margin: 0;">Your new password is now active. If you performed this update, no further action is required.</p>
+      </div>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="${baseUrl}/account/login" class="button">Log In to Your Account</a>
+      </div>
+
+      <p style="font-size: 12px; color: #e53e3e; margin-top: 20px;">
+        <strong>Didn't make this change?</strong> Please contact our London Concierge immediately at <a href="mailto:support@sanfurniture.co.uk" style="color: #c53030;">support@sanfurniture.co.uk</a> to secure your account.
+      </p>
+      `
+    );
+
+    const result = await sendRawEmail({
+      to: data.email,
+      subject: "Security Alert: SAN Furniture Account Password Changed",
+      html,
+      text: `Hello ${recipientName},\n\nYour SAN Furniture account password has been successfully updated. If you did not make this change, please contact support@sanfurniture.co.uk immediately.`,
+    });
+
+    await recordNotificationLog({
+      recipientType: "customer",
+      recipientId: data.email,
+      type: "password_changed",
+      title: "Password Changed Confirmation Dispatched",
+      message: `Password changed alert sent to ${data.email}`,
+      metadata: { to: data.email },
+    });
+
+    return { emailSent: result.success, error: result.error };
+  } catch (err: any) {
+    console.warn("[Notifications] Password changed dispatch error:", err?.message || err);
+    return { error: err?.message || String(err) };
+  }
+}
+

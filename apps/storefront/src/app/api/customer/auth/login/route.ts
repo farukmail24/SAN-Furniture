@@ -7,25 +7,37 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
-    const email = (body.email || "").trim().toLowerCase();
+    const rawIdentifier = (body.email || body.phone || body.identifier || "").trim();
     const password = (body.password || "").trim();
 
-    if (!email || !password) {
+    if (!rawIdentifier || !password) {
       return NextResponse.json(
-        { success: false, error: "Email address and password are required" },
+        { success: false, error: "Email address or mobile number and password are required" },
         { status: 400 }
       );
     }
 
+    const emailCandidate = rawIdentifier.toLowerCase();
+    const cleanInput = rawIdentifier.replace(/[\s\-\(\)\.]/g, "");
+    const digitsOnly = rawIdentifier.replace(/\D/g, "");
+    const last10Digits = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : (digitsOnly.length >= 7 ? digitsOnly : "NOMATCH");
+
     const pool = getDbPool();
     const [rows]: any = await pool.query(
-      "SELECT id, email, username, password_hash, first_name, last_name, phone FROM customers WHERE email = ? LIMIT 1",
-      [email]
+      `SELECT id, email, username, password_hash, first_name, last_name, phone 
+       FROM customers 
+       WHERE email = ? 
+          OR username = ? 
+          OR phone = ? 
+          OR REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') = ?
+          OR RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', ''), 10) = ?
+       LIMIT 1`,
+      [emailCandidate, rawIdentifier, rawIdentifier, cleanInput, last10Digits]
     );
 
     if (!rows || rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Invalid login credentials. Please check your email and password." },
+        { success: false, error: "Invalid login credentials. Please check your email or mobile number and password." },
         { status: 401 }
       );
     }

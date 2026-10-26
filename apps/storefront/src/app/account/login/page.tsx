@@ -57,7 +57,11 @@ export default function CustomerLoginPage() {
 
       router.push("/account");
     } catch (err: any) {
-      setError(err.message || "Login error occurred");
+      if (err?.message?.includes("fetch") || err?.name === "TypeError") {
+        setError("Unable to connect to authentication server. Please check your network and try again.");
+      } else {
+        setError(err.message || "Login error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -91,26 +95,34 @@ export default function CustomerLoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-navy-900 mb-1.5">
-                Email Address or Username
+                Email Address or Mobile Number
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
-                  autoComplete="email"
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your.email@example.co.uk or username"
+                  placeholder="your.email@example.co.uk or +44 7123 456789"
                   className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-navy-900 mb-1.5">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-navy-900">
+                  Password
+                </label>
+                <Link
+                  href="/account/forgot-password"
+                  className="text-[11px] font-semibold text-brass-700 hover:text-brass-800 hover:underline transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input

@@ -975,9 +975,9 @@ export default function CustomerAccountPage() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="text-xs font-bold px-4 py-2.5 rounded-xl bg-navy-950 text-sand-50 hover:bg-navy-900 transition-colors flex items-center gap-2 shadow-sm"
+                className="text-xs font-bold px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-all flex items-center gap-2 shadow-sm border border-red-700/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-red-500/40"
               >
-                <LogOut className="w-3.5 h-3.5 text-sand-300" />
+                <LogOut className="w-3.5 h-3.5 text-white" />
                 <span>Sign Out</span>
               </button>
             </div>

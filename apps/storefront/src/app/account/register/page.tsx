@@ -10,7 +10,6 @@ export default function CustomerRegisterPage() {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [postcode, setPostcode] = useState("");
@@ -48,7 +47,6 @@ export default function CustomerRegisterPage() {
         body: JSON.stringify({
           firstName,
           lastName,
-          username,
           email,
           password,
           postcode,
@@ -158,38 +156,6 @@ export default function CustomerRegisterPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Username (Optional)</label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="eleanor_vance"
-                    className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">Password (Min 8 chars) <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
-                  />
-                </div>
-              </div>
-
-              <div>
                 <label className="block text-xs font-semibold text-navy-900 mb-1.5">
                   Mobile / Phone Number <span className="text-red-500">*</span>
                 </label>
@@ -204,9 +170,22 @@ export default function CustomerRegisterPage() {
                     className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
                   />
                 </div>
-                <p className="text-[10px] text-navy-500 mt-1">
-                  Required for 2-man room-of-choice delivery scheduling &amp; SMS alerts.
-                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-navy-900 mb-1.5">Password (Min 8 chars) <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
+                />
               </div>
             </div>
 
