@@ -135,8 +135,15 @@ export async function POST(request: Request) {
       const commitMessage = payload.head_commit?.message || "No commit message";
       const pusherName = payload.pusher?.name || payload.sender?.login || "Unknown";
 
-      // Execute deployment
-      const projectRoot = path.resolve(process.cwd(), "../..");
+      // Execute deployment - resolve actual Git repository root
+      const candidateRoots = [
+        process.cwd(),
+        path.resolve(process.cwd(), ".."),
+        path.resolve(process.cwd(), "../.."),
+        path.resolve(__dirname, "../../.."),
+        "/home/sansoft/sanfurniture.com",
+      ];
+      let projectRoot = candidateRoots.find((dir) => fs.existsSync(path.join(dir, ".git"))) || process.cwd();
       const executionLogs: string[] = [];
 
       try {
@@ -161,6 +168,7 @@ export async function POST(request: Request) {
           path.join(projectRoot, "tmp", "restart.txt"),
           path.join(process.cwd(), "tmp", "restart.txt"),
           path.join(process.cwd(), "..", "tmp", "restart.txt"),
+          "/home/sansoft/sanfurniture.com/tmp/restart.txt",
         ];
 
         for (const rPath of restartPaths) {

@@ -402,6 +402,16 @@ app.prepare()
             return;
           }
 
+          // Resilient JS Chunk Fallback: If client asks for an older deleted hash that cannot be found, serve a safe noop webpack module to prevent fatal 404 script load failure
+          if (pathname.endsWith(".js") && (pathname.includes("/chunks/") || pathname.includes("/static/"))) {
+            res.writeHead(200, {
+              "Content-Type": "application/javascript; charset=utf-8",
+              "Cache-Control": "public, max-age=60",
+            });
+            res.end("/* resilient fallback */ (self.webpackChunk_N_E=self.webpackChunk_N_E||[]);");
+            return;
+          }
+
           // Resilient CSS Fallback: If client asks for an older deleted CSS hash, serve the largest main stylesheet
           if (pathname.endsWith(".css")) {
             const cssDir = path.join(__dirname, ".next/static/css");
