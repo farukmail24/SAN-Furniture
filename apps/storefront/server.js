@@ -299,8 +299,11 @@ try {
 try {
   const cacheCandidates = [
     path.join(__dirname, ".next/cache"),
+    path.join(__dirname, ".next/server/route-cache"),
     path.resolve(process.cwd(), ".next/cache"),
+    path.resolve(process.cwd(), ".next/server/route-cache"),
     path.resolve(process.cwd(), "apps/storefront/.next/cache"),
+    path.resolve(process.cwd(), "apps/storefront/.next/server/route-cache"),
   ];
   for (const cPath of cacheCandidates) {
     if (fs.existsSync(cPath)) {

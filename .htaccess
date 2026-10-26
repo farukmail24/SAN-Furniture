@@ -31,9 +31,8 @@ PassengerStartupFile server.js
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/public/$1 -f
     RewriteRule ^(.*)$ apps/storefront/public/$1 [L]
 
-    # Serve static assets directly if they exist
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
+    # Serve static assets directly if they exist as real files
+    RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
 
     # IMPORTANT: DO NOT add mod_proxy rules (e.g. RewriteRule ... http://127.0.0.1:3000 [P])!
