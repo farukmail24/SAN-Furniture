@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, User, Phone, MapPin, ArrowRight, AlertCircle, ShieldCheck } from "lucide-react";
+import { Mail, Lock, User, Phone, MapPin, ArrowRight, AlertCircle, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 
 export default function CustomerRegisterPage() {
@@ -12,6 +12,7 @@ export default function CustomerRegisterPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [postcode, setPostcode] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [city, setCity] = useState("London");
@@ -178,14 +179,23 @@ export default function CustomerRegisterPage() {
               <div className="relative">
                 <Lock className="w-4 h-4 text-navy-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   minLength={8}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
+                  className="w-full pl-10 pr-10 py-2.5 bg-sand-50 border border-sand-300 rounded-xl text-navy-950 text-xs focus:outline-none focus:border-brass-500"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-navy-400 hover:text-navy-700 transition-colors p-1"
+                  title={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
