@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { formatGBP, calculateNetAndVat } from "@san-furniture/types";
+import { getAdminFromRequest, getCustomerFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,34 @@ export async function GET(
     }
 
     const order = orderRows[0];
+
+    // Authorization check: Admin, Order Customer, or Postcode Verification
+    const admin = await getAdminFromRequest(request);
+    const authCust = await getCustomerFromRequest(request);
+    const { searchParams } = new URL(request.url);
+    const queryPostcode = (searchParams.get("postcode") || "").trim().toUpperCase().replace(/\s+/g, "");
+
+    const isOrderOwner =
+      authCust &&
+      order.customer_email &&
+      authCust.email.toLowerCase() === order.customer_email.toLowerCase();
+
+    if (!admin && !isOrderOwner) {
+      if (!queryPostcode) {
+        return new NextResponse(
+          "Unauthorized: Please sign in or provide the delivery postcode to view this invoice.",
+          { status: 401 }
+        );
+      }
+      const orderPostcode = (order.shipping_postcode || "").trim().toUpperCase().replace(/\s+/g, "");
+      if (queryPostcode !== orderPostcode) {
+        return new NextResponse(
+          "Forbidden: Postcode does not match the order delivery address.",
+          { status: 403 }
+        );
+      }
+    }
+
     const totalPennies = Number(order.total_pennies) || 0;
     const vatBreakdown = calculateNetAndVat(totalPennies);
 
@@ -170,7 +199,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=300",
+        "Cache-Control": "private, no-cache, no-store, must-revalidate",
       },
     });
   } catch (err: any) {

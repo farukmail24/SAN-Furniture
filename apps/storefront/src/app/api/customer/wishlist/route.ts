@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
-    const targetEmail = authCust?.email || queryEmail;
+    const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
 
     if (!targetEmail) {
       return NextResponse.json({ success: true, wishlist: [] });
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const email = (body.customerEmail || body.email || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
-    const targetEmail = authCust?.email || email;
+    const targetEmail = authCust ? authCust.email.toLowerCase() : email;
 
     if (!productId || !targetEmail) {
       return NextResponse.json(
@@ -100,24 +100,23 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    const email = (searchParams.get("email") || "").trim().toLowerCase();
+    const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
-    if (!id) {
-      return NextResponse.json({ success: false, error: "Missing item identifier" }, { status: 400 });
+    const authCust = await getCustomerFromRequest(request);
+    const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
+
+    if (!id || !targetEmail) {
+      return NextResponse.json(
+        { success: false, error: "Missing item identifier or authenticated customer email" },
+        { status: 400 }
+      );
     }
 
     const pool = getDbPool();
-    if (email) {
-      await pool.query(
-        "DELETE FROM customer_wishlist WHERE (id = ? OR product_id = ?) AND LOWER(customer_email) = ?",
-        [id, id, email]
-      );
-    } else {
-      await pool.query(
-        "DELETE FROM customer_wishlist WHERE id = ? OR product_id = ?",
-        [id, id]
-      );
-    }
+    await pool.query(
+      "DELETE FROM customer_wishlist WHERE (id = ? OR product_id = ?) AND LOWER(customer_email) = ?",
+      [id, id, targetEmail]
+    );
 
     return NextResponse.json({
       success: true,

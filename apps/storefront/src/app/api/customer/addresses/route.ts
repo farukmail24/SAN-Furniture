@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -11,12 +11,21 @@ export async function GET(request: Request) {
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
-    const targetEmail = authCust?.email || queryEmail;
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Customer or admin authorization required", addresses: [] },
+        { status: 401 }
+      );
+    }
+
+    const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
 
     if (!targetEmail) {
       return NextResponse.json(
-        { success: false, error: "Authentication required to view addresses", addresses: [] },
-        { status: 401 }
+        { success: false, error: "Target email required to view addresses", addresses: [] },
+        { status: 400 }
       );
     }
 
@@ -90,12 +99,21 @@ export async function POST(request: Request) {
     } = body;
 
     const authCust = await getCustomerFromRequest(request);
-    const targetEmail = authCust?.email || email;
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to save an address" },
+        { status: 401 }
+      );
+    }
+
+    const targetEmail = authCust ? authCust.email.toLowerCase() : (email || "").trim().toLowerCase();
 
     if (!targetEmail) {
       return NextResponse.json(
-        { success: false, error: "Authentication required" },
-        { status: 401 }
+        { success: false, error: "Target email required" },
+        { status: 400 }
       );
     }
 

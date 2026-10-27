@@ -7,7 +7,6 @@ import { getAdminFromRequest } from "@/lib/auth-token";
 export const dynamic = "force-dynamic";
 
 function getCleanSql(): string {
-  // Try finding san_furniture.sql across common cPanel directories
   const candidates = [
     path.resolve(process.cwd(), "san_furniture.sql"),
     path.resolve(process.cwd(), "database/san_furniture.sql"),
@@ -29,7 +28,7 @@ function getCleanSql(): string {
   return "";
 }
 
-async function runMigration() {
+async function runMigration(forceWipe = false) {
   const rawHost = process.env.DB_HOST || "127.0.0.1";
   const host = rawHost.toLowerCase() === "localhost" ? "127.0.0.1" : rawHost;
 
@@ -43,6 +42,20 @@ async function runMigration() {
   });
 
   try {
+    // Safety check against dropping live data
+    if (!forceWipe) {
+      const [orderRows]: any = await connection.query("SELECT COUNT(*) as c FROM orders").catch(() => [[{ c: 0 }]]);
+      const [custRows]: any = await connection.query("SELECT COUNT(*) as c FROM customers").catch(() => [[{ c: 0 }]]);
+      const orderCount = Number(orderRows?.[0]?.c ?? 0);
+      const custCount = Number(custRows?.[0]?.c ?? 0);
+
+      if (orderCount > 0 || custCount > 0) {
+        throw new Error(
+          `Migration Aborted: Database contains ${orderCount} live orders and ${custCount} customer accounts. Overwriting requires { forceWipeData: true }.`
+        );
+      }
+    }
+
     const sql = getCleanSql();
     if (!sql) {
       throw new Error("san_furniture.sql file could not be located on the server filesystem.");
@@ -92,7 +105,7 @@ export async function GET(request: Request) {
     });
 
     try {
-      const [tableRows]: any = await connection.query("SHOW TABLES");
+      const [tableRows]: any = await connection.query("SHOW TABLES").catch(() => [[]]);
       const [prodRows]: any = await connection.query("SELECT COUNT(*) as c FROM products").catch(() => [[{ c: 0 }]]);
       const [orderRows]: any = await connection.query("SELECT COUNT(*) as c FROM orders").catch(() => [[{ c: 0 }]]);
       const [catRows]: any = await connection.query("SELECT COUNT(*) as c FROM categories").catch(() => [[{ c: 0 }]]);
@@ -100,20 +113,10 @@ export async function GET(request: Request) {
       const pCount = prodRows?.[0]?.c ?? 0;
       const oCount = orderRows?.[0]?.c ?? 0;
 
-      // If database has 0 products, auto-migrate automatically
-      if (pCount === 0) {
-        await connection.end();
-        const migrationResult = await runMigration();
-        return NextResponse.json({
-          status: "auto_seeded",
-          ...migrationResult,
-        });
-      }
-
       return NextResponse.json({
         success: true,
-        status: "healthy",
-        totalTables: tableRows.length,
+        status: pCount === 0 ? "needs_seed" : "healthy",
+        totalTables: Array.isArray(tableRows) ? tableRows.length : 0,
         productsCount: pCount,
         ordersCount: oCount,
         categoriesCount: catRows?.[0]?.c ?? 0,
@@ -125,24 +128,14 @@ export async function GET(request: Request) {
       } catch {}
     }
   } catch (err: any) {
-    // If table doesn't exist or query failed, run migration
-    try {
-      const migrationResult = await runMigration();
-      return NextResponse.json({
-        status: "auto_recovered",
-        ...migrationResult,
-      });
-    } catch (migErr: any) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Database connection or migration failed",
-          details: err?.message,
-          migrationError: migErr?.message,
-        },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Database status inspection failed",
+        details: err?.message,
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -155,13 +148,17 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
-    const result = await runMigration();
+
+    const body = await request.json().catch(() => ({}));
+    const forceWipe = Boolean(body.forceWipeData && admin.role === "super_admin");
+
+    const result = await runMigration(forceWipe);
     return NextResponse.json(result);
   } catch (err: any) {
     return NextResponse.json(
       {
         success: false,
-        error: "Manual migration failed",
+        error: "Migration failed",
         details: err?.message || String(err),
       },
       { status: 500 }

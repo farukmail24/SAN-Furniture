@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const isBilling = body.type === "billing";
@@ -25,6 +33,10 @@ export async function PATCH(
     }
 
     const customerId = addrRows[0].customer_id;
+
+    if (authCust && authCust.id !== customerId) {
+      return NextResponse.json({ success: false, error: "Forbidden: Address does not belong to you" }, { status: 403 });
+    }
 
     if (isBilling) {
       await pool.query("UPDATE customer_addresses SET is_default_billing = 0 WHERE customer_id = ?", [customerId]);

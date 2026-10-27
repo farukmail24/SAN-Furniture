@@ -11,7 +11,7 @@
     "build": "tsc",
     "start": "node src/server.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/amos-mann-adapter.test.mjs test/furniture-to-go-adapter.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs test/security-and-jail.test.mjs test/admin-control-suite.test.mjs test/performance-and-cache.test.mjs test/notifications.test.mjs test/taxonomy.test.mjs test/launch-verification-e2e.test.mjs"
+    "test": "node --test test/health.test.mjs test/seed-and-schema.test.mjs test/dropship-sync.test.mjs test/amos-mann-adapter.test.mjs test/furniture-to-go-adapter.test.mjs test/payment-and-logistics.test.mjs test/feeds-and-conversions.test.mjs test/seo-and-sitemaps.test.mjs test/security-and-jail.test.mjs test/admin-control-suite.test.mjs test/performance-and-cache.test.mjs test/notifications.test.mjs test/taxonomy.test.mjs test/security-and-financial-audit.test.mjs test/launch-verification-e2e.test.mjs"
   },
   "dependencies": {
     "@san-furniture/types": "file:../../packages/types",

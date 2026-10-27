@@ -2807,7 +2807,8 @@ const server = http.createServer(async (req, res) => {
         cat_sofas: "Furniture &gt; Benches, Couches &amp; Chairs &gt; Sofas",
         cat_dining: "Furniture &gt; Tables &gt; Kitchen &amp; Dining Room Tables",
         cat_armchairs: "Furniture &gt; Benches, Couches &amp; Chairs &gt; Armchairs",
-        cat_living: "Furniture &gt; Tables &gt; Coffee Tables"
+        cat_living: "Furniture &gt; Tables &gt; Coffee Tables",
+        cat_office: "Furniture &gt; Office Furniture &gt; Desks"
       };
       const itemsXml = products
         .map((p) => {

@@ -1207,11 +1207,11 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewAmosCategory(e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
-                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
-                      <option value="cat_living">Living & Tables</option>
-                      <option value="cat_dining">Dining Tables & Chairs</option>
-                      <option value="cat_sofas">Sofas & Lounges</option>
-                      <option value="cat_armchairs">Accent Armchairs</option>
+                      <option value="cat_beds">Bedroom</option>
+                      <option value="cat_living">Living Room</option>
+                      <option value="cat_dining">Dining Room</option>
+                      <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_office">Home Office</option>
                     </select>
                   </div>
 
@@ -1309,11 +1309,11 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewAmosCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
-                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
-                      <option value="cat_living">Living & Tables</option>
-                      <option value="cat_dining">Dining Tables & Chairs</option>
-                      <option value="cat_sofas">Sofas & Lounges</option>
-                      <option value="cat_armchairs">Accent Armchairs</option>
+                      <option value="cat_beds">Bedroom</option>
+                      <option value="cat_living">Living Room</option>
+                      <option value="cat_dining">Dining Room</option>
+                      <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_office">Home Office</option>
                     </select>
                   </div>
 
@@ -1812,11 +1812,11 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewFtgCategory(e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D]"
                     >
-                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
-                      <option value="cat_living">Living & Tables</option>
-                      <option value="cat_dining">Dining Tables & Chairs</option>
-                      <option value="cat_sofas">Sofas & Lounges</option>
-                      <option value="cat_armchairs">Accent Armchairs</option>
+                      <option value="cat_beds">Bedroom</option>
+                      <option value="cat_living">Living Room</option>
+                      <option value="cat_dining">Dining Room</option>
+                      <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_office">Home Office</option>
                     </select>
                   </div>
 
@@ -1914,11 +1914,11 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewFtgCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
-                      <option value="cat_beds">Luxury Beds & Wardrobes</option>
-                      <option value="cat_living">Living & Tables</option>
-                      <option value="cat_dining">Dining Tables & Chairs</option>
-                      <option value="cat_sofas">Sofas & Lounges</option>
-                      <option value="cat_armchairs">Accent Armchairs</option>
+                      <option value="cat_beds">Bedroom</option>
+                      <option value="cat_living">Living Room</option>
+                      <option value="cat_dining">Dining Room</option>
+                      <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_office">Home Office</option>
                     </select>
                   </div>
 

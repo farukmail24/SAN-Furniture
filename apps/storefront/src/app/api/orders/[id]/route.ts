@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import { formatGBP } from "@san-furniture/types";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +31,21 @@ export async function GET(
 
     const order = orderRows[0];
 
-    // Verify delivery postcode if supplied
-    if (rawPostcode) {
+    // Authorization Guard: Admins or the authenticated customer owning the order can track without postcode
+    const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+    const isOwner = authCust && authCust.email?.toLowerCase() === (order.customer_email || "").toLowerCase();
+
+    if (!authAdmin && !isOwner) {
+      if (!rawPostcode) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Delivery postcode verification is required to view order tracking details.",
+          },
+          { status: 401 }
+        );
+      }
       const orderPostcode = (order.shipping_postcode || "").toUpperCase().replace(/\s+/g, "");
       if (orderPostcode && !orderPostcode.startsWith(rawPostcode) && !rawPostcode.startsWith(orderPostcode)) {
         return NextResponse.json(

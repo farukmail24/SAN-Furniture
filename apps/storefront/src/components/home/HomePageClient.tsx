@@ -236,11 +236,11 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
   const categoriesWithCounts = useMemo(() => {
     const allTab = { id: "all", name: "All Furniture", count: productsList.length };
     const categoryConfigs = [
-      { id: "cat_beds", name: "Beds & Wardrobes" },
-      { id: "cat_living", name: "Living & Storage" },
-      { id: "cat_sofas", name: "Sofas & Lounges" },
-      { id: "cat_dining", name: "Dining Sets" },
-      { id: "cat_armchairs", name: "Accent Seating" },
+      { id: "cat_sofas", name: "Sofas & Seating" },
+      { id: "cat_living", name: "Living Room" },
+      { id: "cat_dining", name: "Dining Room" },
+      { id: "cat_beds", name: "Bedroom" },
+      { id: "cat_office", name: "Home Office" },
     ];
     const dynamicTabs = categoryConfigs
       .map((cat) => ({

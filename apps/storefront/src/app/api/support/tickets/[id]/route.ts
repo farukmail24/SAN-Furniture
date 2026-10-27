@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getAdminFromRequest, getCustomerFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const admin = await getAdminFromRequest(request);
+    const customer = await getCustomerFromRequest(request);
+
+    if (!admin && !customer) {
+      return NextResponse.json({ success: false, error: "Authentication required" }, { status: 401 });
+    }
+
     const { id } = await params;
     const pool = getDbPool();
 
@@ -28,13 +36,24 @@ export async function GET(
 
     const ticket = ticketRows[0];
 
-    // Fetch message thread
-    const [messages]: any = await pool
-      .query(
-        "SELECT * FROM support_messages WHERE ticket_id = ? ORDER BY created_at ASC",
-        [ticket.id]
-      )
-      .catch(() => [[]]);
+    // Authorization check: Customer can only view their own ticket
+    if (!admin && customer) {
+      const custEmail = (ticket.customer_email || "").toLowerCase();
+      if (custEmail !== customer.email.toLowerCase()) {
+        return NextResponse.json({ success: false, error: "Forbidden: You do not have access to this ticket" }, { status: 403 });
+      }
+    }
+
+    // Fetch message thread (Customers NEVER see internal notes)
+    let messagesQuery = "SELECT * FROM support_messages WHERE ticket_id = ?";
+    const messagesParams: any[] = [ticket.id];
+
+    if (!admin) {
+      messagesQuery += " AND is_internal_note = 0";
+    }
+    messagesQuery += " ORDER BY created_at ASC";
+
+    const [messages]: any = await pool.query(messagesQuery, messagesParams).catch(() => [[]]);
 
     // Fetch linked order if present
     let linked_order = null;
@@ -76,6 +95,14 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin privileges required to modify ticket state" },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const pool = getDbPool();
     const body = await request.json();
@@ -98,13 +125,15 @@ export async function PATCH(
 
     updates.push("updated_at = NOW()");
 
-    if (updates.length > 1) {
-      values.push(id, id);
-      await pool.query(
-        `UPDATE support_tickets SET ${updates.join(", ")} WHERE id = ? OR ticket_number = ?`,
-        values
-      );
+    if (updates.length === 1) {
+      return NextResponse.json({ success: true, message: "No changes provided" });
     }
+
+    values.push(id, id);
+    await pool.query(
+      `UPDATE support_tickets SET ${updates.join(", ")} WHERE id = ? OR ticket_number = ?`,
+      values
+    );
 
     return NextResponse.json({ success: true, message: "Ticket updated successfully" });
   } catch (err: any) {

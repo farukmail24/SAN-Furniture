@@ -761,7 +761,22 @@ export default function CustomerAccountPage() {
     try {
       if (customer) {
         const cleanPhone = profileForm.phone.includes("@") ? "+44 7700 900123" : profileForm.phone;
-        const updatedCustomer = {
+        const res = await fetch(apiUrl("/api/customer/auth/me"), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            firstName: profileForm.firstName,
+            lastName: profileForm.lastName,
+            username: profileForm.username,
+            phone: cleanPhone,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to save profile changes");
+        }
+        const updatedCustomer = data.customer || {
           ...customer,
           firstName: profileForm.firstName,
           lastName: profileForm.lastName,
@@ -773,8 +788,8 @@ export default function CustomerAccountPage() {
         localStorage.setItem("san_customer_user", JSON.stringify(updatedCustomer));
         showToast("Client profile credentials updated successfully.");
       }
-    } catch {
-      showToast("Failed to save profile changes.");
+    } catch (err: any) {
+      showToast(err.message || "Failed to save profile changes.");
     } finally {
       setIsSavingProfile(false);
     }
@@ -829,6 +844,10 @@ export default function CustomerAccountPage() {
   };
 
   const handleUpdatePassword = async () => {
+    if (!passwordForm.currentPassword) {
+      showToast("Please enter your current password.");
+      return;
+    }
     if (!passwordForm.newPassword) {
       showToast("Please enter a new password.");
       return;
@@ -843,11 +862,23 @@ export default function CustomerAccountPage() {
     }
     setIsUpdatingPassword(true);
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      const res = await fetch(apiUrl("/api/customer/auth/me"), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to update password");
+      }
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-      showToast("Password updated securely via Argon2id.");
-    } catch {
-      showToast("Failed to update password.");
+      showToast("Password updated securely in SAN records.");
+    } catch (err: any) {
+      showToast(err.message || "Failed to update password.");
     } finally {
       setIsUpdatingPassword(false);
     }

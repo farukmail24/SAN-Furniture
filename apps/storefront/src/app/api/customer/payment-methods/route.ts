@@ -1,21 +1,26 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    let email = searchParams.get("email")?.trim().toLowerCase();
-    let customerId = searchParams.get("customerId")?.trim() || "";
 
-    // Verify customer token if available
+    // Strict authentication: customer token or admin token required
     const authCustomer = await getCustomerFromRequest(request);
-    if (authCustomer) {
-      if (authCustomer.email) email = authCustomer.email.toLowerCase();
-      if (authCustomer.id) customerId = authCustomer.id;
+    const authAdmin = !authCustomer ? await getAdminFromRequest(request) : null;
+
+    if (!authCustomer && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Customer or admin authorization required", paymentMethods: [] },
+        { status: 401 }
+      );
     }
+
+    const email = authCustomer ? authCustomer.email.toLowerCase() : searchParams.get("email")?.trim().toLowerCase();
+    const customerId = authCustomer ? authCustomer.id : searchParams.get("customerId")?.trim() || "";
 
     if (!email && !customerId) {
       return NextResponse.json({ success: true, paymentMethods: [] });
@@ -60,14 +65,16 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { id, action } = body;
-    let email = body.email?.trim().toLowerCase();
-    let customerId = body.customerId?.trim() || "";
 
     const authCustomer = await getCustomerFromRequest(request);
-    if (authCustomer) {
-      if (authCustomer.email) email = authCustomer.email.toLowerCase();
-      if (authCustomer.id) customerId = authCustomer.id;
+    const authAdmin = !authCustomer ? await getAdminFromRequest(request) : null;
+
+    if (!authCustomer && !authAdmin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    const email = authCustomer ? authCustomer.email.toLowerCase() : body.email?.trim().toLowerCase();
+    const customerId = authCustomer ? authCustomer.id : body.customerId?.trim() || "";
 
     if (!id || (!email && !customerId)) {
       return NextResponse.json(
@@ -117,14 +124,16 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
-    let email = searchParams.get("email")?.trim().toLowerCase();
-    let customerId = searchParams.get("customerId")?.trim() || "";
 
     const authCustomer = await getCustomerFromRequest(request);
-    if (authCustomer) {
-      if (authCustomer.email) email = authCustomer.email.toLowerCase();
-      if (authCustomer.id) customerId = authCustomer.id;
+    const authAdmin = !authCustomer ? await getAdminFromRequest(request) : null;
+
+    if (!authCustomer && !authAdmin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    const email = authCustomer ? authCustomer.email.toLowerCase() : searchParams.get("email")?.trim().toLowerCase();
+    const customerId = authCustomer ? authCustomer.id : searchParams.get("customerId")?.trim() || "";
 
     if (!id || (!email && !customerId)) {
       return NextResponse.json(

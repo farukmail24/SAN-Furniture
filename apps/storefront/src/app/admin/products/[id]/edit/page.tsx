@@ -575,11 +575,11 @@ export default function AdminEditProductPage({ params }: PageProps) {
                     ))
                   ) : (
                     <>
-                      <option value="cat_beds">Luxury Beds &amp; Wardrobes</option>
-                      <option value="cat_living">Living Room &amp; TV Storage</option>
-                      <option value="cat_dining">Dining Tables &amp; Chairs</option>
-                      <option value="cat_sofas">Sofas &amp; Lounges</option>
-                      <option value="cat_armchairs">Accent Armchairs</option>
+                      <option value="cat_beds">Bedroom</option>
+                      <option value="cat_living">Living Room</option>
+                      <option value="cat_dining">Dining Room</option>
+                      <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_office">Home Office</option>
                     </>
                   )}
                 </select>

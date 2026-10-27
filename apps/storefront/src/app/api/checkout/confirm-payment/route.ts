@@ -208,9 +208,30 @@ export async function POST(request: Request) {
           confParams.append("payment_method_data[card][token]", "tok_chargeDeclined");
         }
       } else {
-        // Live mode: use attached Stripe customer / token
-        confParams.append("payment_method_data[type]", "card");
-        confParams.append("payment_method_data[card][token]", "tok_visa");
+        // Live mode: use attached Stripe customer / payment method
+        const stripePmId = paymentDetails?.stripePaymentMethodId || paymentDetails?.paymentMethodId;
+        let resolvedPm = stripePmId;
+        if (!resolvedPm && paymentDetails?.savedCardId) {
+          const [pmRows]: any = await pool.query(
+            "SELECT stripe_payment_method_id FROM customer_payment_methods WHERE id = ? LIMIT 1",
+            [paymentDetails.savedCardId]
+          ).catch(() => [[]]);
+          if (Array.isArray(pmRows) && pmRows.length > 0 && pmRows[0].stripe_payment_method_id) {
+            resolvedPm = pmRows[0].stripe_payment_method_id;
+          }
+        }
+        if (resolvedPm && String(resolvedPm).startsWith("pm_")) {
+          confParams.append("payment_method", resolvedPm);
+        } else {
+          return NextResponse.json(
+            {
+              success: false,
+              status: "failed",
+              error: "Live payment instrument token could not be verified. Please enter your card details directly.",
+            },
+            { status: 400 }
+          );
+        }
       }
     } else if (!isLive) {
       // Map to exact Stripe test tokens

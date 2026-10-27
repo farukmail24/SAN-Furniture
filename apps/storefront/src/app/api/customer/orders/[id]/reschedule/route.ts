@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to reschedule delivery" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const newSlot = body.slot || body.deliverySlot || "Standard Business Day (08:00 - 18:00)";
@@ -25,6 +36,14 @@ export async function POST(
     }
 
     const order = orders[0];
+
+    // Customer can only reschedule their own order
+    if (authCust && order.customer_email?.toLowerCase() !== authCust.email.toLowerCase()) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: You are not authorized to reschedule this order" },
+        { status: 403 }
+      );
+    }
     const slotStr = `${newDate} - ${newSlot}`;
 
     await pool.query(

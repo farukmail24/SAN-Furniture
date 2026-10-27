@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,21 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   // Administrative emergency worker restart trigger for Phusion Passenger on cPanel
-  if (searchParams.get("restart") === "san_restart_now_998124") {
+  if (searchParams.has("restart")) {
+    const admin = await getAdminFromRequest(request);
+    const configuredSecret = process.env.SAN_RESTART_SECRET;
+    const providedParam = searchParams.get("restart");
+
+    const isAuthorizedBySecret = Boolean(configuredSecret && providedParam === configuredSecret);
+    const isAuthorizedByAdmin = Boolean(admin && admin.role === "super_admin");
+
+    if (!isAuthorizedBySecret && !isAuthorizedByAdmin) {
+      return NextResponse.json(
+        { error: "Unauthorized: Emergency restart requires super admin privileges or secret key" },
+        { status: 401 }
+      );
+    }
+
     const restartDirs = [
       process.cwd(),
       path.resolve(process.cwd(), ".."),

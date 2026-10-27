@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import crypto from "node:crypto";
 import { dispatchOrderCancelled } from "@/lib/notifications-dispatcher";
 
@@ -11,6 +11,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to cancel an order" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const reason = body.reason || "Customer requested cancellation before dispatch";
@@ -28,6 +38,14 @@ export async function POST(
     }
 
     const order = orders[0];
+
+    // Customer can only cancel their own order
+    if (authCust && order.customer_email?.toLowerCase() !== authCust.email.toLowerCase()) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: You are not authorized to cancel this order" },
+        { status: 403 }
+      );
+    }
     if (order.fulfillment_status === "delivered") {
       return NextResponse.json(
         { success: false, error: "Delivered orders cannot be cancelled. Please request a return collection instead." },

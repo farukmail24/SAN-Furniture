@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import { formatGBP } from "@san-furniture/types";
 
 export const dynamic = "force-dynamic";
@@ -10,11 +10,21 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
-    // Authenticate via token or verified session email
+    // Authenticate via customer token or admin token
     const authCust = await getCustomerFromRequest(request);
-    const targetEmail = authCust?.email || queryEmail;
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
 
-    if (!targetEmail) {
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Customer or admin authorization required", orders: [] },
+        { status: 401 }
+      );
+    }
+
+    // Customers can strictly ONLY view their own orders. Admins can view specific queryEmail or recent orders.
+    const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
+
+    if (!targetEmail && !authAdmin) {
       return NextResponse.json(
         { success: false, error: "Authentication required to view order history", orders: [] },
         { status: 401 }
@@ -22,14 +32,21 @@ export async function GET(request: Request) {
     }
 
     const pool = getDbPool();
-    const [rows]: any = await pool.query(
-      `SELECT o.*, d.carrier, d.tracking_number, d.po_number, d.status as dispatch_status
-       FROM orders o
-       LEFT JOIN order_po_dispatches d ON o.id = d.order_id
-       WHERE LOWER(o.customer_email) = ?
-       ORDER BY o.created_at DESC`,
-      [targetEmail]
-    );
+    const [rows]: any = targetEmail
+      ? await pool.query(
+          `SELECT o.*, d.carrier, d.tracking_number, d.po_number, d.status as dispatch_status
+           FROM orders o
+           LEFT JOIN order_po_dispatches d ON o.id = d.order_id
+           WHERE LOWER(o.customer_email) = ?
+           ORDER BY o.created_at DESC`,
+          [targetEmail]
+        )
+      : await pool.query(
+          `SELECT o.*, d.carrier, d.tracking_number, d.po_number, d.status as dispatch_status
+           FROM orders o
+           LEFT JOIN order_po_dispatches d ON o.id = d.order_id
+           ORDER BY o.created_at DESC LIMIT 100`
+        );
 
     // Pre-load product thumbnails to ensure 100% of order items have images
     const allProductIds = new Set<string>();

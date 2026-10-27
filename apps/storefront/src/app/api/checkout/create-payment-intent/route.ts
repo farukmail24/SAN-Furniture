@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { formatGBP } from "@san-furniture/types";
+import { formatGBP, classifyUKPostcode } from "@san-furniture/types";
 import { getDbPool } from "@/lib/db";
 import crypto from "node:crypto";
 
@@ -18,16 +18,29 @@ export async function POST(request: Request) {
       const productIds = items.map((it: any) => it.productId || it.id).filter(Boolean);
       if (productIds.length > 0) {
         const [dbProducts]: any = await pool.query(
-          "SELECT id, price_pennies FROM products WHERE id IN (?)",
+          "SELECT id, title, price_pennies, status FROM products WHERE id IN (?)",
           [productIds]
         ).catch(() => [[]]);
 
         if (Array.isArray(dbProducts) && dbProducts.length > 0) {
-          const pMap = new Map(dbProducts.map((p: any) => [p.id, Number(p.price_pennies)]));
+          const pMap = new Map(dbProducts.map((p: any) => [p.id, p]));
           let canonicalSubtotal = 0;
           for (const it of items) {
             const pid = it.productId || it.id;
-            const price = pMap.get(pid);
+            const dbP = pMap.get(pid);
+            if (!dbP) {
+              return NextResponse.json(
+                { success: false, error: `Invalid product in basket: Product "${pid}" not found.` },
+                { status: 400 }
+              );
+            }
+            if (dbP.status !== "published") {
+              return NextResponse.json(
+                { success: false, error: `Product "${dbP.title || pid}" is currently unavailable for purchase.` },
+                { status: 400 }
+              );
+            }
+            const price = Number(dbP.price_pennies);
             if (price) {
               const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
               canonicalSubtotal += price * qty;
@@ -49,7 +62,19 @@ export async function POST(request: Request) {
               tierShipping = 4900;
             }
           }
-          resolvedAmountPennies = canonicalSubtotal + tierShipping;
+
+          // Scottish Highlands delivery surcharge (£49)
+          const rawPostcode = shippingAddress?.postcode || body.postcode || "";
+          const cleanPostcode = String(rawPostcode).toUpperCase().replace(/\s+/g, "");
+          let surchargePennies = 0;
+          if (cleanPostcode) {
+            const zone = classifyUKPostcode(cleanPostcode);
+            if (zone === "zone_2_scottish_highlands") {
+              surchargePennies = 4900;
+            }
+          }
+
+          resolvedAmountPennies = canonicalSubtotal + tierShipping + surchargePennies;
         }
       }
     }

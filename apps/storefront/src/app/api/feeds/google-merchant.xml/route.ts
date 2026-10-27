@@ -7,6 +7,7 @@ const CATEGORY_MAP: Record<string, string> = {
   cat_dining: "Home & Garden > Furniture > Dining Room Furniture",
   cat_beds: "Home & Garden > Furniture > Bedroom Furniture > Beds & Bed Frames",
   cat_living: "Home & Garden > Furniture > Tables > Coffee Tables",
+  cat_office: "Home & Garden > Furniture > Office Furniture > Desks",
 };
 
 function escapeXml(unsafe: string): string {

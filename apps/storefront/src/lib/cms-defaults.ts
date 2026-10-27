@@ -316,11 +316,11 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             {
               title: "Chairs & Accents",
               links: [
-                { label: "All Accent Armchairs", href: "/categories/armchairs", badge: "POPULAR" },
-                { label: "Deep-Seat Bouclé Loungers", href: "/categories/armchairs?material=boucle" },
-                { label: "Matte Velvet Snugglers", href: "/categories/armchairs?material=velvet" },
-                { label: "Storage Footstools & Poufs", href: "/categories/armchairs?type=ottoman" },
-                { label: "Sculptural Fireside Chairs", href: "/categories/armchairs" },
+                { label: "All Accent Armchairs", href: "/categories/sofas?type=armchairs", badge: "POPULAR" },
+                { label: "Deep-Seat Bouclé Loungers", href: "/categories/sofas?material=boucle" },
+                { label: "Matte Velvet Snugglers", href: "/categories/sofas?material=velvet" },
+                { label: "Storage Footstools & Poufs", href: "/categories/sofas?type=footstools" },
+                { label: "Sculptural Fireside Chairs", href: "/categories/sofas?type=armchairs" },
               ],
             },
             {
@@ -369,7 +369,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             {
               title: "Storage & Desks",
               links: [
-                { label: "Desks & Home Office", href: "/categories/living-room?type=desks", badge: "NEW" },
+                { label: "Desks & Home Office", href: "/categories/home-office", badge: "NEW" },
                 { label: "Bookcases & Shelving", href: "/categories/living-room?type=bookcases" },
                 { label: "Media Consoles & TV Units", href: "/categories/living-room?type=tv-units" },
                 { label: "High-Gloss Sideboards", href: "/categories/living-room?type=sideboards" },

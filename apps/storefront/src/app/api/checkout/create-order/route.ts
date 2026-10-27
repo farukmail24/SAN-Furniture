@@ -135,6 +135,12 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+      if (dbP.status !== "published") {
+        return NextResponse.json(
+          { success: false, error: `Product "${dbP.title || pid}" is currently unavailable for purchase.` },
+          { status: 400 }
+        );
+      }
       const unitPrice = Number(dbP.price_pennies);
       const qty = Math.max(1, parseInt(it.quantity, 10) || 1);
       subtotalPennies += unitPrice * qty;

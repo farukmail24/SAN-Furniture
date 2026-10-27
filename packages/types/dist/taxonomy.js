@@ -3,48 +3,55 @@ export const CATALOG_CATEGORIES = [
         id: "cat_sofas",
         name: "Sofas & Seating",
         handle: "sofas",
-        description: "Bespoke handcrafted sofas, deep-seated corner groups, and luxury chaises upholstered in durable bouclé and velvet.",
+        description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and sculptural accent armchairs upholstered in durable bouclé and velvet.",
         heroImage: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85"
     },
     {
-        id: "cat_armchairs",
-        name: "Accent Armchairs & Stools",
-        handle: "armchairs",
-        description: "Sculptural statement armchairs, reading chairs, and ergonomic occasional seating crafted for British comfort.",
-        heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
+        id: "cat_living",
+        name: "Living Room",
+        handle: "living-room",
+        description: "Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and shoe storage cabinets.",
+        heroImage: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85"
     },
     {
         id: "cat_dining",
-        name: "Dining Room Furniture",
+        name: "Dining Room",
         handle: "dining",
-        description: "Solid European oak, American walnut, and extending dining collections engineered for intimate family gatherings.",
+        description: "Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools.",
         heroImage: "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85"
     },
     {
         id: "cat_beds",
-        name: "Bedroom Furniture",
+        name: "Bedroom",
         handle: "bedroom",
-        description: "Luxury ottoman storage beds, bespoke wardrobes, handcrafted bedside tables, and deep chests of drawers.",
+        description: "Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers.",
         heroImage: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85"
     },
     {
-        id: "cat_living",
-        name: "Living Room Furniture",
-        handle: "living-room",
-        description: "Architectural coffee tables, media consoles, Scandinavian writing desks, and statement bookcases.",
-        heroImage: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85"
+        id: "cat_office",
+        name: "Home Office",
+        handle: "home-office",
+        description: "Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living.",
+        heroImage: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1600&auto=format&fit=crop"
     }
 ];
 export const CATEGORY_HANDLE_ALIASES = {
     beds: "bedroom",
     bedroom: "bedroom",
+    "bedroom-furniture": "bedroom",
     "living-tables": "living-room",
     "living-room": "living-room",
+    "living-room-furniture": "living-room",
     "dining-room": "dining",
     dining: "dining",
+    "dining-room-furniture": "dining",
     "sofas-seating": "sofas",
     sofas: "sofas",
-    armchairs: "armchairs"
+    armchairs: "sofas",
+    "accent-armchairs": "sofas",
+    "home-office": "home-office",
+    office: "home-office",
+    desks: "home-office",
 };
 export function normalizeCategoryHandle(handle) {
     const clean = handle.trim().toLowerCase();
@@ -281,11 +288,10 @@ export const FURNITURE_SUBTYPES = [
             return t.includes("sofa bed") || t.includes("sofa-bed") || t.includes("sleeper");
         }
     },
-    // Armchairs & Stools Sub-Types (cat_armchairs)
     {
         id: "armchairs",
         label: "Accent Armchairs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_sofas",
         aliases: ["armchairs", "armchair", "accent-chairs"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -295,7 +301,7 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "loungers",
         label: "Bouclé Loungers",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_sofas",
         aliases: ["loungers", "lounger", "chaise-lounger"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -305,11 +311,45 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "footstools",
         label: "Footstools & Poufs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_sofas",
         aliases: ["footstools", "footstool", "pouf", "poufs", "pouffe", "ottoman"],
         matches: (p) => {
             const t = p.title.toLowerCase();
             return t.includes("footstool") || t.includes("pouf") || t.includes("pouffe") || t.includes("stool");
+        }
+    },
+    // Home Office Sub-Types (cat_office)
+    {
+        id: "desks",
+        label: "Writing Desks & Workstations",
+        categoryId: "cat_office",
+        aliases: ["desks", "desk", "writing-desk", "computer-desk", "workstations"],
+        matches: (p) => {
+            const t = p.title.toLowerCase();
+            const h = p.handle.toLowerCase();
+            return t.includes("desk") || h.includes("desk");
+        }
+    },
+    {
+        id: "office-bookcases",
+        label: "Office Bookcases & Shelving",
+        categoryId: "cat_office",
+        aliases: ["office-bookcases", "bookcases", "shelves", "shelving"],
+        matches: (p) => {
+            const t = p.title.toLowerCase();
+            const h = p.handle.toLowerCase();
+            return t.includes("bookcase") || h.includes("bookcase") || t.includes("shelf");
+        }
+    },
+    {
+        id: "office-storage",
+        label: "Office Storage Cabinets",
+        categoryId: "cat_office",
+        aliases: ["office-storage", "cupboard", "cabinets"],
+        matches: (p) => {
+            const t = p.title.toLowerCase();
+            const h = p.handle.toLowerCase();
+            return t.includes("cupboard") || h.includes("cupboard") || t.includes("storage");
         }
     }
 ];

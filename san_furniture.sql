@@ -247,11 +247,11 @@ CREATE TABLE `categories` (
 -- Dumping data for table `categories` (5 rows)
 LOCK TABLES `categories` WRITE;
 INSERT INTO `categories` (`id`, `name`, `handle`, `description`, `hero_image`, `created_at`) VALUES
-('cat_armchairs', 'Accent Armchairs & Stools', 'armchairs', 'Sculptural statement armchairs, reading chairs, and ergonomic occasional seating crafted for British comfort.', 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
-('cat_beds', 'Luxury Beds & Wardrobes', 'beds', 'Ottoman storage beds, upholstered headboards, and solid hardwood wardrobes for serene bedroom sanctuaries.', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
-('cat_dining', 'Dining Tables & Chairs', 'dining', 'Solid European oak, American walnut, and Italian marble dining collections engineered for intimate family gatherings.', 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
-('cat_living', 'Coffee & Occasional Tables', 'living-tables', 'Fluted wood, brushed brass, and architectural stone coffee, side, and console tables.', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
-('cat_sofas', 'Sofas & Corner Lounges', 'sofas', 'Bespoke handcrafted sofas, deep-seated corner groups, and luxury chaises upholstered in durable bouclé and velvet.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21');
+('cat_beds', 'Bedroom', 'bedroom', 'Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers.', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
+('cat_dining', 'Dining Room', 'dining', 'Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools.', 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
+('cat_living', 'Living Room', 'living-room', 'Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and shoe storage cabinets.', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21'),
+('cat_office', 'Home Office', 'home-office', 'Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living.', 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1600&auto=format&fit=crop', '2026-10-15 06:57:21'),
+('cat_sofas', 'Sofas & Seating', 'sofas', 'Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and sculptural accent armchairs upholstered in durable bouclé and velvet.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85', '2026-10-15 06:57:21');
 UNLOCK TABLES;
 
 -- -----------------------------------------------------
@@ -374,6 +374,49 @@ INSERT INTO `customers` (`id`, `email`, `username`, `password_hash`, `first_name
 ('cust_6c8a705a9710', 'oliver.thorne@sanfurniture.co.uk', NULL, 'GUEST_CHECKOUT', 'Oliver', 'Thorne', '+44 7700 900555', '2026-10-17 13:07:52'),
 ('cust_b8e3bd516a82', 'admin@sanfurniture.co.uk', NULL, 'GUEST_CHECKOUT', 'Md.', 'Faruk Hossain', '+8801723814963', '2026-10-17 13:48:31');
 UNLOCK TABLES;
+
+-- -----------------------------------------------------
+-- Table structure for table `customer_payment_methods`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `customer_payment_methods`;
+CREATE TABLE `customer_payment_methods` (
+  `id` varchar(64) NOT NULL,
+  `customer_id` varchar(64) DEFAULT NULL,
+  `customer_email` varchar(255) NOT NULL,
+  `brand` varchar(32) DEFAULT 'Visa',
+  `last4` varchar(4) NOT NULL,
+  `exp_month` int(11) NOT NULL,
+  `exp_year` int(11) NOT NULL,
+  `cardholder_name` varchar(255) DEFAULT NULL,
+  `stripe_payment_method_id` varchar(100) DEFAULT NULL,
+  `stripe_customer_id` varchar(100) DEFAULT NULL,
+  `is_saved_for_future` tinyint(1) DEFAULT 0,
+  `is_default` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_cpm_email` (`customer_email`),
+  KEY `idx_cpm_customer_id` (`customer_id`),
+  KEY `idx_cpm_saved` (`customer_email`,`is_saved_for_future`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- Table structure for table `customer_password_resets`
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `customer_password_resets`;
+CREATE TABLE `customer_password_resets` (
+  `id` varchar(36) NOT NULL,
+  `customer_id` varchar(36) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `token_hash` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `used_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_cpr_token` (`token_hash`),
+  KEY `idx_cpr_email` (`email`),
+  KEY `idx_cpr_cust` (`customer_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------
 -- Table structure for table `delivery_options`
@@ -611,6 +654,9 @@ CREATE TABLE `orders` (
   `total_pennies` int(11) NOT NULL,
   `payment_status` varchar(50) NOT NULL DEFAULT 'pending',
   `fulfillment_status` varchar(50) NOT NULL DEFAULT 'unfulfilled',
+  `cancellation_reason` text DEFAULT NULL,
+  `cancelled_by` varchar(255) DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
   `stripe_payment_intent_id` varchar(255) DEFAULT NULL,
   `items_json` longtext DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),

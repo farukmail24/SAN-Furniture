@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +10,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to request an order return" },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const reason = body.reason || "Customer resolution request";
@@ -24,6 +35,14 @@ export async function POST(
     }
 
     const order = orders[0];
+
+    // Customer can only return their own order
+    if (authCust && order.customer_email?.toLowerCase() !== authCust.email.toLowerCase()) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: You are not authorized to request a return for this order" },
+        { status: 403 }
+      );
+    }
 
     await pool.query(
       "UPDATE orders SET fulfillment_status = 'return_requested' WHERE id = ?",

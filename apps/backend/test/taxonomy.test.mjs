@@ -21,7 +21,10 @@ test("Taxonomy Handle Aliases and Canonical Resolution", () => {
   assert.equal(normalizeCategoryHandle("living-room"), "living-room");
   assert.equal(normalizeCategoryHandle("dining"), "dining");
   assert.equal(normalizeCategoryHandle("sofas"), "sofas");
-  assert.equal(normalizeCategoryHandle("armchairs"), "armchairs");
+  assert.equal(normalizeCategoryHandle("armchairs"), "sofas");
+  assert.equal(normalizeCategoryHandle("home-office"), "home-office");
+  assert.equal(normalizeCategoryHandle("office"), "home-office");
+  assert.equal(normalizeCategoryHandle("desks"), "home-office");
 
   // getCategoryByHandle should resolve both new and legacy handles
   const bedroomCat = getCategoryByHandle("bedroom");
@@ -30,6 +33,10 @@ test("Taxonomy Handle Aliases and Canonical Resolution", () => {
   assert.ok(bedsCat);
   assert.equal(bedroomCat.id, "cat_beds");
   assert.equal(bedsCat.id, "cat_beds");
+
+  const officeCat = getCategoryByHandle("home-office");
+  assert.ok(officeCat);
+  assert.equal(officeCat.id, "cat_office");
 
   const livingCat = getCategoryByHandle("living-room");
   const livingTablesCat = getCategoryByHandle("living-tables");
@@ -82,6 +89,11 @@ test("Sub-Type Resolution & Aliases", () => {
   assert.equal(resolveSubType("cat_dining", "dining-tables")?.id, "dining-tables");
   assert.equal(resolveSubType("cat_dining", "table")?.id, "dining-tables");
   assert.equal(resolveSubType("cat_dining", "dining-chairs")?.id, "dining-chairs");
+
+  // Home Office Sub-Types
+  assert.equal(resolveSubType("cat_office", "desks")?.id, "desks");
+  assert.equal(resolveSubType("cat_office", "writing-desk")?.id, "desks");
+  assert.equal(resolveSubType("cat_office", "office-bookcases")?.id, "office-bookcases");
 });
 
 test("Database Published Products Sub-Type Coverage", async () => {
