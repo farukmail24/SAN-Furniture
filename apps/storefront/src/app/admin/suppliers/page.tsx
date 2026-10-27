@@ -197,8 +197,13 @@ export default function AdminSuppliersPage() {
     setMounted(true);
     const cached = getCachedData<{ suppliers: Supplier[] }>(apiUrl("/api/admin/suppliers"));
     if (cached?.suppliers?.length) {
-      setSuppliers(cached.suppliers);
-      setLoading(false);
+      const hasMissingCounts = cached.suppliers.some(s => s.mapped_products_count === undefined);
+      if (!hasMissingCounts) {
+        setSuppliers(cached.suppliers);
+        setLoading(false);
+      } else {
+        invalidateCache(apiUrl("/api/admin/suppliers"));
+      }
     }
     fetchSuppliers();
 

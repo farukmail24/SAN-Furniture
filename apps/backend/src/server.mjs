@@ -2908,9 +2908,9 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/admin/suppliers" && method === "GET") {
       const activeOnly = url.searchParams.get("active_only") === "true";
       let query = `
-        SELECT s.*, COUNT(sup_item.id) AS mapped_products_count
+        SELECT s.*, COUNT(DISTINCT sup_item.product_id) AS mapped_products_count
         FROM suppliers s
-        LEFT JOIN supplier_feed_items sup_item ON s.code = sup_item.supplier_id
+        LEFT JOIN supplier_feed_items sup_item ON (s.code = sup_item.supplier_id OR s.id = sup_item.supplier_id)
       `;
       if (activeOnly) {
         query += " WHERE s.is_active = 1";
@@ -2920,7 +2920,11 @@ const server = http.createServer(async (req, res) => {
         ORDER BY s.is_active DESC, s.name ASC
       `;
       const [suppliers] = await pool.query(query);
-      return sendJson(res, 200, { suppliers });
+      const mappedSuppliers = (suppliers || []).map((s) => ({
+        ...s,
+        mapped_products_count: Number(s.mapped_products_count || 0),
+      }));
+      return sendJson(res, 200, { suppliers: mappedSuppliers });
     }
 
     // 12a. Toggle Supplier Active / Paused Status
