@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 
 interface ProductGalleryProps {
@@ -11,6 +12,11 @@ interface ProductGalleryProps {
 export function ProductGallery({ images, title }: ProductGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const validImages = Array.isArray(images) && images.length > 0 ? images : ["/SanFurnitureLogo.png"];
   const activeImage = validImages[selectedIndex] || validImages[0];
 
@@ -152,60 +158,60 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
         </div>
       )}
 
-      {/* Fullscreen Lightbox Modal */}
-      {isLightboxOpen && (
+      {/* Fullscreen Lightbox Modal (Teleported to document.body via Portal) */}
+      {isLightboxOpen && mounted && typeof document !== "undefined" && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 bg-navy-950/95 backdrop-blur-xl flex flex-col items-center justify-between p-4 sm:p-6 animate-fade-in"
+          className="fixed inset-0 z-[9999] bg-navy-950/60 backdrop-blur-sm flex flex-col items-center justify-between p-3 sm:p-6 animate-fade-in select-none"
           onClick={() => setIsLightboxOpen(false)}
         >
-          {/* Top Bar: Title, Count, Close Button */}
+          {/* Top Bar: Title, Count, Close Button inside floating pill */}
           <div
-            className="w-full max-w-6xl flex items-center justify-between text-sand-50 pb-3 border-b border-sand-800/80"
+            className="w-full max-w-5xl flex items-center justify-between text-sand-50 py-2.5 px-4 sm:px-6 rounded-full bg-navy-950/80 backdrop-blur-md border border-white/15 shadow-2xl z-30"
             onClick={(e) => e.stopPropagation()}
           >
-            <div>
-              <p className="text-sm sm:text-base font-bold text-sand-100 truncate max-w-md sm:max-w-xl">
+            <div className="min-w-0 pr-4">
+              <p className="text-xs sm:text-sm font-semibold text-white truncate max-w-xs sm:max-w-md md:max-w-lg">
                 {title}
               </p>
-              <p className="text-xs text-sand-400">
+              <p className="text-[11px] text-brass-400 font-medium">
                 Photo {selectedIndex + 1} of {validImages.length}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setIsLightboxOpen(false)}
-              className="p-2 sm:p-2.5 rounded-full bg-sand-900/80 hover:bg-sand-800 text-sand-200 hover:text-white transition-colors border border-sand-700/60 shadow-lg focus:outline-none focus:ring-2 focus:ring-brass-400"
+              className="p-1.5 sm:p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all border border-white/20 shadow-md focus:outline-none focus:ring-2 focus:ring-brass-400 cursor-pointer flex-shrink-0"
               aria-label="Close full view"
             >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
 
           {/* Center Display Area with Large Nav Chevrons */}
-          <div
-            className="relative flex-1 w-full max-w-6xl flex items-center justify-center p-2 sm:p-4 my-auto overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="relative flex-1 w-full max-w-7xl flex items-center justify-center p-2 sm:p-4 my-auto">
             {/* Lightbox Previous Button (<) */}
             {validImages.length > 1 && (
               <button
                 type="button"
                 onClick={handlePrev}
-                className="absolute left-2 sm:left-4 z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-navy-900/80 hover:bg-navy-800 text-sand-100 hover:text-white transition-all border border-sand-700/80 shadow-2xl flex items-center justify-center active:scale-95 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brass-400"
+                className="absolute left-2 sm:left-6 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-navy-950/80 hover:bg-navy-900 text-white transition-all border border-white/20 shadow-2xl flex items-center justify-center active:scale-95 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-brass-400 cursor-pointer backdrop-blur-md"
                 aria-label="Previous photo in fullscreen"
               >
-                <ChevronLeft className="w-7 h-7 sm:w-8 sm:h-8" />
+                <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
               </button>
             )}
 
             {/* High-Res Fullscreen Image */}
-            <div className="relative max-h-[75vh] sm:max-h-[82vh] max-w-full flex items-center justify-center select-none">
+            <div
+              className="relative max-h-[72vh] sm:max-h-[78vh] max-w-full flex items-center justify-center cursor-default"
+              onClick={(e) => e.stopPropagation()}
+            >
               <img
                 src={activeImage}
                 alt={`${title} - Fullscreen View ${selectedIndex + 1}`}
-                className="max-h-[75vh] sm:max-h-[82vh] w-auto max-w-[90vw] object-contain rounded-xl shadow-2xl"
+                className="max-h-[72vh] sm:max-h-[78vh] w-auto max-w-[92vw] sm:max-w-[85vw] object-contain rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)] border border-white/10"
               />
             </div>
 
@@ -214,10 +220,10 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
               <button
                 type="button"
                 onClick={handleNext}
-                className="absolute right-2 sm:right-4 z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-navy-900/80 hover:bg-navy-800 text-sand-100 hover:text-white transition-all border border-sand-700/80 shadow-2xl flex items-center justify-center active:scale-95 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-brass-400"
+                className="absolute right-2 sm:right-6 z-20 w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-navy-950/80 hover:bg-navy-900 text-white transition-all border border-white/20 shadow-2xl flex items-center justify-center active:scale-95 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-brass-400 cursor-pointer backdrop-blur-md"
                 aria-label="Next photo in fullscreen"
               >
-                <ChevronRight className="w-7 h-7 sm:w-8 sm:h-8" />
+                <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
               </button>
             )}
           </div>
@@ -225,7 +231,7 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
           {/* Bottom Thumbnails Strip for Lightbox */}
           {validImages.length > 1 && (
             <div
-              className="flex items-center gap-2 overflow-x-auto max-w-2xl py-2 px-4 rounded-2xl bg-navy-900/70 backdrop-blur-md border border-sand-800 scrollbar-none"
+              className="flex items-center gap-2 overflow-x-auto max-w-2xl py-2 px-3 sm:px-4 rounded-2xl bg-navy-950/80 backdrop-blur-md border border-white/15 shadow-2xl scrollbar-none z-30"
               onClick={(e) => e.stopPropagation()}
             >
               {validImages.map((img, idx) => (
@@ -233,10 +239,10 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
                   key={idx}
                   type="button"
                   onClick={() => setSelectedIndex(idx)}
-                  className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 bg-sand-100/10 ${
+                  className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 bg-white/5 cursor-pointer ${
                     selectedIndex === idx
                       ? "border-brass-400 ring-2 ring-brass-400/50 scale-105 opacity-100"
-                      : "border-sand-700/60 opacity-50 hover:opacity-90"
+                      : "border-white/20 opacity-60 hover:opacity-100"
                   }`}
                   aria-label={`Jump to photo ${idx + 1}`}
                 >
@@ -245,7 +251,8 @@ export function ProductGallery({ images, title }: ProductGalleryProps) {
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
