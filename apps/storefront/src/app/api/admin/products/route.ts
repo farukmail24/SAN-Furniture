@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     const {
       title,
       handle,
+      sku,
       subtitle,
       description,
       categoryId,
@@ -100,18 +101,20 @@ export async function POST(request: Request) {
         .replace(/(^-|-$)/g, "");
     const prodId = `prod_${prodHandle.replace(/-/g, "_")}_${Date.now()}`;
     const imagesJson = JSON.stringify(images || (thumbnailUrl ? [thumbnailUrl] : []));
+    const prodSku = sku ? String(sku).trim() : null;
 
     // 1. Insert product
     await pool.query(
       `INSERT INTO products (
-        id, title, handle, subtitle, description, category_id, status,
+        id, title, handle, sku, subtitle, description, category_id, status,
         price_pennies, compare_at_price_pennies, vat_rate_percent, thumbnail_url,
         images_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, NOW(), NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, NOW(), NOW())`,
       [
         prodId,
         title,
         prodHandle,
+        prodSku,
         subtitle || null,
         description || null,
         categoryId || "cat_sofas",

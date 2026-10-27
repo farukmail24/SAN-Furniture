@@ -43,6 +43,7 @@ CREATE TABLE \`products\` (
   \`id\` VARCHAR(64) NOT NULL,
   \`title\` VARCHAR(255) NOT NULL,
   \`handle\` VARCHAR(255) NOT NULL,
+  \`sku\` VARCHAR(64) DEFAULT NULL,
   \`subtitle\` VARCHAR(255) DEFAULT NULL,
   \`description\` TEXT,
   \`category_id\` VARCHAR(64) NOT NULL,
@@ -57,6 +58,7 @@ CREATE TABLE \`products\` (
   \`updated_at\` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id\`),
   UNIQUE KEY \`uniq_product_handle\` (\`handle\`),
+  KEY \`idx_products_sku\` (\`sku\`),
   KEY \`idx_prod_cat_status_price\` (\`category_id\`, \`status\`, \`price_pennies\`),
   CONSTRAINT \`fk_products_category\` FOREIGN KEY (\`category_id\`) REFERENCES \`categories\` (\`id\`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

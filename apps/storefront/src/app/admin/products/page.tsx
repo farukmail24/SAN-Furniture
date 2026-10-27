@@ -29,6 +29,8 @@ import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface ProductItem {
   id: string;
+  sku?: string;
+  supplier_sku?: string;
   title: string;
   handle: string;
   subtitle?: string;
@@ -269,11 +271,16 @@ export default function AdminProductsPage() {
             <div>
               <Link
                 href={`/admin/products/${p.id}/edit`}
-                className="font-semibold text-navy-950 hover:text-brass-700 transition-colors"
+                className="font-semibold text-navy-950 hover:text-brass-700 transition-colors block"
               >
                 {p.title}
               </Link>
-              <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {(p.sku || p.supplier_sku) && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#FAF6EE] text-[#00072D] border border-[#C89B3C]/50 shadow-xs">
+                    SKU: {p.sku || (p.id.startsWith("prod_live_am_") ? `SAN-${p.supplier_sku?.replace(/[^0-9]/g, "")}` : (p.id.startsWith("prod_ftg_") ? `SAN-FTG-${p.supplier_sku?.replace(/^FTG-/, "")}` : p.sku))}
+                  </span>
+                )}
                 <span className="text-[10px] text-navy-400 font-mono">{p.id}</span>
                 {p.material && (
                   <span className="text-[10px] text-navy-600 bg-sand-200/70 px-1.5 py-0.2 rounded capitalize">
@@ -527,6 +534,11 @@ export default function AdminProductsPage() {
             <div className="bg-sand-50/95 border-b border-sand-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
               <div className="space-y-1.5 pr-4 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
+                  {(viewingProduct.sku || viewingProduct.supplier_sku) && (
+                    <span className="font-mono text-[11px] font-bold text-[#00072D] bg-[#FAF6EE] border border-[#C89B3C]/60 px-2.5 py-0.5 rounded-md">
+                      SKU: {viewingProduct.sku || viewingProduct.supplier_sku}
+                    </span>
+                  )}
                   <span className="font-mono text-[11px] font-bold text-navy-600 bg-sand-200/80 px-2.5 py-0.5 rounded-md">
                     {viewingProduct.id}
                   </span>

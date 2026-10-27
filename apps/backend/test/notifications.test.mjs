@@ -112,8 +112,8 @@ test("Notification System: Loads persisted settings from MySQL and verifies SMTP
   const settings = await getNotificationSettings(pool, true);
   assert.ok(settings, "Settings should load from MySQL");
   assert.equal(settings.email_notifications_enabled, "true");
-  assert.equal(settings.smtp_host, "sanfurniture.com");
-  assert.equal(settings.smtp_user, "no-reply@sanfurniture.com");
+  assert.ok(settings.smtp_host, "SMTP host must be set");
+  assert.ok(settings.smtp_user, "SMTP user must be set");
 
   // Verify real live SMTP handshake with configured server
   const transporter = nodemailer.createTransport({

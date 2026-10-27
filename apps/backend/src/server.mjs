@@ -2120,6 +2120,7 @@ const server = http.createServer(async (req, res) => {
       const {
         title,
         handle,
+        sku,
         subtitle,
         description,
         categoryId,
@@ -2159,10 +2160,11 @@ const server = http.createServer(async (req, res) => {
         : (variantsJson ? (typeof variantsJson === "string" ? JSON.parse(variantsJson) : variantsJson) : []);
 
       // Insert product
+      const prodSku = sku ? String(sku).trim() : null;
       await pool.query(
-        `INSERT INTO products (id, title, handle, subtitle, description, category_id, status, price_pennies, compare_at_price_pennies, vat_rate_percent, thumbnail_url, images_json, variants_json)
-         VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?, 20, ?, ?, ?)`,
-        [productId, title, productHandle, subtitle || "", description || "", categoryId, pricePennies, compareAtPricePennies || null, primaryThumb, JSON.stringify(finalImages), JSON.stringify(finalVariants)]
+        `INSERT INTO products (id, title, handle, sku, subtitle, description, category_id, status, price_pennies, compare_at_price_pennies, vat_rate_percent, thumbnail_url, images_json, variants_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'published', ?, ?, 20, ?, ?, ?)`,
+        [productId, title, productHandle, prodSku, subtitle || "", description || "", categoryId, pricePennies, compareAtPricePennies || null, primaryThumb, JSON.stringify(finalImages), JSON.stringify(finalVariants)]
       );
 
       // Insert furniture specs
@@ -2240,6 +2242,7 @@ const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const {
         title,
+        sku,
         pricePennies,
         compareAtPricePennies,
         categoryId,
@@ -2262,6 +2265,7 @@ const server = http.createServer(async (req, res) => {
       const pFields = [];
       const pParams = [];
       if (title) { pFields.push("title = ?"); pParams.push(title); }
+      if (sku !== undefined) { pFields.push("sku = ?"); pParams.push(sku); }
       if (pricePennies) { pFields.push("price_pennies = ?"); pParams.push(pricePennies); }
       if (compareAtPricePennies !== undefined) { pFields.push("compare_at_price_pennies = ?"); pParams.push(compareAtPricePennies); }
       if (categoryId) { pFields.push("category_id = ?"); pParams.push(categoryId); }

@@ -18,7 +18,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 
     const fetchQuery = `
       SELECT 
-        p.id, p.title, p.handle, p.subtitle, p.description, p.category_id as categoryId,
+        p.id, p.sku, p.title, p.handle, p.subtitle, p.description, p.category_id as categoryId,
         p.status, p.price_pennies as pricePennies, p.compare_at_price_pennies as compareAtPricePennies,
         p.vat_rate_percent as vatRatePercent, p.gtin_barcode as gtinBarcode,
         p.thumbnail_url as thumbnailUrl, p.images_json, p.variants_json, p.created_at as createdAt,
@@ -71,6 +71,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 
       return {
         id: p.id,
+        sku: p.sku || undefined,
         createdAt: p.createdAt ? String(p.createdAt) : undefined,
         title: p.title,
         handle: p.handle,

@@ -77,6 +77,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
 
   // Form State - Basics
   const [title, setTitle] = useState("");
+  const [sku, setSku] = useState("");
   const [handle, setHandle] = useState("");
   const [categoryId, setCategoryId] = useState("cat_beds");
   const [priceGbp, setPriceGbp] = useState("449.00");
@@ -141,6 +142,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
         if (dataProd.product) {
           const p = dataProd.product;
           setTitle(p.title || "");
+          setSku(p.sku || "");
           setHandle(p.handle || "");
           setCategoryId(p.category_id || "cat_beds");
           setPriceGbp((p.price_pennies / 100).toFixed(2));
@@ -398,6 +400,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
 
       const payload = {
         title,
+        sku: sku.trim() || undefined,
         categoryId,
         pricePennies,
         compareAtPricePennies,
@@ -545,7 +548,20 @@ export default function AdminEditProductPage({ params }: PageProps) {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-navy-900 mb-1">
+                  Product SKU <span className="text-[#C89B3C] font-mono">(SAN-XXXX)</span>
+                </label>
+                <input
+                  type="text"
+                  value={sku}
+                  onChange={(e) => setSku(e.target.value)}
+                  placeholder="e.g. SAN-2696 or SAN-FTG-1014111"
+                  className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 focus:outline-none focus:border-brass-500 uppercase"
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-navy-900 mb-1">
                   URL Handle / Slug

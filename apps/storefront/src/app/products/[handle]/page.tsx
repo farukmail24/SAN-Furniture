@@ -199,12 +199,20 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           {/* Right Column: Title, Subtitle, Price & Actions (50% width on lg) */}
           <ScrollReveal direction="up" delay={0.08} duration={0.55} className="w-full space-y-6">
             <div>
-              {/* Category & Status Pill */}
-              <div className="flex items-center gap-2 mb-2">
+              {/* Category, SKU & Status Pill */}
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 {category && (
                   <span className="text-[11px] font-bold text-navy-600 tracking-wider uppercase">
                     {category.name}
                   </span>
+                )}
+                {product.sku && (
+                  <>
+                    <span className="text-sand-400">•</span>
+                    <span className="font-mono text-[11px] font-bold text-[#00072D] bg-[#FAF6EE] px-2 py-0.5 rounded border border-[#C89B3C]/50">
+                      SKU: {product.sku}
+                    </span>
+                  </>
                 )}
                 <span className="text-sand-400">•</span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">

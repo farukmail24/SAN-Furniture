@@ -399,26 +399,40 @@ export class AmosMannExtractorEngine {
     // Storefront offers Free UK Mainland Delivery as shipping is pre-factored into retail price.
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, shippingPennies, 40);
 
-    const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    // Clean Amos Mann title by removing trailing supplier code like "- 2696", "--- 2696"
+    const rawNumberMatch = liveData.title.match(/[-–—]\s*(\d+[a-zA-Z]*)\s*$/) ||
+                           String(liveData.sku).match(/^(\d{3,5})/);
+    const itemNumber = rawNumberMatch ? rawNumberMatch[1].replace(/[^0-9]/g, "") : String(liveData.sku).replace(/[^0-9]/g, "");
+
+    // Strip "- 2696" from product title
+    const cleanTitle = liveData.title.replace(/\s*[-–—]+\s*\d+[a-zA-Z]*\s*$/, "").trim();
+
+    // SAN Furniture SKU format: SAN-2696
+    const productSku = itemNumber ? `SAN-${itemNumber}` : `SAN-AM-${liveData.sku}`;
+    const handle = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_live_am_${liveData.sku}`.toLowerCase().replace(/[^a-z0-9_]/g, "_");
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
 
     // 1. Insert Product
     await pool.query(`
       INSERT INTO products (
-        id, title, handle, subtitle, description, category_id, status,
+        id, title, handle, sku, subtitle, description, category_id, status,
         price_pennies, compare_at_price_pennies, vat_rate_percent, gtin_barcode,
         thumbnail_url, images_json, variants_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, ?, '[]', NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, ?, '[]', NOW(), NOW())
       ON DUPLICATE KEY UPDATE
+        title = VALUES(title),
+        handle = VALUES(handle),
+        sku = VALUES(sku),
         price_pennies = VALUES(price_pennies),
         compare_at_price_pennies = VALUES(compare_at_price_pennies),
         images_json = VALUES(images_json),
         updated_at = NOW()
     `, [
       productId,
-      liveData.title,
+      cleanTitle,
       handle,
+      productSku,
       "SAN Furniture Luxury Collection - Dispatch Time 2-7 Business Days",
       liveData.description,
       categoryId,
@@ -486,9 +500,10 @@ export class AmosMannExtractorEngine {
 
     return {
       productId,
-      title: liveData.title,
+      title: cleanTitle,
       handle,
-      sku: liveData.sku,
+      sku: productSku,
+      supplierSku: liveData.sku,
       tradeCostPennies,
       retailPricePennies,
       imagesCount: liveData.images.length,

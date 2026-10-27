@@ -585,6 +585,8 @@ export class FurnitureToGoExtractorEngine {
 
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, 40);
 
+    const rawFtgSku = liveData.sku.replace(/^FTG-/, "");
+    const productSku = `SAN-FTG-${rawFtgSku}`;
     const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
@@ -592,11 +594,12 @@ export class FurnitureToGoExtractorEngine {
     // 1. Insert or update Products table
     await pool.query(`
       INSERT INTO products (
-        id, title, handle, subtitle, description, category_id, status,
+        id, title, handle, sku, subtitle, description, category_id, status,
         price_pennies, compare_at_price_pennies, vat_rate_percent, gtin_barcode,
         thumbnail_url, images_json, variants_json, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, ?, '[]', NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, ?, '[]', NOW(), NOW())
       ON DUPLICATE KEY UPDATE
+        sku = VALUES(sku),
         price_pennies = VALUES(price_pennies),
         compare_at_price_pennies = VALUES(compare_at_price_pennies),
         images_json = VALUES(images_json),
@@ -605,6 +608,7 @@ export class FurnitureToGoExtractorEngine {
       productId,
       liveData.title,
       handle,
+      productSku,
       `${liveData.rangeName} - Danish Design by Furniture To Go`,
       liveData.description,
       categoryId,
@@ -679,7 +683,8 @@ export class FurnitureToGoExtractorEngine {
       productId,
       title: liveData.title,
       handle,
-      sku: liveData.sku,
+      sku: productSku,
+      supplierSku: liveData.sku,
       tradeCostPennies,
       retailPricePennies,
       deliveryTier: tier,

@@ -22,6 +22,7 @@ export {
 
 export interface CatalogProduct {
   id: string;
+  sku?: string;
   createdAt?: string;
   title: string;
   handle: string;

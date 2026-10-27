@@ -79,6 +79,7 @@ export async function PATCH(
 
     const {
       title,
+      sku,
       pricePennies,
       compareAtPricePennies,
       categoryId,
@@ -105,6 +106,10 @@ export async function PATCH(
     if (title !== undefined) {
       pFields.push("title = ?");
       pParams.push(title);
+    }
+    if (sku !== undefined) {
+      pFields.push("sku = ?");
+      pParams.push(sku);
     }
     if (pricePennies !== undefined) {
       pFields.push("price_pennies = ?");

@@ -30,6 +30,13 @@ function findSqlDump(): string {
  */
 async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise<void> {
   try {
+    // 0. Ensure products.sku column exists
+    const [prodCols]: any = await connection.query("SHOW COLUMNS FROM `products` LIKE 'sku'").catch(() => [[]]);
+    if (!prodCols || prodCols.length === 0) {
+      await connection.query("ALTER TABLE `products` ADD COLUMN `sku` varchar(64) DEFAULT NULL AFTER `handle`").catch(() => {});
+      await connection.query("ALTER TABLE `products` ADD KEY `idx_products_sku` (`sku`)").catch(() => {});
+    }
+
     // 1. Ensure customer_payment_methods exists
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`customer_payment_methods\` (
