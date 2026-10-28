@@ -834,6 +834,13 @@ export class FurnitureToGoExtractorEngine {
           );
           stockUpdated++;
         }
+
+        if (liveData.assemblyInstructionsUrl) {
+          await pool.query(
+            `UPDATE furniture_specs SET assembly_instructions_url = ?, assembly_required = 1 WHERE product_id = ?`,
+            [liveData.assemblyInstructionsUrl, item.product_id]
+          );
+        }
       } catch {}
     }
 
