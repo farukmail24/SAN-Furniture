@@ -31,7 +31,7 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
-import { cleanHtmlDescription, formatProductSku, DROPBOX_SHARED_MANUALS_URL } from "@/lib/catalog";
+import { cleanHtmlDescription, formatProductSku } from "@/lib/catalog";
 import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 
 interface ProductItem {
@@ -1162,8 +1162,9 @@ export default function AdminProductsPage() {
                       </div>
                       {(() => {
                         const url =
-                          viewingProduct.assembly_instructions_url ||
-                          (viewingProduct.assembly_required ? DROPBOX_SHARED_MANUALS_URL : null);
+                          viewingProduct.assembly_instructions_url && !viewingProduct.assembly_instructions_url.includes("dropbox.com")
+                            ? viewingProduct.assembly_instructions_url
+                            : null;
                         if (!url) return <span className="text-[11px] text-navy-400 italic">Printed manual included in box</span>;
                         return (
                           <a
@@ -1603,8 +1604,9 @@ export default function AdminProductsPage() {
                     {/* Assembly Manual Direct Link */}
                     {(() => {
                       const url =
-                        calcProduct.assembly_instructions_url ||
-                        (calcProduct.assembly_required ? DROPBOX_SHARED_MANUALS_URL : null);
+                        calcProduct.assembly_instructions_url && !calcProduct.assembly_instructions_url.includes("dropbox.com")
+                          ? calcProduct.assembly_instructions_url
+                          : null;
                       if (!url) return null;
                       return (
                         <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-xs">

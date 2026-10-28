@@ -1915,7 +1915,7 @@ export default function AdminSuppliersPage() {
                 <div>
                   <label className="block text-xs font-semibold text-[#00072D] mb-1.5 flex items-center justify-between">
                     <span>Assembly Instructions Manual URL (Optional)</span>
-                    <span className="text-[10px] text-[#7A8B99] font-normal">e.g. mwdownloads link or Dropbox</span>
+                    <span className="text-[10px] text-[#7A8B99] font-normal">e.g. direct PDF link or media URL</span>
                   </label>
                   <input
                     type="text"
@@ -1925,7 +1925,7 @@ export default function AdminSuppliersPage() {
                     className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
                   />
                   <p className="text-[10px] text-[#7A8B99] mt-1">
-                    If provided, this exact PDF link will be attached. If left empty, the engine automatically extracts it or links to the official Dropbox repository.
+                    If provided, this exact PDF link will be attached. If left empty, the engine automatically extracts it if available without exposing supplier branding.
                   </p>
                 </div>
 

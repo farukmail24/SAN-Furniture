@@ -645,10 +645,9 @@ export class FurnitureToGoExtractorEngine {
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
 
-    const DROPBOX_MANUALS_URL = "https://www.dropbox.com/scl/fo/8qcrahcyse84f4075mntd/AOE38-nLR3MacO3t0v_avhU?rlkey=zvufk5975fdapbiyyt6vzgzxg&dl=0";
     const finalAssemblyUrl = (assemblyUrlOverride && typeof assemblyUrlOverride === "string" && assemblyUrlOverride.trim())
       ? assemblyUrlOverride.trim()
-      : (liveData.assemblyInstructionsUrl || DROPBOX_MANUALS_URL);
+      : (liveData.assemblyInstructionsUrl || null);
 
     // 1. Insert or update Products table
     await pool.query(`
@@ -844,20 +843,14 @@ export class FurnitureToGoExtractorEngine {
       } catch {}
     }
 
-    // Auto-repair missing assembly instruction manual links from official Dropbox repository
-    let manualsUpdated = 0;
+    // Ensure white-label compliance: purge any supplier-branded Dropbox links from specs
     try {
-      const DROPBOX_MANUALS_URL = "https://www.dropbox.com/scl/fo/8qcrahcyse84f4075mntd/AOE38-nLR3MacO3t0v_avhU?rlkey=zvufk5975fdapbiyyt6vzgzxg&dl=0";
-      const [manualFixRes] = await pool.query(`
+      await pool.query(`
         UPDATE furniture_specs 
-        SET assembly_instructions_url = ?, assembly_required = 1 
-        WHERE (assembly_instructions_url IS NULL OR assembly_instructions_url = '')
-          AND (product_id LIKE '%ftg%' OR product_id IN (SELECT product_id FROM supplier_feed_items WHERE supplier_id = 'furniture_to_go'))
-      `, [DROPBOX_MANUALS_URL]);
-      manualsUpdated = manualFixRes?.affectedRows || 0;
-    } catch (manualErr) {
-      console.warn("[FTG Sync] Manuals link warning:", manualErr?.message);
-    }
+        SET assembly_instructions_url = NULL 
+        WHERE assembly_instructions_url LIKE '%dropbox.com%'
+      `);
+    } catch {}
 
     await pool.query(
       `UPDATE suppliers SET last_sync_at = NOW() WHERE code = 'furniture_to_go'`

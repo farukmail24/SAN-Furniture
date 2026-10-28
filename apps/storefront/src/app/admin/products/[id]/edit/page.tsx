@@ -1137,17 +1137,8 @@ export default function AdminEditProductPage({ params }: PageProps) {
                     </a>
                   )}
                 </div>
-                {!assemblyInstructionsUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setAssemblyInstructionsUrl("https://www.dropbox.com/scl/fo/8qcrahcyse84f4075mntd/AOE38-nLR3MacO3t0v_avhU?rlkey=zvufk5975fdapbiyyt6vzgzxg&dl=0")}
-                    className="mt-1.5 text-[10px] font-semibold text-brass-700 hover:text-brass-800 underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>Insert Supplier Dropbox Manual Repository Link</span>
-                  </button>
-                )}
                 <p className="text-[10px] text-navy-500 mt-1">
-                  Path to local or cloud assembly manual. If left blank, flat-pack items automatically link to the official manufacturer Dropbox manual repository.
+                  Optional direct PDF URL or uploaded file link. If left blank, the assembly manual section is gracefully hidden on the customer storefront.
                 </p>
               </div>
             </div>
