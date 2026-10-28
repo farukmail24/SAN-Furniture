@@ -1,7 +1,7 @@
 import { getDbPool } from "@/lib/db";
 import { autoSeedDatabaseIfNeeded } from "@/lib/auto-seed";
 import type { CatalogProduct, ProductCategory } from "./catalog";
-import { CATALOG_CATEGORIES, cleanHtmlDescription, formatProductSku } from "./catalog";
+import { CATALOG_CATEGORIES, cleanHtmlDescription, formatProductSku, DROPBOX_SHARED_MANUALS_URL } from "./catalog";
 
 let cachedProducts: CatalogProduct[] = [];
 let lastProductsFetch = 0;
@@ -99,7 +99,9 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
           color: p.color || "Natural",
           assembly_required: Boolean(p.assembly_required),
           assembly_time_mins: p.assembly_time_mins ? Number(p.assembly_time_mins) : undefined,
-          assembly_instructions_url: p.assembly_instructions_url || undefined,
+          assembly_instructions_url:
+            p.assembly_instructions_url ||
+            (p.assembly_required || String(p.id).includes("ftg") ? DROPBOX_SHARED_MANUALS_URL : undefined),
           doorway_clearance_min_cm: p.doorway_clearance_min_cm ? Number(p.doorway_clearance_min_cm) : undefined,
           delivery_tier: p.delivery_tier || "two_man_white_glove",
           fire_safety: {

@@ -20,6 +20,9 @@ export {
   normalizeCategoryHandle
 };
 
+export const DROPBOX_SHARED_MANUALS_URL =
+  "https://www.dropbox.com/scl/fo/8qcrahcyse84f4075mntd/AOE38-nLR3MacO3t0v_avhU?rlkey=zvufk5975fdapbiyyt6vzgzxg&dl=0";
+
 export interface CatalogProduct {
   id: string;
   sku?: string;
