@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Furniture To Go sync completed: ${syncResult.itemsScanned} items verified, ${syncResult.pricesUpdated} prices updated, ${syncResult.stockUpdated} stock status updated.`,
+      message: `Furniture To Go sync completed: ${syncResult.itemsScanned} items verified, ${syncResult.pricesUpdated} prices updated, ${syncResult.stockUpdated} stock status updated${(syncResult.manualsUpdated || 0) > 0 ? `, ${syncResult.manualsUpdated} assembly manuals linked` : ""}.`,
       syncResult,
     });
   } catch (err: any) {

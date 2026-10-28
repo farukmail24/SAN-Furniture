@@ -3040,6 +3040,9 @@ const server = http.createServer(async (req, res) => {
           if (sup[0].code === "amos_mann_furniture") {
             const syncRes = await amosMannExtractor.syncTrackedCatalog(pool, { triggerType: "manual" });
             syncedItemsCount = syncRes.itemsScanned;
+          } else if (sup[0].code === "furniture_to_go") {
+            const syncRes = await furnitureToGoExtractor.syncTrackedCatalog(pool, { triggerType: "manual" });
+            syncedItemsCount = syncRes.itemsScanned;
           } else {
             await pool.query("UPDATE suppliers SET last_sync_at = NOW(), sync_status = 'operational' WHERE id = ?", [sup[0].id]);
             const [cnt] = await pool.query("SELECT COUNT(*) as total FROM supplier_feed_items WHERE supplier_id = ?", [sup[0].code]);
