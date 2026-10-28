@@ -63,8 +63,8 @@ async function run() {
       cleanTitle = cleanAmosTitle(p.title);
       sku = num ? `SAN-${num}` : `SAN-AM-${p.supplier_sku || p.id.replace("prod_live_am_", "")}`;
     } else if (p.supplier_id === "furniture_to_go" || p.id.startsWith("prod_ftg_")) {
-      const rawSku = (p.supplier_sku || p.id.replace("prod_ftg_", "")).replace(/^FTG-/, "");
-      sku = `SAN-FTG-${rawSku}`;
+      const rawSku = (p.supplier_sku || p.id.replace("prod_ftg_", "")).replace(/^(FTG-|SAN-)/i, "");
+      sku = `SAN-${rawSku}`;
     } else {
       sku = `SAN-${p.id.replace("prod_", "").toUpperCase()}`;
     }

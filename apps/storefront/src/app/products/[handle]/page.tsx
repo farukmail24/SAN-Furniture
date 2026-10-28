@@ -19,6 +19,8 @@ import {
   getLiveProductByHandle,
   getLiveProducts,
   getLiveProductsByCategory,
+  cleanHtmlDescription,
+  formatProductSku,
 } from "@/lib/catalog";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { DimensionsClearance } from "@/components/product/DimensionsClearance";
@@ -48,15 +50,17 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   const category = CATALOG_CATEGORIES.find((c) => c.id === product.categoryId);
 
+  const cleanDesc = cleanHtmlDescription(product.description);
+
   return {
     title: `${product.title} | Luxury UK Furniture | SAN Furniture`,
-    description: product.description,
+    description: cleanDesc.slice(0, 160),
     alternates: {
       canonical: `https://sanfurniture.com/products/${product.handle}`,
     },
     openGraph: {
       title: `${product.title} | SAN Furniture UK`,
-      description: product.description,
+      description: cleanDesc.slice(0, 160),
       url: `https://sanfurniture.com/products/${product.handle}`,
       images: [
         {
@@ -69,6 +73,49 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       type: "website",
     },
   };
+}
+
+function ProductDescriptionNotes({ description }: { description?: string }) {
+  if (!description) return null;
+
+  const clean = cleanHtmlDescription(description);
+  if (!clean) return null;
+
+  const rawLines = clean.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  const paragraphs: string[] = [];
+  const bullets: string[] = [];
+
+  for (const line of rawLines) {
+    if (line.startsWith("•") || line.startsWith("-") || line.startsWith("*")) {
+      const bulletText = line.replace(/^[•\-\*]\s*/, "").trim();
+      if (bulletText) bullets.push(bulletText);
+    } else {
+      paragraphs.push(line);
+    }
+  }
+
+  return (
+    <div className="space-y-3.5">
+      {paragraphs.map((p, idx) => (
+        <p key={idx} className="text-xs sm:text-sm text-navy-700 leading-relaxed font-normal">
+          {p}
+        </p>
+      ))}
+
+      {bullets.length > 0 && (
+        <div className="pt-2">
+          <ul className="space-y-2">
+            {bullets.map((b, idx) => (
+              <li key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-navy-800">
+                <span className="w-1.5 h-1.5 rounded-full bg-brass-500 mt-2 shrink-0" />
+                <span className="leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
@@ -96,8 +143,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
     "@type": "Product",
     name: product.title,
     image: Array.isArray(product.images) && product.images.length > 0 ? product.images : [product.thumbnailUrl],
-    description: product.description,
-    sku: product.id,
+    description: cleanHtmlDescription(product.description),
+    sku: formatProductSku(product.sku) || product.id,
     gtin13: product.gtinBarcode,
     brand: {
       "@type": "Brand",
@@ -209,11 +256,11 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                     {category.name}
                   </span>
                 )}
-                {product.sku && (
+                {(product.sku || product.id) && (
                   <>
                     <span className="text-sand-400">•</span>
-                    <span className="font-mono text-[11px] font-bold text-[#00072D] bg-[#FAF6EE] px-2 py-0.5 rounded border border-[#C89B3C]/50">
-                      SKU: {product.sku}
+                    <span className="font-mono text-[11px] font-bold text-[#00072D] bg-[#FAF6EE] px-2 py-0.5 rounded border border-[#C89B3C]/50 shadow-xs">
+                      SKU: {formatProductSku(product.sku) || (product.id.startsWith("prod_live_am_") ? `SAN-${product.id.replace(/[^0-9]/g, "")}` : product.id)}
                     </span>
                   </>
                 )}
@@ -240,12 +287,10 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
             {/* Description Summary */}
             <div className="pt-4 border-t border-sand-200">
-              <h2 className="text-xs font-bold text-navy-950 uppercase tracking-wider mb-2">
+              <h2 className="text-xs font-bold text-navy-950 uppercase tracking-wider mb-3">
                 Craftsmanship & Design Notes
               </h2>
-              <p className="text-xs sm:text-sm text-navy-700 leading-relaxed">
-                {product.description}
-              </p>
+              <ProductDescriptionNotes description={product.description} />
             </div>
           </ScrollReveal>
         </div>

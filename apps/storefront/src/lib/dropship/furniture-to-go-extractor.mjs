@@ -279,6 +279,46 @@ export class FurnitureToGoExtractorEngine {
   }
 
   /**
+   * Clean and sanitize raw HTML descriptions into luxury typography & clean bullets
+   */
+  cleanHtmlDescription(raw) {
+    if (!raw || typeof raw !== "string") return "";
+
+    let text = raw;
+    text = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+    text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "");
+    text = text.replace(/<([a-z]+)[^>]*>\s*<\/\1>/gi, "");
+    text = text.replace(/<([a-z]+)[^>]*>\s*<\/\1>/gi, "");
+
+    text = text.replace(/<li[^>]*>(.*?)<\/li>/gis, (_, content) => {
+      const cleanItem = content.replace(/<[^>]+>/g, "").trim();
+      return cleanItem ? `\n• ${cleanItem}` : "";
+    });
+
+    text = text.replace(/<\/(p|div|h[1-6])>/gi, "\n\n");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<[^>]+>/g, "");
+
+    text = text
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#([0-9]+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+    return text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line, i, arr) => line.length > 0 || (i > 0 && arr[i - 1].length > 0))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  /**
    * Extract live product attributes directly from Furniture To Go URL
    */
   async extractProductData(url) {
@@ -311,7 +351,8 @@ export class FurnitureToGoExtractorEngine {
         const title = productSchema.name;
         const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "ftg-product";
         const sku = productSchema.sku || productSchema.productID || `FTG-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-        const description = productSchema.description || matchedKnown?.description || "Authentic Scandinavian furniture distributed by Furniture To Go UK.";
+        const rawDesc = productSchema.description || matchedKnown?.description || "Authentic Scandinavian furniture distributed by Furniture To Go UK.";
+        const description = this.cleanHtmlDescription(rawDesc);
         const dims = this.parseDimensions(html + " " + description);
 
         // Weight extraction
@@ -585,8 +626,9 @@ export class FurnitureToGoExtractorEngine {
 
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, 40);
 
-    const rawFtgSku = liveData.sku.replace(/^FTG-/, "");
-    const productSku = `SAN-FTG-${rawFtgSku}`;
+    const rawFtgSku = liveData.sku.replace(/^(FTG-|SAN-)/i, "");
+    const productSku = `SAN-${rawFtgSku}`;
+    const cleanDesc = this.cleanHtmlDescription(liveData.description);
     const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
@@ -603,6 +645,7 @@ export class FurnitureToGoExtractorEngine {
         price_pennies = VALUES(price_pennies),
         compare_at_price_pennies = VALUES(compare_at_price_pennies),
         images_json = VALUES(images_json),
+        description = VALUES(description),
         updated_at = NOW()
     `, [
       productId,
@@ -610,7 +653,7 @@ export class FurnitureToGoExtractorEngine {
       handle,
       productSku,
       `${liveData.rangeName} - Danish Design by Furniture To Go`,
-      liveData.description,
+      cleanDesc,
       categoryId,
       liveData.isOutOfStock ? "out_of_stock" : "published",
       retailPricePennies,

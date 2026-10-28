@@ -563,7 +563,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
                   type="text"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
-                  placeholder="e.g. SAN-2696 or SAN-FTG-1014111"
+                  placeholder="e.g. SAN-2696 or SAN-90A10234-1p1"
                   className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 focus:outline-none focus:border-brass-500 uppercase"
                 />
               </div>

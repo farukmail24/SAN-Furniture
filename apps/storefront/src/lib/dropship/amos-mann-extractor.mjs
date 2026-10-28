@@ -76,6 +76,46 @@ export class AmosMannExtractorEngine {
   }
 
   /**
+   * Clean and sanitize raw HTML descriptions into luxury typography & clean bullets
+   */
+  cleanHtmlDescription(raw) {
+    if (!raw || typeof raw !== "string") return "";
+
+    let text = raw;
+    text = text.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
+    text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "");
+    text = text.replace(/<([a-z]+)[^>]*>\s*<\/\1>/gi, "");
+    text = text.replace(/<([a-z]+)[^>]*>\s*<\/\1>/gi, "");
+
+    text = text.replace(/<li[^>]*>(.*?)<\/li>/gis, (_, content) => {
+      const cleanItem = content.replace(/<[^>]+>/g, "").trim();
+      return cleanItem ? `\n• ${cleanItem}` : "";
+    });
+
+    text = text.replace(/<\/(p|div|h[1-6])>/gi, "\n\n");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<[^>]+>/g, "");
+
+    text = text
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&#([0-9]+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+    return text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line, i, arr) => line.length > 0 || (i > 0 && arr[i - 1].length > 0))
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  /**
    * Extract live product attributes directly from Amos Mann page HTML
    */
   async extractProductData(url) {
@@ -126,7 +166,8 @@ export class AmosMannExtractorEngine {
       ? Math.round((rawPriceGbp / 1.20) * 100) / 100
       : rawPriceGbp;
 
-    const description = productSchema.description || "";
+    const rawDescription = productSchema.description || "";
+    const description = this.cleanHtmlDescription(rawDescription);
     const dims = this.parseDimensions(description);
 
     // 5. Extract Authentic Finish / Color from Title

@@ -31,6 +31,7 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { cleanHtmlDescription, formatProductSku } from "@/lib/catalog";
 
 interface ProductItem {
   id: string;
@@ -471,7 +472,7 @@ export default function AdminProductsPage() {
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
                 {(p.sku || p.supplier_sku) && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#FAF6EE] text-[#00072D] border border-[#C89B3C]/50 shadow-xs">
-                    SKU: {p.sku || (p.id.startsWith("prod_live_am_") ? `SAN-${p.supplier_sku?.replace(/[^0-9]/g, "")}` : (p.id.startsWith("prod_ftg_") ? `SAN-FTG-${p.supplier_sku?.replace(/^FTG-/, "")}` : p.sku))}
+                    SKU: {p.sku ? formatProductSku(p.sku) : (p.id.startsWith("prod_live_am_") ? `SAN-${p.supplier_sku?.replace(/[^0-9]/g, "")}` : (p.id.startsWith("prod_ftg_") ? `SAN-${p.supplier_sku?.replace(/^(FTG-|SAN-)/i, "")}` : p.sku))}
                   </span>
                 )}
                 <span className="text-[10px] text-navy-400 font-mono">{p.id}</span>
@@ -1176,8 +1177,8 @@ export default function AdminProductsPage() {
                         <Sparkles className="w-4 h-4 text-brass-600" />
                         Description &amp; Specifications
                       </h4>
-                      <div className="text-xs text-navy-700 leading-relaxed bg-sand-50 p-3.5 rounded-xl border border-sand-200 max-h-32 overflow-y-auto">
-                        <p>{viewingProduct.description}</p>
+                      <div className="text-xs text-navy-700 leading-relaxed bg-sand-50 p-3.5 rounded-xl border border-sand-200 max-h-48 overflow-y-auto">
+                        <p className="whitespace-pre-line">{cleanHtmlDescription(viewingProduct.description)}</p>
                       </div>
                     </div>
                   )}
@@ -1257,7 +1258,7 @@ export default function AdminProductsPage() {
                     </span>
                     {(calcProduct.sku || calcProduct.supplier_sku) && (
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF6EE] text-[#00072D] border border-[#C89B3C]/50">
-                        SKU: {calcProduct.sku || (calcProduct.id.startsWith("prod_live_am_") ? `SAN-${calcProduct.supplier_sku?.replace(/[^0-9]/g, "")}` : (calcProduct.id.startsWith("prod_ftg_") ? `SAN-FTG-${calcProduct.supplier_sku?.replace(/^FTG-/, "")}` : calcProduct.sku))}
+                        SKU: {calcProduct.sku ? formatProductSku(calcProduct.sku) : (calcProduct.id.startsWith("prod_live_am_") ? `SAN-${calcProduct.supplier_sku?.replace(/[^0-9]/g, "")}` : (calcProduct.id.startsWith("prod_ftg_") ? `SAN-${calcProduct.supplier_sku?.replace(/^(FTG-|SAN-)/i, "")}` : calcProduct.sku))}
                       </span>
                     )}
                   </div>

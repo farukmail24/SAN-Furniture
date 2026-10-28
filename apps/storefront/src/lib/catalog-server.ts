@@ -1,7 +1,7 @@
 import { getDbPool } from "@/lib/db";
 import { autoSeedDatabaseIfNeeded } from "@/lib/auto-seed";
 import type { CatalogProduct, ProductCategory } from "./catalog";
-import { CATALOG_CATEGORIES } from "./catalog";
+import { CATALOG_CATEGORIES, cleanHtmlDescription, formatProductSku } from "./catalog";
 
 let cachedProducts: CatalogProduct[] = [];
 let lastProductsFetch = 0;
@@ -71,12 +71,12 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 
       return {
         id: p.id,
-        sku: p.sku || undefined,
+        sku: p.sku ? formatProductSku(p.sku) : undefined,
         createdAt: p.createdAt ? String(p.createdAt) : undefined,
         title: p.title,
         handle: p.handle,
         subtitle: p.subtitle || "",
-        description: p.description || "",
+        description: cleanHtmlDescription(p.description),
         categoryId: p.categoryId,
         status: (p.status === "active" ? "published" : p.status) || "published",
         pricePennies: Number(p.pricePennies) || 0,
