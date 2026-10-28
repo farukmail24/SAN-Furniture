@@ -27,6 +27,7 @@ import {
 import { MediaAsset } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 
 export default function AdminMediaPage() {
   const [mediaList, setMediaList] = useState<MediaAsset[]>([]);
@@ -119,7 +120,14 @@ export default function AdminMediaPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this media asset permanently?")) return;
+    const ok = await showConfirm({
+      title: "Delete Media Asset",
+      message: "Are you sure you want to permanently delete this media asset?",
+      confirmText: "Delete Asset",
+      type: "danger"
+    });
+    if (!ok) return;
+
     try {
       const res = await fetch(apiUrl(`/api/admin/media/${id}`), { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
@@ -130,12 +138,23 @@ export default function AdminMediaPage() {
       await fetchMedia();
       setTimeout(() => setToastMsg(null), 3000);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      await showAlert({
+        title: "Delete Failed",
+        message: err.message,
+        type: "danger"
+      });
     }
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(`Delete ${selectedIds.length} selected items permanently?`)) return;
+    const ok = await showConfirm({
+      title: "Bulk Delete Media",
+      message: `Delete ${selectedIds.length} selected items permanently?`,
+      confirmText: `Delete ${selectedIds.length} Items`,
+      type: "danger"
+    });
+    if (!ok) return;
+
     try {
       for (const id of selectedIds) {
         await fetch(apiUrl(`/api/admin/media/${id}`), { method: "DELETE" });
@@ -146,7 +165,11 @@ export default function AdminMediaPage() {
       await fetchMedia();
       setTimeout(() => setToastMsg(null), 3000);
     } catch (err: any) {
-      alert("Error deleting bulk items: " + err.message);
+      await showAlert({
+        title: "Bulk Delete Failed",
+        message: err.message,
+        type: "danger"
+      });
     }
   };
 

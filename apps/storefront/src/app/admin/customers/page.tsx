@@ -22,6 +22,7 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { showConfirm } from "@/components/ui/AlertModal";
 
 interface CustomerRecord {
   id: string;
@@ -151,7 +152,13 @@ export default function AdminCustomersPage() {
   };
 
   const handleDeleteCustomer = async (id: string) => {
-    if (!confirm("Are you sure you want to permanently delete this customer record?")) return;
+    const ok = await showConfirm({
+      title: "Delete Customer Record",
+      message: "Are you sure you want to permanently delete this customer profile from the CRM?",
+      confirmText: "Delete Customer",
+      type: "danger"
+    });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/customers/${id}`), {
         method: "DELETE",

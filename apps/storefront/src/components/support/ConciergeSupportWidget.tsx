@@ -14,6 +14,7 @@ import {
   GripVertical
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert } from "@/components/ui/AlertModal";
 
 export function ConciergeSupportWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -209,7 +210,7 @@ export function ConciergeSupportWidget() {
   const handleSubmitInquiry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userEmail.trim() || !userName.trim() || !message.trim()) {
-      alert("Please enter your name, email, and message.");
+      await showAlert({ title: "Inquiry Details Required", message: "Please enter your name, email, and message.", type: "warning" });
       return;
     }
 
@@ -234,10 +235,10 @@ export function ConciergeSupportWidget() {
         setMessage("");
         setSubject("");
       } else {
-        alert("Failed to submit inquiry. Please try again.");
+        await showAlert({ title: "Submission Failed", message: "Failed to submit inquiry. Please try again.", type: "danger" });
       }
     } catch (e: any) {
-      alert("Network error: " + e.message);
+      await showAlert({ title: "Network Error", message: e.message, type: "danger" });
     } finally {
       setSubmitting(false);
     }

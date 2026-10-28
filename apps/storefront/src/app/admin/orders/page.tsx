@@ -41,6 +41,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface OrderLineItem {
@@ -250,7 +251,7 @@ export default function AdminOrdersPage() {
       setDispatchOrder(null);
       await fetchOrders(true);
     } catch (err: any) {
-      alert("Error dispatching: " + err.message);
+      await showAlert({ title: "Dispatch Failed", message: err.message, type: "danger" });
     } finally {
       setIsSubmittingDispatch(false);
     }
@@ -309,7 +310,7 @@ export default function AdminOrdersPage() {
     e.preventDefault();
     const product = catalogProducts.find((p) => p.id === manualForm.selectedProductId);
     if (!product) {
-      alert("Please select a valid product.");
+      await showAlert({ title: "Product Required", message: "Please select a valid product.", type: "warning" });
       return;
     }
 
@@ -361,10 +362,10 @@ export default function AdminOrdersPage() {
         await fetchOrders(true);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to create manual order.");
+        await showAlert({ title: "Order Creation Failed", message: err.error || "Failed to create manual order.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Error: " + err.message);
+      await showAlert({ title: "Order Error", message: err.message, type: "danger" });
     } finally {
       setIsSubmittingManualOrder(false);
     }
@@ -436,10 +437,10 @@ export default function AdminOrdersPage() {
         showToast(`Order ${cancellingOrder.order_number || cancellingOrder.id} cancelled. Refund scheduled.`);
         setCancellingOrder(null);
       } else {
-        alert(data.error || "Failed to cancel order.");
+        await showAlert({ title: "Order Cancel Failed", message: data.error || "Failed to cancel order.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Error cancelling order: " + (err?.message || "Network error"));
+      await showAlert({ title: "Cancel Error", message: err?.message || "Network error", type: "danger" });
     } finally {
       setIsSubmittingCancel(false);
     }
@@ -463,10 +464,10 @@ export default function AdminOrdersPage() {
         showToast(`Order ${deletingOrder.order_number || deletingOrder.id} permanently deleted.`);
         setDeletingOrder(null);
       } else {
-        alert(data.error || "Failed to delete order.");
+        await showAlert({ title: "Delete Order Failed", message: data.error || "Failed to delete order.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Error deleting order: " + (err?.message || "Network error"));
+      await showAlert({ title: "Delete Order Error", message: err?.message || "Network error", type: "danger" });
     } finally {
       setIsSubmittingDelete(false);
     }

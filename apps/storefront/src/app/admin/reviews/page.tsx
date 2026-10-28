@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface ReviewItem {
@@ -74,12 +75,13 @@ export default function AdminReviewsPage() {
       setSuccessMessage(`Review ${reviewId} marked as "${nextStatus}".`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert("Error updating review: " + err.message);
+      await showAlert({ title: "Review Update Failed", message: err.message, type: "danger" });
     }
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!confirm(`Are you sure you want to delete review "${reviewId}"?`)) return;
+    const ok = await showConfirm({ title: "Delete Review", message: `Are you sure you want to delete review "${reviewId}"?`, confirmText: "Delete", type: "danger" });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/reviews/${reviewId}`), {
         method: "DELETE",
@@ -91,7 +93,7 @@ export default function AdminReviewsPage() {
       setSuccessMessage(`Review ${reviewId} removed from database.`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert("Error deleting review: " + err.message);
+      await showAlert({ title: "Delete Review Failed", message: err.message, type: "danger" });
     }
   };
 

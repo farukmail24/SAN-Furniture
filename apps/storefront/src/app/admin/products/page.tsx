@@ -32,6 +32,7 @@ import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 import { cleanHtmlDescription, formatProductSku } from "@/lib/catalog";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 
 interface ProductItem {
   id: string;
@@ -267,7 +268,13 @@ export default function AdminProductsPage() {
 
   // Handle Single Delete Product
   const handleDeleteProduct = async (productId: string, title: string) => {
-    if (!confirm(`Are you sure you want to remove "${title}" from the live catalog?`)) return;
+    const ok = await showConfirm({
+      title: "Remove from Catalog",
+      message: `Are you sure you want to remove "${title}" from the live catalog? This action will permanently remove the item.`,
+      confirmText: "Delete Product",
+      type: "danger"
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
@@ -281,13 +288,24 @@ export default function AdminProductsPage() {
       setProducts((prev) => prev.filter((p) => p.id !== productId));
       setTimeout(() => setSuccessMessage(null), 3500);
     } catch (err: any) {
-      alert("Error deleting product: " + err.message);
+      await showAlert({
+        title: "Delete Failed",
+        message: "Error deleting product: " + err.message,
+        type: "danger"
+      });
     }
   };
 
   // Handle Bulk Delete
   const handleBulkDelete = async (selectedIds: string[]) => {
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} selected items?`)) return;
+    const ok = await showConfirm({
+      title: "Delete Selected Products",
+      message: `Are you sure you want to delete ${selectedIds.length} selected items?`,
+      confirmText: `Delete ${selectedIds.length} Items`,
+      type: "danger"
+    });
+    if (!ok) return;
+
     try {
       for (const id of selectedIds) {
         await fetch(apiUrl(`/api/admin/products/${id}`), { method: "DELETE" });
@@ -297,7 +315,11 @@ export default function AdminProductsPage() {
       await fetchProducts();
       setTimeout(() => setSuccessMessage(null), 3500);
     } catch (err: any) {
-      alert("Error during bulk delete: " + err.message);
+      await showAlert({
+        title: "Bulk Delete Failed",
+        message: "Error during bulk delete: " + err.message,
+        type: "danger"
+      });
     }
   };
 
@@ -438,11 +460,19 @@ export default function AdminProductsPage() {
         setCalcProduct(null);
       } else {
         const data = await res.json().catch(() => null);
-        alert("Failed to update pricing: " + (data?.error || res.statusText));
+        await showAlert({
+          title: "Pricing Update Failed",
+          message: data?.error || res.statusText || "Unable to save suggested pricing.",
+          type: "warning"
+        });
       }
     } catch (e: any) {
       console.error("Failed to update pricing from calculation modal:", e);
-      alert("Error updating pricing: " + (e?.message || String(e)));
+      await showAlert({
+        title: "Pricing Error",
+        message: e?.message || String(e),
+        type: "danger"
+      });
     } finally {
       setCalcSaving(false);
     }

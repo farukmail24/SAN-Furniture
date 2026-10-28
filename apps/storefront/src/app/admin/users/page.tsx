@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface AdminUserRecord {
@@ -135,7 +136,8 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to remove this staff member?")) return;
+    const ok = await showConfirm({ title: "Remove Staff Member", message: "Are you sure you want to remove this staff member from admin access?", confirmText: "Remove Staff", type: "danger" });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/users/${userId}`), {
         method: "DELETE",

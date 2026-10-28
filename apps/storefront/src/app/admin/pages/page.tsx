@@ -46,6 +46,7 @@ import { invalidateCache } from "@/lib/api-cache";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { MegaMenuEditor } from "@/components/admin/MegaMenuEditor";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import type { CatalogProduct } from "@/lib/catalog";
 
 function getAdminAuthHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
@@ -483,8 +484,14 @@ export default function AdminPagesCustomizer() {
     );
   };
 
-  const handleRemoveArrayItem = (sectionKey: string, arrayKey: string, index: number) => {
-    if (!window.confirm(`Delete item #${index + 1}?`)) return;
+  const handleRemoveArrayItem = async (sectionKey: string, arrayKey: string, index: number) => {
+    const ok = await showConfirm({
+      title: "Remove Item",
+      message: `Delete item #${index + 1}?`,
+      confirmText: "Delete",
+      type: "danger"
+    });
+    if (!ok) return;
     setSections((prev) =>
       prev.map((s) => {
         if (s.sectionKey === sectionKey) {
@@ -634,13 +641,13 @@ export default function AdminPagesCustomizer() {
   };
 
   const handleResetSection = async (sec: SectionRecord) => {
-    if (
-      !window.confirm(
-        `Restore "${sec.sectionName}" to official factory defaults? Any custom modifications will be reverted.`
-      )
-    ) {
-      return;
-    }
+    const ok = await showConfirm({
+      title: "Restore Factory Defaults",
+      message: `Restore "${sec.sectionName}" to official factory defaults? Any custom modifications will be reverted.`,
+      confirmText: "Restore Defaults",
+      type: "warning"
+    });
+    if (!ok) return;
     setResettingKey(sec.sectionKey);
     try {
       const res = await fetch(apiUrl(`/api/admin/content/sections/${sec.sectionKey}/reset`), {
@@ -698,7 +705,7 @@ export default function AdminPagesCustomizer() {
     }
   };
 
-  const handleSaveRawJson = (sectionKey: string, jsonStr: string) => {
+  const handleSaveRawJson = async (sectionKey: string, jsonStr: string) => {
     try {
       const parsed = JSON.parse(jsonStr);
       setSections((prev) =>
@@ -707,7 +714,7 @@ export default function AdminPagesCustomizer() {
       setRawJsonModal(null);
       showToast(`Updated content from raw JSON for "${sectionKey}". Click Save to persist.`);
     } catch (err: any) {
-      alert("Invalid JSON: " + err.message);
+      await showAlert({ title: "Invalid JSON", message: "Invalid JSON format: " + err.message, type: "danger" });
     }
   };
 

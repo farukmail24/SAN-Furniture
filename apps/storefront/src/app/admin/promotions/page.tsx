@@ -20,6 +20,7 @@ import {
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface PromotionItem {
@@ -105,7 +106,7 @@ export default function AdminPromotionsPage() {
       await fetchPromotions();
       setTimeout(() => setSuccessMessage(null), 3500);
     } catch (err: any) {
-      alert("Error creating promotion: " + err.message);
+      await showAlert({ title: "Promotion Error", message: err.message, type: "danger" });
     } finally {
       setIsSubmitting(false);
     }
@@ -128,12 +129,13 @@ export default function AdminPromotionsPage() {
       setSuccessMessage(`Voucher "${promo.code}" is now ${nextState ? "ACTIVE" : "PAUSED"}.`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert("Error toggling status: " + err.message);
+      await showAlert({ title: "Status Error", message: err.message, type: "danger" });
     }
   };
 
   const handleDeletePromotion = async (promoId: string, code: string) => {
-    if (!confirm(`Are you sure you want to delete coupon "${code}"?`)) return;
+    const ok = await showConfirm({ title: "Delete Coupon", message: `Are you sure you want to delete coupon "${code}"?`, confirmText: "Delete", type: "danger" });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/promotions/${promoId}`), {
         method: "DELETE",
@@ -145,7 +147,7 @@ export default function AdminPromotionsPage() {
       setSuccessMessage(`Promotion "${code}" removed from database.`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert("Error deleting: " + err.message);
+      await showAlert({ title: "Delete Error", message: err.message, type: "danger" });
     }
   };
 

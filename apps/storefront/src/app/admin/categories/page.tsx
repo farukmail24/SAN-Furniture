@@ -17,6 +17,7 @@ import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { showConfirm } from "@/components/ui/AlertModal";
 
 interface CategoryRecord {
   id: string;
@@ -142,7 +143,13 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDeleteCategory = async (catId: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+    const ok = await showConfirm({
+      title: "Delete Furniture Category",
+      message: "Are you sure you want to permanently delete this category? Any associated navigation links will be affected.",
+      confirmText: "Delete Category",
+      type: "danger"
+    });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/categories/${catId}`), {
         method: "DELETE",

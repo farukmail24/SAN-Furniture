@@ -16,6 +16,7 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 
 export interface MediaAsset {
   id: string;
@@ -131,7 +132,8 @@ export function MediaPickerModal({
   };
 
   const handleDeleteAsset = async (assetId: string) => {
-    if (!confirm("Are you sure you want to delete this media asset permanently?")) return;
+    const ok = await showConfirm({ title: "Delete Media Asset", message: "Are you sure you want to delete this media asset permanently?", confirmText: "Delete Asset", type: "danger" });
+    if (!ok) return;
     try {
       const res = await fetch(apiUrl(`/api/admin/media/${assetId}`), {
         method: "DELETE",
@@ -140,7 +142,7 @@ export function MediaPickerModal({
       if (selectedAsset?.id === assetId) setSelectedAsset(null);
       await fetchMedia();
     } catch (err: any) {
-      alert("Error deleting: " + err.message);
+      await showAlert({ title: "Delete Failed", message: err.message, type: "danger" });
     }
   };
 

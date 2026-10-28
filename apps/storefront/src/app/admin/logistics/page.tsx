@@ -24,6 +24,7 @@ import {
 import { formatGBP, UK_MAINLAND_REGIONS, UKRegionItem } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
+import { showConfirm } from "@/components/ui/AlertModal";
 
 interface DeliveryPolicy {
   scope: "mainland_only" | "all_uk";
@@ -301,9 +302,13 @@ export default function AdminLogisticsPage() {
 
   // Delete Delivery Option
   const handleDeleteOption = async (optId: string, optName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete delivery option "${optName}"?`)) {
-      return;
-    }
+    const ok = await showConfirm({
+      title: "Delete Delivery Tier",
+      message: `Are you sure you want to permanently delete delivery option "${optName}"? Checkout rates will recalculate.`,
+      confirmText: "Delete Tier",
+      type: "danger"
+    });
+    if (!ok) return;
 
     setDeletingOptionId(optId);
     try {

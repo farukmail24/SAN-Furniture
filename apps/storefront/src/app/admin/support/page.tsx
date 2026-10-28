@@ -27,6 +27,7 @@ import {
   FileText
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface SupportMessage {
@@ -221,7 +222,7 @@ export default function AdminSupportHelpdeskPage() {
         fetchTickets();
       }
     } catch (e: any) {
-      alert("Failed to update status: " + e.message);
+      await showAlert({ title: "Status Update Failed", message: e.message, type: "danger" });
     }
   };
 
@@ -240,7 +241,7 @@ export default function AdminSupportHelpdeskPage() {
         fetchTickets();
       }
     } catch (e: any) {
-      alert("Failed to update priority: " + e.message);
+      await showAlert({ title: "Priority Update Failed", message: e.message, type: "danger" });
     }
   };
 
@@ -259,7 +260,7 @@ export default function AdminSupportHelpdeskPage() {
         fetchTickets();
       }
     } catch (e: any) {
-      alert("Failed to assign staff: " + e.message);
+      await showAlert({ title: "Assignment Failed", message: e.message, type: "danger" });
     }
   };
 
@@ -288,10 +289,10 @@ export default function AdminSupportHelpdeskPage() {
         fetchTickets();
       } else {
         const d = await res.json();
-        alert("Error sending message: " + (d.error || "Unknown"));
+        await showAlert({ title: "Message Failed", message: d.error || "Unknown error", type: "danger" });
       }
     } catch (err: any) {
-      alert("Network error: " + err.message);
+      await showAlert({ title: "Network Error", message: err.message, type: "danger" });
     } finally {
       setSendingReply(false);
     }

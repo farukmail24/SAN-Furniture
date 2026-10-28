@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { showAlert } from "@/components/ui/AlertModal";
 import Link from "next/link";
 import {
   Plus,
@@ -108,9 +109,9 @@ export function MegaMenuEditor({
     setSelectedTabIndex(newTabs.length - 1);
   };
 
-  const handleRemoveTab = (index: number) => {
+  const handleRemoveTab = async (index: number) => {
     if (tabs.length <= 1) {
-      alert("At least one navigation tab must remain active in the mega menu.");
+      await showAlert({ title: "Action Not Permitted", message: "At least one navigation tab must remain active in the mega menu.", type: "warning" });
       return;
     }
     const newTabs = tabs.filter((_, i) => i !== index);

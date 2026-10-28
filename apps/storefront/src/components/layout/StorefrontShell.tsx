@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type { SiteSection } from "@/lib/cms";
 import type { CatalogProduct } from "@/lib/catalog";
+import { AlertModalProvider } from "@/components/ui/AlertModal";
 
 const StorefrontFrame = dynamic(() => import("./StorefrontFrame"));
 
@@ -20,17 +21,17 @@ export function StorefrontShell({
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
 
-  if (isAdminRoute) {
-    return (
-      <div className="w-full min-h-screen flex flex-col flex-1" suppressHydrationWarning>
-        {children}
-      </div>
-    );
-  }
-
   return (
-    <StorefrontFrame initialSections={initialSections} initialProducts={initialProducts}>
-      {children}
-    </StorefrontFrame>
+    <AlertModalProvider>
+      {isAdminRoute ? (
+        <div className="w-full min-h-screen flex flex-col flex-1" suppressHydrationWarning>
+          {children}
+        </div>
+      ) : (
+        <StorefrontFrame initialSections={initialSections} initialProducts={initialProducts}>
+          {children}
+        </StorefrontFrame>
+      )}
+    </AlertModalProvider>
   );
 }

@@ -18,6 +18,7 @@ import {
   FileText
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert } from "@/components/ui/AlertModal";
 
 interface CustomerTicket {
   id: string;
@@ -141,7 +142,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject.trim() || !initialMessage.trim()) {
-      alert("Please enter a subject and message.");
+      await showAlert({ title: "Information Required", message: "Please enter a subject and message before submitting.", type: "warning" });
       return;
     }
 
@@ -176,10 +177,10 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
         }
       } else {
         const err = await res.json();
-        alert("Failed to submit ticket: " + (err.error || "Unknown"));
+        await showAlert({ title: "Ticket Submission Failed", message: err.error || "Unknown error occurred.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Network error: " + err.message);
+      await showAlert({ title: "Network Error", message: err.message, type: "danger" });
     } finally {
       setSubmitting(false);
     }
@@ -210,7 +211,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
         fetchTickets();
       }
     } catch (e: any) {
-      alert("Error sending reply: " + e.message);
+      await showAlert({ title: "Reply Failed", message: e.message, type: "danger" });
     } finally {
       setSendingReply(false);
     }

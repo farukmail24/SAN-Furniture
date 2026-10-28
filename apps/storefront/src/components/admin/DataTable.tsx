@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { showConfirm } from "@/components/ui/AlertModal";
 import {
   Search,
   ChevronDown,
@@ -229,13 +230,19 @@ export function DataTable<T extends Record<string, any>>({
             {onBulkDelete && (
               <button
                 type="button"
-                onClick={() => {
-                  if (confirm(`Are you sure you want to delete ${selectedIds.size} selected record(s)?`)) {
+                onClick={async () => {
+                  const confirmed = await showConfirm({
+                    title: "Bulk Delete Records",
+                    message: `Are you sure you want to permanently delete ${selectedIds.size} selected record(s)? This action cannot be undone.`,
+                    confirmText: `Delete ${selectedIds.size} Records`,
+                    type: "danger"
+                  });
+                  if (confirmed) {
                     onBulkDelete(Array.from(selectedIds));
                     setSelectedIds(new Set());
                   }
                 }}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold transition-colors ml-2"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold transition-colors ml-2 cursor-pointer shadow-xs"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>Bulk Delete</span>

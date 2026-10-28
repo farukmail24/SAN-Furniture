@@ -52,6 +52,7 @@ import {
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, getCachedData, invalidateCache } from "@/lib/api-cache";
 import { useCart } from "@/lib/cart-context";
 import { type CatalogProduct } from "@/lib/catalog";
@@ -636,10 +637,10 @@ export default function CustomerAccountPage() {
         setReturnModalOrder(null);
         showToast("14-Day Return request submitted. Our logistics team will arrange direct home collection.");
       } else {
-        alert(data.error || "Failed to submit return request.");
+        await showAlert({ title: "Return Request Failed", message: data.error || "Failed to submit return request.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Error submitting return request: " + (err?.message || "Network error"));
+      await showAlert({ title: "Return Request Error", message: err?.message || "Network error", type: "danger" });
     } finally {
       setIsSubmittingReturn(false);
     }
@@ -682,10 +683,10 @@ export default function CustomerAccountPage() {
         setCancelModalOrder(null);
         showToast("Order cancelled successfully. 100% refund scheduled to your payment method.");
       } else {
-        alert(data.error || "Failed to cancel order.");
+        await showAlert({ title: "Order Cancel Failed", message: data.error || "Failed to cancel order.", type: "danger" });
       }
     } catch (err: any) {
-      alert("Error cancelling order: " + (err?.message || "Network error"));
+      await showAlert({ title: "Order Cancel Error", message: err?.message || "Network error", type: "danger" });
     } finally {
       setIsCancelling(false);
     }
@@ -885,7 +886,8 @@ export default function CustomerAccountPage() {
   };
 
   const handleRemovePaymentMethod = async (id: string) => {
-    if (!confirm("Are you sure you want to remove this saved card from your customer profile?")) return;
+    const ok = await showConfirm({ title: "Remove Payment Card", message: "Are you sure you want to remove this saved payment method from your customer profile?", confirmText: "Remove Card", type: "danger" });
+    if (!ok) return;
     try {
       const res = await fetch(
         apiUrl(`/api/customer/payment-methods?id=${encodeURIComponent(id)}&email=${encodeURIComponent(customer.email)}`),
