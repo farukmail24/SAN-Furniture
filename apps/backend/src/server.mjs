@@ -3183,7 +3183,8 @@ const server = http.createServer(async (req, res) => {
             pool,
             urls[0],
             body.categoryId || "cat_beds",
-            body.deliveryTier || "standard_parcel"
+            body.deliveryTier || "standard_parcel",
+            body.assemblyInstructionsUrl || body.assembly_instructions_url || null
           );
           return sendJson(res, 201, {
             success: true,

@@ -396,6 +396,17 @@ export class FurnitureToGoExtractorEngine {
           images = ["https://images.unsplash.com/photo-1595428774223-ef52624120d2"];
         }
 
+        // Extract assembly instructions / manual URL if available on supplier page
+        let assemblyInstructionsUrl = null;
+        const mwMatch = html.match(/https?:\/\/[^\s"'><]+mwdownloads\/download\/link\/id\/\d+/i) ||
+                         html.match(/\/mwdownloads\/download\/link\/id\/\d+/i) ||
+                         html.match(/https?:\/\/[^\s"'><]+\.pdf/i);
+        if (mwMatch) {
+          assemblyInstructionsUrl = mwMatch[0].startsWith("http")
+            ? mwMatch[0]
+            : `https://furniture-to-go.co.uk${mwMatch[0].startsWith("/") ? "" : "/"}${mwMatch[0]}`;
+        }
+
         return {
           title: title.trim(),
           sku: String(sku).trim(),
@@ -409,6 +420,7 @@ export class FurnitureToGoExtractorEngine {
           dimensions: dims,
           weightKg,
           deliveryTier: (dims.width_cm >= 120 || weightKg > 40) ? "two_man_white_glove" : "standard_parcel",
+          assemblyInstructionsUrl,
           images
         };
       }
@@ -615,7 +627,7 @@ export class FurnitureToGoExtractorEngine {
   /**
    * Extract & Import single URL into SAN Furniture Catalog
    */
-  async extractAndImportUrl(pool, url, categoryId = "cat_beds", deliveryTierOverride = null) {
+  async extractAndImportUrl(pool, url, categoryId = "cat_beds", deliveryTierOverride = null, assemblyUrlOverride = null) {
     const liveData = await this.extractProductData(url);
     const tradeCostPennies = Math.round(liveData.priceGbp * 100);
 
@@ -632,6 +644,11 @@ export class FurnitureToGoExtractorEngine {
     const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
+
+    const DROPBOX_MANUALS_URL = "https://www.dropbox.com/scl/fo/8qcrahcyse84f4075mntd/AOE38-nLR3MacO3t0v_avhU?rlkey=zvufk5975fdapbiyyt6vzgzxg&dl=0";
+    const finalAssemblyUrl = (assemblyUrlOverride && typeof assemblyUrlOverride === "string" && assemblyUrlOverride.trim())
+      ? assemblyUrlOverride.trim()
+      : (liveData.assemblyInstructionsUrl || DROPBOX_MANUALS_URL);
 
     // 1. Insert or update Products table
     await pool.query(`
@@ -673,15 +690,18 @@ export class FurnitureToGoExtractorEngine {
       INSERT INTO furniture_specs (
         id, product_id, width_cm, height_cm, depth_cm, weight_kg,
         material, frame_material, color, assembly_required,
+        assembly_instructions_url,
         delivery_tier, fire_safety_compliant, fire_safety_standard, lead_time_days, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, 'engineered_hardwood', 'engineered_hardwood', ?, 1, ?, 1, 'UK Quality Checked', 3, NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, 'engineered_hardwood', 'engineered_hardwood', ?, 1, ?, ?, 1, 'UK Quality Checked', 3, NOW())
       ON DUPLICATE KEY UPDATE
         width_cm = VALUES(width_cm),
         height_cm = VALUES(height_cm),
         depth_cm = VALUES(depth_cm),
         delivery_tier = VALUES(delivery_tier),
         weight_kg = VALUES(weight_kg),
-        color = VALUES(color)
+        color = VALUES(color),
+        assembly_required = 1,
+        assembly_instructions_url = COALESCE(VALUES(assembly_instructions_url), furniture_specs.assembly_instructions_url)
     `, [
       `spec_${productId}`,
       productId,
@@ -690,6 +710,7 @@ export class FurnitureToGoExtractorEngine {
       liveData.dimensions.depth_cm,
       liveData.weightKg || 35,
       liveData.finishColor || "Scandinavian Natural Oak & White",
+      finalAssemblyUrl,
       dbDeliveryTier
     ]);
 

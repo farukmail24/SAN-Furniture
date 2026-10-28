@@ -31,13 +31,15 @@ export async function POST(request: Request) {
     const pool = getDbPool();
     const categoryId = body.categoryId || "cat_beds";
     const deliveryTier = body.deliveryTier || "standard_parcel";
+    const assemblyInstructionsUrl = body.assemblyInstructionsUrl || body.assembly_instructions_url || null;
 
     if (urls.length === 1) {
       const imported = await furnitureToGoExtractor.extractAndImportUrl(
         pool,
         urls[0],
         categoryId,
-        deliveryTier
+        deliveryTier,
+        assemblyInstructionsUrl
       );
       return NextResponse.json(
         {

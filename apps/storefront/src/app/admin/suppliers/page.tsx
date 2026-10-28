@@ -148,6 +148,7 @@ export default function AdminSuppliersPage() {
   const [ftgImportModalOpen, setFtgImportModalOpen] = useState<boolean>(false);
   const [ftgImportMode, setFtgImportMode] = useState<"sitemap" | "manual" | "sync">("sitemap");
   const [newFtgUrl, setNewFtgUrl] = useState<string>("");
+  const [newFtgAssemblyUrl, setNewFtgAssemblyUrl] = useState<string>("");
   const [newFtgCategory, setNewFtgCategory] = useState<string>("cat_beds");
   const [newFtgDeliveryTier, setNewFtgDeliveryTier] = useState<string>("del_opt_001");
   const [importingFtg, setImportingFtg] = useState<boolean>(false);
@@ -474,6 +475,7 @@ export default function AdminSuppliersPage() {
           url: newFtgUrl.trim(),
           categoryId: newFtgCategory,
           deliveryTier: newFtgDeliveryTier,
+          assemblyInstructionsUrl: newFtgAssemblyUrl.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -484,6 +486,7 @@ export default function AdminSuppliersPage() {
         });
         setFtgImportModalOpen(false);
         setNewFtgUrl("");
+        setNewFtgAssemblyUrl("");
         if (inspectSupplier) {
           handleOpenFeedInspector(inspectSupplier);
         }
@@ -1907,6 +1910,23 @@ export default function AdminSuppliersPage() {
                     onChange={(e) => setNewFtgUrl(e.target.value)}
                     className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#00072D] mb-1.5 flex items-center justify-between">
+                    <span>Assembly Instructions Manual URL (Optional)</span>
+                    <span className="text-[10px] text-[#7A8B99] font-normal">e.g. mwdownloads link or Dropbox</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://furniture-to-go.co.uk/mwdownloads/download/link/id/5233"
+                    value={newFtgAssemblyUrl}
+                    onChange={(e) => setNewFtgAssemblyUrl(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
+                  />
+                  <p className="text-[10px] text-[#7A8B99] mt-1">
+                    If provided, this exact PDF link will be attached. If left empty, the engine automatically extracts it or links to the official Dropbox repository.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
