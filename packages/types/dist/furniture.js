@@ -76,6 +76,7 @@ export const FurnitureSpecsSchema = z.object({
     color: z.string().min(1),
     assembly_required: z.boolean().default(false),
     assembly_time_mins: z.number().int().nonnegative().optional(),
+    assembly_instructions_url: z.string().optional(),
     delivery_tier: DeliveryTierEnum.default("two_man_white_glove"),
     fire_safety: FireSafetyComplianceSchema,
     lead_time_days: z.number().int().positive().default(5)

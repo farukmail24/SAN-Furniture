@@ -50,6 +50,7 @@ export interface CatalogProduct {
     color: string;
     assembly_required: boolean;
     assembly_time_mins?: number;
+    assembly_instructions_url?: string;
     doorway_clearance_min_cm?: number;
     delivery_tier: DeliveryTier;
     fire_safety: {

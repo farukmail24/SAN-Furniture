@@ -10,6 +10,9 @@ import {
   Award,
   CheckCircle2,
   FileCheck2,
+  FileText,
+  Download,
+  Wrench,
 } from "lucide-react";
 import {
   CATALOG_CATEGORIES,
@@ -342,6 +345,50 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
               </div>
             </div>
           </div>
+
+          {/* Assembly Instructions & Manual Download Card */}
+          {product.specs?.assembly_instructions_url ? (
+            <div className="mt-6 p-4.5 rounded-2xl bg-gradient-to-r from-sand-100 via-sand-200/50 to-sand-100 border border-sand-300 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-navy-950 text-brass-400 flex items-center justify-center shrink-0 shadow-xs">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-display font-bold text-navy-950 text-sm">
+                      Manufacturer Assembly Manual (PDF)
+                    </h4>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
+                      Official Guide
+                    </span>
+                  </div>
+                  <p className="text-xs text-navy-600 mt-0.5">
+                    Step-by-step pictorial assembly guide &amp; statutory hardware fittings checklist.
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={product.specs.assembly_instructions_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer group"
+              >
+                <Download className="w-4 h-4 text-brass-400 group-hover:translate-y-0.5 transition-transform" />
+                <span>Download Instructions (PDF)</span>
+              </a>
+            </div>
+          ) : product.specs?.assembly_required ? (
+            <div className="mt-6 p-4 rounded-2xl bg-sand-100/70 border border-sand-200 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-sand-200 text-navy-700 flex items-center justify-center shrink-0">
+                <Wrench className="w-4 h-4" />
+              </div>
+              <div className="text-xs text-navy-700 leading-relaxed">
+                <strong>Assembly Requirement:</strong> Flat-pack self-assembly required (~{product.specs.assembly_time_mins || 20} mins). A comprehensive printed step-by-step instruction booklet and all statutory fittings are securely enclosed inside the delivery boxes.
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Curated Related Furniture Grid */}

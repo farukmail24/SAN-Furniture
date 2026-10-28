@@ -96,6 +96,8 @@ export default function AdminEditProductPage({ params }: PageProps) {
   const [depthCm, setDepthCm] = useState("66");
   const [weightKg, setWeightKg] = useState("165");
   const [fireSafety, setFireSafety] = useState(true);
+  const [assemblyRequired, setAssemblyRequired] = useState(false);
+  const [assemblyInstructionsUrl, setAssemblyInstructionsUrl] = useState("");
   const [deliveryTier, setDeliveryTier] = useState("two_man_white_glove");
   const [status, setStatus] = useState("published");
 
@@ -160,6 +162,8 @@ export default function AdminEditProductPage({ params }: PageProps) {
           setDepthCm(p.depth_cm ? String(p.depth_cm) : "66");
           setWeightKg(p.weight_kg ? String(p.weight_kg) : "165");
           setFireSafety(Boolean(p.fire_safety_compliant));
+          setAssemblyRequired(Boolean(p.assembly_required));
+          setAssemblyInstructionsUrl(p.assembly_instructions_url || "");
           setDeliveryTier(p.delivery_tier || "two_man_white_glove");
           setStatus(p.status || "published");
 
@@ -418,6 +422,8 @@ export default function AdminEditProductPage({ params }: PageProps) {
         weightKg: parseFloat(weightKg) || 0,
         fireSafetyCompliant: fireSafety,
         deliveryType: deliveryTier,
+        assemblyRequired,
+        assemblyInstructionsUrl: assemblyInstructionsUrl.trim() || undefined,
       };
 
       const res = await fetch(apiUrl(`/api/admin/products/${productId}`), {
@@ -1093,6 +1099,47 @@ export default function AdminEditProductPage({ params }: PageProps) {
                   />
                   <span className="font-semibold">UK Quality Checked</span>
                 </label>
+              </div>
+
+              <div className="flex items-center pt-5">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-navy-800">
+                  <input
+                    type="checkbox"
+                    checked={assemblyRequired}
+                    onChange={(e) => setAssemblyRequired(e.target.checked)}
+                    className="w-4 h-4 rounded text-brass-500 focus:ring-0"
+                  />
+                  <span className="font-semibold">Self-Assembly Required</span>
+                </label>
+              </div>
+
+              <div className="sm:col-span-2 pt-2">
+                <label className="block text-xs font-semibold text-navy-800 mb-1">
+                  Assembly Instructions Manual (PDF URL)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={assemblyInstructionsUrl}
+                    onChange={(e) => setAssemblyInstructionsUrl(e.target.value)}
+                    placeholder="/documents/assembly/90A0000102468.pdf or https://..."
+                    className="flex-1 px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950 focus:outline-none focus:border-brass-500"
+                  />
+                  {assemblyInstructionsUrl.trim() && (
+                    <a
+                      href={assemblyInstructionsUrl.trim()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 rounded-lg bg-navy-950 text-brass-400 font-bold text-xs hover:bg-navy-900 transition-colors inline-flex items-center gap-1.5 shrink-0"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Preview PDF</span>
+                    </a>
+                  )}
+                </div>
+                <p className="text-[10px] text-navy-500 mt-1">
+                  Path to local or cloud assembly manual. When configured, customers can download this guide from the storefront product page.
+                </p>
               </div>
             </div>
           </div>

@@ -142,6 +142,7 @@ export declare const FurnitureSpecsSchema: z.ZodObject<{
     color: z.ZodString;
     assembly_required: z.ZodDefault<z.ZodBoolean>;
     assembly_time_mins: z.ZodOptional<z.ZodNumber>;
+    assembly_instructions_url: z.ZodOptional<z.ZodString>;
     delivery_tier: z.ZodDefault<z.ZodEnum<["standard_parcel", "pallet", "two_man_white_glove"]>>;
     fire_safety: z.ZodObject<{
         compliant: z.ZodEffects<z.ZodBoolean, boolean, boolean>;
@@ -191,6 +192,7 @@ export declare const FurnitureSpecsSchema: z.ZodObject<{
     };
     lead_time_days: number;
     assembly_time_mins?: number | undefined;
+    assembly_instructions_url?: string | undefined;
 }, {
     dimensions: {
         width_cm: number;
@@ -220,6 +222,7 @@ export declare const FurnitureSpecsSchema: z.ZodObject<{
     }[] | undefined;
     assembly_required?: boolean | undefined;
     assembly_time_mins?: number | undefined;
+    assembly_instructions_url?: string | undefined;
     delivery_tier?: "standard_parcel" | "pallet" | "two_man_white_glove" | undefined;
     lead_time_days?: number | undefined;
 }>;

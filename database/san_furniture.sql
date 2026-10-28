@@ -374,6 +374,7 @@ CREATE TABLE `furniture_specs` (
   `color` varchar(100) NOT NULL,
   `assembly_required` tinyint(1) NOT NULL DEFAULT 0,
   `assembly_time_mins` int(11) DEFAULT NULL,
+  `assembly_instructions_url` varchar(500) DEFAULT NULL,
   `doorway_clearance_min_cm` decimal(6,2) NOT NULL DEFAULT 76.20 COMMENT 'UK Standard Doorway Clearance (30 inches)',
   `delivery_tier` enum('standard_parcel','pallet','two_man_white_glove') NOT NULL DEFAULT 'standard_parcel',
   `fire_safety_compliant` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'UK Furniture and Furnishings Fire Safety Regs 1988',

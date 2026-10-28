@@ -20,7 +20,7 @@ export async function GET(
     const [rows]: any = await pool.query(
       `
       SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
-             s.material, s.color, s.assembly_required, s.fire_safety_compliant, s.delivery_tier,
+             s.material, s.color, s.assembly_required, s.assembly_instructions_url, s.fire_safety_compliant, s.delivery_tier,
              sup.supplier_id,
              sup.supplier_sku,
              sup.source_url as supplier_source_url,
@@ -98,6 +98,8 @@ export async function PATCH(
     const color = body.color;
     const deliveryType = body.deliveryType ?? body.delivery_tier;
     const fireSafetyCompliant = body.fireSafetyCompliant ?? body.fire_safety_compliant;
+    const assemblyRequired = body.assemblyRequired ?? body.assembly_required;
+    const assemblyInstructionsUrl = body.assemblyInstructionsUrl ?? body.assembly_instructions_url;
 
     const pFields: string[] = [];
     const pParams: any[] = [];
@@ -183,6 +185,14 @@ export async function PATCH(
     if (fireSafetyCompliant !== undefined) {
       sFields.push("fire_safety_compliant = ?");
       sParams.push(fireSafetyCompliant ? 1 : 0);
+    }
+    if (assemblyRequired !== undefined) {
+      sFields.push("assembly_required = ?");
+      sParams.push(assemblyRequired ? 1 : 0);
+    }
+    if (assemblyInstructionsUrl !== undefined) {
+      sFields.push("assembly_instructions_url = ?");
+      sParams.push(assemblyInstructionsUrl || null);
     }
 
     if (sFields.length > 0) {

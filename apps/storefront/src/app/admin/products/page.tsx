@@ -24,7 +24,8 @@ import {
   Calculator,
   Building,
   TrendingUp,
-  RefreshCw
+  RefreshCw,
+  FileText
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -58,6 +59,7 @@ interface ProductItem {
   material: string;
   color: string;
   assembly_required?: number | boolean;
+  assembly_instructions_url?: string;
   fire_safety_compliant: number | boolean;
   delivery_type?: string;
   delivery_tier?: string;
@@ -1119,6 +1121,28 @@ export default function AdminProductsPage() {
                         <span className="text-[11px] text-navy-600 mt-0.5 block">Catalog palette</span>
                       </div>
                     </div>
+
+                    <div className="mt-3 p-3 bg-sand-50 rounded-xl border border-sand-200 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-navy-500">Assembly:</span>
+                        <span className="font-semibold text-navy-950">
+                          {viewingProduct.assembly_required ? "Flat-pack self assembly" : "Fully Assembled"}
+                        </span>
+                      </div>
+                      {viewingProduct.assembly_instructions_url ? (
+                        <a
+                          href={viewingProduct.assembly_instructions_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-navy-950 hover:bg-navy-900 text-brass-400 font-bold text-[11px] shadow-xs transition-colors cursor-pointer"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View Assembly Manual (PDF)</span>
+                        </a>
+                      ) : (
+                        <span className="text-[11px] text-navy-400 italic">Printed manual included in box</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Available Options & Variants */}
@@ -1540,6 +1564,25 @@ export default function AdminProductsPage() {
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     </div>
+
+                    {/* Assembly Manual Direct Link */}
+                    {calcProduct.assembly_instructions_url && (
+                      <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-emerald-950 font-semibold text-[11px]">
+                          <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                          <span>Official Assembly Manual (PDF) attached</span>
+                        </div>
+                        <a
+                          href={calcProduct.assembly_instructions_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Open PDF Manual</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    )}
 
                     <p className="text-[11px] text-navy-500 leading-relaxed">
                       💡 <strong>সাপ্লায়ার ডাইরেক্ট নেভিগেশন:</strong> উপরের বাটনে ক্লিক করলে এক ক্লিকে সরাসরি {supplier.name} ({supplier.domain}) এর মূল প্রোডাক্ট পেজ ওপেন হবে। সেখান থেকে আপনি সাপ্লায়ারের লাইভ স্টক লেভেল, পাইকারি অফার, ডাইমেনশন স্পেসিফিকেশন ও অ্যাসেম্বলি গাইড সরাসরি যাচাই করতে পারবেন।

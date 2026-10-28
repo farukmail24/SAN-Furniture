@@ -24,7 +24,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
         p.thumbnail_url as thumbnailUrl, p.images_json, p.variants_json, p.created_at as createdAt,
         s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.seat_depth_cm,
         s.arm_height_cm, s.weight_kg, s.material, s.frame_material, s.color,
-        s.assembly_required, s.assembly_time_mins, s.doorway_clearance_min_cm,
+        s.assembly_required, s.assembly_time_mins, s.assembly_instructions_url, s.doorway_clearance_min_cm,
         s.delivery_tier, s.fire_safety_compliant, s.fire_safety_standard,
         s.fire_safety_cert, s.lead_time_days
       FROM products p
@@ -99,6 +99,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
           color: p.color || "Natural",
           assembly_required: Boolean(p.assembly_required),
           assembly_time_mins: p.assembly_time_mins ? Number(p.assembly_time_mins) : undefined,
+          assembly_instructions_url: p.assembly_instructions_url || undefined,
           doorway_clearance_min_cm: p.doorway_clearance_min_cm ? Number(p.doorway_clearance_min_cm) : undefined,
           delivery_tier: p.delivery_tier || "two_man_white_glove",
           fire_safety: {

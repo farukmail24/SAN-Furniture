@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
     const fetchQuery = `
       SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
-             s.material, s.color, s.assembly_required, s.fire_safety_compliant, s.delivery_tier,
+             s.material, s.color, s.assembly_required, s.assembly_instructions_url, s.fire_safety_compliant, s.delivery_tier,
              sup.supplier_id,
              sup.supplier_sku,
              sup.source_url as supplier_source_url,
