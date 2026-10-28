@@ -2102,6 +2102,9 @@ const server = http.createServer(async (req, res) => {
       const [rows] = await pool.query(`
         SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
                s.material, s.color, s.assembly_required, s.fire_safety_compliant, s.delivery_tier,
+               sup.supplier_id,
+               sup.supplier_sku,
+               sup.source_url as supplier_source_url,
                COALESCE(sup.cost_price_pennies, 0) as cost_price_pennies,
                COALESCE(sup.markup_percentage, 40) as markup_percentage,
                COALESCE(sup.stock_level, 25) as stock_level,
@@ -2215,6 +2218,9 @@ const server = http.createServer(async (req, res) => {
       const [rows] = await pool.query(`
         SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
                s.material, s.color, s.assembly_required, s.fire_safety_compliant, s.delivery_tier,
+               sup.supplier_id,
+               sup.supplier_sku,
+               sup.source_url as supplier_source_url,
                COALESCE(sup.cost_price_pennies, 0) as cost_price_pennies,
                COALESCE(sup.markup_percentage, 40) as markup_percentage,
                COALESCE(sup.stock_level, 25) as stock_level,

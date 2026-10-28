@@ -77,29 +77,27 @@ export async function PATCH(
     const pool = getDbPool();
     const body = await request.json();
 
-    const {
-      title,
-      sku,
-      pricePennies,
-      compareAtPricePennies,
-      categoryId,
-      thumbnailUrl,
-      images,
-      imagesJson,
-      variants,
-      variantsJson,
-      supplierCostPennies,
-      shippingCostPennies,
-      markupPercentage,
-      widthCm,
-      heightCm,
-      depthCm,
-      weightKg,
-      material,
-      color,
-      deliveryType,
-      fireSafetyCompliant,
-    } = body;
+    const title = body.title;
+    const sku = body.sku;
+    const pricePennies = body.pricePennies ?? body.price_pennies;
+    const compareAtPricePennies = body.compareAtPricePennies ?? body.compare_at_price_pennies;
+    const categoryId = body.categoryId ?? body.category_id;
+    const thumbnailUrl = body.thumbnailUrl ?? body.thumbnail_url;
+    const images = body.images;
+    const imagesJson = body.imagesJson ?? body.images_json;
+    const variants = body.variants;
+    const variantsJson = body.variantsJson ?? body.variants_json;
+    const supplierCostPennies = body.supplierCostPennies ?? body.cost_price_pennies;
+    const shippingCostPennies = body.shippingCostPennies ?? body.shipping_cost_pennies;
+    const markupPercentage = body.markupPercentage ?? body.markup_percentage;
+    const widthCm = body.widthCm ?? body.width_cm;
+    const heightCm = body.heightCm ?? body.height_cm;
+    const depthCm = body.depthCm ?? body.depth_cm;
+    const weightKg = body.weightKg ?? body.weight_kg;
+    const material = body.material;
+    const color = body.color;
+    const deliveryType = body.deliveryType ?? body.delivery_tier;
+    const fireSafetyCompliant = body.fireSafetyCompliant ?? body.fire_safety_compliant;
 
     const pFields: string[] = [];
     const pParams: any[] = [];

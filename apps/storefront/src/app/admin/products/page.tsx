@@ -20,7 +20,11 @@ import {
   Coins,
   Ruler,
   Box,
-  Tag
+  Tag,
+  Calculator,
+  Building,
+  TrendingUp,
+  RefreshCw
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -31,6 +35,9 @@ interface ProductItem {
   id: string;
   sku?: string;
   supplier_sku?: string;
+  supplier_id?: string;
+  supplier_source_url?: string;
+  source_url?: string;
   title: string;
   handle: string;
   subtitle?: string;
@@ -56,6 +63,8 @@ interface ProductItem {
   delivery_tier?: string;
   cost_price_pennies?: number;
   markup_percentage?: number;
+  shipping_cost_pennies?: number;
+  lead_time_days?: number;
   created_at?: string;
   variants?: any[];
 }
@@ -76,6 +85,13 @@ export default function AdminProductsPage() {
   const [viewingProduct, setViewingProduct] = useState<ProductItem | null>(null);
   const [activeImage, setActiveImage] = useState<string>("");
   const [detailLoading, setDetailLoading] = useState<boolean>(false);
+
+  // Landed Cost & Supplier Sourcing Modal state
+  const [calcProduct, setCalcProduct] = useState<ProductItem | null>(null);
+  const [calcShippingGbp, setCalcShippingGbp] = useState<string>("49.00");
+  const [calcMarkupPercent, setCalcMarkupPercent] = useState<string>("40");
+  const [calcSaving, setCalcSaving] = useState<boolean>(false);
+  const [calcDetailLoading, setCalcDetailLoading] = useState<boolean>(false);
 
   // Gallery images list for the active product
   const modalGalleryImages = useMemo(() => {
@@ -123,9 +139,36 @@ export default function AdminProductsPage() {
     };
   }, [viewingProduct?.id]);
 
-  // Lock body scroll while modal is active
+  // Handle open calculation modal
+  const handleOpenCalculationModal = (item: ProductItem) => {
+    setCalcProduct(item);
+    const shipping = item.shipping_cost_pennies ? (item.shipping_cost_pennies / 100).toFixed(2) : "49.00";
+    const markup = item.markup_percentage !== undefined ? String(item.markup_percentage) : "40";
+    setCalcShippingGbp(shipping);
+    setCalcMarkupPercent(markup);
+
+    // Fetch full product details in background to ensure all supplier fields and specs are loaded
+    setCalcDetailLoading(true);
+    fetch(apiUrl(`/api/admin/products/${item.id}`))
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.product) {
+          setCalcProduct((prev) => (prev && prev.id === data.product.id ? { ...prev, ...data.product } : prev));
+          if (data.product.shipping_cost_pennies !== undefined) {
+            setCalcShippingGbp((data.product.shipping_cost_pennies / 100).toFixed(2));
+          }
+          if (data.product.markup_percentage !== undefined) {
+            setCalcMarkupPercent(String(data.product.markup_percentage));
+          }
+        }
+      })
+      .catch((err) => console.error("Error fetching calculation details:", err))
+      .finally(() => setCalcDetailLoading(false));
+  };
+
+  // Lock body scroll while either modal is active
   useEffect(() => {
-    if (viewingProduct) {
+    if (viewingProduct || calcProduct) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
@@ -133,22 +176,23 @@ export default function AdminProductsPage() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [viewingProduct]);
+  }, [viewingProduct, calcProduct]);
 
-  // Close modal with Escape key
+  // Close modals with Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setViewingProduct(null);
+        setCalcProduct(null);
       }
     };
-    if (viewingProduct) {
+    if (viewingProduct || calcProduct) {
       window.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [viewingProduct]);
+  }, [viewingProduct, calcProduct]);
 
   // Fetch products & categories from backend with instant SWR cache
   const fetchProducts = async () => {
@@ -251,6 +295,153 @@ export default function AdminProductsPage() {
       setTimeout(() => setSuccessMessage(null), 3500);
     } catch (err: any) {
       alert("Error during bulk delete: " + err.message);
+    }
+  };
+
+  // Calculation mathematical architecture for active calculation modal
+  const calcCostVal = calcProduct?.cost_price_pennies ? calcProduct.cost_price_pennies / 100 : 0;
+  const calcShippingVal = parseFloat(calcShippingGbp) || 0;
+  const calcLandedCost = calcCostVal + calcShippingVal;
+  const calcTargetMarkupVal = parseFloat(calcMarkupPercent) || 0;
+  const calcAutoNetRetail = calcLandedCost * (1 + calcTargetMarkupVal / 100);
+  const calcAutoRetailIncVat = calcAutoNetRetail * 1.20;
+  const calcCurrentRetailVal = calcProduct?.price_pennies ? calcProduct.price_pennies / 100 : 0;
+  const calcGrossProfit = calcCurrentRetailVal - calcCostVal;
+  const calcGrossMarginPercent =
+    calcCurrentRetailVal > 0 ? ((calcGrossProfit / calcCurrentRetailVal) * 100).toFixed(1) : "0";
+  const calcNetCommercialProfit = calcCurrentRetailVal / 1.20 - calcLandedCost;
+  const calcCompareAtVal = calcAutoRetailIncVat * 1.25;
+
+  // Resolve supplier sourcing information
+  const getSupplierInfo = (p?: ProductItem | null) => {
+    if (!p) {
+      return {
+        name: "UK Furniture Supplier",
+        domain: "uk-supplier-network",
+        badge: "UK Dropship Partner Network",
+        portalUrl: "#",
+        productUrl: "#",
+        sku: "N/A",
+        isDirect: false,
+      };
+    }
+    const url = p.supplier_source_url || p.source_url || "";
+    const sId = (p.supplier_id || "").toLowerCase();
+    const sku = p.supplier_sku || p.sku || "";
+    const pId = (p.id || "").toLowerCase();
+
+    if (
+      url.includes("furniture-to-go.co.uk") ||
+      sId.includes("furniture_to_go") ||
+      sId.includes("ftg") ||
+      pId.includes("ftg") ||
+      sku.toUpperCase().startsWith("FTG-")
+    ) {
+      return {
+        name: "Furniture To Go (FTG)",
+        domain: "furniture-to-go.co.uk",
+        badge: "Danish Design Flatpack • FTG Wiltshire Hub",
+        portalUrl: "https://furniture-to-go.co.uk",
+        productUrl:
+          url ||
+          (sku
+            ? `https://furniture-to-go.co.uk/catalogsearch/result/?q=${encodeURIComponent(sku)}`
+            : "https://furniture-to-go.co.uk"),
+        sku: sku || "FTG-REF",
+        isDirect: Boolean(url),
+      };
+    }
+
+    if (
+      url.includes("amosmannfurniture.co.uk") ||
+      sId.includes("amos_mann") ||
+      pId.includes("amos") ||
+      pId.includes("_am_") ||
+      sku.toUpperCase().startsWith("AM-")
+    ) {
+      return {
+        name: "Amos Mann Furniture",
+        domain: "amosmannfurniture.co.uk",
+        badge: "UK B2B Dropship • Leicester Hub",
+        portalUrl: "https://www.amosmannfurniture.co.uk",
+        productUrl:
+          url ||
+          (sku
+            ? `https://www.amosmannfurniture.co.uk/search.asp?q=${encodeURIComponent(sku)}`
+            : "https://www.amosmannfurniture.co.uk"),
+        sku: sku || "AM-REF",
+        isDirect: Boolean(url),
+      };
+    }
+
+    return {
+      name: "UK Furniture Supplier",
+      domain: "uk-supplier-network",
+      badge: "UK Dropship Partner Network",
+      portalUrl: url || "#",
+      productUrl: url || "#",
+      sku: sku || "N/A",
+      isDirect: Boolean(url),
+    };
+  };
+
+  // Handle Apply Simulated Price from Calculation Modal
+  const handleApplySuggestedPrice = async (customMarkup?: number) => {
+    if (!calcProduct) return;
+    const markupToApply = customMarkup !== undefined ? customMarkup : calcTargetMarkupVal;
+    if (customMarkup !== undefined) {
+      setCalcMarkupPercent(String(customMarkup));
+    }
+    const net = calcLandedCost * (1 + markupToApply / 100);
+    const incVat = net * 1.20;
+    const newPricePennies = Math.round(incVat * 100);
+    const newCompareAtPennies = Math.round(incVat * 1.25 * 100);
+    const newShippingCostPennies = Math.round(calcShippingVal * 100);
+
+    setCalcSaving(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+      const res = await fetch(apiUrl(`/api/admin/products/${calcProduct.id}`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          price_pennies: newPricePennies,
+          compare_at_price_pennies: newCompareAtPennies,
+          markup_percentage: markupToApply,
+          shipping_cost_pennies: newShippingCostPennies,
+        }),
+      });
+
+      if (res.ok) {
+        setProducts((prev) =>
+          prev.map((item) =>
+            item.id === calcProduct.id
+              ? {
+                  ...item,
+                  price_pennies: newPricePennies,
+                  compare_at_price_pennies: newCompareAtPennies,
+                  markup_percentage: markupToApply,
+                  shipping_cost_pennies: newShippingCostPennies,
+                }
+              : item
+          )
+        );
+        clearProductCaches();
+        setSuccessMessage(`Pricing updated to £${incVat.toFixed(2)} (${markupToApply}% markup) for "${calcProduct.title}"`);
+        setTimeout(() => setSuccessMessage(null), 5000);
+        setCalcProduct(null);
+      } else {
+        const data = await res.json().catch(() => null);
+        alert("Failed to update pricing: " + (data?.error || res.statusText));
+      }
+    } catch (e: any) {
+      console.error("Failed to update pricing from calculation modal:", e);
+      alert("Error updating pricing: " + (e?.message || String(e)));
+    } finally {
+      setCalcSaving(false);
     }
   };
 
@@ -413,8 +604,16 @@ export default function AdminProductsPage() {
           <div className="flex items-center justify-end gap-1.5">
             <button
               type="button"
+              onClick={() => handleOpenCalculationModal(p)}
+              className="p-1.5 rounded-lg text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 transition-colors inline-flex items-center cursor-pointer"
+              title="View Landed Cost Calculation & Supplier Sourcing"
+            >
+              <Calculator className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
               onClick={() => setViewingProduct(p)}
-              className="p-1.5 rounded-lg text-navy-600 hover:text-navy-950 hover:bg-sand-100 transition-colors inline-flex items-center"
+              className="p-1.5 rounded-lg text-navy-600 hover:text-navy-950 hover:bg-sand-100 transition-colors inline-flex items-center cursor-pointer"
               title="Quick view product specs & details"
             >
               <Eye className="w-4 h-4" />
@@ -429,7 +628,7 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => handleDeleteProduct(p.id, p.title)}
-              className="p-1.5 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors"
+              className="p-1.5 rounded-lg text-red-600 hover:text-red-800 hover:bg-red-50 transition-colors cursor-pointer"
               title="Delete product from database"
             >
               <Trash2 className="w-4 h-4" />
@@ -1002,6 +1201,393 @@ export default function AdminProductsPage() {
                   <Edit3 className="w-4 h-4" />
                   <span>Edit Full Product</span>
                 </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Landed Cost & Supplier Sourcing Modal */}
+      {calcProduct && (
+        <div
+          className="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fade-in"
+          onClick={() => setCalcProduct(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl bg-sand-50 border border-sand-300 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-sand-100 border-b border-sand-300 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-navy-950 flex items-center justify-center shadow-xs">
+                  <Calculator className="w-5 h-5 text-brass-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-display text-base font-bold text-navy-950">
+                      Dynamic Landed Cost &amp; Profit Breakdown
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase tracking-wider">
+                      UK Dropship Pricing
+                    </span>
+                    {(calcProduct.sku || calcProduct.supplier_sku) && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF6EE] text-[#00072D] border border-[#C89B3C]/50">
+                        SKU: {calcProduct.sku || (calcProduct.id.startsWith("prod_live_am_") ? `SAN-${calcProduct.supplier_sku?.replace(/[^0-9]/g, "")}` : (calcProduct.id.startsWith("prod_ftg_") ? `SAN-FTG-${calcProduct.supplier_sku?.replace(/^FTG-/, "")}` : calcProduct.sku))}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-navy-600 line-clamp-1">
+                    Mathematical breakdown of wholesale trade cost, freight, 20% UK VAT &amp; supplier sourcing for <span className="font-semibold text-navy-900">{calcProduct.title}</span>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCalcProduct(null)}
+                className="w-8 h-8 rounded-full bg-sand-200 hover:bg-sand-300 text-navy-700 hover:text-navy-950 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body (Scrollable) */}
+            <div className="p-6 space-y-6 overflow-y-auto">
+              {/* Section 1: Target Markup Presets & Landed Cost Controls */}
+              <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-navy-950 uppercase tracking-wider block">
+                      Target Markup Simulator (% on Landed Cost)
+                    </span>
+                    <span className="text-[11px] text-navy-500">
+                      Select target gross markup to dynamically calculate recommended retail price
+                    </span>
+                  </div>
+
+                  {/* Markup Presets */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[30, 35, 40, 45, 50, 60].map((pct) => (
+                      <button
+                        key={pct}
+                        type="button"
+                        onClick={() => setCalcMarkupPercent(String(pct))}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          calcTargetMarkupVal === pct
+                            ? "bg-navy-950 text-sand-50 ring-2 ring-brass-500 shadow-xs"
+                            : "bg-sand-100 hover:bg-sand-200 text-navy-800 border border-sand-300"
+                        }`}
+                      >
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-sand-200">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-navy-700 mb-1">
+                      Inbound Freight / Drop Fee (£)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-navy-500">£</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={calcShippingGbp}
+                        onChange={(e) => setCalcShippingGbp(e.target.value)}
+                        className="w-full pl-6 pr-2.5 py-1.5 bg-sand-50 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 focus:outline-none focus:border-brass-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-navy-700 mb-1">
+                      Target Markup %
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="1"
+                        value={calcMarkupPercent}
+                        onChange={(e) => setCalcMarkupPercent(e.target.value)}
+                        className="w-full pl-3 pr-6 py-1.5 bg-sand-50 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 focus:outline-none focus:border-brass-500"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-navy-500">%</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      disabled={calcSaving}
+                      onClick={() => handleApplySuggestedPrice()}
+                      className="w-full py-1.5 px-3 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {calcSaving ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Apply Formula (£{calcAutoRetailIncVat.toFixed(2)})</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: 7-Step Visual Formula Chain */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-navy-950 uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4 text-brass-600" />
+                    <span>UK Pricing Mathematical Architecture</span>
+                  </h4>
+                  <span className="text-[11px] font-mono text-navy-500">
+                    Formula: (Trade + Freight) × (1 + Markup%) × 1.20 VAT
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                  {/* Step 1: Wholesale */}
+                  <div className="p-3 rounded-xl bg-white border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-wider block">Step 1</span>
+                      <span className="text-[11px] font-bold text-navy-800 line-clamp-1">Trade Cost</span>
+                      <span className="text-[10px] text-navy-500 block">ex VAT</span>
+                    </div>
+                    <div className="mt-2 font-mono font-bold text-navy-950 text-sm">
+                      £{calcCostVal.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Shipping */}
+                  <div className="p-3 rounded-xl bg-white border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-wider block">Step 2</span>
+                      <span className="text-[11px] font-bold text-navy-800 line-clamp-1">+ Inbound Freight</span>
+                      <span className="text-[10px] text-navy-500 block">Pallet / Courier</span>
+                    </div>
+                    <div className="mt-2 font-mono font-bold text-navy-950 text-sm">
+                      +£{calcShippingVal.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 3: Landed Cost */}
+                  <div className="p-3 rounded-xl bg-sand-200/80 border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-brass-700 uppercase tracking-wider block">Step 3</span>
+                      <span className="text-[11px] font-bold text-navy-950 line-clamp-1">= Landed Cost</span>
+                      <span className="text-[10px] text-navy-600 block">True COGS</span>
+                    </div>
+                    <div className="mt-2 font-mono font-black text-navy-950 text-sm">
+                      £{calcLandedCost.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 4: Target Markup */}
+                  <div className="p-3 rounded-xl bg-white border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-wider block">Step 4</span>
+                      <span className="text-[11px] font-bold text-navy-800 line-clamp-1">+ Markup ({calcTargetMarkupVal}%)</span>
+                      <span className="text-[10px] text-navy-500 block">Commercial Margin</span>
+                    </div>
+                    <div className="mt-2 font-mono font-bold text-emerald-700 text-sm">
+                      +£{(calcAutoNetRetail - calcLandedCost).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 5: Net Retail */}
+                  <div className="p-3 rounded-xl bg-white border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-wider block">Step 5</span>
+                      <span className="text-[11px] font-bold text-navy-800 line-clamp-1">= Net Retail</span>
+                      <span className="text-[10px] text-navy-500 block">ex 20% VAT</span>
+                    </div>
+                    <div className="mt-2 font-mono font-bold text-navy-950 text-sm">
+                      £{calcAutoNetRetail.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 6: 20% VAT */}
+                  <div className="p-3 rounded-xl bg-white border border-sand-300 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-wider block">Step 6</span>
+                      <span className="text-[11px] font-bold text-navy-800 line-clamp-1">+ 20% UK VAT</span>
+                      <span className="text-[10px] text-navy-500 block">HMRC Statutory</span>
+                    </div>
+                    <div className="mt-2 font-mono font-bold text-amber-700 text-sm">
+                      +£{(calcAutoRetailIncVat - calcAutoNetRetail).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Step 7: Customer Retail */}
+                  <div className="p-3 rounded-xl bg-navy-950 text-sand-50 border border-navy-900 flex flex-col justify-between shadow-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-brass-400 uppercase tracking-wider block">Step 7</span>
+                      <span className="text-[11px] font-bold text-white line-clamp-1">= Formula Price</span>
+                      <span className="text-[10px] text-sand-300 block">Customer (Inc VAT)</span>
+                    </div>
+                    <div className="mt-2 font-mono font-black text-brass-300 text-sm">
+                      £{calcAutoRetailIncVat.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Live Financial KPIs */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 rounded-xl bg-white border border-sand-300">
+                  <span className="text-[11px] font-semibold text-navy-600 block">Gross Profit / Unit</span>
+                  <div className="mt-1 font-mono font-bold text-lg text-navy-950">
+                    £{calcGrossProfit.toFixed(2)}
+                  </div>
+                  <span className="text-[10px] text-navy-500">Retail price minus trade cost</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-sand-300">
+                  <span className="text-[11px] font-semibold text-navy-600 block">Gross Margin %</span>
+                  <div className="mt-1 font-mono font-bold text-lg text-emerald-700">
+                    {calcGrossMarginPercent}%
+                  </div>
+                  <span className="text-[10px] text-navy-500">Gross profit on retail price</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-sand-300">
+                  <span className="text-[11px] font-semibold text-navy-600 block">Net Commercial Profit</span>
+                  <div className="mt-1 font-mono font-bold text-lg text-navy-950">
+                    £{calcNetCommercialProfit.toFixed(2)}
+                  </div>
+                  <span className="text-[10px] text-navy-500">After deducting 20% VAT &amp; freight</span>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white border border-sand-300">
+                  <span className="text-[11px] font-semibold text-navy-600 block">Anchor High Street RRP</span>
+                  <div className="mt-1 font-mono font-bold text-lg text-navy-500 line-through">
+                    £{calcCompareAtVal.toFixed(2)}
+                  </div>
+                  <span className="text-[10px] text-navy-500">25% strike-through anchor</span>
+                </div>
+              </div>
+
+              {/* Section 4: Supplier Product Sourcing & Live Direct Link */}
+              {(() => {
+                const supplier = getSupplierInfo(calcProduct);
+                return (
+                  <div className="p-5 rounded-2xl bg-gradient-to-r from-sand-100 via-sand-200/60 to-sand-100 border border-sand-300 shadow-xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-navy-900 text-brass-400 flex items-center justify-center shrink-0 shadow-xs">
+                          <Building className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-display font-bold text-navy-950 text-sm">
+                              {supplier.name}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-navy-950 text-brass-400 text-[10px] font-bold">
+                              {supplier.badge}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5 text-xs text-navy-600">
+                            <span>Supplier SKU: <strong className="text-navy-900 font-mono">{supplier.sku}</strong></span>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              {supplier.isDirect ? "Direct Verified Link" : "Catalog Search Fallback"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 1-Click Button directly to Supplier Product Page */}
+                      <a
+                        href={supplier.productUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer group"
+                      >
+                        <ExternalLink className="w-4 h-4 text-brass-400 group-hover:scale-110 transition-transform" />
+                        <span>Open Product on {supplier.name}</span>
+                      </a>
+                    </div>
+
+                    {/* URL Bar & Quick Helper */}
+                    <div className="p-3 rounded-xl bg-white/80 border border-sand-300 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 truncate text-navy-600 font-mono text-[11px]">
+                        <span className="text-navy-400 shrink-0">Source URL:</span>
+                        <a
+                          href={supplier.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="truncate text-brass-700 hover:text-brass-900 hover:underline"
+                        >
+                          {supplier.productUrl}
+                        </a>
+                      </div>
+                      <a
+                        href={supplier.portalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 text-[11px] font-semibold text-navy-700 hover:text-navy-950 underline flex items-center gap-1"
+                      >
+                        <span>Supplier Portal</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+
+                    <p className="text-[11px] text-navy-500 leading-relaxed">
+                      💡 <strong>সাপ্লায়ার ডাইরেক্ট নেভিগেশন:</strong> উপরের বাটনে ক্লিক করলে এক ক্লিকে সরাসরি {supplier.name} ({supplier.domain}) এর মূল প্রোডাক্ট পেজ ওপেন হবে। সেখান থেকে আপনি সাপ্লায়ারের লাইভ স্টক লেভেল, পাইকারি অফার, ডাইমেনশন স্পেসিফিকেশন ও অ্যাসেম্বলি গাইড সরাসরি যাচাই করতে পারবেন।
+                    </p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-sand-100 border-t border-sand-300 flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-xs text-navy-600">
+                Current Storefront Price: <strong className="font-mono text-navy-950 font-bold">£{calcCurrentRetailVal.toFixed(2)}</strong> (Inc 20% VAT)
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCalcProduct(null)}
+                  className="px-4 py-2 rounded-xl bg-sand-200 hover:bg-sand-300 text-navy-800 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+                <Link
+                  href={`/admin/products/${calcProduct.id}/edit`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-sand-300 text-xs font-semibold text-navy-800 bg-white hover:bg-sand-100 transition-colors"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-navy-600" />
+                  <span>Edit Full Product</span>
+                </Link>
+                <button
+                  type="button"
+                  disabled={calcSaving}
+                  onClick={() => handleApplySuggestedPrice()}
+                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {calcSaving ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Apply Suggested Price &amp; Save</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
