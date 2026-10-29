@@ -4,6 +4,7 @@
  *
  * Automatically pulls new commits from GitHub when pushed to 'master' or 'main'
  * and triggers Phusion Passenger Node.js app restart via tmp/restart.txt.
+ * Records immutable deployment audit trail in MySQL admin_audit_logs & notifications.
  *
  * GitHub Webhook Setup:
  * 1. Payload URL: https://sanfurniture.com/deploy.php
@@ -13,6 +14,20 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
+
+if (!function_exists('cleanEnvVal')) {
+    function cleanEnvVal($val) {
+        $val = trim($val);
+        if (strlen($val) >= 2) {
+            $first = $val[0];
+            $last = $val[strlen($val) - 1];
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                return substr($val, 1, -1);
+            }
+        }
+        return $val;
+    }
+}
 
 // 1. Resolve Project Root
 $possibleRoots = [
@@ -33,26 +48,48 @@ if (!$projectRoot) {
     $projectRoot = is_dir('/home/sansoft/sanfurniture.com') ? '/home/sansoft/sanfurniture.com' : dirname(dirname(__DIR__));
 }
 
-// 2. Resolve Deployment Secret
+// 2. Resolve Deployment Secret & Database Credentials
 $secret = getenv('DEPLOY_SECRET') ?: (getenv('SAN_AUTH_SECRET') ?: 'san_furniture_auto_deploy_master_secret_2026');
+$dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+$dbPort = getenv('DB_PORT') ?: '3306';
+$dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'sansoft_san_furniture');
+$dbUser = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'root');
+$dbPass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
 
-// Check .env files
 $envFiles = [
     $projectRoot . '/.env',
+    $projectRoot . '/.env.production',
+    $projectRoot . '/.env.local',
+    $projectRoot . '/.env.production.local',
     $projectRoot . '/apps/storefront/.env',
-    __DIR__ . '/.env'
+    $projectRoot . '/apps/storefront/.env.production',
+    $projectRoot . '/apps/storefront/.env.local',
+    $projectRoot . '/apps/storefront/.env.production.local',
+    dirname($projectRoot) . '/.env',
+    __DIR__ . '/.env',
+    __DIR__ . '/../.env'
 ];
+
+$existingEnvFiles = [];
 foreach ($envFiles as $ef) {
     if (file_exists($ef) && is_readable($ef)) {
-        $lines = file($ef, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $existingEnvFiles[] = $ef;
+        $lines = @file($ef, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (!$lines) continue;
         foreach ($lines as $line) {
             $line = trim($line);
-            if (strpos($line, '#') === 0) continue;
-            if (strpos($line, 'DEPLOY_SECRET=') === 0) {
-                $secret = trim(substr($line, strlen('DEPLOY_SECRET=')));
-                break;
-            } elseif (strpos($line, 'SAN_AUTH_SECRET=') === 0 && $secret === 'san_furniture_auto_deploy_master_secret_2026') {
-                $secret = trim(substr($line, strlen('SAN_AUTH_SECRET=')));
+            if ($line === '' || strpos($line, '#') === 0) continue;
+            if (strpos($line, '=') !== false) {
+                list($k, $v) = explode('=', $line, 2);
+                $k = trim($k);
+                $v = cleanEnvVal($v);
+                if ($k === 'DEPLOY_SECRET') $secret = $v;
+                if ($k === 'SAN_AUTH_SECRET' && $secret === 'san_furniture_auto_deploy_master_secret_2026') $secret = $v;
+                if ($k === 'DB_HOST') $dbHost = $v;
+                if ($k === 'DB_PORT') $dbPort = $v;
+                if ($k === 'DB_DATABASE' || $k === 'DB_NAME') $dbName = $v;
+                if ($k === 'DB_USERNAME' || $k === 'DB_USER') $dbUser = $v;
+                if ($k === 'DB_PASSWORD') $dbPass = $v;
             }
         }
     }
@@ -67,6 +104,8 @@ if ($requestMethod === 'GET') {
     $isAuthenticated = ($queryToken === $secret || $headerToken === $secret);
     $action = $_GET['action'] ?? 'status';
 
+    $htaccessFile = $projectRoot . '/.htaccess';
+    $curHtaccess = file_exists($htaccessFile) ? (string)@file_get_contents($htaccessFile) : '';
     $hasRealPassenger = (bool)preg_match('/^\s*PassengerAppRoot\s+/m', $curHtaccess);
 
     // List all node binaries and environments
@@ -100,17 +139,62 @@ if ($requestMethod === 'GET') {
         "PassengerStartupFile server.js\n" .
         "# DO NOT REMOVE. CLOUDLINUX PASSENGER CONFIGURATION END\n\n";
 
-    if ($isAuthenticated && ($action === 'fix_htaccess' || !$hasRealPassenger)) {
-        if (!$hasRealPassenger) {
-            $updatedHtaccess = $passengerBlock . $curHtaccess;
-            @file_put_contents($htaccessFile, $updatedHtaccess);
-            $curHtaccess = $updatedHtaccess;
-            $hasRealPassenger = true;
+    if ($isAuthenticated && $action === 'fix_htaccess') {
+        try {
+            if (!$hasRealPassenger) {
+                $updatedHtaccess = $passengerBlock . $curHtaccess;
+                @file_put_contents($htaccessFile, $updatedHtaccess);
+                $curHtaccess = $updatedHtaccess;
+                $hasRealPassenger = true;
+            }
+
+            @mkdir($projectRoot . '/tmp', 0755, true);
+            @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted by fix_htaccess at " . date('c') . "\n");
+            @exec("passenger-config restart-app {$projectRoot} 2>&1");
+        } catch (Exception $e) {}
+    }
+
+    // Diagnostic mode to inspect DB and environment safely
+    if ($isAuthenticated && $action === 'diag') {
+        $dbConnected = false;
+        $dbError = null;
+        $hostUsed = null;
+        $auditLogsCount = 0;
+        $hostsToTry = array_unique([$dbHost, '127.0.0.1', 'localhost']);
+        foreach ($hostsToTry as $h) {
+            try {
+                $dsn = "mysql:host={$h};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+                $pdo = new PDO($dsn, $dbUser, $dbPass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_TIMEOUT => 3
+                ]);
+                $dbConnected = true;
+                $hostUsed = $h;
+                $cStmt = $pdo->query("SELECT COUNT(*) FROM admin_audit_logs");
+                $auditLogsCount = (int)$cStmt->fetchColumn();
+                break;
+            } catch (Exception $e) {
+                $dbError = $e->getMessage();
+            }
         }
 
-        @mkdir($projectRoot . '/tmp', 0755, true);
-        @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted by fix_htaccess at " . date('c') . "\n");
-        @exec("passenger-config restart-app {$projectRoot} 2>&1");
+        echo json_encode([
+            'status' => 'diagnostic',
+            'projectRoot' => $projectRoot,
+            'existingEnvFiles' => $existingEnvFiles,
+            'dbHost' => $dbHost,
+            'dbPort' => $dbPort,
+            'dbName' => $dbName,
+            'dbUser' => $dbUser,
+            'dbConnected' => $dbConnected,
+            'hostUsed' => $hostUsed,
+            'auditLogsCount' => $auditLogsCount,
+            'dbError' => $dbError,
+            'pdoAvailable' => extension_loaded('pdo_mysql'),
+            'curlAvailable' => extension_loaded('curl'),
+            'serverTime' => date('c')
+        ], JSON_PRETTY_PRINT);
+        exit;
     }
 
     echo json_encode([
@@ -288,60 +372,95 @@ if ($githubEvent === 'push') {
     @file_put_contents($projectRoot . '/deploy.log', $logMsg, FILE_APPEND);
 
     // Record immutable audit entry in MySQL admin_audit_logs & notifications
-    try {
-        $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
-        $dbPort = getenv('DB_PORT') ?: '3306';
-        $dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'san_furniture');
-        $dbUser = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'root');
-        $dbPass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
+    $auditSuccess = false;
+    $auditMethod = null;
+    $auditErrorMsg = null;
 
-        foreach ($envFiles as $ef) {
-            if (file_exists($ef) && is_readable($ef)) {
-                $lines = file($ef, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-                foreach ($lines as $line) {
-                    $line = trim($line);
-                    if (strpos($line, '#') === 0) continue;
-                    if (strpos($line, 'DB_HOST=') === 0) $dbHost = trim(substr($line, 8));
-                    if (strpos($line, 'DB_PORT=') === 0) $dbPort = trim(substr($line, 8));
-                    if (strpos($line, 'DB_DATABASE=') === 0 || strpos($line, 'DB_NAME=') === 0) $dbName = trim(substr($line, strpos($line, '=') + 1));
-                    if (strpos($line, 'DB_USERNAME=') === 0 || strpos($line, 'DB_USER=') === 0) $dbUser = trim(substr($line, strpos($line, '=') + 1));
-                    if (strpos($line, 'DB_PASSWORD=') === 0) $dbPass = trim(substr($line, 12));
-                }
+    $hostsToTry = array_unique([$dbHost, '127.0.0.1', 'localhost']);
+    $pdo = null;
+    foreach ($hostsToTry as $h) {
+        try {
+            $dsn = "mysql:host={$h};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+            $p = new PDO($dsn, $dbUser, $dbPass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 3
+            ]);
+            $pdo = $p;
+            break;
+        } catch (Exception $e) {
+            $auditErrorMsg = $e->getMessage();
+        }
+    }
+
+    $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'GitHub Webhook');
+    $detailsData = [
+        'branch' => $branch,
+        'commitSha' => substr($commitSha, 0, 7),
+        'fullCommitSha' => $commitSha,
+        'commitMessage' => $commitMsg,
+        'pusher' => $pusher,
+        'deliveryId' => $deliveryId,
+        'passengerRestart' => $restarted,
+        'deployStatus' => 'SUCCESS',
+        'timestamp' => date('c')
+    ];
+    $detailsJson = json_encode($detailsData);
+
+    if ($pdo) {
+        try {
+            $auditId = 'audit_deploy_' . time() . '_' . bin2hex(random_bytes(3));
+            $stmt = $pdo->prepare("INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at) VALUES (?, ?, 'GITHUB_AUTO_DEPLOY', 'git_repository', ?, ?, NOW())");
+            $stmt->execute([$auditId, "GitHub ({$pusher})", $detailsJson, $clientIp]);
+
+            $notifId = 'notif_deploy_' . time() . '_' . bin2hex(random_bytes(3));
+            $notifTitle = "Auto-Deployed branch '{$branch}' (" . substr($commitSha, 0, 7) . ")";
+            $notifMsg = "Pushed by {$pusher}: {$commitMsg}";
+            $notifMeta = json_encode(['branch' => $branch, 'commitSha' => substr($commitSha, 0, 7), 'pusher' => $pusher, 'auditId' => $auditId]);
+
+            $nStmt = $pdo->prepare("INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at) VALUES (?, 'admin', 'all', 'deploy', ?, ?, '/admin/audit', 0, ?, NOW())");
+            $nStmt->execute([$notifId, $notifTitle, $notifMsg, $notifMeta]);
+
+            $auditSuccess = true;
+            $auditMethod = 'direct_pdo';
+        } catch (Exception $dbErr) {
+            $auditErrorMsg = $dbErr->getMessage();
+        }
+    }
+
+    // Failsafe HTTP fallback to Next.js API if PDO direct insert failed or was unavailable
+    if (!$auditSuccess) {
+        $apiUrls = [
+            'http://127.0.0.1:3000/api/admin/audit',
+            'https://sanfurniture.com/api/admin/audit'
+        ];
+        foreach ($apiUrls as $apiUrl) {
+            $ch = curl_init($apiUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'X-Deploy-Secret: ' . $secret
+            ]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+                'actor' => "GitHub ({$pusher})",
+                'action' => 'GITHUB_AUTO_DEPLOY',
+                'resource' => 'git_repository',
+                'details' => $detailsData,
+                'ipAddress' => $clientIp
+            ]));
+            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            $resp = @curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            @curl_close($ch);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                $auditSuccess = true;
+                $auditMethod = 'http_api_fallback';
+                $auditErrorMsg = null;
+                break;
             }
         }
-
-        $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
-        $pdo = new PDO($dsn, $dbUser, $dbPass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 3
-        ]);
-
-        $auditId = 'audit_deploy_' . time() . '_' . bin2hex(random_bytes(3));
-        $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'GitHub Webhook');
-        $detailsJson = json_encode([
-            'branch' => $branch,
-            'commitSha' => substr($commitSha, 0, 7),
-            'fullCommitSha' => $commitSha,
-            'commitMessage' => $commitMsg,
-            'pusher' => $pusher,
-            'deliveryId' => $deliveryId,
-            'passengerRestart' => $restarted,
-            'deployStatus' => 'SUCCESS',
-            'timestamp' => date('c')
-        ]);
-
-        $stmt = $pdo->prepare("INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at) VALUES (?, ?, 'GITHUB_AUTO_DEPLOY', 'git_repository', ?, ?, NOW())");
-        $stmt->execute([$auditId, "GitHub ({$pusher})", $detailsJson, $clientIp]);
-
-        $notifId = 'notif_deploy_' . time() . '_' . bin2hex(random_bytes(3));
-        $notifTitle = "Auto-Deployed branch '{$branch}' (" . substr($commitSha, 0, 7) . ")";
-        $notifMsg = "Pushed by {$pusher}: {$commitMsg}";
-        $notifMeta = json_encode(['branch' => $branch, 'commitSha' => substr($commitSha, 0, 7), 'pusher' => $pusher, 'auditId' => $auditId]);
-
-        $nStmt = $pdo->prepare("INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at) VALUES (?, 'admin', 'all', 'deploy', ?, ?, '/admin/audit', 0, ?, NOW())");
-        $nStmt->execute([$notifId, $notifTitle, $notifMsg, $notifMeta]);
-    } catch (Exception $dbErr) {
-        // Continue gracefully if database is temporarily unavailable during git reset
     }
 
     echo json_encode([
@@ -352,6 +471,9 @@ if ($githubEvent === 'push') {
         'pusher' => $pusher,
         'deliveryId' => $deliveryId,
         'passengerRestartTriggered' => $restarted,
+        'auditLogged' => $auditSuccess,
+        'auditMethod' => $auditMethod,
+        'auditError' => $auditErrorMsg,
         'output' => array_slice($output, 0, 5),
         'timestamp' => date('c')
     ], JSON_PRETTY_PRINT);
