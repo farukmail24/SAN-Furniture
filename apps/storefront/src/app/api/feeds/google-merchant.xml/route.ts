@@ -12,6 +12,10 @@ const CATEGORY_MAP: Record<string, string> = {
 
 function escapeXml(unsafe: any): string {
   return String(unsafe ?? "")
+    // Strip XML 1.0 disallowed control characters (Char value 8 backspace, etc.)
+    // Allowed XML 1.0: 0x9 (tab), 0xA (LF), 0xD (CR), 0x20-0xD7FF, 0xE000-0xFFFD
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]/g, "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

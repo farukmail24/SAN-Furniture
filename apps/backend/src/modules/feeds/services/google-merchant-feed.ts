@@ -39,10 +39,12 @@ export class GoogleMerchantFeedGenerator {
   }
 
   /**
-   * Escape XML special characters
+   * Escape XML special characters and purge disallowed XML 1.0 control codes
    */
   private escapeXml(unsafe: string): string {
-    return unsafe
+    return String(unsafe ?? "")
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]/g, "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
