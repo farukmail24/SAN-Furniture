@@ -62,7 +62,7 @@ export async function POST(request: Request) {
           success: true,
           importedCount: batchRes.importedCount,
           failedCount: batchRes.failedCount,
-          message: `Successfully batch-imported ${batchRes.importedCount} FTG products into catalog!`,
+          message: `Successfully batch-imported ${batchRes.importedCount} products into catalog!`,
           products: batchRes.products,
           errors: batchRes.errors,
         },

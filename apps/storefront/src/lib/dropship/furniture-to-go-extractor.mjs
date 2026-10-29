@@ -319,6 +319,26 @@ export class FurnitureToGoExtractorEngine {
   }
 
   /**
+   * Clean and sanitize product titles to ensure premium SAN Furniture white-label branding
+   * Strips supplier acronyms (FTG, Furniture To Go) from title prefix, suffix, or standalone words.
+   */
+  cleanProductTitle(rawTitle) {
+    if (!rawTitle || typeof rawTitle !== "string") return "";
+
+    let clean = rawTitle.trim();
+    // 1. Remove leading FTG or Furniture To Go (e.g. "FTG ", "FTG - ", "Furniture To Go - ")
+    clean = clean.replace(/^(?:FTG|Furniture\s+To\s+Go)[\s\-–—:]+/i, "").trim();
+    // 2. Remove trailing FTG or Furniture To Go (e.g. " - FTG", " | Furniture To Go")
+    clean = clean.replace(/[\s\-–—|]+(?:FTG|Furniture\s+To\s+Go)$/i, "").trim();
+    // 3. Remove standalone occurrences of "FTG" as a separate word
+    clean = clean.replace(/\bFTG\b\s*/gi, "").trim();
+    // 4. Normalize multiple spaces
+    clean = clean.replace(/\s+/g, " ");
+
+    return clean;
+  }
+
+  /**
    * Extract live product attributes directly from Furniture To Go URL
    */
   async extractProductData(url) {
@@ -348,10 +368,10 @@ export class FurnitureToGoExtractorEngine {
       }
 
       if (productSchema && productSchema.name) {
-        const title = productSchema.name;
-        const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "ftg-product";
-        const sku = productSchema.sku || productSchema.productID || `FTG-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
-        const rawDesc = productSchema.description || matchedKnown?.description || "Authentic Scandinavian furniture distributed by Furniture To Go UK.";
+        const title = this.cleanProductTitle(productSchema.name);
+        const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "product";
+        const sku = productSchema.sku || productSchema.productID || `SAN-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+        const rawDesc = productSchema.description || matchedKnown?.description || "Authentic Scandinavian furniture distributed via UK logistics hub.";
         const description = this.cleanHtmlDescription(rawDesc);
         const dims = this.parseDimensions(html + " " + description);
 
@@ -408,7 +428,7 @@ export class FurnitureToGoExtractorEngine {
         }
 
         return {
-          title: title.trim(),
+          title: this.cleanProductTitle(title),
           sku: String(sku).trim(),
           priceGbp: rawPriceGbp,
           rawPriceGbp,
@@ -429,7 +449,7 @@ export class FurnitureToGoExtractorEngine {
     // Fallback to verified FTG catalog database or synthetic authentic extraction
     if (matchedKnown) {
       return {
-        title: matchedKnown.title,
+        title: this.cleanProductTitle(matchedKnown.title),
         sku: matchedKnown.sku,
         priceGbp: matchedKnown.trade_price_gbp,
         rawPriceGbp: matchedKnown.trade_price_gbp,
@@ -450,21 +470,25 @@ export class FurnitureToGoExtractorEngine {
     }
 
     // Dynamic extraction from slug
-    const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "ftg-danish-furniture";
-    const title = slug
+    const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "scandinavian-furniture";
+    const rawTitle = slug
       .replace(/-/g, " ")
+      .replace(/\bin\b/gi, "in")
+      .replace(/\bwith\b/gi, "with")
+      .replace(/\band\b/gi, "and")
       .replace(/\b\w/g, (c) => c.toUpperCase());
+    const title = this.cleanProductTitle(rawTitle);
 
     return {
-      title: `FTG ${title}`,
-      sku: `FTG-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+      title,
+      sku: `SAN-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`,
       priceGbp: 149.00,
       rawPriceGbp: 149.00,
       rangeName: "Scandinavian Range",
       finishColor: "Danish Oak & White",
       material: "European Certified Engineered Hardwood",
       isOutOfStock: false,
-      description: "High quality Scandinavian flat-pack furniture manufactured to European standards. Distributed via Furniture To Go Wiltshire logistics hub.",
+      description: "High quality Scandinavian flat-pack furniture manufactured to European standards. Distributed via UK logistics hub.",
       dimensions: { width_cm: 110, height_cm: 85, depth_cm: 45 },
       weightKg: 32,
       deliveryTier: "standard_parcel",
@@ -638,10 +662,11 @@ export class FurnitureToGoExtractorEngine {
 
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, 40);
 
+    const cleanTitle = this.cleanProductTitle(liveData.title);
     const rawFtgSku = liveData.sku.replace(/^(FTG-|SAN-)/i, "");
     const productSku = `SAN-${rawFtgSku}`;
     const cleanDesc = this.cleanHtmlDescription(liveData.description);
-    const handle = liveData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const handle = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
     const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
 
@@ -657,7 +682,10 @@ export class FurnitureToGoExtractorEngine {
         thumbnail_url, images_json, variants_json, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 20.00, ?, ?, ?, '[]', NOW(), NOW())
       ON DUPLICATE KEY UPDATE
+        title = VALUES(title),
+        handle = VALUES(handle),
         sku = VALUES(sku),
+        subtitle = VALUES(subtitle),
         price_pennies = VALUES(price_pennies),
         compare_at_price_pennies = VALUES(compare_at_price_pennies),
         images_json = VALUES(images_json),
@@ -665,10 +693,10 @@ export class FurnitureToGoExtractorEngine {
         updated_at = NOW()
     `, [
       productId,
-      liveData.title,
+      cleanTitle,
       handle,
       productSku,
-      `${liveData.rangeName} - Danish Design by Furniture To Go`,
+      `${liveData.rangeName} - Contemporary Scandinavian Design`,
       cleanDesc,
       categoryId,
       liveData.isOutOfStock ? "out_of_stock" : "published",
@@ -744,7 +772,7 @@ export class FurnitureToGoExtractorEngine {
 
     return {
       productId,
-      title: liveData.title,
+      title: cleanTitle,
       handle,
       sku: productSku,
       supplierSku: liveData.sku,
@@ -785,6 +813,30 @@ export class FurnitureToGoExtractorEngine {
    * Synchronize all tracked Furniture To Go products in MySQL
    */
   async syncTrackedCatalog(pool, options = { triggerType: "manual" }) {
+    // 0. Auto-repair any existing products with legacy "FTG " prefix in title or handle
+    let repairedTitlesCount = 0;
+    try {
+      const [legacyFtgRows] = await pool.query(`
+        SELECT id, title, handle FROM products 
+        WHERE title LIKE 'FTG %' OR title LIKE 'FTG-%' OR title LIKE 'Furniture To Go %'
+      `);
+      if (Array.isArray(legacyFtgRows) && legacyFtgRows.length > 0) {
+        for (const lp of legacyFtgRows) {
+          const newTitle = this.cleanProductTitle(lp.title);
+          if (newTitle && newTitle !== lp.title) {
+            const newHandle = newTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+            await pool.query(
+              `UPDATE products SET title = ?, handle = ?, updated_at = NOW() WHERE id = ?`,
+              [newTitle, newHandle, lp.id]
+            );
+            repairedTitlesCount++;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("[FTG Title Cleanup Warning]:", e.message);
+    }
+
     const [rows] = await pool.query(`
       SELECT fi.id as feed_item_id, fi.supplier_sku, fi.source_url, fi.cost_price_pennies,
              fi.shipping_cost_pennies, fi.markup_percentage, fi.retail_price_pennies,
@@ -797,6 +849,7 @@ export class FurnitureToGoExtractorEngine {
     let itemsScanned = 0;
     let pricesUpdated = 0;
     let stockUpdated = 0;
+    let manualsUpdated = 0;
 
     for (const item of rows) {
       itemsScanned++;
@@ -807,6 +860,15 @@ export class FurnitureToGoExtractorEngine {
         const liveData = await this.extractProductData(item.source_url);
         const newCostPennies = Math.round(liveData.priceGbp * 100);
         const newStatus = liveData.isOutOfStock ? "out_of_stock" : "published";
+        const cleanTitle = this.cleanProductTitle(liveData.title);
+
+        if (cleanTitle && cleanTitle !== item.title) {
+          const newHandle = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+          await pool.query(
+            `UPDATE products SET title = ?, handle = ?, updated_at = NOW() WHERE id = ?`,
+            [cleanTitle, newHandle, item.product_id]
+          );
+        }
 
         if (newCostPennies > 0 && Math.abs(newCostPennies - item.cost_price_pennies) > 0) {
           const carriage = item.shipping_cost_pennies || 0;
@@ -839,6 +901,7 @@ export class FurnitureToGoExtractorEngine {
             `UPDATE furniture_specs SET assembly_instructions_url = ?, assembly_required = 1 WHERE product_id = ?`,
             [liveData.assemblyInstructionsUrl, item.product_id]
           );
+          manualsUpdated++;
         }
       } catch {}
     }
@@ -861,7 +924,8 @@ export class FurnitureToGoExtractorEngine {
       itemsScanned,
       pricesUpdated,
       stockUpdated,
-      manualsUpdated
+      manualsUpdated,
+      repairedTitlesCount
     };
   }
 }

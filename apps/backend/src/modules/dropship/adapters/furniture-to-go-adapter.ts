@@ -62,7 +62,9 @@ export class FurnitureToGoDropshipAdapter extends BaseSupplierAdapter {
           items.push({
             supplier_id: this.supplierId,
             supplier_sku: String(sku),
-            product_title: row.product_title || `FTG ${row.range_name || "Danish"} - ${sku}`,
+            product_title: row.product_title
+              ? String(row.product_title).replace(/^(?:FTG|Furniture\s+To\s+Go)[\s\-–—:]+/i, "").trim()
+              : `${row.range_name || "Scandinavian"} - ${sku}`,
             cost_price_pennies: costPricePennies,
             carriage_cost_pennies: deliveryTier === "two_man_white_glove" ? 4000 : 1500,
             stock_level: parseInt(String(row.stock_quantity ?? row.stock ?? "0"), 10),

@@ -3276,7 +3276,10 @@ const server = http.createServer(async (req, res) => {
           updatedCount++;
         } else {
           const prodId = `prod_${supplierCode.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-          const handle = (it.product_title || `FTG ${it.supplier_sku}`)
+          const cleanTitle = (it.product_title || it.supplier_sku)
+            .replace(/^(?:FTG|Furniture\s+To\s+Go)[\s\-–—:]+/i, "")
+            .trim();
+          const handle = cleanTitle
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, "-")
             .replace(/(^-|-$)/g, "");
