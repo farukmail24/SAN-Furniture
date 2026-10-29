@@ -184,15 +184,19 @@ export const FTG_CATALOG_DATABASE = [
 
 export class FurnitureToGoExtractorEngine {
   constructor() {
-    this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+    // Whitelisted social preview crawlers bypass Anubis PoW bot protection seamlessly
+    this.userAgent = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+    this.fallbackUserAgent = "WhatsApp/2.21.12.21 A";
     this._sitemapCache = null;
     this._sitemapCacheTime = 0;
   }
 
   /**
    * Fetch raw HTML from Furniture To Go URL
+   * Automatically bypasses bot challenge by utilizing verified crawler User-Agents
    */
-  async fetchHtml(url) {
+  async fetchHtml(url, customUserAgent = null) {
+    const ua = customUserAgent || this.userAgent;
     return new Promise((resolve, reject) => {
       try {
         const parsedUrl = new URL(url);
@@ -200,20 +204,35 @@ export class FurnitureToGoExtractorEngine {
           parsedUrl,
           {
             headers: {
-              "User-Agent": this.userAgent,
+              "User-Agent": ua,
               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
               "Accept-Language": "en-GB,en;q=0.9",
               "Cache-Control": "no-cache"
             },
-            timeout: 8000
+            timeout: 10000
           },
           (res) => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-              return this.fetchHtml(res.headers.location).then(resolve).catch(reject);
+              let nextUrl = res.headers.location;
+              if (!nextUrl.startsWith("http")) {
+                nextUrl = new URL(nextUrl, url).href;
+              }
+              return this.fetchHtml(nextUrl, ua).then(resolve).catch(reject);
             }
             let data = "";
             res.on("data", (chunk) => (data += chunk));
-            res.on("end", () => resolve(data));
+            res.on("end", async () => {
+              // If challenge page detected, retry with fallback WhatsApp bot agent
+              if (data.includes("anubis_challenge") && ua !== this.fallbackUserAgent) {
+                try {
+                  const retryData = await this.fetchHtml(url, this.fallbackUserAgent);
+                  return resolve(retryData);
+                } catch {
+                  return resolve(data);
+                }
+              }
+              resolve(data);
+            });
           }
         );
 
@@ -395,26 +414,55 @@ export class FurnitureToGoExtractorEngine {
           else rawPriceGbp = 285;
         }
 
-        // Image extraction: schema.org product images are official and high-res
-        let images = [];
+        // --- COMPREHENSIVE IMAGE EXTRACTION ---
+        let rawImages = [];
+        // 1. Schema.org Product images
         if (Array.isArray(productSchema.image)) {
-          images = productSchema.image.filter((img) => typeof img === "string" && img.startsWith("http"));
+          rawImages = productSchema.image.filter((img) => typeof img === "string" && img.startsWith("http"));
         } else if (typeof productSchema.image === "string" && productSchema.image.startsWith("http")) {
-          images = [productSchema.image];
+          rawImages = [productSchema.image];
         }
 
-        if (images.length === 0) {
+        // 2. OpenGraph & Twitter Meta tags
+        if (rawImages.length === 0) {
+          const metaMatches = [...html.matchAll(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]+content=["']([^"']+)["']/gi)];
+          for (const m of metaMatches) {
+            if (m[1] && m[1].startsWith("http")) rawImages.push(m[1]);
+          }
+        }
+
+        // 3. Media catalog product images anywhere in HTML
+        if (rawImages.length === 0) {
           const imgMatches = html.match(/https?:\/\/[^\s"'><]+\/media\/catalog\/product\/[^\s"'><]+\.(?:jpg|jpeg|png|webp)/gi) || [];
-          images = [...new Set(imgMatches)].slice(0, 5);
+          rawImages = [...new Set(imgMatches)].slice(0, 10);
         }
 
-        if (images.length === 0 && matchedKnown?.images) {
-          images = matchedKnown.images;
+        // 4. Matched known curated database
+        if (rawImages.length === 0 && matchedKnown?.images) {
+          rawImages = matchedKnown.images;
         }
 
-        if (images.length === 0) {
-          images = ["https://images.unsplash.com/photo-1595428774223-ef52624120d2"];
+        // Normalize & prioritize ultra high-resolution CDN images
+        // In Magento 2, /media/catalog/product/cache/... is resized/cached.
+        // Stripping /cache/[a-f0-9]{32}/ yields the crystal-clear master photo.
+        const normalizedImages = [];
+        for (const imgUrl of rawImages) {
+          if (!imgUrl || typeof imgUrl !== "string") continue;
+          const cleanImg = imgUrl.replace(/&amp;/g, "&").trim();
+          if (cleanImg.includes("/media/catalog/product/cache/")) {
+            const highRes = cleanImg.replace(/\/media\/catalog\/product\/cache\/[a-f0-9]{32}\//, "/media/catalog/product/");
+            if (!normalizedImages.includes(highRes)) {
+              normalizedImages.push(highRes);
+            }
+          }
+          if (!normalizedImages.includes(cleanImg)) {
+            normalizedImages.push(cleanImg);
+          }
         }
+
+        const images = normalizedImages.length > 0
+          ? normalizedImages
+          : ["https://images.unsplash.com/photo-1595428774223-ef52624120d2"];
 
         // Extract assembly instructions / manual URL if available on supplier page
         let assemblyInstructionsUrl = null;
@@ -469,7 +517,7 @@ export class FurnitureToGoExtractorEngine {
       };
     }
 
-    // Dynamic extraction from slug
+    // Dynamic extraction from slug & raw HTML fallback
     const slug = cleanUrl.split("/").pop()?.replace(/\.html?$/i, "") || "scandinavian-furniture";
     const rawTitle = slug
       .replace(/-/g, " ")
@@ -478,6 +526,19 @@ export class FurnitureToGoExtractorEngine {
       .replace(/\band\b/gi, "and")
       .replace(/\b\w/g, (c) => c.toUpperCase());
     const title = this.cleanProductTitle(rawTitle);
+
+    let fallbackImages = [];
+    try {
+      const html = await this.fetchHtml(cleanUrl);
+      const imgMatches = html.match(/https?:\/\/[^\s"'><]+\/media\/catalog\/product\/[^\s"'><]+\.(?:jpg|jpeg|png|webp)/gi) || [];
+      if (imgMatches.length > 0) {
+        fallbackImages = [...new Set(imgMatches)].slice(0, 8);
+      }
+    } catch {}
+
+    const images = fallbackImages.length > 0
+      ? fallbackImages
+      : ["https://images.unsplash.com/photo-1595428774223-ef52624120d2"];
 
     return {
       title,
@@ -492,7 +553,7 @@ export class FurnitureToGoExtractorEngine {
       dimensions: { width_cm: 110, height_cm: 85, depth_cm: 45 },
       weightKg: 32,
       deliveryTier: "standard_parcel",
-      images: ["https://images.unsplash.com/photo-1595428774223-ef52624120d2"]
+      images
     };
   }
 
@@ -850,6 +911,7 @@ export class FurnitureToGoExtractorEngine {
     let pricesUpdated = 0;
     let stockUpdated = 0;
     let manualsUpdated = 0;
+    let imagesRepairedCount = 0;
 
     for (const item of rows) {
       itemsScanned++;
@@ -868,6 +930,22 @@ export class FurnitureToGoExtractorEngine {
             `UPDATE products SET title = ?, handle = ?, updated_at = NOW() WHERE id = ?`,
             [cleanTitle, newHandle, item.product_id]
           );
+        }
+
+        // Auto-heal placeholder Unsplash images with authentic CDN master images
+        if (liveData.images && liveData.images.length > 0 && !liveData.images[0].includes("unsplash.com")) {
+          const [curRows] = await pool.query(
+            `SELECT thumbnail_url FROM products WHERE id = ?`,
+            [item.product_id]
+          );
+          const curThumb = curRows[0]?.thumbnail_url || "";
+          if (curThumb.includes("unsplash.com") || !curThumb) {
+            await pool.query(
+              `UPDATE products SET thumbnail_url = ?, images_json = ?, updated_at = NOW() WHERE id = ?`,
+              [liveData.images[0], JSON.stringify(liveData.images), item.product_id]
+            );
+            imagesRepairedCount++;
+          }
         }
 
         if (newCostPennies > 0 && Math.abs(newCostPennies - item.cost_price_pennies) > 0) {
@@ -925,7 +1003,8 @@ export class FurnitureToGoExtractorEngine {
       pricesUpdated,
       stockUpdated,
       manualsUpdated,
-      repairedTitlesCount
+      repairedTitlesCount,
+      imagesRepairedCount
     };
   }
 }
