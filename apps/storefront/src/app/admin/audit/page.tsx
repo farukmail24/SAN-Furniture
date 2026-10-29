@@ -12,7 +12,11 @@ import {
   Terminal,
   Clock,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  GitBranch,
+  GitCommit,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr } from "@/lib/api-cache";
@@ -66,6 +70,12 @@ export default function AdminAuditPage() {
   });
 
   const getActionBadgeColor = (action: string) => {
+    if (action.includes("DEPLOY") || action.includes("GITHUB")) {
+      if (action.includes("FAILED") || action.includes("ERR")) {
+        return "bg-rose-100 text-rose-800 border-rose-200 font-bold";
+      }
+      return "bg-indigo-100 text-indigo-800 border-indigo-200 font-bold";
+    }
     if (action.includes("CREATE")) return "bg-emerald-100 text-emerald-800 border-emerald-200";
     if (action.includes("DELETE") || action.includes("BAN")) return "bg-rose-100 text-rose-800 border-rose-200";
     if (action.includes("UPDATE")) return "bg-blue-100 text-blue-800 border-blue-200";
@@ -158,8 +168,14 @@ export default function AdminAuditPage() {
 
                         <td className="py-3.5 px-4 text-xs font-medium text-[#00072D]">
                           <div className="flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-[#C89B3C]" />
-                            <span>{log.actor}</span>
+                            {log.actor.toLowerCase().includes("github") ? (
+                              <GitBranch className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                            ) : (
+                              <User className="w-3.5 h-3.5 text-[#C89B3C] shrink-0" />
+                            )}
+                            <span className={log.actor.toLowerCase().includes("github") ? "text-indigo-950 font-bold" : ""}>
+                              {log.actor}
+                            </span>
                           </div>
                         </td>
 
@@ -198,20 +214,68 @@ export default function AdminAuditPage() {
                       {isExpanded && (
                         <tr className="bg-[#FAF8F5]/80">
                           <td colSpan={6} className="p-4 border-b border-[#E8E2D5]">
-                            <div className="text-xs font-mono text-[#00072D] space-y-1">
-                              <div className="text-[#4F6D7A] font-semibold mb-1">
-                                Event Payload (Raw JSON):
-                              </div>
-                              <pre className="p-3 bg-white border border-[#E8E2D5] rounded-lg overflow-x-auto text-[11px] text-[#00072D]">
-                                {(() => {
-                                  try {
-                                    return JSON.stringify(JSON.parse(log.details_json || "{}"), null, 2);
-                                  } catch {
-                                    return log.details_json || "No payload details recorded";
-                                  }
-                                })()}
-                              </pre>
-                            </div>
+                            {(() => {
+                              let parsed: any = null;
+                              try {
+                                parsed = typeof log.details_json === "string" ? JSON.parse(log.details_json) : log.details_json;
+                              } catch {}
+
+                              const isDeploy = log.action === "GITHUB_AUTO_DEPLOY" || log.action === "GITHUB_DEPLOY_FAILED";
+
+                              return (
+                                <div className="space-y-3">
+                                  {isDeploy && parsed && (
+                                    <div className="p-3.5 rounded-lg border border-indigo-200 bg-indigo-50/60 text-xs">
+                                      <div className="flex items-center gap-2 font-bold text-indigo-950 mb-2">
+                                        <GitCommit className="w-4 h-4 text-indigo-600" />
+                                        <span>GitHub Deployment Specification</span>
+                                      </div>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 text-[11px]">
+                                        <div className="bg-white/80 p-2 rounded border border-indigo-100">
+                                          <div className="text-indigo-600 uppercase font-bold text-[9px]">Branch</div>
+                                          <div className="font-mono font-bold text-navy-950">{parsed.branch || "master"}</div>
+                                        </div>
+                                        <div className="bg-white/80 p-2 rounded border border-indigo-100">
+                                          <div className="text-indigo-600 uppercase font-bold text-[9px]">Commit SHA</div>
+                                          <div className="font-mono font-bold text-navy-950">{parsed.commitSha || "HEAD"}</div>
+                                        </div>
+                                        <div className="bg-white/80 p-2 rounded border border-indigo-100">
+                                          <div className="text-indigo-600 uppercase font-bold text-[9px]">Pushed By</div>
+                                          <div className="font-bold text-navy-950">{parsed.pusher || "GitHub"}</div>
+                                        </div>
+                                        <div className="bg-white/80 p-2 rounded border border-indigo-100">
+                                          <div className="text-indigo-600 uppercase font-bold text-[9px]">Deploy Status</div>
+                                          <div className={`font-bold ${parsed.deployStatus === "FAILED" ? "text-rose-600" : "text-emerald-700"}`}>
+                                            {parsed.deployStatus || "SUCCESS"}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {parsed.commitMessage && (
+                                        <div className="mt-2 bg-white/80 p-2 rounded border border-indigo-100 text-xs text-navy-900">
+                                          <span className="font-bold text-indigo-950 mr-1.5">Commit Message:</span>
+                                          <span>{parsed.commitMessage}</span>
+                                        </div>
+                                      )}
+                                      {parsed.error && (
+                                        <div className="mt-2 bg-rose-50 p-2 rounded border border-rose-200 text-xs text-rose-800">
+                                          <span className="font-bold mr-1.5">Error Detail:</span>
+                                          <span>{parsed.error}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div className="text-xs font-mono text-[#00072D] space-y-1">
+                                    <div className="text-[#4F6D7A] font-semibold mb-1">
+                                      Event Payload (Raw JSON):
+                                    </div>
+                                    <pre className="p-3 bg-white border border-[#E8E2D5] rounded-lg overflow-x-auto text-[11px] text-[#00072D]">
+                                      {parsed ? JSON.stringify(parsed, null, 2) : (log.details_json || "No payload details recorded")}
+                                    </pre>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </td>
                         </tr>
                       )}

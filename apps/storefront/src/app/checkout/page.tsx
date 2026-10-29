@@ -190,6 +190,8 @@ export default function CheckoutPage() {
       if (rawUser) {
         const u = JSON.parse(rawUser);
         setLoggedInCustomer(u);
+        setCreateAccount(false);
+        setAccountPassword("");
         if (u.firstName) setAccountFirstName(u.firstName);
         if (u.lastName) setAccountLastName(u.lastName);
         if (u.username) setAccountUsername(u.username);
@@ -213,11 +215,45 @@ export default function CheckoutPage() {
             setBillingCompany(def.company || "");
           }
         }
+      } else {
+        // Also check server auth session if localStorage is empty
+        fetch(apiUrl("/api/customer/auth/me"))
+          .then((r) => r.json())
+          .then((data) => {
+            if (data?.success && data?.customer) {
+              const u = data.customer;
+              setLoggedInCustomer(u);
+              setCreateAccount(false);
+              setAccountPassword("");
+              try {
+                localStorage.setItem("san_customer_user", JSON.stringify(u));
+              } catch {}
+              if (u.firstName) setAccountFirstName(u.firstName);
+              if (u.lastName) setAccountLastName(u.lastName);
+              if (u.username) setAccountUsername(u.username);
+              if (u.email) setAccountEmail(u.email);
+              if (u.phone) setAccountPhone(u.phone);
+
+              setBillingFirstName(u.firstName || "");
+              setBillingLastName(u.lastName || "");
+              setBillingEmail(u.email || "");
+              setBillingPhone(u.phone || "");
+            }
+          })
+          .catch(() => {});
       }
     } catch {
       // ignore
     }
   }, []);
+
+  // Ensure createAccount is always false when loggedInCustomer is active
+  useEffect(() => {
+    if (loggedInCustomer) {
+      setCreateAccount(false);
+      setAccountPassword("");
+    }
+  }, [loggedInCustomer]);
 
   // Fetch saved payment instruments dynamically for instant 1-click reuse
   useEffect(() => {
@@ -567,8 +603,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validate Password if account creation is requested
-    if (createAccount && (!accountPassword || accountPassword.length < 6)) {
+    // Validate Password if account creation is requested (guest customers only)
+    if (!loggedInCustomer && createAccount && (!accountPassword || accountPassword.length < 6)) {
       setSubmitError("Password must be at least 6 characters long to create your customer account.");
       return;
     }
@@ -776,8 +812,8 @@ export default function CheckoutPage() {
         },
         shippingAddress: resolvedShipping,
         billingAddress: resolvedBilling,
-        createAccount,
-        accountPassword: createAccount ? accountPassword : undefined,
+        createAccount: !loggedInCustomer && createAccount,
+        accountPassword: (!loggedInCustomer && createAccount) ? accountPassword : undefined,
         deliveryOption: {
           tier: currentDeliveryOption?.id || "del_opt_001",
           name: currentDeliveryOption?.name || "Free UK Mainland Delivery",
@@ -815,7 +851,10 @@ export default function CheckoutPage() {
 
       const orderData = await orderRes.json();
       if (!orderRes.ok || !orderData.success) {
-        throw new Error(orderData.error || orderData.details || "Failed to persist verified order in database.");
+        const errorMsg = orderData.details && orderData.details !== orderData.error
+          ? `${orderData.error || "Order placement failed"} (${orderData.details})`
+          : (orderData.error || orderData.details || "Failed to persist verified order in database.");
+        throw new Error(errorMsg);
       }
 
       // 4. Smooth Transition to Order Confirmation
@@ -1291,35 +1330,51 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-sand-200">
-                  <label className="flex items-center gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={createAccount}
-                      onChange={(e) => setCreateAccount(e.target.checked)}
-                      className="w-4 h-4 rounded text-navy-950 focus:ring-brass-500 border-sand-300"
-                    />
-                    <span className="text-xs font-semibold text-navy-900">
-                      Create a customer account for instant order tracking & faster reordering
-                    </span>
-                  </label>
-
-                  {createAccount && (
-                    <div className="mt-3 p-3 bg-sand-200/40 rounded-lg border border-sand-300 animate-fade-in">
-                      <label className="block text-xs font-semibold text-navy-900 mb-1">
-                        Create Account Password *
-                      </label>
-                      <input
-                        type="password"
-                        required={createAccount}
-                        value={accountPassword}
-                        onChange={(e) => setAccountPassword(e.target.value)}
-                        placeholder="Choose a secure password (min 6 characters)"
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
-                      />
+                {/* Account Creation Option (Shown ONLY for guest customers who are NOT logged in) */}
+                {loggedInCustomer ? (
+                  <div className="pt-2.5 border-t border-sand-200 flex items-center justify-between text-xs text-navy-700">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-forest-600 animate-pulse"></div>
+                      <span className="font-medium">
+                        Customer Account Active: <strong className="text-navy-950">{loggedInCustomer.email}</strong>
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
+                      <CheckCircle2 className="w-3 h-3 text-forest-600" />
+                      Profile Linked
+                    </span>
+                  </div>
+                ) : (
+                  <div className="pt-2 border-t border-sand-200">
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={createAccount}
+                        onChange={(e) => setCreateAccount(e.target.checked)}
+                        className="w-4 h-4 rounded text-navy-950 focus:ring-brass-500 border-sand-300"
+                      />
+                      <span className="text-xs font-semibold text-navy-900">
+                        Create a customer account for instant order tracking &amp; faster reordering
+                      </span>
+                    </label>
+
+                    {createAccount && (
+                      <div className="mt-3 p-3 bg-sand-200/40 rounded-lg border border-sand-300 animate-fade-in">
+                        <label className="block text-xs font-semibold text-navy-900 mb-1">
+                          Create Account Password *
+                        </label>
+                        <input
+                          type="password"
+                          required={createAccount}
+                          value={accountPassword}
+                          onChange={(e) => setAccountPassword(e.target.value)}
+                          placeholder="Choose a secure password (min 6 characters)"
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-white text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Step 2: Billing Address (can copy from Account) */}

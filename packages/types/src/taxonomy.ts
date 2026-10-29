@@ -183,7 +183,14 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      return t.includes("bookcase") || h.includes("bookcase") || t.includes("shelf") || t.includes("shelving");
+      return (
+        t.includes("bookcase") ||
+        h.includes("bookcase") ||
+        t.includes("shelf") ||
+        t.includes("shelving") ||
+        t.includes("display") ||
+        h.includes("display")
+      );
     }
   },
   {
@@ -194,7 +201,14 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      return t.includes("tv") || h.includes("tv") || t.includes("media") || t.includes("wall cabinet");
+      return (
+        t.includes("tv") ||
+        h.includes("tv") ||
+        t.includes("media") ||
+        t.includes("wall cabinet") ||
+        t.includes("entertainment") ||
+        h.includes("entertainment")
+      );
     }
   },
   {
@@ -216,7 +230,19 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      return (t.includes("cupboard") || h.includes("cupboard") || t.includes("shoe")) && !t.includes("tv");
+      return (
+        t.includes("cupboard") ||
+        h.includes("cupboard") ||
+        t.includes("shoe") ||
+        t.includes("cabinet") ||
+        h.includes("cabinet") ||
+        t.includes("trolley") ||
+        h.includes("trolley") ||
+        t.includes("chest") ||
+        h.includes("chest") ||
+        t.includes("dressing") ||
+        h.includes("dressing")
+      ) && !t.includes("tv");
     }
   },
   {

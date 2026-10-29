@@ -2056,10 +2056,12 @@ export default function AdminOrdersPage() {
               {/* Branding and Invoice Header */}
               <div className="flex items-start justify-between">
                 <div>
-                  <h2 className="font-display text-2xl font-bold text-navy-950 tracking-tight">
-                    SAN FURNITURE
-                  </h2>
-                  <p className="text-xs text-navy-600 mt-1">Contemporary Quality Home Living</p>
+                  <img
+                    src="/SanFurnitureLogo.png"
+                    alt="SAN Furniture"
+                    className="h-9 sm:h-11 w-auto object-contain mb-2 print:h-12"
+                  />
+                  <p className="text-xs text-navy-600">Contemporary Quality Home Living</p>
                   <div className="text-[11px] text-navy-500 mt-2 space-y-0.5">
                     <p>Online UK Furniture Retailer • Mainland Delivery</p>
                     <p>Customer Support: <strong className="text-navy-900">support@sanfurniture.com</strong></p>

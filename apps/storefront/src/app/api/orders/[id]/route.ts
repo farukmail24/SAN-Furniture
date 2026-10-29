@@ -47,7 +47,7 @@ export async function GET(
         );
       }
       const orderPostcode = (order.shipping_postcode || "").toUpperCase().replace(/\s+/g, "");
-      if (orderPostcode && !orderPostcode.startsWith(rawPostcode) && !rawPostcode.startsWith(orderPostcode)) {
+      if (orderPostcode && rawPostcode !== orderPostcode) {
         return NextResponse.json(
           {
             success: false,

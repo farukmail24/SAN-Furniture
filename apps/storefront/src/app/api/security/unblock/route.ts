@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Unauthorized: Administrator privileges required" }, { status: 401 });
+    }
+
     const { ip } = await request.json();
     if (!ip) {
       return NextResponse.json({ error: "IP address is required" }, { status: 400 });

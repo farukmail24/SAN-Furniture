@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
+import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -76,8 +77,13 @@ async function ensureAndSeedSectionsTable(pool: any): Promise<any[]> {
   return [];
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const pool = getDbPool();
     const rows = await ensureAndSeedSectionsTable(pool);
 

@@ -102,8 +102,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     quantity = 1,
     options?: { fabric?: string; finish?: string }
   ) => {
-    const fabric = options?.fabric ?? product.specs.material;
-    const finish = options?.finish ?? product.specs.color;
+    const fabric = options?.fabric ?? product?.specs?.material ?? "Standard Timber";
+    const finish = options?.finish ?? product?.specs?.color ?? "Standard Finish";
     const itemId = `${product.id}-${fabric}-${finish}`.replace(/\s+/g, "_").toLowerCase();
 
     setItems((prevItems) => {

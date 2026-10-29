@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,15 @@ export async function DELETE(
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to modify wishlist" },
+        { status: 401 }
+      );
+    }
+
     const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
 
     if (!id || !targetEmail) {

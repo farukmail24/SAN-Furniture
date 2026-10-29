@@ -2,7 +2,7 @@
  * SAN Furniture - MySQL & phpMyAdmin Database Generation & Seeding Script
  * Generates database/san_furniture.sql and imports it directly into XAMPP MySQL.
  */
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
 
@@ -282,10 +282,14 @@ INSERT INTO \`admin_audit_logs\` (\`id\`, \`actor\`, \`action\`, \`resource\`, \
 // 1. Create database/ directory
 mkdirSync(join(process.cwd(), "database"), { recursive: true });
 
-// 2. Write database/san_furniture.sql
+// 2. Write database/san_furniture.sql only if it does not exist or is empty
 const sqlPath = join(process.cwd(), "database", "san_furniture.sql");
-writeFileSync(sqlPath, sqlContent, "utf8");
-console.log(`[MySQL Generator] Created SQL file at: ${sqlPath}`);
+if (!existsSync(sqlPath) || statSync(sqlPath).size < 1000) {
+  writeFileSync(sqlPath, sqlContent, "utf8");
+  console.log(`[MySQL Generator] Created SQL file at: ${sqlPath}`);
+} else {
+  console.log(`[MySQL Generator] Preserving existing full canonical SQL dump at: ${sqlPath} (${(statSync(sqlPath).size / 1024).toFixed(1)} KB)`);
+}
 
 // 3. Execute via mysql.exe in XAMPP
 try {

@@ -10,8 +10,8 @@ const CATEGORY_MAP: Record<string, string> = {
   cat_office: "Home & Garden > Furniture > Office Furniture > Desks",
 };
 
-function escapeXml(unsafe: string): string {
-  return unsafe
+function escapeXml(unsafe: any): string {
+  return String(unsafe ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
@@ -48,9 +48,9 @@ export async function GET() {
         <g:service>UK 2-Man White Glove Delivery</g:service>
         <g:price>${shippingCost}</g:price>
       </g:shipping>
-      <g:material>${escapeXml(p.specs.material)}</g:material>
-      <g:color>${escapeXml(p.specs.color)}</g:color>
-      <g:custom_label_0>${escapeXml(p.specs.delivery_tier)}</g:custom_label_0>
+      <g:material>${escapeXml(p?.specs?.material)}</g:material>
+      <g:color>${escapeXml(p?.specs?.color)}</g:color>
+      <g:custom_label_0>${escapeXml(p?.specs?.delivery_tier)}</g:custom_label_0>
       <g:custom_label_1>UK Quality Checked</g:custom_label_1>
       <g:custom_label_2>${p.pricePennies >= 50000 ? "Free Delivery Eligible" : "Standard Freight"}</g:custom_label_2>
     </item>`;

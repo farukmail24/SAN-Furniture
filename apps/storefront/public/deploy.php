@@ -131,7 +131,7 @@ if ($requestMethod === 'GET') {
         'instructions' => [
             'payloadUrl' => 'https://sanfurniture.com/deploy.php',
             'contentType' => 'application/json',
-            'secret' => 'san_furniture_auto_deploy_master_secret_2026',
+            'secret' => $isAuthenticated ? 'Configured in .env' : '[PROTECTED]',
             'events' => 'Just the push event'
         ]
     ], JSON_PRETTY_PRINT);
@@ -286,6 +286,63 @@ if ($githubEvent === 'push') {
     // Append to deploy.log
     $logMsg = sprintf("[%s] Branch: %s | Commit: %s | By: %s | Msg: %s\n", date('c'), $branch, $commitSha, $pusher, $commitMsg);
     @file_put_contents($projectRoot . '/deploy.log', $logMsg, FILE_APPEND);
+
+    // Record immutable audit entry in MySQL admin_audit_logs & notifications
+    try {
+        $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
+        $dbPort = getenv('DB_PORT') ?: '3306';
+        $dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'san_furniture');
+        $dbUser = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'root');
+        $dbPass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
+
+        foreach ($envFiles as $ef) {
+            if (file_exists($ef) && is_readable($ef)) {
+                $lines = file($ef, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (strpos($line, '#') === 0) continue;
+                    if (strpos($line, 'DB_HOST=') === 0) $dbHost = trim(substr($line, 8));
+                    if (strpos($line, 'DB_PORT=') === 0) $dbPort = trim(substr($line, 8));
+                    if (strpos($line, 'DB_DATABASE=') === 0 || strpos($line, 'DB_NAME=') === 0) $dbName = trim(substr($line, strpos($line, '=') + 1));
+                    if (strpos($line, 'DB_USERNAME=') === 0 || strpos($line, 'DB_USER=') === 0) $dbUser = trim(substr($line, strpos($line, '=') + 1));
+                    if (strpos($line, 'DB_PASSWORD=') === 0) $dbPass = trim(substr($line, 12));
+                }
+            }
+        }
+
+        $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+        $pdo = new PDO($dsn, $dbUser, $dbPass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_TIMEOUT => 3
+        ]);
+
+        $auditId = 'audit_deploy_' . time() . '_' . bin2hex(random_bytes(3));
+        $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'GitHub Webhook');
+        $detailsJson = json_encode([
+            'branch' => $branch,
+            'commitSha' => substr($commitSha, 0, 7),
+            'fullCommitSha' => $commitSha,
+            'commitMessage' => $commitMsg,
+            'pusher' => $pusher,
+            'deliveryId' => $deliveryId,
+            'passengerRestart' => $restarted,
+            'deployStatus' => 'SUCCESS',
+            'timestamp' => date('c')
+        ]);
+
+        $stmt = $pdo->prepare("INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at) VALUES (?, ?, 'GITHUB_AUTO_DEPLOY', 'git_repository', ?, ?, NOW())");
+        $stmt->execute([$auditId, "GitHub ({$pusher})", $detailsJson, $clientIp]);
+
+        $notifId = 'notif_deploy_' . time() . '_' . bin2hex(random_bytes(3));
+        $notifTitle = "Auto-Deployed branch '{$branch}' (" . substr($commitSha, 0, 7) . ")";
+        $notifMsg = "Pushed by {$pusher}: {$commitMsg}";
+        $notifMeta = json_encode(['branch' => $branch, 'commitSha' => substr($commitSha, 0, 7), 'pusher' => $pusher, 'auditId' => $auditId]);
+
+        $nStmt = $pdo->prepare("INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at) VALUES (?, 'admin', 'all', 'deploy', ?, ?, '/admin/audit', 0, ?, NOW())");
+        $nStmt->execute([$notifId, $notifTitle, $notifMsg, $notifMeta]);
+    } catch (Exception $dbErr) {
+        // Continue gracefully if database is temporarily unavailable during git reset
+    }
 
     echo json_encode([
         'success' => true,

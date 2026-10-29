@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
     const [policyRows]: any = await pool
       .query(
-        "SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('delivery_policy_scope', 'delivery_policy_restricted', 'delivery_policy_notice')"
+        "SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('delivery_policy_scope', 'delivery_policy_restricted', 'delivery_restricted_prefixes', 'delivery_policy_notice', 'delivery_non_serviceable_notice')"
       )
       .catch(() => [[]]);
 
@@ -67,9 +67,11 @@ export async function GET(request: Request) {
       scope: policyMap["delivery_policy_scope"] || "mainland_only",
       restrictedPrefixes:
         policyMap["delivery_policy_restricted"] ||
+        policyMap["delivery_restricted_prefixes"] ||
         "IV, KW, PH, AB, PA, BT, HS, ZE, GY, JE, IM",
       nonServiceableNotice:
         policyMap["delivery_policy_notice"] ||
+        policyMap["delivery_non_serviceable_notice"] ||
         "We currently deliver exclusively to Mainland UK addresses. We are unable to fulfill orders to Northern Ireland, Scottish Highlands & Islands, or Channel Islands at this time. Please enter a valid Mainland UK delivery postcode.",
     };
 

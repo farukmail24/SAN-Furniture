@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getLiveProducts } from "@/lib/catalog";
 
-function escapeCsv(field: string): string {
-  if (field.includes(",") || field.includes('"') || field.includes("\n") || field.includes("\r")) {
-    return `"${field.replace(/"/g, '""')}"`;
+function escapeCsv(field: string | null | undefined): string {
+  const safe = String(field ?? "");
+  if (safe.includes(",") || safe.includes('"') || safe.includes("\n") || safe.includes("\r")) {
+    return `"${safe.replace(/"/g, '""')}"`;
   }
-  return field;
+  return safe;
 }
 
 export async function GET() {

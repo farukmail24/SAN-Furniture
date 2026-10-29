@@ -4,6 +4,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import fs from "node:fs";
 import path from "node:path";
+import { getDbPool } from "@/lib/db";
 
 const execAsync = promisify(exec);
 
@@ -191,6 +192,59 @@ export async function POST(request: Request) {
           fs.appendFileSync(logPath, logEntry);
         } catch {}
 
+        // Step D: Record immutable deployment entry in admin_audit_logs & notifications
+        try {
+          const pool = getDbPool();
+          const auditId = `audit_deploy_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+          const clientIp =
+            request.headers.get("x-forwarded-for") ||
+            request.headers.get("cf-connecting-ip") ||
+            "GitHub Webhook";
+
+          const deployDetails = {
+            branch,
+            commitSha: commitSha.substring(0, 7),
+            fullCommitSha: commitSha,
+            commitMessage,
+            pusher: pusherName,
+            deliveryId,
+            passengerRestart: true,
+            deployStatus: "SUCCESS",
+            timestamp: new Date().toISOString(),
+          };
+
+          await pool.query(
+            `INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at)
+             VALUES (?, ?, 'GITHUB_AUTO_DEPLOY', 'git_repository', ?, ?, NOW())`,
+            [
+              auditId,
+              `GitHub (${pusherName})`,
+              JSON.stringify(deployDetails),
+              clientIp,
+            ]
+          );
+
+          // Step E: Non-destructive DB Schema Alignment (ensure subsidiary tables have required columns)
+          try {
+            await pool.query("ALTER TABLE order_po_dispatches ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP").catch(() => {});
+            await pool.query("ALTER TABLE order_po_dispatches MODIFY COLUMN dispatched_at TIMESTAMP NULL DEFAULT NULL").catch(() => {});
+          } catch {}
+
+          const notifId = `notif_deploy_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+          await pool.query(
+            `INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at)
+             VALUES (?, 'admin', 'all', 'deploy', ?, ?, '/admin/audit', 0, ?, NOW())`,
+            [
+              notifId,
+              `Auto-Deployed branch '${branch}' (${commitSha.substring(0, 7)})`,
+              `Pushed by ${pusherName}: ${commitMessage}`,
+              JSON.stringify({ branch, commitSha: commitSha.substring(0, 7), pusher: pusherName, auditId }),
+            ]
+          );
+        } catch (dbErr) {
+          console.error("Failed to insert deployment audit log/notification:", dbErr);
+        }
+
         return NextResponse.json({
           success: true,
           message: `SAN Furniture auto-deployed successfully from branch '${branch}'`,
@@ -204,6 +258,49 @@ export async function POST(request: Request) {
           timestamp: new Date().toISOString(),
         });
       } catch (deployErr: any) {
+        try {
+          const pool = getDbPool();
+          const auditId = `audit_deploy_err_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+          const clientIp =
+            request.headers.get("x-forwarded-for") ||
+            request.headers.get("cf-connecting-ip") ||
+            "GitHub Webhook";
+
+          const errDetails = {
+            branch,
+            commitSha: commitSha.substring(0, 7),
+            commitMessage,
+            pusher: pusherName,
+            deliveryId,
+            deployStatus: "FAILED",
+            error: deployErr?.message || String(deployErr),
+            timestamp: new Date().toISOString(),
+          };
+
+          await pool.query(
+            `INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at)
+             VALUES (?, ?, 'GITHUB_DEPLOY_FAILED', 'git_repository', ?, ?, NOW())`,
+            [
+              auditId,
+              `GitHub (${pusherName})`,
+              JSON.stringify(errDetails),
+              clientIp,
+            ]
+          );
+
+          const notifId = `notif_deploy_err_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+          await pool.query(
+            `INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at)
+             VALUES (?, 'admin', 'all', 'critical', ?, ?, '/admin/audit', 0, ?, NOW())`,
+            [
+              notifId,
+              `Deploy Failed: branch '${branch}' (${commitSha.substring(0, 7)})`,
+              `Error deploying commit by ${pusherName}: ${deployErr?.message || String(deployErr)}`,
+              JSON.stringify(errDetails),
+            ]
+          );
+        } catch {}
+
         return NextResponse.json(
           {
             success: false,

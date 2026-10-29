@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { getCustomerFromRequest } from "@/lib/auth-token";
+import { getCustomerFromRequest, getAdminFromRequest } from "@/lib/auth-token";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,15 @@ export async function GET(request: Request) {
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to view wishlist", wishlist: [] },
+        { status: 401 }
+      );
+    }
+
     const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
 
     if (!targetEmail) {
@@ -58,6 +67,15 @@ export async function POST(request: Request) {
     const email = (body.customerEmail || body.email || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to save items to wishlist" },
+        { status: 401 }
+      );
+    }
+
     const targetEmail = authCust ? authCust.email.toLowerCase() : email;
 
     if (!productId || !targetEmail) {
@@ -103,6 +121,15 @@ export async function DELETE(request: Request) {
     const queryEmail = (searchParams.get("email") || "").trim().toLowerCase();
 
     const authCust = await getCustomerFromRequest(request);
+    const authAdmin = !authCust ? await getAdminFromRequest(request) : null;
+
+    if (!authCust && !authAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Sign in required to modify wishlist" },
+        { status: 401 }
+      );
+    }
+
     const targetEmail = authCust ? authCust.email.toLowerCase() : queryEmail;
 
     if (!id || !targetEmail) {

@@ -19,7 +19,9 @@ export async function POST(request: Request) {
     const queries = [
       { key: "delivery_policy_scope", val: scope || "mainland_only" },
       { key: "delivery_policy_restricted", val: restrictedPrefixes || "" },
+      { key: "delivery_restricted_prefixes", val: restrictedPrefixes || "" },
       { key: "delivery_policy_notice", val: nonServiceableNotice || "" },
+      { key: "delivery_non_serviceable_notice", val: nonServiceableNotice || "" },
     ];
 
     for (const q of queries) {

@@ -17,6 +17,8 @@ import {
   Building2,
   Zap,
   Database,
+  GitBranch,
+  GitCommit,
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
 import { apiUrl } from "@/lib/api-config";
@@ -575,17 +577,30 @@ export default function AdminDashboardPage() {
               ) : (
                 auditLogs.slice(0, 6).map((log) => {
                   let detailsStr = log.resource;
+                  let isDeploy = log.action === "GITHUB_AUTO_DEPLOY" || log.action === "GITHUB_DEPLOY_FAILED";
+                  let parsedPayload: any = null;
+
                   if (log.details_json) {
                     try {
-                      const parsed =
+                      parsedPayload =
                         typeof log.details_json === "string"
                           ? JSON.parse(log.details_json)
                           : log.details_json;
-                      detailsStr = JSON.stringify(parsed);
+                      if (isDeploy && parsedPayload) {
+                        const sha = parsedPayload.commitSha || "HEAD";
+                        const msg = parsedPayload.commitMessage || "Code update";
+                        const br = parsedPayload.branch || "master";
+                        const by = parsedPayload.pusher || "GitHub";
+                        detailsStr = `[${sha}] ${msg} (${br} by ${by})`;
+                      } else {
+                        detailsStr = JSON.stringify(parsedPayload);
+                      }
                     } catch {
                       detailsStr = String(log.details_json);
                     }
                   }
+
+                  const isGithubActor = log.actor.toLowerCase().includes("github");
 
                   return (
                     <tr key={log.id} className="hover:bg-sand-50/60 transition-colors">
@@ -594,14 +609,43 @@ export default function AdminDashboardPage() {
                           ? new Date(log.created_at).toLocaleString("en-GB")
                           : "Recent"}
                       </td>
-                      <td className="py-3 px-4 font-semibold text-navy-950">{log.actor}</td>
+                      <td className="py-3 px-4 font-semibold text-navy-950">
+                        <div className="flex items-center gap-1.5">
+                          {isGithubActor && <GitBranch className="w-3.5 h-3.5 text-indigo-600 shrink-0" />}
+                          <span className={isGithubActor ? "text-indigo-950 font-bold" : ""}>
+                            {log.actor}
+                          </span>
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
-                        <span className="px-2 py-0.5 rounded-full bg-sand-100 border border-sand-300/80 text-navy-900 font-mono text-[10px] font-semibold">
+                        <span
+                          className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-semibold border ${
+                            isDeploy
+                              ? log.action === "GITHUB_DEPLOY_FAILED"
+                                ? "bg-rose-50 border-rose-200 text-rose-700"
+                                : "bg-indigo-50 border-indigo-200 text-indigo-700 font-bold"
+                              : "bg-sand-100 border-sand-300/80 text-navy-900"
+                          }`}
+                        >
                           {log.action}
                         </span>
                       </td>
                       <td className="py-3 px-4 max-w-md truncate text-navy-600" title={detailsStr}>
-                        {detailsStr}
+                        {isDeploy && parsedPayload ? (
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800 border border-indigo-200 shrink-0">
+                              {parsedPayload.commitSha || "HEAD"}
+                            </span>
+                            <span className="truncate text-navy-800">
+                              {parsedPayload.commitMessage || "Code update"}
+                            </span>
+                            <span className="text-[10px] text-navy-400 shrink-0">
+                              ({parsedPayload.branch || "master"})
+                            </span>
+                          </div>
+                        ) : (
+                          detailsStr
+                        )}
                       </td>
                     </tr>
                   );

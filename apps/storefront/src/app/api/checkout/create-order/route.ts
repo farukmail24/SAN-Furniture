@@ -218,24 +218,28 @@ export async function POST(request: Request) {
       passwordHash = hashPassword(accountPassword);
     }
 
-    // Upsert customer
-    await connection.query(
-      `INSERT INTO customers (id, email, username, password_hash, first_name, last_name, phone, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-       ON DUPLICATE KEY UPDATE 
-         phone = COALESCE(VALUES(phone), phone),
-         first_name = COALESCE(VALUES(first_name), first_name),
-         last_name = COALESCE(VALUES(last_name), last_name)`,
-      [
-        customerId,
-        customer.email.trim().toLowerCase(),
-        customer.username || customer.email.split("@")[0],
-        passwordHash,
-        firstName,
-        lastName,
-        customer.phone || null,
-      ]
-    );
+    // Upsert customer (resilient: profile collisions must never abort paid order)
+    try {
+      await connection.query(
+        `INSERT INTO customers (id, email, username, password_hash, first_name, last_name, phone)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE 
+           phone = COALESCE(VALUES(phone), phone),
+           first_name = COALESCE(VALUES(first_name), first_name),
+           last_name = COALESCE(VALUES(last_name), last_name)`,
+        [
+          customerId,
+          customer.email.trim().toLowerCase(),
+          customer.username || customer.email.split("@")[0],
+          passwordHash,
+          firstName,
+          lastName,
+          customer.phone || null,
+        ]
+      );
+    } catch (custErr: any) {
+      console.warn("[create-order: customers upsert warning]:", custErr?.message || custErr);
+    }
 
     // Save shipping address to customer_addresses
     const addrId = `addr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
@@ -359,19 +363,29 @@ export async function POST(request: Request) {
     }
 
     // Insert B2B Dropship Dispatch record (Pending supplier/hub dispatch)
-    await connection.query(
-      `INSERT INTO order_po_dispatches (
-        id, po_number, order_id, supplier_id, item_count, delivery_tier, status, tracking_number, carrier, dispatched_at, created_at
-      ) VALUES (?, ?, ?, 'sup_craft_uk', ?, ?, 'pending', ?, 'SAN Dedicated Delivery Fleet', NULL, NOW())`,
-      [
-        `po_${orderId}`,
-        poNumber,
-        orderId,
-        canonicalItems.length,
-        tier,
-        trackingNumber,
-      ]
-    );
+    // Non-fatal: subsidiary supplier logistics tracking must never rollback paid customer order
+    try {
+      const primarySupplierId =
+        canonicalItems[0]?.supplierId ||
+        (String(canonicalItems[0]?.productId || "").startsWith("prod_live_am_") ? "sup_amos_mann" : "sup_craft_uk");
+
+      await connection.query(
+        `INSERT INTO order_po_dispatches (
+          id, po_number, order_id, supplier_id, item_count, delivery_tier, status, tracking_number, carrier
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 'SAN Dedicated Delivery Fleet')`,
+        [
+          `po_${orderId}`,
+          poNumber,
+          orderId,
+          primarySupplierId,
+          canonicalItems.length,
+          tier,
+          trackingNumber,
+        ]
+      );
+    } catch (poErr: any) {
+      console.warn("[order_po_dispatches] Non-fatal dispatch log error:", poErr?.message || poErr);
+    }
 
     // Create Admin notification
     const notifId = `notif_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;

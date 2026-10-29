@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "node:crypto";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
 
@@ -23,6 +24,21 @@ export async function PATCH(
 
     const { fullName, role, isActive } = body;
 
+    // Privilege check: Only super_admin can modify roles or disable staff accounts
+    if (role !== undefined && admin.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Only super_admin can modify staff roles" },
+        { status: 403 }
+      );
+    }
+
+    if (isActive !== undefined && admin.role !== "super_admin" && admin.id !== id) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Only super_admin can deactivate staff accounts" },
+        { status: 403 }
+      );
+    }
+
     const updates: string[] = [];
     const values: any[] = [];
 
@@ -45,6 +61,21 @@ export async function PATCH(
         `UPDATE admin_users SET ${updates.join(", ")} WHERE id = ?`,
         values
       );
+
+      // Record audit log
+      const auditId = `audit_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+      const clientIp = request.headers.get("x-forwarded-for") || "internal";
+      await pool.query(
+        `INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at)
+         VALUES (?, ?, 'STAFF_USER_UPDATED', ?, ?, ?, NOW())`,
+        [
+          auditId,
+          `${admin.fullName || admin.email} (${admin.role})`,
+          `admin_user:${id}`,
+          JSON.stringify({ targetUserId: id, changes: { fullName, role, isActive } }),
+          clientIp,
+        ]
+      ).catch(() => {});
     }
 
     return NextResponse.json({ success: true, message: "User updated successfully" });
@@ -69,6 +100,14 @@ export async function DELETE(
       );
     }
 
+    // Privilege check: Only super_admin can delete staff accounts
+    if (admin.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Only super_admin can delete staff accounts" },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     if (admin.id === id) {
       return NextResponse.json(
@@ -79,6 +118,21 @@ export async function DELETE(
 
     const pool = getDbPool();
     await pool.query("DELETE FROM admin_users WHERE id = ?", [id]);
+
+    // Record audit log
+    const auditId = `audit_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+    const clientIp = request.headers.get("x-forwarded-for") || "internal";
+    await pool.query(
+      `INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at)
+       VALUES (?, ?, 'STAFF_USER_DELETED', ?, ?, ?, NOW())`,
+      [
+        auditId,
+        `${admin.fullName || admin.email} (${admin.role})`,
+        `admin_user:${id}`,
+        JSON.stringify({ deletedUserId: id }),
+        clientIp,
+      ]
+    ).catch(() => {});
 
     return NextResponse.json({ success: true, message: "User deleted successfully" });
   } catch (err: any) {

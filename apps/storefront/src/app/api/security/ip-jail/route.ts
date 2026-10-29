@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
+import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Unauthorized: Administrator privileges required", jailedIps: [] }, { status: 401 });
+    }
+
     const pool = getDbPool();
     const [rows]: any = await pool
       .query(

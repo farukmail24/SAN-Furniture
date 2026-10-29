@@ -15,10 +15,27 @@ export async function GET(request: Request) {
     const pool = getDbPool();
     const [rows]: any = await pool.query("SELECT setting_key, setting_value FROM system_settings");
     const settings: Record<string, string> = {};
+
+    const SENSITIVE_SECRET_KEYS = new Set([
+      "smtp_pass",
+      "sms_auth_token",
+      "stripe_secret_key",
+      "stripe_webhook_secret",
+      "paypal_client_secret",
+      "github_webhook_secret",
+      "deploy_secret",
+    ]);
+
+    const isSuperAdmin = admin.role === "super_admin";
+
     if (Array.isArray(rows)) {
       for (const r of rows) {
         if (r.setting_key && r.setting_key !== "settings") {
-          settings[r.setting_key] = r.setting_value;
+          if (!isSuperAdmin && SENSITIVE_SECRET_KEYS.has(r.setting_key)) {
+            settings[r.setting_key] = r.setting_value ? "••••••••••••••••" : "";
+          } else {
+            settings[r.setting_key] = r.setting_value;
+          }
         }
       }
     }
@@ -46,7 +63,24 @@ export async function POST(request: Request) {
       "sms_auth_token",
       "stripe_secret_key",
       "stripe_webhook_secret",
+      "paypal_client_secret",
+      "github_webhook_secret",
+      "deploy_secret",
     ]);
+
+    const isSuperAdmin = admin.role === "super_admin";
+
+    // Non-super-admins cannot alter sensitive security secrets
+    if (!isSuperAdmin) {
+      for (const key of Object.keys(updates)) {
+        if (SENSITIVE_SECRET_KEYS.has(key)) {
+          return NextResponse.json(
+            { success: false, error: `Forbidden: Only super_admin can configure credentials (${key})` },
+            { status: 403 }
+          );
+        }
+      }
+    }
 
     for (const [key, val] of Object.entries(updates)) {
       if (typeof key === "string" && key.length > 0 && typeof val !== "object" && key !== "settings") {

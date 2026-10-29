@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       [`log_${Date.now()}`, user.email, "ADMIN_LOGIN", "admin_users", JSON.stringify({ role: user.role }), clientIp]
     ).catch(() => {});
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       token,
       user: {
@@ -62,6 +62,15 @@ export async function POST(request: Request) {
         role: user.role,
       },
     });
+
+    response.cookies.set("san_admin_token", token, {
+      path: "/",
+      maxAge: 86400,
+      sameSite: "strict",
+      httpOnly: true,
+    });
+
+    return response;
   } catch (err: any) {
     console.error("[Admin Login Route Error]:", err);
     return NextResponse.json(

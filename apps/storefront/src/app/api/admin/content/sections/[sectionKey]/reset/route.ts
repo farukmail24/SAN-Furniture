@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 import { invalidateServerSectionsCache } from "@/lib/cms-server";
+import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,11 @@ export async function POST(
   { params }: { params: Promise<{ sectionKey: string }> }
 ) {
   try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const resolvedParams = params ? await params : ({} as any);
     const sectionKey = resolvedParams.sectionKey;
     if (!sectionKey) {
