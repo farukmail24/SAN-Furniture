@@ -39,6 +39,9 @@ import {
   AlertTriangle,
   CreditCard,
   RotateCcw,
+  Landmark,
+  Wallet,
+  Smartphone,
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -75,6 +78,11 @@ interface OrderItem {
   payment_status?: string;
   payment_method?: string;
   stripe_payment_intent_id?: string | null;
+  payment_card_brand?: string | null;
+  payment_card_last4?: string | null;
+  payment_card_exp_month?: number | null;
+  payment_card_exp_year?: number | null;
+  payment_cardholder_name?: string | null;
   billing_address?: string;
   items_json?: string | null;
   carrier?: string;
@@ -103,6 +111,7 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stripeMode, setStripeMode] = useState<string>("test");
+  const [statementDescriptor, setStatementDescriptor] = useState<string>("SAN FURNITURE UK");
   const [refundingOrderId, setRefundingOrderId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -171,12 +180,13 @@ export default function AdminOrdersPage() {
   const fetchOrders = useCallback(async (isSilent = false) => {
     setRefreshing(true);
     try {
-      await fetchWithSwr<{ orders: OrderItem[]; stripeMode?: string }>(
+      await fetchWithSwr<{ orders: OrderItem[]; stripeMode?: string; statementDescriptor?: string }>(
         apiUrl("/api/admin/orders"),
         (data) => {
           if (data && data.orders) {
             setOrders(data.orders);
             if (data.stripeMode) setStripeMode(data.stripeMode);
+            if (data.statementDescriptor) setStatementDescriptor(data.statementDescriptor);
             setLoading(false);
           }
         }
@@ -617,6 +627,152 @@ export default function AdminOrdersPage() {
     });
   }, [orders, activeTab, dateFilter]);
 
+  // Universal / Global Payment & Settlement Resolver
+  const resolveOrderPayment = useCallback((order: OrderItem, mode: string = "test") => {
+    const rawMethod = (order.payment_method || "").toLowerCase().trim();
+    const rawTxId = (order.stripe_payment_intent_id || "").trim();
+    const isStripeId = rawTxId.startsWith("pi_") || rawTxId.startsWith("ch_");
+    const txId = rawTxId || order.order_number;
+
+    // Card instrument details
+    let cardInstrument = "";
+    if (order.payment_card_brand || order.payment_card_last4) {
+      const brand = order.payment_card_brand || "Card";
+      const last4 = order.payment_card_last4 ? `•••• ${order.payment_card_last4}` : "";
+      cardInstrument = `${brand} ${last4}`.trim();
+    }
+
+    // 1. PayPal
+    if (rawMethod.includes("paypal") || rawTxId.startsWith("PAYID-") || rawTxId.startsWith("pp_")) {
+      return {
+        gatewayKey: "paypal",
+        gatewayName: "PayPal Commerce Platform",
+        gatewayShortName: "PayPal",
+        gatewayPillClass: "bg-sky-50 text-sky-800 border-sky-300",
+        instrumentLabel: "PayPal Account / Pay in 3",
+        instrumentSubtext: order.customer_email ? `Account: ${order.customer_email}` : undefined,
+        transactionId: txId,
+        transactionLabel: "PayPal Transaction ID",
+        externalUrl: rawTxId ? `https://www.paypal.com/activity/payment/${rawTxId}` : undefined,
+        externalLabel: "Open in PayPal Activity",
+        iconType: "wallet",
+      };
+    }
+
+    // 2. Apple Pay
+    if (rawMethod === "apple_pay" || rawMethod.includes("apple")) {
+      const dashUrl = isStripeId
+        ? `https://dashboard.stripe.com/${mode === "test" || rawTxId.startsWith("pi_test") ? "test/" : ""}payments/${rawTxId}`
+        : undefined;
+      return {
+        gatewayKey: "apple_pay",
+        gatewayName: "Apple Pay (Express Checkout)",
+        gatewayShortName: "Apple Pay",
+        gatewayPillClass: "bg-zinc-100 text-zinc-900 border-zinc-300",
+        instrumentLabel: cardInstrument || "Apple Pay Device Card",
+        instrumentSubtext: "Touch ID / Face ID Biometric Verified",
+        transactionId: txId,
+        transactionLabel: isStripeId ? "Stripe Payment Intent ID" : "Apple Pay Reference",
+        externalUrl: dashUrl,
+        externalLabel: "Open in Stripe Dashboard",
+        iconType: "smartphone",
+      };
+    }
+
+    // 3. Google Pay
+    if (rawMethod === "google_pay" || rawMethod.includes("google")) {
+      const dashUrl = isStripeId
+        ? `https://dashboard.stripe.com/${mode === "test" || rawTxId.startsWith("pi_test") ? "test/" : ""}payments/${rawTxId}`
+        : undefined;
+      return {
+        gatewayKey: "google_pay",
+        gatewayName: "Google Pay (Express Checkout)",
+        gatewayShortName: "Google Pay",
+        gatewayPillClass: "bg-blue-50 text-blue-900 border-blue-300",
+        instrumentLabel: cardInstrument || "Google Pay Device Card",
+        instrumentSubtext: "Google Wallet Verified",
+        transactionId: txId,
+        transactionLabel: isStripeId ? "Stripe Payment Intent ID" : "Google Pay Reference",
+        externalUrl: dashUrl,
+        externalLabel: "Open in Stripe Dashboard",
+        iconType: "smartphone",
+      };
+    }
+
+    // 4. Klarna / Clearpay
+    if (rawMethod.includes("klarna") || rawMethod.includes("clearpay") || rawTxId.startsWith("kl_")) {
+      return {
+        gatewayKey: "klarna",
+        gatewayName: rawMethod.includes("clearpay") ? "Clearpay BNPL" : "Klarna Pay in 3",
+        gatewayShortName: rawMethod.includes("clearpay") ? "Clearpay" : "Klarna",
+        gatewayPillClass: "bg-pink-50 text-pink-800 border-pink-300",
+        instrumentLabel: "Buy Now Pay Later (Installments)",
+        instrumentSubtext: "3-Month Split Financing",
+        transactionId: txId,
+        transactionLabel: "Klarna Order Reference",
+        externalUrl: `https://portal.klarna.com/orders/${txId}`,
+        externalLabel: "Open in Klarna Portal",
+        iconType: "wallet",
+      };
+    }
+
+    // 5. BACS / Direct Bank Transfer
+    if (rawMethod.includes("bacs") || rawMethod.includes("bank") || rawMethod.includes("transfer") || rawTxId.startsWith("BACS-")) {
+      return {
+        gatewayKey: "bacs",
+        gatewayName: "UK BACS Direct Bank Transfer",
+        gatewayShortName: "BACS",
+        gatewayPillClass: "bg-amber-50 text-amber-900 border-amber-300",
+        instrumentLabel: "Faster Payments / Wire Remittance",
+        instrumentSubtext: "UK Sort Code & Account Number Remitted",
+        transactionId: txId,
+        transactionLabel: "BACS Remittance Reference",
+        externalUrl: undefined,
+        externalLabel: undefined,
+        iconType: "bank",
+      };
+    }
+
+    // 6. Telephone MOTO (Staff Concierge)
+    if (rawMethod.includes("moto") || rawMethod.includes("phone") || order.id.startsWith("ord_manual")) {
+      const dashUrl = isStripeId
+        ? `https://dashboard.stripe.com/${mode === "test" || rawTxId.startsWith("pi_test") ? "test/" : ""}payments/${rawTxId}`
+        : undefined;
+      return {
+        gatewayKey: "moto",
+        gatewayName: "Telephone MOTO (SAN Concierge Terminal)",
+        gatewayShortName: "MOTO",
+        gatewayPillClass: "bg-sand-200 text-navy-950 border-sand-300",
+        instrumentLabel: cardInstrument || "Staff Over-The-Phone Card Vault",
+        instrumentSubtext: "PCI-DSS Telephone Vault Keyed",
+        transactionId: txId,
+        transactionLabel: isStripeId ? "Stripe Payment Intent ID" : "MOTO Authorization Ref",
+        externalUrl: dashUrl,
+        externalLabel: isStripeId ? "Open in Stripe Dashboard" : undefined,
+        iconType: "phone",
+      };
+    }
+
+    // 7. Standard Card / Stripe (Default)
+    const dashUrl = isStripeId
+      ? `https://dashboard.stripe.com/${mode === "test" || rawTxId.startsWith("pi_test") ? "test/" : ""}payments/${rawTxId}`
+      : undefined;
+
+    return {
+      gatewayKey: isStripeId ? "stripe" : "generic",
+      gatewayName: isStripeId ? "Stripe UK Gateway (256-bit SSL)" : "Card Payment Gateway",
+      gatewayShortName: isStripeId ? "Stripe" : "Card",
+      gatewayPillClass: isStripeId ? "bg-indigo-50 text-indigo-800 border-indigo-200" : "bg-sand-100 text-navy-800 border-sand-200",
+      instrumentLabel: cardInstrument || (order.payment_method ? `${order.payment_method.toUpperCase()} Card` : "Credit / Debit Card (Visa / Mastercard)"),
+      instrumentSubtext: order.payment_cardholder_name ? `Cardholder: ${order.payment_cardholder_name}` : (order.customer_name ? `Authorized by ${order.customer_name}` : undefined),
+      transactionId: txId,
+      transactionLabel: isStripeId ? "Stripe Payment Intent ID" : "Gateway Transaction Reference",
+      externalUrl: dashUrl,
+      externalLabel: "Open in Stripe Dashboard",
+      iconType: "card",
+    };
+  }, []);
+
   // Parse items from JSON safely
   const parseItems = (itemsJson?: string | null): OrderLineItem[] => {
     if (!itemsJson) return [];
@@ -659,36 +815,62 @@ export default function AdminOrdersPage() {
                 {o.id.startsWith("ord_manual") ? "Concierge" : "Online"}
               </span>
             </div>
-            {o.stripe_payment_intent_id && (
-              <div
-                className="flex items-center gap-1 mt-1"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <a
-                  href={`https://dashboard.stripe.com/${stripeMode === "test" || o.stripe_payment_intent_id.startsWith("pi_test") ? "test/" : ""}payments/${o.stripe_payment_intent_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-mono text-[9px] font-semibold text-indigo-700 hover:text-indigo-950 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded transition-colors shadow-2xs"
-                  title={`View in Stripe Dashboard: ${o.stripe_payment_intent_id}`}
+            {(() => {
+              const payment = resolveOrderPayment(o, stripeMode);
+              if (!o.stripe_payment_intent_id && !o.payment_method) return null;
+              return (
+                <div
+                  className="flex items-center gap-1 mt-1"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <CreditCard className="w-2.5 h-2.5 text-indigo-600" />
-                  <span>
-                    {o.stripe_payment_intent_id.length > 15
-                      ? `${o.stripe_payment_intent_id.slice(0, 14)}…`
-                      : o.stripe_payment_intent_id}
-                  </span>
-                  <ExternalLink className="w-2 h-2 text-indigo-400" />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => handleCopyTracking(o.stripe_payment_intent_id!)}
-                  className="p-0.5 text-navy-400 hover:text-navy-950 cursor-pointer"
-                  title="Copy Stripe Payment Intent ID"
-                >
-                  <Copy className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            )}
+                  {payment.externalUrl ? (
+                    <a
+                      href={payment.externalUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex items-center gap-1 font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors shadow-2xs border ${payment.gatewayPillClass} hover:opacity-80`}
+                      title={`${payment.gatewayName}: ${payment.transactionId}`}
+                    >
+                      {payment.iconType === "bank" ? (
+                        <Landmark className="w-2.5 h-2.5" />
+                      ) : payment.iconType === "wallet" ? (
+                        <Wallet className="w-2.5 h-2.5" />
+                      ) : payment.iconType === "smartphone" ? (
+                        <Smartphone className="w-2.5 h-2.5" />
+                      ) : (
+                        <CreditCard className="w-2.5 h-2.5" />
+                      )}
+                      <span>
+                        ${payment.gatewayShortName}: ${payment.transactionId.length > 14 ? `${payment.transactionId.slice(0, 12)}…` : payment.transactionId}
+                      </span>
+                      <ExternalLink className="w-2 h-2 opacity-60" />
+                    </a>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-1 font-mono text-[9px] font-semibold px-1.5 py-0.5 rounded shadow-2xs border ${payment.gatewayPillClass}`}
+                      title={`${payment.gatewayName}: ${payment.transactionId}`}
+                    >
+                      {payment.iconType === "bank" ? (
+                        <Landmark className="w-2.5 h-2.5" />
+                      ) : (
+                        <CreditCard className="w-2.5 h-2.5" />
+                      )}
+                      <span>
+                        ${payment.gatewayShortName}: ${payment.transactionId.length > 14 ? `${payment.transactionId.slice(0, 12)}…` : payment.transactionId}
+                      </span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleCopyTracking(payment.transactionId)}
+                    className="p-0.5 text-navy-400 hover:text-navy-950 cursor-pointer"
+                    title={`Copy ${payment.transactionLabel}`}
+                  >
+                    <Copy className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         ),
       },
@@ -1583,92 +1765,219 @@ export default function AdminOrdersPage() {
                 })()}
               </div>
 
-              {/* Stripe Payment & Settlement Gateway Card */}
-              <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-sand-200">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-navy-900 flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
-                    Stripe Payment &amp; Settlement
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
-                      selectedOrder.payment_status === "refunded"
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-                        : selectedOrder.payment_status === "paid"
-                        ? "bg-indigo-50 text-indigo-800 border-indigo-200"
-                        : "bg-rose-50 text-rose-800 border-rose-300"
-                    }`}
-                  >
-                    {selectedOrder.payment_status === "refunded"
-                      ? "✓ Refunded"
-                      : selectedOrder.payment_status === "paid"
-                      ? "✓ Paid & Settled"
-                      : "Refund Pending"}
-                  </span>
-                </div>
+              {/* Universal Payment & Transaction Settlement Gateway Card */}
+              {(() => {
+                const payment = resolveOrderPayment(selectedOrder, stripeMode);
+                const orderDate = new Date(selectedOrder.created_at);
+                const formattedDate = orderDate.toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                });
+                const formattedTime = orderDate.toLocaleTimeString("en-GB", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: false,
+                });
+                const isCancelledOrder = selectedOrder.status === "cancelled" || selectedOrder.fulfillment_status === "cancelled";
+                const isFullyRefunded = selectedOrder.payment_status === "refunded";
 
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-navy-500 text-[11px]">Payment Method:</span>
-                    <span className="font-semibold text-navy-900 capitalize">
-                      {selectedOrder.payment_method || "Credit / Debit Card (Stripe)"}
-                    </span>
-                  </div>
-
-                  {selectedOrder.stripe_payment_intent_id ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-navy-500 text-[11px]">Payment Intent ID:</span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-[11px] font-bold text-navy-950 bg-sand-100 px-2 py-0.5 rounded border border-sand-300">
-                          {selectedOrder.stripe_payment_intent_id}
+                return (
+                  <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3.5">
+                    {/* Header: Dynamic Gateway Badge & Live Settlement Status */}
+                    <div className="flex items-center justify-between pb-2.5 border-b border-sand-200">
+                      <div className="flex items-center gap-2">
+                        {payment.iconType === "bank" ? (
+                          <Landmark className="w-4 h-4 text-amber-700" />
+                        ) : payment.iconType === "wallet" ? (
+                          <Wallet className="w-4 h-4 text-sky-700" />
+                        ) : payment.iconType === "smartphone" ? (
+                          <Smartphone className="w-4 h-4 text-zinc-800" />
+                        ) : (
+                          <CreditCard className="w-4 h-4 text-indigo-600" />
+                        )}
+                        <span className="text-xs font-bold uppercase tracking-wider text-navy-950">
+                          Payment &amp; Transaction Settlement
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyTracking(selectedOrder.stripe_payment_intent_id!)}
-                          className="p-1 rounded text-navy-500 hover:text-navy-950 hover:bg-sand-200 cursor-pointer"
-                          title="Copy Payment Intent ID"
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${payment.gatewayPillClass}`}>
+                          {payment.gatewayShortName}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                            isFullyRefunded
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                              : selectedOrder.payment_status === "paid"
+                              ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                              : "bg-rose-50 text-rose-800 border-rose-300"
+                          }`}
                         >
-                          <Copy className="w-3 h-3" />
-                        </button>
+                          {isFullyRefunded
+                            ? "✓ 100% Refunded"
+                            : selectedOrder.payment_status === "paid"
+                            ? "✓ Paid & Settled"
+                            : "Refund Pending"}
+                        </span>
                       </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <span className="text-navy-500 text-[11px]">Payment Intent ID:</span>
-                      <span className="text-navy-400 italic text-[11px]">Direct / Manual Settlement</span>
-                    </div>
-                  )}
 
-                  {selectedOrder.stripe_payment_intent_id && (
-                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                      <a
-                        href={`https://dashboard.stripe.com/${stripeMode === "test" || selectedOrder.stripe_payment_intent_id.startsWith("pi_test") ? "test/" : ""}payments/${selectedOrder.stripe_payment_intent_id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 py-2 px-3 rounded-xl bg-sand-100 hover:bg-sand-200 text-navy-900 border border-sand-300 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-navy-600" />
-                        <span>Open in Stripe Dashboard</span>
-                      </a>
+                    {/* Informative Specs Grid: 6 Comprehensive Domain Dimensions */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {/* 1. Gateway Provider */}
+                      <div className="p-2.5 rounded-xl bg-sand-50 border border-sand-200/80">
+                        <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider block mb-0.5">
+                          Payment Processor / Gateway
+                        </span>
+                        <span className="font-semibold text-navy-950 block">
+                          {payment.gatewayName}
+                        </span>
+                        <span className="text-[10px] text-emerald-700 flex items-center gap-1 mt-0.5 font-medium">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                          256-bit SSL Bank-Grade Secured
+                        </span>
+                      </div>
 
-                      {(selectedOrder.status === "cancelled" || selectedOrder.fulfillment_status === "cancelled") &&
-                        selectedOrder.payment_status !== "refunded" && (
+                      {/* 2. Payment Instrument & Cardholder */}
+                      <div className="p-2.5 rounded-xl bg-sand-50 border border-sand-200/80">
+                        <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider block mb-0.5">
+                          Payment Instrument
+                        </span>
+                        <span className="font-semibold text-navy-950 block">
+                          {payment.instrumentLabel}
+                        </span>
+                        <span className="text-[10px] text-navy-600 block mt-0.5 truncate">
+                          {selectedOrder.payment_card_exp_month && selectedOrder.payment_card_exp_year
+                            ? `Expires: ${selectedOrder.payment_card_exp_month}/${selectedOrder.payment_card_exp_year} • `
+                            : ""}
+                          {payment.instrumentSubtext || `Cardholder: ${selectedOrder.customer_name}`}
+                        </span>
+                      </div>
+
+                      {/* 3. Transaction / Reference ID */}
+                      <div className="p-2.5 rounded-xl bg-sand-50 border border-sand-200/80 sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider">
+                            {payment.transactionLabel}
+                          </span>
+                          <span className="text-[10px] font-mono text-navy-400">
+                            Unique Gateway Ref
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-white border border-sand-300">
+                          <span className="font-mono text-xs font-bold text-navy-950 truncate select-all">
+                            {payment.transactionId}
+                          </span>
                           <button
                             type="button"
-                            disabled={refundingOrderId === selectedOrder.id}
-                            onClick={() => handleProcessRefund(selectedOrder)}
-                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                            onClick={() => handleCopyTracking(payment.transactionId)}
+                            className="p-1 rounded text-navy-500 hover:text-navy-950 hover:bg-sand-100 cursor-pointer transition-colors"
+                            title={`Copy ${payment.transactionLabel}`}
                           >
-                            <RotateCcw className={`w-3.5 h-3.5 ${refundingOrderId === selectedOrder.id ? "animate-spin" : ""}`} />
-                            <span>
-                              {refundingOrderId === selectedOrder.id ? "Processing Refund..." : `Issue Refund (${formatGBP(selectedOrder.total_pennies)})`}
-                            </span>
+                            <Copy className="w-3.5 h-3.5" />
                           </button>
-                        )}
+                        </div>
+                      </div>
+
+                      {/* 4. Settlement Date & Exact Time */}
+                      <div className="p-2.5 rounded-xl bg-sand-50 border border-sand-200/80">
+                        <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider block mb-0.5">
+                          Settlement Date &amp; Time
+                        </span>
+                        <div className="flex items-center gap-1.5 text-navy-950 font-semibold">
+                          <Calendar className="w-3.5 h-3.5 text-brass-700" />
+                          <span>{formattedDate}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] font-mono text-navy-600 mt-0.5">
+                          <Clock className="w-3 h-3 text-navy-400" />
+                          <span>{formattedTime} GMT</span>
+                        </div>
+                      </div>
+
+                      {/* 5. Statement Descriptor & Currency */}
+                      <div className="p-2.5 rounded-xl bg-sand-50 border border-sand-200/80">
+                        <span className="text-[10px] font-bold text-navy-500 uppercase tracking-wider block mb-0.5">
+                          Bank Statement Descriptor
+                        </span>
+                        <span className="font-mono text-xs font-bold text-navy-900 block">
+                          {statementDescriptor || "SAN FURNITURE UK"}
+                        </span>
+                        <span className="text-[10px] text-navy-500 block mt-0.5">
+                          Settlement Currency: <strong>GBP (£)</strong>
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    {/* Refund / Cancellation Audit Details Banner */}
+                    {isCancelledOrder && (
+                      <div
+                        className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                          isFullyRefunded
+                            ? "bg-emerald-50/70 border-emerald-200 text-emerald-950"
+                            : "bg-rose-50/70 border-rose-200 text-rose-950"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                            {isFullyRefunded ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            ) : (
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                            )}
+                            {isFullyRefunded ? "Full Refund Issued" : "Cancellation Recorded • Refund Pending"}
+                          </span>
+                          <span className="font-mono text-[10px] font-semibold text-navy-600">
+                            {selectedOrder.cancelled_at
+                              ? new Date(selectedOrder.cancelled_at).toLocaleString("en-GB", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })
+                              : "Recorded"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-navy-700">
+                          Authorized by: <strong>{selectedOrder.cancelled_by || "Customer"}</strong>
+                          {selectedOrder.cancellation_reason ? ` • Reason: "${selectedOrder.cancellation_reason}"` : ""}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons: Gateway External Deep Link & 1-Click Refund */}
+                    <div className="pt-1 flex flex-col sm:flex-row gap-2">
+                      {payment.externalUrl && (
+                        <a
+                          href={payment.externalUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2 px-3 rounded-xl bg-sand-100 hover:bg-sand-200 text-navy-900 border border-sand-300 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5 text-navy-700" />
+                          <span>{payment.externalLabel || "Open Gateway Dashboard"}</span>
+                        </a>
+                      )}
+
+                      {isCancelledOrder && !isFullyRefunded && (
+                        <button
+                          type="button"
+                          disabled={refundingOrderId === selectedOrder.id}
+                          onClick={() => handleProcessRefund(selectedOrder)}
+                          className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                        >
+                          <RotateCcw className={`w-3.5 h-3.5 ${refundingOrderId === selectedOrder.id ? "animate-spin" : ""}`} />
+                          <span>
+                            {refundingOrderId === selectedOrder.id
+                              ? "Processing Refund..."
+                              : `Issue Full Refund (${formatGBP(selectedOrder.total_pennies)})`}
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Internal Staff Notes */}
               <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3">

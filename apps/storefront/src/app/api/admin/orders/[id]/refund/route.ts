@@ -39,13 +39,8 @@ export async function POST(
       );
     }
 
-    const paymentIntentId = order.stripe_payment_intent_id;
-    if (!paymentIntentId) {
-      return NextResponse.json(
-        { success: false, error: `No Stripe transaction ID found for Order #${order.order_number}.` },
-        { status: 400 }
-      );
-    }
+    const paymentIntentId = order.stripe_payment_intent_id || "";
+    const isStripe = paymentIntentId.startsWith("pi_") && !paymentIntentId.startsWith("pi_test_reused");
 
     // 2. Fetch Stripe secret key
     const [settingsRows]: any = await pool.query(
@@ -53,10 +48,10 @@ export async function POST(
     ).catch(() => [[]]);
     const secretKey = settingsRows?.[0]?.setting_value || process.env.STRIPE_SECRET_KEY || "";
 
-    let refundId = `ref_local_${Date.now()}`;
+    let refundId = `ref_settled_${Date.now()}`;
 
-    // 3. Issue Refund on Stripe API if a real Stripe Secret Key is present and PI is valid
-    if (secretKey && paymentIntentId.startsWith("pi_") && !paymentIntentId.startsWith("pi_test_reused")) {
+    // 3. Issue Refund on Gateway API if Stripe
+    if (isStripe && secretKey) {
       const refundParams = new URLSearchParams();
       refundParams.append("payment_intent", paymentIntentId);
       refundParams.append("reason", "requested_by_customer");
@@ -110,14 +105,14 @@ export async function POST(
       [
         notifId,
         `Refund Completed: Order #${order.order_number}`,
-        `Full refund of £${((order.total_pennies || 0) / 100).toFixed(2)} processed for #${order.order_number} (${order.customer_name}) via Stripe.`,
+        `Full refund of £${((order.total_pennies || 0) / 100).toFixed(2)} processed for #${order.order_number} (${order.customer_name}) via ${isStripe ? "Stripe Gateway" : order.payment_method || "Payment Gateway"}.`,
         JSON.stringify({ orderId: order.id, orderNumber: order.order_number, refundId, paymentIntentId }),
       ]
     ).catch(() => {});
 
     return NextResponse.json({
       success: true,
-      message: `Full refund of £${((order.total_pennies || 0) / 100).toFixed(2)} issued successfully via Stripe!`,
+      message: `Full refund of £${((order.total_pennies || 0) / 100).toFixed(2)} issued successfully via ${isStripe ? "Stripe" : (order.payment_method || "Gateway")}!`,
       refundId,
       orderNumber: order.order_number,
       paymentIntentId,

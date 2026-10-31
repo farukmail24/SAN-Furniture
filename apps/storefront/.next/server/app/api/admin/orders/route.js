@@ -28,11 +28,21 @@
         po.po_number,
         po.carrier,
         po.tracking_number,
-        po.status as po_status
+        po.status as po_status,
+        cpm.brand as payment_card_brand,
+        cpm.last4 as payment_card_last4,
+        cpm.exp_month as payment_card_exp_month,
+        cpm.exp_year as payment_card_exp_year,
+        cpm.cardholder_name as payment_cardholder_name
       FROM orders o
       LEFT JOIN order_po_dispatches po ON o.id = po.order_id
+      LEFT JOIN (
+        SELECT id, stripe_customer_id, stripe_payment_method_id, brand, last4, exp_month, exp_year, cardholder_name,
+               ROW_NUMBER() OVER (PARTITION BY COALESCE(NULLIF(stripe_customer_id, ''), stripe_payment_method_id) ORDER BY updated_at DESC) as rn
+        FROM customer_payment_methods
+      ) cpm ON (o.stripe_payment_intent_id = cpm.stripe_customer_id OR o.stripe_payment_intent_id = cpm.stripe_payment_method_id) AND cpm.rn = 1
       ORDER BY o.created_at DESC
-      LIMIT ?`,[c]),[f]=await d.query("SELECT setting_value FROM system_settings WHERE setting_key = 'stripe_mode' LIMIT 1").catch(()=>[[]]),g=f?.[0]?.setting_value||"test";return v.NextResponse.json({success:!0,orders:Array.isArray(e)?e:[],total:Array.isArray(e)?e.length:0,stripeMode:g})}catch(a){return console.error("Failed to fetch admin orders:",a),v.NextResponse.json({success:!1,error:"Failed to fetch orders",details:a?.message||String(a)},{status:500})}}async function C(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});let b=(0,w.n)(),c=await a.json(),d=`ord_manual_${Date.now()}`,e=`SAN-2026-${Math.floor(1e3+9e3*Math.random())}`,f=JSON.stringify(c.items||[]),g=Number(c.total_pennies)||0,h=Math.round(20/120*g);await b.query(`INSERT INTO orders (
+      LIMIT ?`,[c]),[f]=await d.query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('stripe_mode', 'stripe_statement_descriptor')").catch(()=>[[]]),g={};if(Array.isArray(f))for(let a of f)g[a.setting_key]=a.setting_value;let h=g.stripe_mode||"test",i=g.stripe_statement_descriptor||"SAN FURNITURE UK";return v.NextResponse.json({success:!0,orders:Array.isArray(e)?e:[],total:Array.isArray(e)?e.length:0,stripeMode:h,statementDescriptor:i})}catch(a){return console.error("Failed to fetch admin orders:",a),v.NextResponse.json({success:!1,error:"Failed to fetch orders",details:a?.message||String(a)},{status:500})}}async function C(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});let b=(0,w.n)(),c=await a.json(),d=`ord_manual_${Date.now()}`,e=`SAN-2026-${Math.floor(1e3+9e3*Math.random())}`,f=JSON.stringify(c.items||[]),g=Number(c.total_pennies)||0,h=Math.round(20/120*g);await b.query(`INSERT INTO orders (
         id, order_number, customer_name, customer_email, customer_phone,
         shipping_address, shipping_postcode, shipping_zone, delivery_tier,
         delivery_slot, subtotal_pennies, shipping_pennies, vat_pennies,
