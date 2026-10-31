@@ -147,6 +147,14 @@
       "namedRegex": "^/api/admin/orders/(?<nxtPid>[^/]+?)/dispatch(?:/)?$"
     },
     {
+      "page": "/api/admin/orders/[id]/refund",
+      "regex": "^/api/admin/orders/([^/]+?)/refund(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/orders/(?<nxtPid>[^/]+?)/refund(?:/)?$"
+    },
+    {
       "page": "/api/admin/orders/[id]/status",
       "regex": "^/api/admin/orders/([^/]+?)/status(?:/)?$",
       "routeKeys": {

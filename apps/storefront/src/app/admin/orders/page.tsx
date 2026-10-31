@@ -36,7 +36,9 @@ import {
   Copy,
   ChevronDown,
   Ban,
-  AlertTriangle
+  AlertTriangle,
+  CreditCard,
+  RotateCcw,
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -72,6 +74,7 @@ interface OrderItem {
   vat_pennies?: number;
   payment_status?: string;
   payment_method?: string;
+  stripe_payment_intent_id?: string | null;
   billing_address?: string;
   items_json?: string | null;
   carrier?: string;
@@ -99,6 +102,8 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [stripeMode, setStripeMode] = useState<string>("test");
+  const [refundingOrderId, setRefundingOrderId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -166,11 +171,12 @@ export default function AdminOrdersPage() {
   const fetchOrders = useCallback(async (isSilent = false) => {
     setRefreshing(true);
     try {
-      await fetchWithSwr<{ orders: OrderItem[] }>(
+      await fetchWithSwr<{ orders: OrderItem[]; stripeMode?: string }>(
         apiUrl("/api/admin/orders"),
         (data) => {
           if (data && data.orders) {
             setOrders(data.orders);
+            if (data.stripeMode) setStripeMode(data.stripeMode);
             setLoading(false);
           }
         }
@@ -208,6 +214,43 @@ export default function AdminOrdersPage() {
   const handleCopyTracking = (code: string) => {
     navigator.clipboard.writeText(code);
     showToast(`Copied tracking code ${code} to clipboard.`);
+  };
+
+  // 1-Click Stripe Refund Action
+  const handleProcessRefund = async (order: OrderItem) => {
+    if (!order.stripe_payment_intent_id) {
+      showToast(`Cannot refund Order #${order.order_number}: No Stripe payment ID found.`);
+      return;
+    }
+    const confirmed = window.confirm(
+      `Issue 100% full refund of ${formatGBP(order.total_pennies)} for Order #${order.order_number} via Stripe?\n\nThis will instantly refund the customer's card and update status.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setRefundingOrderId(order.id);
+      const res = await fetch(apiUrl(`/api/admin/orders/${order.id}/refund`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`✓ Full refund successfully processed via Stripe (${data.refundId || "Completed"}).`);
+        setOrders((prev) =>
+          prev.map((o) => (o.id === order.id ? { ...o, payment_status: "refunded" } : o))
+        );
+        if (selectedOrder && selectedOrder.id === order.id) {
+          setSelectedOrder((prev) => (prev ? { ...prev, payment_status: "refunded" } : null));
+        }
+        invalidateCache("/api/admin/orders");
+      } else {
+        alert(`Stripe Refund Failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      alert(`Refund Request Error: ${err?.message || err}`);
+    } finally {
+      setRefundingOrderId(null);
+    }
   };
 
   // Open Dispatch Modal
@@ -616,6 +659,36 @@ export default function AdminOrdersPage() {
                 {o.id.startsWith("ord_manual") ? "Concierge" : "Online"}
               </span>
             </div>
+            {o.stripe_payment_intent_id && (
+              <div
+                className="flex items-center gap-1 mt-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <a
+                  href={`https://dashboard.stripe.com/${stripeMode === "test" || o.stripe_payment_intent_id.startsWith("pi_test") ? "test/" : ""}payments/${o.stripe_payment_intent_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-mono text-[9px] font-semibold text-indigo-700 hover:text-indigo-950 bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200 px-1.5 py-0.5 rounded transition-colors shadow-2xs"
+                  title={`View in Stripe Dashboard: ${o.stripe_payment_intent_id}`}
+                >
+                  <CreditCard className="w-2.5 h-2.5 text-indigo-600" />
+                  <span>
+                    {o.stripe_payment_intent_id.length > 15
+                      ? `${o.stripe_payment_intent_id.slice(0, 14)}…`
+                      : o.stripe_payment_intent_id}
+                  </span>
+                  <ExternalLink className="w-2 h-2 text-indigo-400" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleCopyTracking(o.stripe_payment_intent_id!)}
+                  className="p-0.5 text-navy-400 hover:text-navy-950 cursor-pointer"
+                  title="Copy Stripe Payment Intent ID"
+                >
+                  <Copy className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            )}
           </div>
         ),
       },
@@ -743,14 +816,27 @@ export default function AdminOrdersPage() {
         sortable: true,
         cell: (o) => {
           if (o.status === "cancelled" || o.fulfillment_status === "cancelled") {
+            const isRefunded = o.payment_status === "refunded";
             return (
               <div className="space-y-0.5">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full shadow-2xs">
-                  <Ban className="w-3 h-3 text-rose-600" />
-                  Cancelled
+                <span
+                  className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs ${
+                    isRefunded
+                      ? "text-emerald-800 bg-emerald-100 border border-emerald-300"
+                      : "text-rose-800 bg-rose-100 border border-rose-300"
+                  }`}
+                >
+                  {isRefunded ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  ) : (
+                    <Ban className="w-3 h-3 text-rose-600" />
+                  )}
+                  {isRefunded ? "Cancelled (Refunded)" : "Cancelled"}
                 </span>
                 <span
-                  className="text-[10px] text-rose-800 font-semibold block max-w-[150px] truncate"
+                  className={`text-[10px] font-semibold block max-w-[150px] truncate ${
+                    isRefunded ? "text-emerald-800" : "text-rose-800"
+                  }`}
                   title={o.cancellation_reason ? `${o.cancelled_by || "Customer"}: ${o.cancellation_reason}` : (o.cancelled_by || "Customer")}
                 >
                   By: {o.cancelled_by || "Customer"}
@@ -805,10 +891,25 @@ export default function AdminOrdersPage() {
                 <Eye className="w-3.5 h-3.5 text-navy-700" />
               </button>
               {isCancelled ? (
-                <span className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-xs flex items-center gap-1 select-none">
-                  <Ban className="w-3 h-3 text-rose-500" />
-                  <span>Cancelled</span>
-                </span>
+                <div className="flex items-center gap-1">
+                  {o.payment_status !== "refunded" && o.stripe_payment_intent_id ? (
+                    <button
+                      type="button"
+                      disabled={refundingOrderId === o.id}
+                      onClick={() => handleProcessRefund(o)}
+                      className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                      title="Issue 100% Refund via Stripe API"
+                    >
+                      <RotateCcw className={`w-3 h-3 ${refundingOrderId === o.id ? "animate-spin" : ""}`} />
+                      <span>{refundingOrderId === o.id ? "Refunding..." : "Refund"}</span>
+                    </button>
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 font-semibold text-xs flex items-center gap-1 select-none">
+                      <Ban className="w-3 h-3 text-rose-500" />
+                      <span>Cancelled</span>
+                    </span>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"
@@ -1194,14 +1295,38 @@ export default function AdminOrdersPage() {
             <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs text-navy-800">
               {/* Cancellation & Refund Audit Card */}
               {(selectedOrder.status === "cancelled" || selectedOrder.fulfillment_status === "cancelled") && (
-                <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200 shadow-2xs space-y-2.5">
-                  <div className="flex items-center justify-between pb-2 border-b border-rose-200">
-                    <span className="font-bold text-rose-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      <Ban className="w-4 h-4 text-rose-600" />
+                <div
+                  className={`p-4 rounded-2xl border shadow-2xs space-y-2.5 ${
+                    selectedOrder.payment_status === "refunded"
+                      ? "bg-emerald-50/80 border-emerald-200"
+                      : "bg-rose-50/80 border-rose-200"
+                  }`}
+                >
+                  <div
+                    className={`flex items-center justify-between pb-2 border-b ${
+                      selectedOrder.payment_status === "refunded" ? "border-emerald-200" : "border-rose-200"
+                    }`}
+                  >
+                    <span
+                      className={`font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5 ${
+                        selectedOrder.payment_status === "refunded" ? "text-emerald-950" : "text-rose-950"
+                      }`}
+                    >
+                      {selectedOrder.payment_status === "refunded" ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <Ban className="w-4 h-4 text-rose-600" />
+                      )}
                       Cancellation &amp; Refund Audit
                     </span>
-                    <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-100/90 border border-rose-300 px-2 py-0.5 rounded-md">
-                      Refund Scheduled
+                    <span
+                      className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                        selectedOrder.payment_status === "refunded"
+                          ? "text-emerald-700 bg-emerald-100/90 border border-emerald-300"
+                          : "text-rose-700 bg-rose-100/90 border border-rose-300"
+                      }`}
+                    >
+                      {selectedOrder.payment_status === "refunded" ? "✓ 100% Refund Completed" : "Refund Scheduled"}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1456,6 +1581,93 @@ export default function AdminOrdersPage() {
                     </div>
                   );
                 })()}
+              </div>
+
+              {/* Stripe Payment & Settlement Gateway Card */}
+              <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-sand-200">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-navy-900 flex items-center gap-1.5">
+                    <CreditCard className="w-3.5 h-3.5 text-indigo-600" />
+                    Stripe Payment &amp; Settlement
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
+                      selectedOrder.payment_status === "refunded"
+                        ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                        : selectedOrder.payment_status === "paid"
+                        ? "bg-indigo-50 text-indigo-800 border-indigo-200"
+                        : "bg-rose-50 text-rose-800 border-rose-300"
+                    }`}
+                  >
+                    {selectedOrder.payment_status === "refunded"
+                      ? "✓ Refunded"
+                      : selectedOrder.payment_status === "paid"
+                      ? "✓ Paid & Settled"
+                      : "Refund Pending"}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-navy-500 text-[11px]">Payment Method:</span>
+                    <span className="font-semibold text-navy-900 capitalize">
+                      {selectedOrder.payment_method || "Credit / Debit Card (Stripe)"}
+                    </span>
+                  </div>
+
+                  {selectedOrder.stripe_payment_intent_id ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-navy-500 text-[11px]">Payment Intent ID:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-mono text-[11px] font-bold text-navy-950 bg-sand-100 px-2 py-0.5 rounded border border-sand-300">
+                          {selectedOrder.stripe_payment_intent_id}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyTracking(selectedOrder.stripe_payment_intent_id!)}
+                          className="p-1 rounded text-navy-500 hover:text-navy-950 hover:bg-sand-200 cursor-pointer"
+                          title="Copy Payment Intent ID"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-navy-500 text-[11px]">Payment Intent ID:</span>
+                      <span className="text-navy-400 italic text-[11px]">Direct / Manual Settlement</span>
+                    </div>
+                  )}
+
+                  {selectedOrder.stripe_payment_intent_id && (
+                    <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                      <a
+                        href={`https://dashboard.stripe.com/${stripeMode === "test" || selectedOrder.stripe_payment_intent_id.startsWith("pi_test") ? "test/" : ""}payments/${selectedOrder.stripe_payment_intent_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 py-2 px-3 rounded-xl bg-sand-100 hover:bg-sand-200 text-navy-900 border border-sand-300 text-xs font-semibold inline-flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-navy-600" />
+                        <span>Open in Stripe Dashboard</span>
+                      </a>
+
+                      {(selectedOrder.status === "cancelled" || selectedOrder.fulfillment_status === "cancelled") &&
+                        selectedOrder.payment_status !== "refunded" && (
+                          <button
+                            type="button"
+                            disabled={refundingOrderId === selectedOrder.id}
+                            onClick={() => handleProcessRefund(selectedOrder)}
+                            className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold inline-flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            <RotateCcw className={`w-3.5 h-3.5 ${refundingOrderId === selectedOrder.id ? "animate-spin" : ""}`} />
+                            <span>
+                              {refundingOrderId === selectedOrder.id ? "Processing Refund..." : `Issue Refund (${formatGBP(selectedOrder.total_pennies)})`}
+                            </span>
+                          </button>
+                        )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Internal Staff Notes */}

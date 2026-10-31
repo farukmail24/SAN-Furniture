@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
       // Find order by Stripe payment intent ID
       const [orderRows]: any = await pool.query(
-        "SELECT id, order_number, payment_status, status, total_pennies, customer_email, customer_name FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1",
+        "SELECT id, order_number, payment_status, total_pennies, customer_email, customer_name FROM orders WHERE stripe_payment_intent_id = ? LIMIT 1",
         [paymentIntentId]
       );
 
@@ -114,11 +114,7 @@ export async function POST(request: Request) {
         // Idempotency check: if already marked paid, skip redundant updates
         if (order.payment_status !== "paid") {
           await pool.query(
-            `UPDATE orders 
-             SET payment_status = 'paid', 
-                 status = IF(status = 'pending_payment' OR status = 'pending', 'processing', status),
-                 updated_at = NOW() 
-             WHERE id = ?`,
+            "UPDATE orders SET payment_status = 'paid' WHERE id = ?",
             [order.id]
           );
 
@@ -152,7 +148,7 @@ export async function POST(request: Request) {
       if (Array.isArray(orderRows) && orderRows.length > 0) {
         const order = orderRows[0];
         await pool.query(
-          "UPDATE orders SET payment_status = 'failed', updated_at = NOW() WHERE id = ?",
+          "UPDATE orders SET payment_status = 'failed' WHERE id = ?",
           [order.id]
         );
 
@@ -174,12 +170,34 @@ export async function POST(request: Request) {
 
     // Handle charge.refunded
     if (eventType === "charge.refunded") {
-      const paymentIntentId = dataObject.payment_intent;
+      const paymentIntentId = dataObject.payment_intent || dataObject.id;
       if (paymentIntentId) {
         await pool.query(
-          "UPDATE orders SET payment_status = 'refunded', status = 'refunded', updated_at = NOW() WHERE stripe_payment_intent_id = ?",
-          [paymentIntentId]
+          "UPDATE orders SET payment_status = 'refunded' WHERE stripe_payment_intent_id = ? OR stripe_payment_intent_id = ?",
+          [dataObject.payment_intent || "", dataObject.id || ""]
         );
+
+        // Find order to record notification
+        const [oRows]: any = await pool.query(
+          "SELECT id, order_number, customer_name, total_pennies FROM orders WHERE stripe_payment_intent_id = ? OR stripe_payment_intent_id = ? LIMIT 1",
+          [dataObject.payment_intent || "", dataObject.id || ""]
+        ).catch(() => [[]]);
+
+        if (Array.isArray(oRows) && oRows.length > 0) {
+          const ord = oRows[0];
+          const notifId = `notif_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+          await pool.query(
+            `INSERT INTO notifications (id, recipient_type, recipient_id, type, title, message, link, is_read, metadata, created_at)
+             VALUES (?, 'admin', NULL, 'order', ?, ?, ?, 0, ?, NOW())`,
+            [
+              notifId,
+              `Payment Refunded: Order #${ord.order_number}`,
+              `Stripe confirmed full refund of £${((ord.total_pennies || 0) / 100).toFixed(2)} for order #${ord.order_number} (${ord.customer_name}).`,
+              `/admin/orders`,
+              JSON.stringify({ orderId: ord.id, orderNumber: ord.order_number, paymentIntentId }),
+            ]
+          ).catch(() => {});
+        }
       }
     }
 

@@ -8,6 +8,8 @@ import {
   CATALOG_CATEGORIES,
   CATEGORY_HANDLE_ALIASES,
   normalizeCategoryHandle,
+  PRODUCT_HANDLE_ALIASES,
+  normalizeProductHandle,
   calculateNetAndVat,
   formatGBP
 } from "@san-furniture/types";
@@ -17,7 +19,9 @@ export {
   type ProductCategory,
   CATALOG_CATEGORIES,
   CATEGORY_HANDLE_ALIASES,
-  normalizeCategoryHandle
+  normalizeCategoryHandle,
+  PRODUCT_HANDLE_ALIASES,
+  normalizeProductHandle
 };
 
 
@@ -137,7 +141,10 @@ export async function getLiveProducts(): Promise<CatalogProduct[]> {
 }
 
 export function getProductByHandle(handle: string): CatalogProduct | undefined {
-  return inMemoryLiveProducts.find((p) => p.handle === handle || p.id === handle);
+  const normalized = normalizeProductHandle(handle);
+  return inMemoryLiveProducts.find(
+    (p) => p.handle === normalized || p.id === normalized || p.handle === handle || p.id === handle
+  );
 }
 
 export function getCategoryByHandle(handle: string): ProductCategory | undefined {
@@ -205,13 +212,16 @@ export async function getLiveCategoryByHandle(handle: string): Promise<ProductCa
 }
 
 export async function getLiveProductByHandle(handle: string): Promise<CatalogProduct | undefined> {
+  const normalized = normalizeProductHandle(handle);
   const products = await getLiveProducts();
-  const match = products.find((p) => p.handle === handle || p.id === handle);
+  const match = products.find(
+    (p) => p.handle === normalized || p.id === normalized || p.handle === handle || p.id === handle
+  );
   if (match) return match;
 
   // Direct fallback to API in case product was just imported
   try {
-    const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(handle)}`), {
+    const res = await fetch(apiUrl(`/api/products/${encodeURIComponent(normalized)}`), {
       next: { revalidate: 30 },
       signal: AbortSignal.timeout(3000),
     });

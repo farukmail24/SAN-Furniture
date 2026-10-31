@@ -34,6 +34,7 @@ export async function GET(request: Request) {
         o.vat_pennies,
         o.total_pennies,
         o.payment_status,
+        o.stripe_payment_intent_id,
         o.fulfillment_status,
         o.cancellation_reason,
         o.cancelled_by,
@@ -54,10 +55,16 @@ export async function GET(request: Request) {
       [limit]
     );
 
+    const [modeRows]: any = await pool.query(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'stripe_mode' LIMIT 1"
+    ).catch(() => [[]]);
+    const stripeMode = modeRows?.[0]?.setting_value || "test";
+
     return NextResponse.json({
       success: true,
       orders: Array.isArray(rows) ? rows : [],
       total: Array.isArray(rows) ? rows.length : 0,
+      stripeMode,
     });
   } catch (err: any) {
     console.error("Failed to fetch admin orders:", err);

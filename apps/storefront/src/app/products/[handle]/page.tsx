@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   ChevronRight,
   ShieldCheck,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   CATALOG_CATEGORIES,
+  PRODUCT_HANDLE_ALIASES,
   getLiveProductByHandle,
   getLiveProducts,
   getLiveProductsByCategory,
@@ -40,7 +41,8 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { handle } = await params;
-  const product = await getLiveProductByHandle(handle);
+  const canonicalHandle = PRODUCT_HANDLE_ALIASES[handle.toLowerCase()] || handle;
+  const product = await getLiveProductByHandle(canonicalHandle);
 
   if (!product) {
     return {
@@ -120,6 +122,11 @@ function ProductDescriptionNotes({ description }: { description?: string }) {
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
+  const aliasedHandle = PRODUCT_HANDLE_ALIASES[handle.toLowerCase()];
+  if (aliasedHandle) {
+    redirect(`/products/${aliasedHandle}`);
+  }
+
   const [product, cmsSections] = await Promise.all([
     getLiveProductByHandle(handle),
     getLiveSections("product_detail"),

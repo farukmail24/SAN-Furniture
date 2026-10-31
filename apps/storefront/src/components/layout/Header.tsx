@@ -264,7 +264,7 @@ export function Header({ initialProducts }: { initialProducts?: CatalogProduct[]
               {[
                 { name: "All Furniture", href: "/catalog" },
                 { name: "Sofas", href: "/categories/sofas" },
-                { name: "Armchairs", href: "/categories/armchairs" },
+                { name: "Armchairs", href: "/categories/sofas?type=armchairs" },
                 { name: "Dining", href: "/categories/dining" },
                 { name: "Bedroom", href: "/categories/bedroom" },
                 { name: "Living Room", href: "/categories/living-room" },

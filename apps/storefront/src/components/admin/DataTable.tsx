@@ -25,6 +25,8 @@ export interface ColumnDef<T> {
   searchable?: boolean;
   width?: string;
   hidden?: boolean;
+  searchValue?: (item: T) => string;
+  sortValue?: (item: T) => any;
 }
 
 interface DataTableProps<T> {
@@ -74,14 +76,47 @@ export function DataTable<T extends Record<string, any>>({
   // 1. Filtered Data
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
-    const lower = searchTerm.toLowerCase();
+    const rawSearch = searchTerm.trim().toLowerCase();
+    const tokens = rawSearch.split(/\s+/).filter(Boolean);
 
     return data.filter((item) => {
-      return columns.some((col) => {
-        if (col.searchable === false) return false;
-        const val = item[col.key];
-        if (val === null || val === undefined) return false;
-        return String(val).toLowerCase().includes(lower);
+      // Build composite searchable corpus
+      const compositeParts: string[] = [];
+
+      columns.forEach((col) => {
+        if (col.searchable === false) return;
+        if (col.searchValue) {
+          const custom = col.searchValue(item);
+          if (custom) compositeParts.push(String(custom));
+        } else if (item[col.key] !== undefined && item[col.key] !== null) {
+          compositeParts.push(String(item[col.key]));
+        }
+      });
+
+      // Canonical fallbacks for items with title, sku, id, handle, or name
+      if (item.title) compositeParts.push(String(item.title));
+      if (item.name) compositeParts.push(String(item.name));
+      if (item.sku) compositeParts.push(String(item.sku));
+      if (item.supplier_sku) compositeParts.push(String(item.supplier_sku));
+      if (item.id) compositeParts.push(String(item.id));
+      if (item.handle) compositeParts.push(String(item.handle));
+      if (item.category_id) compositeParts.push(String(item.category_id));
+
+      const fullText = compositeParts.join(" ").toLowerCase();
+
+      // Direct full substring match
+      if (fullText.includes(rawSearch)) return true;
+
+      // Multi-token match with flexible s/5 number equivalence (e.g. S22 vs 522)
+      return tokens.every((token) => {
+        if (fullText.includes(token)) return true;
+        const altToken = token.startsWith("5")
+          ? "s" + token.slice(1)
+          : token.startsWith("s")
+          ? "5" + token.slice(1)
+          : null;
+        if (altToken && fullText.includes(altToken)) return true;
+        return false;
       });
     });
   }, [data, searchTerm, columns]);
@@ -89,10 +124,14 @@ export function DataTable<T extends Record<string, any>>({
   // 2. Sorted Data
   const sortedData = useMemo(() => {
     if (!sortKey) return filteredData;
+    const currentCol = columns.find((c) => c.key === sortKey);
 
     return [...filteredData].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+      let aVal = currentCol?.sortValue ? currentCol.sortValue(a) : a[sortKey];
+      let bVal = currentCol?.sortValue ? currentCol.sortValue(b) : b[sortKey];
+
+      if (aVal === undefined && (sortKey === "product" || sortKey === "title")) aVal = a.title || a.name;
+      if (bVal === undefined && (sortKey === "product" || sortKey === "title")) bVal = b.title || b.name;
 
       if (aVal === bVal) return 0;
       if (aVal === null || aVal === undefined) return 1;
@@ -106,7 +145,7 @@ export function DataTable<T extends Record<string, any>>({
       const strB = String(bVal).toLowerCase();
       return sortDirection === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
     });
-  }, [filteredData, sortKey, sortDirection]);
+  }, [filteredData, sortKey, sortDirection, columns]);
 
   // 3. Paginated Data
   const totalRecords = sortedData.length;

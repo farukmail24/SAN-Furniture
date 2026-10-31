@@ -18,6 +18,8 @@ import {
   extractUKPostcodeArea,
   isMainlandUKPostcode,
   resolveUKPostcodeInfo,
+  PRODUCT_HANDLE_ALIASES,
+  normalizeProductHandle,
 } from "./types-bridge.mjs";
 import { amosMannExtractor } from "./modules/dropship/services/amos-mann-extractor.mjs";
 import { furnitureToGoExtractor } from "./modules/dropship/services/furniture-to-go-extractor.mjs";
@@ -848,13 +850,14 @@ const server = http.createServer(async (req, res) => {
 
     // 4. Single Product By Handle
     if (pathname.startsWith("/api/products/") && method === "GET") {
-      const handle = pathname.replace("/api/products/", "").trim();
+      const rawHandle = pathname.replace("/api/products/", "").trim();
+      const handle = normalizeProductHandle(rawHandle);
       const [rows] = await pool.query(
         `SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
                 s.material, s.frame_material, s.color, s.assembly_required, s.doorway_clearance_min_cm,
                 s.delivery_tier, s.fire_safety_compliant, s.fire_safety_standard, s.lead_time_days
-         FROM products p LEFT JOIN furniture_specs s ON p.id = s.product_id WHERE p.handle = ? OR p.id = ? LIMIT 1`,
-        [handle, handle]
+         FROM products p LEFT JOIN furniture_specs s ON p.id = s.product_id WHERE p.handle = ? OR p.id = ? OR p.handle = ? LIMIT 1`,
+        [rawHandle, rawHandle, handle]
       );
       if (rows.length === 0) {
         return sendJson(res, 404, { error: "Product not found", handle });

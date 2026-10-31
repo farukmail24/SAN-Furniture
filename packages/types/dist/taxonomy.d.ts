@@ -8,6 +8,8 @@ export interface ProductCategory {
 export declare const CATALOG_CATEGORIES: ProductCategory[];
 export declare const CATEGORY_HANDLE_ALIASES: Record<string, string>;
 export declare function normalizeCategoryHandle(handle: string): string;
+export declare const PRODUCT_HANDLE_ALIASES: Record<string, string>;
+export declare function normalizeProductHandle(handle: string): string;
 export declare function getCategoryByHandle(handle: string): ProductCategory | undefined;
 export interface FurnitureSubType {
     id: string;

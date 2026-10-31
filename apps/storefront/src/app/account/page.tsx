@@ -1574,10 +1574,17 @@ export default function CustomerAccountPage() {
                           
                           {/* Rich Dynamic Status Badge */}
                           {isCancelled ? (
-                            <span className="text-[11px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
-                              <X className="w-3 h-3 text-rose-600" />
-                              Order Cancelled &bull; Refund Scheduled
-                            </span>
+                            order.payment_status === "refunded" ? (
+                              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                Order Cancelled &bull; Refund Completed
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-bold text-rose-800 bg-rose-50 border border-rose-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                                <X className="w-3 h-3 text-rose-600" />
+                                Order Cancelled &bull; Refund Scheduled
+                              </span>
+                            )
                           ) : isReturnRequested ? (
                             <span className="text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                               <RotateCcw className="w-3 h-3 text-amber-600" />
@@ -1679,15 +1686,36 @@ export default function CustomerAccountPage() {
 
                     {/* 4-Step Interactive White Glove Progress Timeline OR Cancellation Audit */}
                     {isCancelled ? (
-                      <div className="p-4 rounded-xl bg-rose-50/80 border border-rose-200 text-xs space-y-2">
+                      <div
+                        className={`p-4 rounded-xl text-xs space-y-2 ${
+                          order.payment_status === "refunded"
+                            ? "bg-emerald-50/80 border border-emerald-200"
+                            : "bg-rose-50/80 border border-rose-200"
+                        }`}
+                      >
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-rose-950 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                            <Ban className="w-4 h-4 text-rose-600" />
+                          <span
+                            className={`font-bold uppercase tracking-wider text-[11px] flex items-center gap-1.5 ${
+                              order.payment_status === "refunded" ? "text-emerald-950" : "text-rose-950"
+                            }`}
+                          >
+                            {order.payment_status === "refunded" ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <Ban className="w-4 h-4 text-rose-600" />
+                            )}
                             Order Cancellation &amp; Full Refund Status
                           </span>
-                          <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full">
-                            100% Refund Scheduled
-                          </span>
+                          {order.payment_status === "refunded" ? (
+                            <span className="font-mono text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              100% Refund Completed
+                            </span>
+                          ) : (
+                            <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-100 border border-rose-300 px-2.5 py-0.5 rounded-full">
+                              100% Refund Scheduled
+                            </span>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
                           <div>

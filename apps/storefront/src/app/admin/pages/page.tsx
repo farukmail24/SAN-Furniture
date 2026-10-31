@@ -116,7 +116,7 @@ const PAGE_TABS: PageTabDef[] = [
     label: "Product Detail (PDP)",
     icon: ShoppingBag,
     desc: "Product value badges, delivery timeframe notice, room clearance guidelines & warranty perks",
-    liveUrl: "/products/sandringham-large-sofa",
+    liveUrl: "/products/sandringham-large-boucl-3-seater-sofa",
     color: "navy",
   },
   {

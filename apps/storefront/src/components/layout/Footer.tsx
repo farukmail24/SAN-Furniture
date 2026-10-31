@@ -93,7 +93,7 @@ export function Footer() {
             </summary>
             <ul className="mt-3 space-y-2.5 text-xs text-sand-300 pl-1">
               <li><Link href="/categories/sofas" className="hover:text-brass-400 block py-0.5">Sofas & Lounges</Link></li>
-              <li><Link href="/categories/armchairs" className="hover:text-brass-400 block py-0.5">Accent Chairs & Stools</Link></li>
+              <li><Link href="/categories/sofas?type=armchairs" className="hover:text-brass-400 block py-0.5">Accent Chairs & Stools</Link></li>
               <li><Link href="/categories/dining" className="hover:text-brass-400 block py-0.5">Solid Oak Dining Sets</Link></li>
               <li><Link href="/categories/bedroom" className="hover:text-brass-400 block py-0.5">Storage Beds & Wardrobes</Link></li>
             </ul>
@@ -166,7 +166,7 @@ export function Footer() {
           <h4 className="text-sand-50 font-semibold text-xs uppercase tracking-wider">Living Collections</h4>
           <ul className="mt-4 space-y-2.5 text-xs text-sand-300">
             <li><Link href="/categories/sofas" className="hover:text-brass-400">Sofas & Lounges</Link></li>
-            <li><Link href="/categories/armchairs" className="hover:text-brass-400">Accent Chairs & Stools</Link></li>
+            <li><Link href="/categories/sofas?type=armchairs" className="hover:text-brass-400">Accent Chairs & Stools</Link></li>
             <li><Link href="/categories/dining" className="hover:text-brass-400">Solid Oak Dining Sets</Link></li>
             <li><Link href="/categories/bedroom" className="hover:text-brass-400">Storage Beds & Wardrobes</Link></li>
           </ul>

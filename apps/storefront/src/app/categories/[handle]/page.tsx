@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ChevronRight, ShieldCheck, Truck } from "lucide-react";
 import {
   CATALOG_CATEGORIES,
@@ -60,6 +60,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   if (!category) {
     notFound();
+  }
+
+  if (category.handle !== handle) {
+    const searchEntries = Object.entries(resolvedSearchParams).flatMap(([k, v]) =>
+      Array.isArray(v) ? v.map((item) => [k, item]) : typeof v === "string" ? [[k, v]] : []
+    );
+    const qs = new URLSearchParams(searchEntries).toString();
+    redirect(`/categories/${category.handle}${qs ? `?${qs}` : ""}`);
   }
 
   const products = await getLiveProductsByCategory(category.id);

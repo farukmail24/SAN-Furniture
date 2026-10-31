@@ -485,6 +485,9 @@ export default function AdminProductsPage() {
         key: "product",
         header: "Product & Spec",
         sortable: true,
+        searchValue: (p) =>
+          `${p.title} ${p.sku || ""} ${p.supplier_sku || ""} ${p.id} ${p.handle} ${p.material || ""} ${p.color || ""}`,
+        sortValue: (p) => p.title,
         cell: (p) => (
           <div className="flex items-center gap-3">
             <img
@@ -520,6 +523,14 @@ export default function AdminProductsPage() {
         key: "category_id",
         header: "Category",
         sortable: true,
+        searchValue: (p) => {
+          const cat = categories.find((c) => c.id === p.category_id);
+          return `${cat ? cat.name : p.category_id} ${p.category_id}`;
+        },
+        sortValue: (p) => {
+          const cat = categories.find((c) => c.id === p.category_id);
+          return cat ? cat.name : p.category_id;
+        },
         cell: (p) => {
           const cat = categories.find((c) => c.id === p.category_id);
           const name = cat ? cat.name : p.category_id?.replace("cat_", "").replace("_", " ");
@@ -554,6 +565,11 @@ export default function AdminProductsPage() {
         key: "margin",
         header: "Gross Margin",
         sortable: true,
+        sortValue: (p) => {
+          return p.cost_price_pennies
+            ? ((p.price_pennies - p.cost_price_pennies) / p.price_pennies) * 100
+            : 40.0;
+        },
         cell: (p) => {
           const margin = p.cost_price_pennies
             ? (((p.price_pennies - p.cost_price_pennies) / p.price_pennies) * 100).toFixed(1)

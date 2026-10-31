@@ -36,6 +36,8 @@ export const {
   CATALOG_CATEGORIES,
   CATEGORY_HANDLE_ALIASES,
   normalizeCategoryHandle,
+  PRODUCT_HANDLE_ALIASES,
+  normalizeProductHandle,
   getCategoryByHandle,
   FURNITURE_SUBTYPES,
   getCategorySubTypes,

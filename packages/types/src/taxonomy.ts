@@ -67,6 +67,50 @@ export function normalizeCategoryHandle(handle: string): string {
   const clean = handle.trim().toLowerCase();
   return CATEGORY_HANDLE_ALIASES[clean] || clean;
 }
+export const PRODUCT_HANDLE_ALIASES: Record<string, string> = {
+  // Oslo Scandinavian desk
+  "oslo-scandinavian-minimalist-writing-desk": "oslo-scandinavian-minimalist-writing-desk-with-3-drawers",
+  "oslo-scandinavian-desk": "oslo-scandinavian-minimalist-writing-desk-with-3-drawers",
+  "oslo-minimalist-writing-desk": "oslo-scandinavian-minimalist-writing-desk-with-3-drawers",
+
+  // Sandringham sofa
+  "sandringham-large-sofa": "sandringham-large-boucl-3-seater-sofa",
+  "sandringham-large-boucle-sofa": "sandringham-large-boucl-3-seater-sofa",
+  "sandringham-large-boucle-3-seater-sofa": "sandringham-large-boucl-3-seater-sofa",
+
+  // Zing Bookcases
+  "zing-white-gloss-bookcase-2439": "zing-white-gloss-bookcase",
+  "zing-short-white-gloss-bookcase-2507": "zing-short-white-gloss-bookcase",
+  "zing-oak-effect-bookcase-2605": "zing-oak-effect-bookcase",
+
+  // Madrid series
+  "madrid-white-gloss-tall-chest-of-drawers-2429": "madrid-white-gloss-tall-chest-of-drawers",
+  "madrid-sliding-door-wardrobe-120cm-gloss-white-2461": "madrid-sliding-door-wardrobe-120cm-gloss-white",
+  "madrid-wardrobe-internal-drawers-2428": "madrid-wardrobe-internal-drawers",
+
+  // Modena dining
+  "modena-extending-dining-table-high-gloss": "modena-high-gloss-extending-6-8-seater-dining-table",
+  "modena-high-gloss-extending-dining-table": "modena-high-gloss-extending-6-8-seater-dining-table",
+
+  // Paris wardrobe
+  "paris-3-door-mirrored-wardrobe-matt-white": "paris-3-door-2-drawer-classic-mirrored-wardrobe-in-matt-white",
+  "paris-3-door-mirrored-wardrobe": "paris-3-door-2-drawer-classic-mirrored-wardrobe-in-matt-white",
+  "paris-2-door-1-drawer-wardrobe": "paris-2-door-1-drawer-wardrobe-romantic-white",
+
+  // Copenhagen chest
+  "copenhagen-4-drawer-deep-chest-danish-oak": "copenhagen-4-drawer-deep-chest-in-solid-danish-oak",
+  "copenhagen-4-drawer-deep-chest": "copenhagen-4-drawer-deep-chest-in-solid-danish-oak",
+
+  // Bedside tables
+  "venice-alpine-white-bedside-2394": "venice-alpine-white-bedside",
+  "louise-white-gloss-bedside-table-2413": "louise-white-gloss-bedside-table",
+};
+
+export function normalizeProductHandle(handle: string): string {
+  const clean = handle.trim().toLowerCase();
+  return PRODUCT_HANDLE_ALIASES[clean] || clean;
+}
+
 
 export function getCategoryByHandle(handle: string): ProductCategory | undefined {
   const normalized = normalizeCategoryHandle(handle);

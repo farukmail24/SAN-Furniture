@@ -290,6 +290,27 @@ export async function POST(request: Request) {
       ]
     );
 
+    // Update Stripe PaymentIntent metadata & description so Stripe Dashboard displays Order Number & Customer Name
+    if (secretKey && paymentConfirmation.paymentIntentId?.startsWith("pi_") && !paymentConfirmation.paymentIntentId.startsWith("pi_test_reused")) {
+      const stripeUpdateParams = new URLSearchParams();
+      stripeUpdateParams.append("description", `SAN Furniture UK Order #${orderNumber} - £${(grandTotalPennies / 100).toFixed(2)}`);
+      stripeUpdateParams.append("metadata[order_number]", orderNumber);
+      stripeUpdateParams.append("metadata[order_id]", orderId);
+      stripeUpdateParams.append("metadata[customer_name]", customer.name);
+      stripeUpdateParams.append("metadata[customer_email]", customer.email.trim().toLowerCase());
+      stripeUpdateParams.append("metadata[shipping_postcode]", cleanPostcode);
+
+      fetch(`https://api.stripe.com/v1/payment_intents/${paymentConfirmation.paymentIntentId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: stripeUpdateParams.toString(),
+        signal: AbortSignal.timeout(5000),
+      }).catch((err) => console.warn("[create-order] Stripe PaymentIntent update warning:", err?.message || err));
+    }
+
     // Save Card Record to customer_payment_methods
     // User mandate: Card is ALWAYS saved in our database. But is_saved_for_future is 1 only if customer agreed.
     try {

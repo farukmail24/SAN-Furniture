@@ -15,6 +15,7 @@
         o.vat_pennies,
         o.total_pennies,
         o.payment_status,
+        o.stripe_payment_intent_id,
         o.fulfillment_status,
         o.cancellation_reason,
         o.cancelled_by,
@@ -31,7 +32,7 @@
       FROM orders o
       LEFT JOIN order_po_dispatches po ON o.id = po.order_id
       ORDER BY o.created_at DESC
-      LIMIT ?`,[c]);return v.NextResponse.json({success:!0,orders:Array.isArray(e)?e:[],total:Array.isArray(e)?e.length:0})}catch(a){return console.error("Failed to fetch admin orders:",a),v.NextResponse.json({success:!1,error:"Failed to fetch orders",details:a?.message||String(a)},{status:500})}}async function C(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});let b=(0,w.n)(),c=await a.json(),d=`ord_manual_${Date.now()}`,e=`SAN-2026-${Math.floor(1e3+9e3*Math.random())}`,f=JSON.stringify(c.items||[]),g=Number(c.total_pennies)||0,h=Math.round(20/120*g);await b.query(`INSERT INTO orders (
+      LIMIT ?`,[c]),[f]=await d.query("SELECT setting_value FROM system_settings WHERE setting_key = 'stripe_mode' LIMIT 1").catch(()=>[[]]),g=f?.[0]?.setting_value||"test";return v.NextResponse.json({success:!0,orders:Array.isArray(e)?e:[],total:Array.isArray(e)?e.length:0,stripeMode:g})}catch(a){return console.error("Failed to fetch admin orders:",a),v.NextResponse.json({success:!1,error:"Failed to fetch orders",details:a?.message||String(a)},{status:500})}}async function C(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});let b=(0,w.n)(),c=await a.json(),d=`ord_manual_${Date.now()}`,e=`SAN-2026-${Math.floor(1e3+9e3*Math.random())}`,f=JSON.stringify(c.items||[]),g=Number(c.total_pennies)||0,h=Math.round(20/120*g);await b.query(`INSERT INTO orders (
         id, order_number, customer_name, customer_email, customer_phone,
         shipping_address, shipping_postcode, shipping_zone, delivery_tier,
         delivery_slot, subtotal_pennies, shipping_pennies, vat_pennies,
