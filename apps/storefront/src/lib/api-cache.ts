@@ -49,6 +49,38 @@ function readCachedData<T>(url: string, method: string): T | null {
   return null;
 }
 
+function prepareRequestOptions(url: string, options?: RequestInit): RequestInit {
+  const customOptions: RequestInit = { ...options };
+  const headers = new Headers(options?.headers || {});
+
+  if (typeof window !== "undefined") {
+    if (!headers.has("Authorization")) {
+      const adminToken = localStorage.getItem("san_admin_token");
+      const customerToken = localStorage.getItem("san_customer_token");
+
+      const isAdminContext =
+        window.location.pathname.startsWith("/admin") ||
+        url.includes("/api/admin/") ||
+        url.includes("/api/security/") ||
+        url.includes("recipient_type=admin");
+
+      if (isAdminContext && adminToken) {
+        headers.set("Authorization", `Bearer ${adminToken}`);
+      } else if (adminToken && (url.includes("/api/admin/") || url.includes("/api/security/"))) {
+        headers.set("Authorization", `Bearer ${adminToken}`);
+      } else if (customerToken) {
+        headers.set("Authorization", `Bearer ${customerToken}`);
+      }
+    }
+    if (!customOptions.credentials) {
+      customOptions.credentials = "include";
+    }
+  }
+
+  customOptions.headers = headers;
+  return customOptions;
+}
+
 /**
  * Pre-fetches an API route into cache in the background
  */
@@ -60,7 +92,8 @@ export async function preloadCache(url: string, options?: RequestInit): Promise<
     return; // Already warm within last 20s
   }
   try {
-    const res = await fetch(url, options);
+    const finalOptions = prepareRequestOptions(url, options);
+    const res = await fetch(url, finalOptions);
     if (!res.ok) return;
     const data = await res.json();
     const cacheRecord: CacheEntry<any> = {
@@ -191,21 +224,7 @@ export async function fetchWithSwr<T>(
 
   // 2. Fetch fresh data in the background without UI blocking
   try {
-    const customOptions: RequestInit = { ...options };
-    const headers = new Headers(options?.headers || {});
-
-    if (typeof window !== "undefined") {
-      if (!headers.has("Authorization")) {
-        const adminToken = localStorage.getItem("san_admin_token");
-        const customerToken = localStorage.getItem("san_customer_token");
-        if ((url.includes("/api/admin/") || url.includes("/api/security/")) && adminToken) {
-          headers.set("Authorization", `Bearer ${adminToken}`);
-        } else if (customerToken) {
-          headers.set("Authorization", `Bearer ${customerToken}`);
-        }
-      }
-    }
-    customOptions.headers = headers;
+    const customOptions = prepareRequestOptions(url, options);
 
     const res = await fetch(url, customOptions);
     if (!res.ok) {

@@ -283,6 +283,14 @@
       "namedRegex": "^/api/notifications/(?<nxtPid>[^/]+?)/read(?:/)?$"
     },
     {
+      "page": "/api/notifications/[id]/unread",
+      "regex": "^/api/notifications/([^/]+?)/unread(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/notifications/(?<nxtPid>[^/]+?)/unread(?:/)?$"
+    },
+    {
       "page": "/api/orders/[id]",
       "regex": "^/api/orders/([^/]+?)(?:/)?$",
       "routeKeys": {

@@ -86,29 +86,39 @@ export default function NotificationsHubPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const getAuthHeaders = useCallback((includeJson = true) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    const headers: Record<string, string> = {};
+    if (includeJson) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  }, []);
+
   const fetchNotifications = useCallback(async (isSilent = false) => {
-    setRefreshing(true);
+    if (!isSilent) setRefreshing(true);
     try {
+      const authHeaders = getAuthHeaders(false);
       await fetchWithSwr<{ notifications: NotificationItem[]; stats?: NotificationStats }>(
         apiUrl("/api/notifications?recipient_type=admin&limit=250"),
         (data) => {
           if (data && data.notifications) {
             setNotifications(data.notifications);
-            if (data.stats) {
-              setStats(data.stats);
-            } else {
-              const list: NotificationItem[] = data.notifications || [];
-              setStats({
-                total: list.length,
-                unread: list.filter((n) => !n.is_read).length,
-                orders: list.filter((n) => n.type.includes("order")).length,
-                tickets: list.filter((n) => n.type.includes("ticket")).length,
-                security: list.filter((n) => n.type.includes("security") || n.type.includes("jail")).length,
-              });
-            }
+            const list: NotificationItem[] = data.notifications || [];
+            setStats({
+              total: list.length,
+              unread: list.filter((n) => !n.is_read).length,
+              orders: list.filter((n) => n.type.includes("order")).length,
+              tickets: list.filter((n) => n.type.includes("ticket")).length,
+              security: list.filter((n) => n.type.includes("security") || n.type.includes("jail")).length,
+            });
             setLoading(false);
           }
-        }
+        },
+        { headers: authHeaders, credentials: "include" }
       );
     } catch (err) {
       console.error("Failed to load notifications", err);
@@ -116,7 +126,7 @@ export default function NotificationsHubPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     fetchNotifications();
@@ -157,8 +167,13 @@ export default function NotificationsHubPage() {
     const newStatus = currentRead ? 0 : 1;
     const endpoint = newStatus ? `/api/notifications/${id}/read` : `/api/notifications/${id}/unread`;
     try {
-      const res = await fetch(apiUrl(endpoint), { method: "PATCH" });
+      const res = await fetch(apiUrl(endpoint), {
+        method: "PATCH",
+        headers: getAuthHeaders(false),
+        credentials: "include",
+      });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, is_read: newStatus } : n))
         );
@@ -167,6 +182,8 @@ export default function NotificationsHubPage() {
           unread: newStatus ? Math.max(0, prev.unread - 1) : prev.unread + 1,
         }));
         showToast(newStatus ? "Alert marked as read." : "Alert marked as unread.");
+      } else {
+        showToast("Failed to update status.");
       }
     } catch {
       showToast("Failed to update status.");
@@ -175,8 +192,13 @@ export default function NotificationsHubPage() {
 
   const handleDeleteSingle = async (id: string) => {
     try {
-      const res = await fetch(apiUrl(`/api/notifications/${id}`), { method: "DELETE" });
+      const res = await fetch(apiUrl(`/api/notifications/${id}`), {
+        method: "DELETE",
+        headers: getAuthHeaders(false),
+        credentials: "include",
+      });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         const removed = notifications.find((n) => n.id === id);
         setNotifications((prev) => prev.filter((n) => n.id !== id));
         setSelectedIds((prev) => prev.filter((item) => item !== id));
@@ -198,13 +220,17 @@ export default function NotificationsHubPage() {
     try {
       const res = await fetch(apiUrl("/api/notifications/read-all"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ recipient_type: "admin" }),
       });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         setNotifications((prev) => prev.map((n) => ({ ...n, is_read: 1 })));
         setStats((prev) => ({ ...prev, unread: 0 }));
         showToast("All operational alerts marked as read.");
+      } else {
+        showToast("Failed to mark all as read.");
       }
     } catch {
       showToast("Failed to mark all as read.");
@@ -216,10 +242,12 @@ export default function NotificationsHubPage() {
     try {
       const res = await fetch(apiUrl("/api/notifications/delete-bulk"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ ids: selectedIds }),
       });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         const deletedSet = new Set(selectedIds);
         const unreadDeleted = notifications.filter((n) => deletedSet.has(n.id) && !n.is_read).length;
         setNotifications((prev) => prev.filter((n) => !deletedSet.has(n.id)));
@@ -230,6 +258,8 @@ export default function NotificationsHubPage() {
         }));
         showToast(`${selectedIds.length} notifications deleted successfully.`);
         setSelectedIds([]);
+      } else {
+        showToast("Failed to delete selected notifications.");
       }
     } catch {
       showToast("Failed to delete selected notifications.");
@@ -240,15 +270,19 @@ export default function NotificationsHubPage() {
     try {
       const res = await fetch(apiUrl("/api/notifications/clear"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ recipient_type: "admin" }),
       });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         setNotifications([]);
         setSelectedIds([]);
         setStats({ total: 0, unread: 0, orders: 0, tickets: 0, security: 0 });
         setIsClearModalOpen(false);
         showToast("All operations notifications cleared.");
+      } else {
+        showToast("Failed to clear notifications.");
       }
     } catch {
       showToast("Failed to clear notifications.");
@@ -265,10 +299,12 @@ export default function NotificationsHubPage() {
     try {
       const res = await fetch(apiUrl("/api/notifications"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify(newAlert),
       });
       if (res.ok) {
+        invalidateCache("/api/notifications");
         setIsCreateModalOpen(false);
         setNewAlert({
           title: "",
@@ -279,6 +315,8 @@ export default function NotificationsHubPage() {
         });
         showToast("New alert broadcasted successfully.");
         fetchNotifications(true);
+      } else {
+        showToast("Failed to create alert.");
       }
     } catch {
       showToast("Failed to create alert.");
