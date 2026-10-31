@@ -160,6 +160,16 @@ export default function CheckoutPage() {
   const [billingState, setBillingState] = useState("");
   const [billingEmail, setBillingEmail] = useState("");
   const [billingPhone, setBillingPhone] = useState("");
+  const [billingAddressOptions, setBillingAddressOptions] = useState<Array<{
+    id: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    county: string;
+    postcode: string;
+    formatted: string;
+  }>>([]);
+  const [selectedBillingAddressIndex, setSelectedBillingAddressIndex] = useState<string>("");
 
   // 3. Shipping Address State
   const [shippingSameAsBilling, setShippingSameAsBilling] = useState(true);
@@ -172,6 +182,16 @@ export default function CheckoutPage() {
   const [shippingPostcode, setShippingPostcode] = useState("");
   const [shippingCountry, setShippingCountry] = useState("United Kingdom");
   const [shippingState, setShippingState] = useState("");
+  const [shippingAddressOptions, setShippingAddressOptions] = useState<Array<{
+    id: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    county: string;
+    postcode: string;
+    formatted: string;
+  }>>([]);
+  const [selectedShippingAddressIndex, setSelectedShippingAddressIndex] = useState<string>("");
 
   // Copy Account -> Billing
   const handleCopyAccountToBilling = () => {
@@ -640,16 +660,36 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (res.ok && data.valid) {
+        const foundAddresses = Array.isArray(data.addresses) ? data.addresses : [];
+
         if (target === "billing") {
           setBillingPostcode(data.postcode);
           if (data.city) setBillingCity(data.city);
           if (data.county) setBillingState(data.county);
-          if (!billingAddress1 && data.sampleAddress) setBillingAddress1(data.sampleAddress);
+          setBillingAddressOptions(foundAddresses);
+          setSelectedBillingAddressIndex("");
+
+          if (foundAddresses.length > 0) {
+            setBillingAddress1(foundAddresses[0].line1);
+            if (foundAddresses[0].line2) setBillingAddress2(foundAddresses[0].line2);
+            setSelectedBillingAddressIndex("0");
+          } else if (data.sampleAddress) {
+            setBillingAddress1(data.sampleAddress);
+          }
         } else {
           setShippingPostcode(data.postcode);
           if (data.city) setShippingCity(data.city);
           if (data.county) setShippingState(data.county);
-          if (!shippingAddress1 && data.sampleAddress) setShippingAddress1(data.sampleAddress);
+          setShippingAddressOptions(foundAddresses);
+          setSelectedShippingAddressIndex("");
+
+          if (foundAddresses.length > 0) {
+            setShippingAddress1(foundAddresses[0].line1);
+            if (foundAddresses[0].line2) setShippingAddress2(foundAddresses[0].line2);
+            setSelectedShippingAddressIndex("0");
+          } else if (data.sampleAddress) {
+            setShippingAddress1(data.sampleAddress);
+          }
         }
 
         if (data.deliverable === false) {
@@ -1549,7 +1589,7 @@ export default function CheckoutPage() {
                       <label className="block text-xs font-semibold text-navy-900">
                         Postcode *
                       </label>
-                      <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN</span>
+                      <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN, CV7 9EU</span>
                     </div>
                     <input
                       type="text"
@@ -1558,6 +1598,7 @@ export default function CheckoutPage() {
                       onChange={(e) => {
                         setBillingPostcode(e.target.value.toUpperCase());
                         setLookupMessage(null);
+                        setBillingAddressOptions([]);
                       }}
                       placeholder="Enter UK Postcode"
                       className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono uppercase"
@@ -1580,18 +1621,86 @@ export default function CheckoutPage() {
                   </button>
                 </div>
 
+                {/* Billing Address Dropdown Selector */}
+                {billingAddressOptions.length > 0 && (
+                  <div className="p-3.5 bg-sand-100 rounded-xl border border-sand-300 shadow-xs space-y-2 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-navy-950 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-brass-600" />
+                        <span>Select Address ({billingAddressOptions.length} premises found):</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setBillingAddressOptions([])}
+                        className="text-[11px] font-medium text-brass-700 hover:text-navy-950 hover:underline"
+                      >
+                        Enter manually
+                      </button>
+                    </div>
+                    <select
+                      value={selectedBillingAddressIndex}
+                      onChange={(e) => {
+                        const idx = e.target.value;
+                        setSelectedBillingAddressIndex(idx);
+                        if (idx !== "" && billingAddressOptions[Number(idx)]) {
+                          const picked = billingAddressOptions[Number(idx)];
+                          setBillingAddress1(picked.line1);
+                          if (picked.line2) setBillingAddress2(picked.line2);
+                          if (picked.city) setBillingCity(picked.city);
+                          if (picked.county) setBillingState(picked.county);
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 font-medium focus:ring-2 focus:ring-brass-500 outline-none cursor-pointer"
+                    >
+                      <option value="">-- Please select your address --</option>
+                      {billingAddressOptions.map((addr, idx) => (
+                        <option key={addr.id || idx} value={idx}>
+                          {addr.formatted}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-semibold text-navy-900 mb-1">
-                    Address Line 1 *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-navy-900">
+                      Address Line 1 *
+                    </label>
+                    {billingAddressOptions.length > 0 && (
+                      <span className="text-[10px] text-emerald-800 font-medium">
+                        ✓ Select from dropdown above or edit / type below
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
+                    list="billing-address-options-list"
                     value={billingAddress1}
-                    onChange={(e) => setBillingAddress1(e.target.value)}
+                    onChange={(e) => {
+                      setBillingAddress1(e.target.value);
+                      const match = billingAddressOptions.find(
+                        (a) => a.line1.toLowerCase() === e.target.value.toLowerCase()
+                      );
+                      if (match) {
+                        if (match.line2) setBillingAddress2(match.line2);
+                        if (match.city) setBillingCity(match.city);
+                        if (match.county) setBillingState(match.county);
+                      }
+                    }}
                     placeholder="House name / number and street"
                     className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                   />
+                  {billingAddressOptions.length > 0 && (
+                    <datalist id="billing-address-options-list">
+                      {billingAddressOptions.map((a, idx) => (
+                        <option key={idx} value={a.line1}>
+                          {a.formatted}
+                        </option>
+                      ))}
+                    </datalist>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1768,7 +1877,7 @@ export default function CheckoutPage() {
                           <label className="block text-xs font-semibold text-navy-900">
                             Postcode *
                           </label>
-                          <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN</span>
+                          <span className="text-[10px] text-navy-500">e.g. SW1A 1AA, M1 1AE, LE5 5FN, CV7 9EU</span>
                         </div>
                         <input
                           type="text"
@@ -1777,6 +1886,7 @@ export default function CheckoutPage() {
                           onChange={(e) => {
                             setShippingPostcode(e.target.value.toUpperCase());
                             setLookupMessage(null);
+                            setShippingAddressOptions([]);
                           }}
                           placeholder="Enter UK Delivery Postcode"
                           className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none font-mono uppercase"
@@ -1799,18 +1909,86 @@ export default function CheckoutPage() {
                       </button>
                     </div>
 
+                    {/* Shipping Address Dropdown Selector */}
+                    {shippingAddressOptions.length > 0 && (
+                      <div className="p-3.5 bg-sand-100 rounded-xl border border-sand-300 shadow-xs space-y-2 animate-in fade-in duration-200">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-bold text-navy-950 flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5 text-brass-600" />
+                            <span>Select Delivery Address ({shippingAddressOptions.length} premises found):</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setShippingAddressOptions([])}
+                            className="text-[11px] font-medium text-brass-700 hover:text-navy-950 hover:underline"
+                          >
+                            Enter manually
+                          </button>
+                        </div>
+                        <select
+                          value={selectedShippingAddressIndex}
+                          onChange={(e) => {
+                            const idx = e.target.value;
+                            setSelectedShippingAddressIndex(idx);
+                            if (idx !== "" && shippingAddressOptions[Number(idx)]) {
+                              const picked = shippingAddressOptions[Number(idx)];
+                              setShippingAddress1(picked.line1);
+                              if (picked.line2) setShippingAddress2(picked.line2);
+                              if (picked.city) setShippingCity(picked.city);
+                              if (picked.county) setShippingState(picked.county);
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 font-medium focus:ring-2 focus:ring-brass-500 outline-none cursor-pointer"
+                        >
+                          <option value="">-- Please select your delivery address --</option>
+                          {shippingAddressOptions.map((addr, idx) => (
+                            <option key={addr.id || idx} value={idx}>
+                              {addr.formatted}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="block text-xs font-semibold text-navy-900 mb-1">
-                        Address Line 1 *
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-navy-900">
+                          Address Line 1 *
+                        </label>
+                        {shippingAddressOptions.length > 0 && (
+                          <span className="text-[10px] text-emerald-800 font-medium">
+                            ✓ Select from dropdown above or edit / type below
+                          </span>
+                        )}
+                      </div>
                       <input
                         type="text"
                         required={!shippingSameAsBilling}
+                        list="shipping-address-options-list"
                         value={shippingAddress1}
-                        onChange={(e) => setShippingAddress1(e.target.value)}
+                        onChange={(e) => {
+                          setShippingAddress1(e.target.value);
+                          const match = shippingAddressOptions.find(
+                            (a) => a.line1.toLowerCase() === e.target.value.toLowerCase()
+                          );
+                          if (match) {
+                            if (match.line2) setShippingAddress2(match.line2);
+                            if (match.city) setShippingCity(match.city);
+                            if (match.county) setShippingState(match.county);
+                          }
+                        }}
                         placeholder="House name / number and street"
                         className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                       />
+                      {shippingAddressOptions.length > 0 && (
+                        <datalist id="shipping-address-options-list">
+                          {shippingAddressOptions.map((a, idx) => (
+                            <option key={idx} value={a.line1}>
+                              {a.formatted}
+                            </option>
+                          ))}
+                        </datalist>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
