@@ -27,7 +27,7 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
       console.log(`[catalog-server] Auto-syncing ${missingProducts.length} missing products to MySQL...`);
       const productCols = [
         "id", "handle", "sku", "title", "subtitle", "description", "category_id", "status",
-        "price_pennies", "compare_at_price_pennies", "cost_price_pennies", "vat_rate_percent",
+        "price_pennies", "compare_at_price_pennies", "vat_rate_percent",
         "gtin_barcode", "thumbnail_url", "images_json", "variants_json", "created_at", "updated_at"
       ];
 
@@ -35,7 +35,32 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
         await pool.query(
           `INSERT IGNORE INTO products (${productCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${productCols.map(() => "?").join(", ")})`,
           productCols.map((c) => (p as any)[c] ?? null)
-        ).catch(() => {});
+        ).catch((err: any) => console.warn(`Failed to insert product ${p.id}:`, err));
+
+        if ((p as any).cost_price_pennies) {
+          const supplierCols = [
+            "id", "supplier_id", "supplier_sku", "product_id", "source_url",
+            "cost_price_pennies", "shipping_cost_pennies", "markup_percentage",
+            "retail_price_pennies", "stock_level", "lead_time_days", "last_synced_at"
+          ];
+          await pool.query(
+            `INSERT IGNORE INTO supplier_feed_items (${supplierCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${supplierCols.map(() => "?").join(", ")})`,
+            [
+              `sup_${p.id}`,
+              p.id.includes("am_") ? "amos_mann" : "furniture_to_go",
+              p.sku || p.id,
+              p.id,
+              p.thumbnail_url || null,
+              Number((p as any).cost_price_pennies) || 0,
+              4900,
+              40,
+              Number(p.price_pennies) || 0,
+              25,
+              5,
+              new Date()
+            ]
+          ).catch(() => {});
+        }
       }
     }
 
@@ -154,7 +179,7 @@ export async function syncSingleProductToDb(p: any, s?: any): Promise<void> {
     const pool = getDbPool();
     const productCols = [
       "id", "handle", "sku", "title", "subtitle", "description", "category_id", "status",
-      "price_pennies", "compare_at_price_pennies", "cost_price_pennies", "vat_rate_percent",
+      "price_pennies", "compare_at_price_pennies", "vat_rate_percent",
       "gtin_barcode", "thumbnail_url", "images_json", "variants_json", "created_at", "updated_at"
     ];
     await pool.query(
@@ -175,11 +200,39 @@ export async function syncSingleProductToDb(p: any, s?: any): Promise<void> {
         specCols.map((c) => (s as any)[c] ?? null)
       ).catch(() => {});
     }
+
+    if (p.cost_price_pennies) {
+      const supplierCols = [
+        "id", "supplier_id", "supplier_sku", "product_id", "source_url",
+        "cost_price_pennies", "shipping_cost_pennies", "markup_percentage",
+        "retail_price_pennies", "stock_level", "lead_time_days", "last_synced_at"
+      ];
+      await pool.query(
+        `INSERT IGNORE INTO supplier_feed_items (${supplierCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${supplierCols.map(() => "?").join(", ")})`,
+        [
+          `sup_${p.id}`,
+          p.id.includes("am_") ? "amos_mann" : "furniture_to_go",
+          p.sku || p.id,
+          p.id,
+          p.thumbnail_url || null,
+          Number(p.cost_price_pennies) || 0,
+          4900,
+          40,
+          Number(p.price_pennies) || 0,
+          25,
+          5,
+          new Date()
+        ]
+      ).catch(() => {});
+    }
   } catch {}
 }
 
 export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<CatalogProduct[]> {
   const now = Date.now();
+  if (forceRefresh) {
+    isCatalogSyncAttempted = false;
+  }
   if (!forceRefresh && cachedProducts.length > 0 && now - lastProductsFetch < CACHE_TTL) {
     return cachedProducts;
   }

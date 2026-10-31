@@ -2160,7 +2160,19 @@ const server = http.createServer(async (req, res) => {
                COALESCE(sup.lead_time_days, 5) as lead_time_days
         FROM products p
         LEFT JOIN furniture_specs s ON p.id = s.product_id
-        LEFT JOIN supplier_feed_items sup ON p.id = sup.product_id
+        LEFT JOIN (
+          SELECT product_id,
+                 MAX(supplier_id) as supplier_id,
+                 MAX(supplier_sku) as supplier_sku,
+                 MAX(source_url) as source_url,
+                 COALESCE(MAX(cost_price_pennies), 0) as cost_price_pennies,
+                 COALESCE(MAX(markup_percentage), 40) as markup_percentage,
+                 COALESCE(MAX(stock_level), 25) as stock_level,
+                 COALESCE(MAX(shipping_cost_pennies), 4900) as shipping_cost_pennies,
+                 COALESCE(MAX(lead_time_days), 5) as lead_time_days
+          FROM supplier_feed_items
+          GROUP BY product_id
+        ) sup ON p.id = sup.product_id
         ORDER BY p.created_at DESC
       `);
       return sendJson(res, 200, { products: rows });

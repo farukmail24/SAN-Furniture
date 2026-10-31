@@ -135,6 +135,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           initialProducts={products}
           allCategories={CATALOG_CATEGORIES}
           initialSearchParams={resolvedSearchParams}
+          hideHeaderBanner={true}
         />
       </div>
     </div>

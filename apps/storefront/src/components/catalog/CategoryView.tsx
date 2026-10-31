@@ -18,13 +18,15 @@ interface CategoryViewProps {
   initialProducts: CatalogProduct[];
   allCategories?: ProductCategory[];
   initialSearchParams?: Record<string, string | string[] | undefined>;
+  hideHeaderBanner?: boolean;
 }
 
 export function CategoryView({
   category,
   initialProducts,
   allCategories,
-  initialSearchParams
+  initialSearchParams,
+  hideHeaderBanner = false,
 }: CategoryViewProps) {
   // Extract initial sub-type from URL search params (e.g. ?type=wardrobes)
   const initialTypeParam =
@@ -153,69 +155,72 @@ export function CategoryView({
 
   return (
     <div className="w-full px-0">
-      {/* Category Header Banner */}
-      <div className="mb-10 pb-8 border-b border-sand-200">
-        <div className="flex items-center gap-2 text-xs text-navy-500 mb-3">
-          <Link href="/" className="hover:text-navy-950">Home</Link>
-          <span>/</span>
-          <Link href="/catalog" className="hover:text-navy-950">Collections</Link>
-          {category && (
-            <>
-              <span>/</span>
-              <span className="text-navy-900 font-medium">{category.name}</span>
-            </>
-          )}
-          {activeSubType && (
-            <>
-              <span>/</span>
-              <span className="text-brass-700 font-semibold">{activeSubType.label}</span>
-            </>
-          )}
+      {/* Category Header Banner (shown only when not suppressed by parent page) */}
+      {!hideHeaderBanner && (
+        <div className="mb-8 pb-6 border-b border-sand-200">
+          <div className="flex items-center gap-2 text-xs text-navy-500 mb-3">
+            <Link href="/" className="hover:text-navy-950">Home</Link>
+            <span>/</span>
+            <Link href="/catalog" className="hover:text-navy-950">Collections</Link>
+            {category && (
+              <>
+                <span>/</span>
+                <span className="text-navy-900 font-medium">{category.name}</span>
+              </>
+            )}
+            {activeSubType && (
+              <>
+                <span>/</span>
+                <span className="text-brass-700 font-semibold">{activeSubType.label}</span>
+              </>
+            )}
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-navy-950">
+            {activeSubType
+              ? `${category?.name || "Collection"} — ${activeSubType.label}`
+              : category
+              ? category.name
+              : "The Complete Furniture Collection"}
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-navy-700 max-w-2xl leading-relaxed">
+            {category
+              ? category.description
+              : "Handcrafted British furniture designed with architectural proportions, premium fabrics, and white glove delivery."}
+          </p>
         </div>
+      )}
 
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-navy-950">
-          {activeSubType
-            ? `${category?.name || "Collection"} — ${activeSubType.label}`
-            : category
-            ? category.name
-            : "All Living Collections"}
-        </h1>
-        <p className="mt-3 text-sm sm:text-base text-navy-700 max-w-2xl leading-relaxed">
-          {category
-            ? category.description
-            : "Handcrafted British furniture designed with architectural proportions, premium fabrics, and white glove delivery."}
-        </p>
-
-        {/* Quick Room Category Tabs */}
-        {allCategories && allCategories.length > 0 && (
-          <div className="flex items-center gap-2 mt-6 overflow-x-auto pb-2 scrollbar-none">
+      {/* Quick Room Category Tabs */}
+      {allCategories && allCategories.length > 0 && (
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none">
+          <Link
+            href="/catalog"
+            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              !category ? "bg-navy-950 text-sand-50" : "bg-sand-100 text-navy-800 hover:bg-sand-200"
+            }`}
+          >
+            All Items ({initialProducts.length})
+          </Link>
+          {allCategories.map((c) => (
             <Link
-              href="/catalog"
+              key={c.id}
+              href={`/categories/${c.handle}`}
               className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                !category ? "bg-navy-950 text-sand-50" : "bg-sand-100 text-navy-800 hover:bg-sand-200"
+                category?.id === c.id
+                  ? "bg-navy-950 text-sand-50 shadow-sm"
+                  : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200/80"
               }`}
             >
-              All Items ({initialProducts.length})
+              {c.name}
             </Link>
-            {allCategories.map((c) => (
-              <Link
-                key={c.id}
-                href={`/categories/${c.handle}`}
-                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                  category?.id === c.id
-                    ? "bg-navy-950 text-sand-50 shadow-sm"
-                    : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200/80"
-                }`}
-              >
-                {c.name}
-              </Link>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+      )}
 
-        {/* Granular Furniture Sub-Type Filter Pills (Wardrobes, Bedside, Desks, etc.) */}
-        {availableSubTypes.length > 0 && (
-          <div className="mt-6 pt-5 border-t border-sand-200/80">
+      {/* Granular Furniture Sub-Type Filter Pills (Wardrobes, Bedside, Desks, etc.) */}
+      {availableSubTypes.length > 0 && (
+        <div className="mb-8 pt-4 pb-4 border-t border-b border-sand-200/80">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] font-bold uppercase tracking-wider text-navy-600 flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-brass-600" />
@@ -272,7 +277,6 @@ export function CategoryView({
             </div>
           </div>
         )}
-      </div>
 
       {/* Main Content: Sidebar + Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">

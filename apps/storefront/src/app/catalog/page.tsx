@@ -74,6 +74,7 @@ export default async function CatalogPage() {
         <CategoryView
           initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}
+          hideHeaderBanner={true}
         />
       </div>
     </div>

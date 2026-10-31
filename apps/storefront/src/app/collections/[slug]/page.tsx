@@ -191,6 +191,7 @@ export default async function ProgrammaticCollectionPage({
         <CategoryView
           initialProducts={matchingProducts}
           allCategories={CATALOG_CATEGORIES}
+          hideHeaderBanner={true}
         />
       </div>
 
