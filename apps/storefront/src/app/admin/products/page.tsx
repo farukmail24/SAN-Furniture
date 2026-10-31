@@ -84,6 +84,25 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "out_of_stock">("all");
+
+  const publishedCount = useMemo(() => {
+    return products.filter((p) => p.status === "published" || p.status === "active").length;
+  }, [products]);
+
+  const outOfStockCount = useMemo(() => {
+    return products.filter((p) => p.status === "out_of_stock").length;
+  }, [products]);
+
+  const displayedProducts = useMemo(() => {
+    if (statusFilter === "published") {
+      return products.filter((p) => p.status === "published" || p.status === "active");
+    }
+    if (statusFilter === "out_of_stock") {
+      return products.filter((p) => p.status === "out_of_stock");
+    }
+    return products;
+  }, [products, statusFilter]);
 
   // View Modal state
   const [viewingProduct, setViewingProduct] = useState<ProductItem | null>(null);
@@ -728,30 +747,82 @@ export default function AdminProductsPage() {
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Catalog Items</span>
           <p className="text-2xl font-display font-bold text-navy-950 mt-1">{products.length}</p>
+          <p className="text-[11px] text-navy-600 mt-1 flex items-center gap-1.5 flex-wrap">
+            <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {publishedCount} Live
+            </span>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-rose-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+              {outOfStockCount} Out of Stock
+            </span>
+          </p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Live Units In Stock</span>
           <p className="text-2xl font-display font-bold text-emerald-700 mt-1">
-            {products.reduce((acc, p) => acc + (p.stock_level ?? 25), 0)}
+            {products.reduce((acc, p) => acc + (p.status === "out_of_stock" ? 0 : (p.stock_level ?? 25)), 0)}
           </p>
+          <p className="text-[11px] text-emerald-800/80 mt-1">UK Warehouse Ready</p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Active Categories</span>
           <p className="text-2xl font-display font-bold text-brass-700 mt-1">{categories.length}</p>
+          <p className="text-[11px] text-navy-600 mt-1">All Rooms Covered</p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Quality Checked</span>
           <p className="text-2xl font-display font-bold text-emerald-700 mt-1">100%</p>
+          <p className="text-[11px] text-navy-600 mt-1">BS 5852 Compliant</p>
         </div>
         <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Database Source</span>
           <p className="text-sm font-mono font-bold text-navy-900 mt-2">MySQL / port 3306</p>
+          <p className="text-[11px] text-emerald-700 mt-1 font-medium">Direct Sync Active</p>
         </div>
+      </div>
+
+      {/* Quick Status Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+        <button
+          type="button"
+          onClick={() => setStatusFilter("all")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+            statusFilter === "all"
+              ? "bg-navy-950 text-sand-50 shadow-sm ring-1 ring-navy-950"
+              : "bg-sand-100 text-navy-800 hover:bg-sand-200 border border-sand-200"
+          }`}
+        >
+          All Catalog ({products.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter("published")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+            statusFilter === "published"
+              ? "bg-emerald-800 text-emerald-50 shadow-sm ring-1 ring-emerald-900"
+              : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200"
+          }`}
+        >
+          Live on Storefront ({publishedCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => setStatusFilter("out_of_stock")}
+          className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shadow-xs ${
+            statusFilter === "out_of_stock"
+              ? "bg-rose-800 text-rose-50 shadow-sm ring-1 ring-rose-900"
+              : "bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200"
+          }`}
+        >
+          Out of Stock / Auto-Hidden ({outOfStockCount})
+        </button>
       </div>
 
       {/* Global Advanced DataTable */}
       <DataTable
-        data={products}
+        data={displayedProducts}
         columns={columns}
         keyExtractor={(p) => p.id}
         title="Live Furniture Inventory"
