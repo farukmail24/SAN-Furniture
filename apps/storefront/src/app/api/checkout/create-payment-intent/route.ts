@@ -11,6 +11,8 @@ export async function POST(request: Request) {
     const { amountPennies, customer, shippingAddress, deliveryTier, items } = body;
 
     let resolvedAmountPennies = Number(amountPennies) || 0;
+    let voucherDiscountPennies = 0;
+    let validatedVoucherCode: string | null = null;
 
     // Canonical price recalculation if items are provided (Prevents client-side price manipulation)
     if (Array.isArray(items) && items.length > 0) {
@@ -74,7 +76,40 @@ export async function POST(request: Request) {
             }
           }
 
-          resolvedAmountPennies = canonicalSubtotal + tierShipping + surchargePennies;
+          // Voucher discount evaluation
+          const promoCode = (body.voucherCode || body.promoCode || "").toString().trim().toUpperCase();
+
+          if (promoCode) {
+            const [promos]: any = await pool.query(
+              "SELECT * FROM promotions WHERE UPPER(code) = ? AND is_active = 1 LIMIT 1",
+              [promoCode]
+            ).catch(() => [[]]);
+
+            if (Array.isArray(promos) && promos.length > 0) {
+              const promo = promos[0];
+              const now = new Date();
+              const validDates =
+                (!promo.starts_at || new Date(promo.starts_at) <= now) &&
+                (!promo.expires_at || new Date(promo.expires_at) >= now);
+              const validUses = promo.max_uses <= 0 || promo.usage_count < promo.max_uses;
+              const validSpend = canonicalSubtotal >= (Number(promo.min_order_pennies) || 0);
+
+              if (validDates && validUses && validSpend) {
+                validatedVoucherCode = promo.code;
+                if (promo.discount_type === "percentage") {
+                  voucherDiscountPennies = Math.round((canonicalSubtotal * Number(promo.discount_value)) / 100);
+                  if (promo.max_discount_pennies && promo.max_discount_pennies > 0) {
+                    voucherDiscountPennies = Math.min(voucherDiscountPennies, Number(promo.max_discount_pennies));
+                  }
+                } else {
+                  voucherDiscountPennies = Math.min(Number(promo.discount_value), canonicalSubtotal);
+                }
+              }
+            }
+          }
+
+          const discountedSubtotal = Math.max(0, canonicalSubtotal - voucherDiscountPennies);
+          resolvedAmountPennies = discountedSubtotal + tierShipping + surchargePennies;
         }
       }
     }
@@ -199,6 +234,11 @@ export async function POST(request: Request) {
         if (deliveryTier) {
           stripeParams.append("metadata[delivery_tier]", deliveryTier);
         }
+        if (validatedVoucherCode) {
+          stripeParams.append("metadata[voucher_code]", validatedVoucherCode);
+          stripeParams.append("metadata[discount_pennies]", String(voucherDiscountPennies));
+          stripeParams.append("metadata[discount_gbp]", (voucherDiscountPennies / 100).toFixed(2));
+        }
 
         const stripeRes = await fetch("https://api.stripe.com/v1/payment_intents", {
           method: "POST",
@@ -234,6 +274,8 @@ export async function POST(request: Request) {
       clientSecret,
       amountPennies: resolvedAmountPennies,
       formattedAmount: formatGBP(resolvedAmountPennies),
+      discountPennies: voucherDiscountPennies,
+      voucherCode: validatedVoucherCode,
       currency: conf.stripe_currency || "GBP",
       status: "requires_confirmation",
       paymentMethod: "card",

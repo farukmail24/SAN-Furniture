@@ -15,17 +15,80 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const pool = getDbPool();
 
-    const isActive = body.isActive ? 1 : 0;
-    await pool.query("UPDATE promotions SET is_active = ? WHERE id = ? OR code = ?", [
-      isActive,
-      id,
-      id,
-    ]);
+    // Check if simple status toggle
+    if (Object.keys(body).length === 1 && typeof body.isActive !== "undefined") {
+      const isActive = body.isActive ? 1 : 0;
+      await pool.query("UPDATE promotions SET is_active = ? WHERE id = ? OR code = ?", [
+        isActive,
+        id,
+        id,
+      ]);
+      return NextResponse.json({ success: true, message: "Promotion status updated" });
+    }
 
-    return NextResponse.json({ success: true, message: "Promotion status updated" });
+    // Full update
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (typeof body.description === "string") {
+      fields.push("description = ?");
+      values.push(body.description);
+    }
+    if (body.discountType) {
+      fields.push("discount_type = ?");
+      values.push(body.discountType);
+    }
+    if (typeof body.discountValue !== "undefined") {
+      fields.push("discount_value = ?");
+      values.push(Number(body.discountValue) || 0);
+    }
+    if (typeof body.maxDiscountPennies !== "undefined") {
+      fields.push("max_discount_pennies = ?");
+      values.push(body.maxDiscountPennies ? Number(body.maxDiscountPennies) : null);
+    }
+    if (typeof body.minOrderPennies !== "undefined") {
+      fields.push("min_order_pennies = ?");
+      values.push(Number(body.minOrderPennies) || 0);
+    }
+    if (typeof body.isActive !== "undefined") {
+      fields.push("is_active = ?");
+      values.push(body.isActive ? 1 : 0);
+    }
+    if (typeof body.startsAt !== "undefined") {
+      fields.push("starts_at = ?");
+      values.push(body.startsAt ? new Date(body.startsAt) : null);
+    }
+    if (typeof body.expiresAt !== "undefined") {
+      fields.push("expires_at = ?");
+      values.push(body.expiresAt ? new Date(body.expiresAt) : null);
+    }
+    if (typeof body.maxUses !== "undefined") {
+      fields.push("max_uses = ?");
+      values.push(Number(body.maxUses) || 1000);
+    }
+    if (typeof body.perCustomerLimit !== "undefined") {
+      fields.push("per_customer_limit = ?");
+      values.push(Number(body.perCustomerLimit) || 1);
+    }
+    if (typeof body.firstOrderOnly !== "undefined") {
+      fields.push("first_order_only = ?");
+      values.push(body.firstOrderOnly ? 1 : 0);
+    }
+
+    if (fields.length === 0) {
+      return NextResponse.json({ success: false, error: "No fields provided to update" }, { status: 400 });
+    }
+
+    values.push(id, id);
+    await pool.query(
+      `UPDATE promotions SET ${fields.join(", ")} WHERE id = ? OR code = ?`,
+      values
+    );
+
+    return NextResponse.json({ success: true, message: "Promotion updated successfully" });
   } catch (err: any) {
     return NextResponse.json(
       { success: false, error: "Failed to update promotion", details: err?.message || String(err) },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   Headphones,
@@ -132,6 +132,14 @@ export default function AdminSupportHelpdeskPage() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const getAuthHeaders = useCallback((includeJson = true) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    const headers: Record<string, string> = {};
+    if (includeJson) headers["Content-Type"] = "application/json";
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    return headers;
+  }, []);
+
   // Fetch Tickets List with 0ms SWR Cache
   const fetchTickets = async (isSilent = false) => {
     try {
@@ -145,27 +153,32 @@ export default function AdminSupportHelpdeskPage() {
       if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
       const url = apiUrl(`/api/support/tickets?${params.toString()}`);
+      const authHeaders = getAuthHeaders(false);
       await fetchWithSwr<{
         tickets: SupportTicket[];
         counts: { total: number; open: number; in_progress: number; waiting_customer: number; resolved: number };
-      }>(url, (data) => {
-        if (data && data.tickets) {
-          setTickets(data.tickets);
-          if (data.counts) {
-            setCounts({
-              total: Number(data.counts.total || 0),
-              open: Number(data.counts.open || 0),
-              in_progress: Number(data.counts.in_progress || 0),
-              waiting_customer: Number(data.counts.waiting_customer || 0),
-              resolved: Number(data.counts.resolved || 0),
-            });
+      }>(
+        url,
+        (data) => {
+          if (data && data.tickets) {
+            setTickets(data.tickets);
+            if (data.counts) {
+              setCounts({
+                total: Number(data.counts.total || 0),
+                open: Number(data.counts.open || 0),
+                in_progress: Number(data.counts.in_progress || 0),
+                waiting_customer: Number(data.counts.waiting_customer || 0),
+                resolved: Number(data.counts.resolved || 0),
+              });
+            }
+            if (!selectedTicketId && data.tickets.length > 0) {
+              setSelectedTicketId(data.tickets[0].id);
+            }
+            setLoading(false);
           }
-          if (!selectedTicketId && data.tickets.length > 0) {
-            setSelectedTicketId(data.tickets[0].id);
-          }
-          setLoading(false);
-        }
-      });
+        },
+        { headers: authHeaders, credentials: "include" }
+      );
     } catch (err) {
       console.error("Failed to load tickets:", err);
     } finally {
@@ -177,7 +190,10 @@ export default function AdminSupportHelpdeskPage() {
   const fetchTicketDetails = async (id: string) => {
     try {
       setDetailLoading(true);
-      const res = await fetch(apiUrl(`/api/support/tickets/${id}`));
+      const res = await fetch(apiUrl(`/api/support/tickets/${id}`), {
+        headers: getAuthHeaders(false),
+        credentials: "include",
+      });
       if (res.ok) {
         const data = await res.json();
         setTicketDetail(data);
@@ -213,7 +229,8 @@ export default function AdminSupportHelpdeskPage() {
     try {
       const res = await fetch(apiUrl(`/api/support/tickets/${selectedTicketId}`), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ status: newStatus }),
       });
       if (res.ok) {
@@ -232,7 +249,8 @@ export default function AdminSupportHelpdeskPage() {
     try {
       const res = await fetch(apiUrl(`/api/support/tickets/${selectedTicketId}`), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ priority: newPriority }),
       });
       if (res.ok) {
@@ -251,7 +269,8 @@ export default function AdminSupportHelpdeskPage() {
     try {
       const res = await fetch(apiUrl(`/api/support/tickets/${selectedTicketId}`), {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({ assigned_to: newAssignee }),
       });
       if (res.ok) {
@@ -273,7 +292,8 @@ export default function AdminSupportHelpdeskPage() {
       setSendingReply(true);
       const res = await fetch(apiUrl(`/api/support/tickets/${selectedTicketId}/messages`), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(true),
+        credentials: "include",
         body: JSON.stringify({
           sender_type: "agent",
           sender_name: "SAN Operations Concierge",

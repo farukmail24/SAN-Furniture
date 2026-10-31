@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
+import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,29 @@ export async function GET(request: Request) {
     }
 
     const pool = getDbPool();
-    const [promotions]: any = await pool.query("SELECT * FROM promotions ORDER BY created_at DESC");
+    const [promotions]: any = await pool.query(
+      `SELECT p.*,
+              COALESCE((SELECT SUM(discount_pennies) FROM voucher_redemptions WHERE voucher_code = p.code), 0) as total_savings_pennies
+       FROM promotions p 
+       ORDER BY p.created_at DESC`
+    );
+
+    const list = Array.isArray(promotions) ? promotions : [];
+    const totalRedeemed = list.reduce((acc: number, p: any) => acc + (Number(p.usage_count) || 0), 0);
+    const totalSavingsPennies = list.reduce(
+      (acc: number, p: any) => acc + (Number(p.total_savings_pennies) || 0),
+      0
+    );
+
     return NextResponse.json({
       success: true,
-      promotions: Array.isArray(promotions) ? promotions : [],
+      promotions: list,
+      summary: {
+        totalVouchers: list.length,
+        activeCampaigns: list.filter((p: any) => p.is_active).length,
+        totalRedeemed,
+        totalSavingsPennies,
+      },
     });
   } catch (err: any) {
     return NextResponse.json(
@@ -39,34 +59,60 @@ export async function POST(request: Request) {
       description,
       discountType = "percentage",
       discountValue = 10,
+      maxDiscountPennies = null,
       minOrderPennies = 0,
-      maxUses = 100,
+      maxUses = 1000,
+      perCustomerLimit = 1,
+      firstOrderOnly = 0,
+      startsAt = null,
+      expiresAt = null,
       isActive = 1,
     } = body;
 
-    if (!code) {
-      return NextResponse.json({ error: "Voucher code is required" }, { status: 400 });
+    const cleanCode = (code || "").toString().trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "");
+    if (!cleanCode) {
+      return NextResponse.json({ error: "A valid alphanumeric voucher code is required" }, { status: 400 });
     }
 
-    const promoId = `promo_${code.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+    const promoId = `promo_${cleanCode.toLowerCase()}_${crypto.randomBytes(3).toString("hex")}`;
+    
     await pool.query(
-      `INSERT INTO promotions (id, code, description, discount_type, discount_value, min_order_pennies, is_active, usage_count, max_uses)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
-       ON DUPLICATE KEY UPDATE description = VALUES(description), discount_type = VALUES(discount_type), discount_value = VALUES(discount_value), min_order_pennies = VALUES(min_order_pennies), is_active = VALUES(is_active)`,
+      `INSERT INTO promotions (
+        id, code, description, discount_type, discount_value, max_discount_pennies,
+        min_order_pennies, is_active, starts_at, expires_at, usage_count, max_uses,
+        per_customer_limit, first_order_only, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE
+        description = VALUES(description),
+        discount_type = VALUES(discount_type),
+        discount_value = VALUES(discount_value),
+        max_discount_pennies = VALUES(max_discount_pennies),
+        min_order_pennies = VALUES(min_order_pennies),
+        is_active = VALUES(is_active),
+        starts_at = VALUES(starts_at),
+        expires_at = VALUES(expires_at),
+        max_uses = VALUES(max_uses),
+        per_customer_limit = VALUES(per_customer_limit),
+        first_order_only = VALUES(first_order_only)`,
       [
         promoId,
-        code.toUpperCase(),
-        description || code,
+        cleanCode,
+        description || cleanCode,
         discountType,
-        discountValue,
-        minOrderPennies,
+        Number(discountValue) || 0,
+        maxDiscountPennies ? Number(maxDiscountPennies) : null,
+        Number(minOrderPennies) || 0,
         isActive ? 1 : 0,
-        maxUses,
+        startsAt ? new Date(startsAt) : null,
+        expiresAt ? new Date(expiresAt) : null,
+        Number(maxUses) || 1000,
+        Number(perCustomerLimit) || 1,
+        firstOrderOnly ? 1 : 0,
       ]
     );
 
     return NextResponse.json(
-      { success: true, promoId, message: `Promotion ${code} created` },
+      { success: true, promoId, code: cleanCode, message: `Voucher "${cleanCode}" created successfully` },
       { status: 201 }
     );
   } catch (err: any) {

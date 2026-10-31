@@ -172,8 +172,45 @@ export async function POST(request: Request) {
       }
     }
 
+    // Voucher discount validation
+    const promoCode = (body.voucherCode || body.promoCode || "").toString().trim().toUpperCase();
+    let discountPennies = 0;
+    let appliedVoucherId: string | null = null;
+    let appliedVoucherCode: string | null = null;
+
+    if (promoCode) {
+      const [promos]: any = await pool.query(
+        "SELECT * FROM promotions WHERE UPPER(code) = ? AND is_active = 1 LIMIT 1",
+        [promoCode]
+      ).catch(() => [[]]);
+
+      if (Array.isArray(promos) && promos.length > 0) {
+        const promo = promos[0];
+        const now = new Date();
+        const validDates =
+          (!promo.starts_at || new Date(promo.starts_at) <= now) &&
+          (!promo.expires_at || new Date(promo.expires_at) >= now);
+        const validUses = promo.max_uses <= 0 || promo.usage_count < promo.max_uses;
+        const validSpend = subtotalPennies >= (Number(promo.min_order_pennies) || 0);
+
+        if (validDates && validUses && validSpend) {
+          appliedVoucherId = promo.id;
+          appliedVoucherCode = promo.code;
+          if (promo.discount_type === "percentage") {
+            discountPennies = Math.round((subtotalPennies * Number(promo.discount_value)) / 100);
+            if (promo.max_discount_pennies && promo.max_discount_pennies > 0) {
+              discountPennies = Math.min(discountPennies, Number(promo.max_discount_pennies));
+            }
+          } else {
+            discountPennies = Math.min(Number(promo.discount_value), subtotalPennies);
+          }
+        }
+      }
+    }
+
     const shippingPennies = baseShippingPennies + surchargePennies;
-    const grandTotalPennies = subtotalPennies + shippingPennies;
+    const discountedGoodsPennies = Math.max(0, subtotalPennies - discountPennies);
+    const grandTotalPennies = discountedGoodsPennies + shippingPennies;
     const vatBreakdown = calculateNetAndVat(grandTotalPennies);
 
     const orderId = `ord_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
@@ -264,10 +301,10 @@ export async function POST(request: Request) {
       `INSERT INTO orders (
         id, order_number, customer_name, customer_email, customer_phone,
         shipping_address, shipping_postcode, shipping_zone, delivery_tier, delivery_slot,
-        subtotal_pennies, shipping_pennies, vat_pennies, total_pennies,
+        subtotal_pennies, discount_pennies, voucher_code, shipping_pennies, vat_pennies, total_pennies,
         payment_status, fulfillment_status, stripe_payment_intent_id, items_json,
         billing_address, payment_method, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'paid', 'unfulfilled', ?, ?, ?, ?, NOW())`,
       [
         orderId,
         orderNumber,
@@ -280,6 +317,8 @@ export async function POST(request: Request) {
         tier,
         deliveryOption?.timeframe || "5 - 10 business days",
         subtotalPennies,
+        discountPennies,
+        appliedVoucherCode,
         shippingPennies,
         vatBreakdown.vatPennies,
         grandTotalPennies,
@@ -290,6 +329,21 @@ export async function POST(request: Request) {
       ]
     );
 
+    // Record voucher redemption & increment promotion usage count
+    if (appliedVoucherCode && appliedVoucherId && discountPennies > 0) {
+      const redemptionId = `red_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+      await connection.query(
+        `INSERT INTO voucher_redemptions (id, voucher_id, voucher_code, order_id, customer_email, discount_pennies, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+        [redemptionId, appliedVoucherId, appliedVoucherCode, orderId, customer.email.trim().toLowerCase(), discountPennies]
+      ).catch((redErr: any) => console.warn("[create-order: voucher_redemptions insert warning]:", redErr?.message || redErr));
+
+      await connection.query(
+        "UPDATE promotions SET usage_count = usage_count + 1 WHERE id = ?",
+        [appliedVoucherId]
+      ).catch((updErr: any) => console.warn("[create-order: promotions usage_count update warning]:", updErr?.message || updErr));
+    }
+
     // Update Stripe PaymentIntent metadata & description so Stripe Dashboard displays Order Number & Customer Name
     if (secretKey && paymentConfirmation.paymentIntentId?.startsWith("pi_") && !paymentConfirmation.paymentIntentId.startsWith("pi_test_reused")) {
       const stripeUpdateParams = new URLSearchParams();
@@ -299,6 +353,10 @@ export async function POST(request: Request) {
       stripeUpdateParams.append("metadata[customer_name]", customer.name);
       stripeUpdateParams.append("metadata[customer_email]", customer.email.trim().toLowerCase());
       stripeUpdateParams.append("metadata[shipping_postcode]", cleanPostcode);
+      if (appliedVoucherCode) {
+        stripeUpdateParams.append("metadata[voucher_code]", appliedVoucherCode);
+        stripeUpdateParams.append("metadata[discount_gbp]", (discountPennies / 100).toFixed(2));
+      }
 
       fetch(`https://api.stripe.com/v1/payment_intents/${paymentConfirmation.paymentIntentId}`, {
         method: "POST",
@@ -453,6 +511,9 @@ export async function POST(request: Request) {
       carrier: "SAN Dedicated Delivery Fleet",
       totalPennies: grandTotalPennies,
       formattedTotal: formatGBP(grandTotalPennies),
+      subtotalPennies,
+      discountPennies,
+      voucherCode: appliedVoucherCode,
       customerName: customer.name,
       customerEmail: customer.email,
       shippingAddress: fullShippingAddress,

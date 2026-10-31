@@ -29,6 +29,8 @@ import {
   User,
   Copy,
   Plus,
+  Tag,
+  X,
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { apiUrl } from "@/lib/api-config";
@@ -108,6 +110,34 @@ export default function CheckoutPage() {
     guarantee_text: "Direct Mainland Dispatch • 100% Transit Insured • UK Quality Checked",
     ssl_note: "256-bit SSL Bank-Grade Encryption",
   });
+
+  // Voucher / Promotion State
+  const [voucherInput, setVoucherInput] = useState("");
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+  const [voucherError, setVoucherError] = useState<string | null>(null);
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    description: string;
+    discountType: string;
+    discountValue: number;
+    discountPennies: number;
+    discountFormatted: string;
+  } | null>(null);
+
+  // Restore applied voucher from session on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("san_applied_voucher");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.code && parsed.discountPennies) {
+            setAppliedVoucher(parsed);
+          }
+        }
+      } catch {}
+    }
+  }, []);
 
   // 1. Account / Contact State
   const [accountFirstName, setAccountFirstName] = useState("");
@@ -481,8 +511,70 @@ export default function CheckoutPage() {
   const postcodeSurchargePennies = isOutsideDeliveryArea ? 0 : (Number(logisticsData?.surchargePennies) || 0);
   const baseDeliveryPennies = isOutsideDeliveryArea ? 0 : (Number(currentDeliveryOption?.baseFeePennies) || 0);
   const totalShippingPennies = baseDeliveryPennies + postcodeSurchargePennies;
-  const grandTotalPennies = (Number(subtotalPennies) || 0) + totalShippingPennies;
+  // Promotional Voucher calculation
+  const voucherDiscountPennies = appliedVoucher?.discountPennies || 0;
+  const discountedGoodsPennies = Math.max(0, (Number(subtotalPennies) || 0) - voucherDiscountPennies);
+  const effectiveGoodsVat = calculateNetAndVat(discountedGoodsPennies);
+
+  const grandTotalPennies = discountedGoodsPennies + totalShippingPennies;
   const overallVatBreakdown = calculateNetAndVat(grandTotalPennies);
+
+  const handleApplyVoucher = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanCode = voucherInput.trim().toUpperCase();
+    if (!cleanCode) {
+      setVoucherError("Please enter a voucher code.");
+      return;
+    }
+    setIsApplyingVoucher(true);
+    setVoucherError(null);
+    try {
+      const res = await fetch(apiUrl("/api/promotions/validate"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: cleanCode,
+          subtotalPennies: Number(subtotalPennies) || 0,
+          customerEmail: (accountEmail.trim() || billingEmail.trim() || loggedInCustomer?.email || undefined),
+          items: items.map((it) => ({
+            productId: it?.product?.id || it?.id,
+            quantity: Math.max(1, Number(it?.quantity) || 1),
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setVoucherError(data.error || "Invalid voucher code.");
+        return;
+      }
+      const voucherPayload = {
+        code: data.code,
+        description: data.description,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        discountPennies: data.discountPennies,
+        discountFormatted: data.discountFormatted,
+      };
+      setAppliedVoucher(voucherPayload);
+      try {
+        sessionStorage.setItem("san_applied_voucher", JSON.stringify(voucherPayload));
+      } catch {}
+      setVoucherInput("");
+      setVoucherError(null);
+    } catch {
+      setVoucherError("Failed to validate voucher. Please check your connection.");
+    } finally {
+      setIsApplyingVoucher(false);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherError(null);
+    try {
+      sessionStorage.removeItem("san_applied_voucher");
+    } catch {}
+  };
 
   // Quick helper to autofill demo customer details for dev & test
   const handleFillDemoDetails = () => {
@@ -668,6 +760,7 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amountPennies: grandTotalPennies,
+          voucherCode: appliedVoucher?.code || undefined,
           customer: {
             id: loggedInCustomer?.id || undefined,
             name: `${effAccountFirstName} ${effAccountLastName}`.trim(),
@@ -801,6 +894,8 @@ export default function CheckoutPage() {
       };
 
       const orderPayload = {
+        voucherCode: appliedVoucher?.code || undefined,
+        discountPennies: voucherDiscountPennies,
         customer: {
           id: loggedInCustomer?.id || undefined,
           name: `${effAccountFirstName} ${effAccountLastName}`.trim(),
@@ -884,6 +979,9 @@ export default function CheckoutPage() {
       // Clear basket from client state and scroll to top
       setCheckoutStepState("confirmed");
       clearCart();
+      try {
+        sessionStorage.removeItem("san_applied_voucher");
+      } catch {}
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Error processing payment authorization.";
@@ -2288,16 +2386,101 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+              {/* Voucher / Promotional Code Input */}
+              <div className="border-t border-sand-200 pt-4">
+                {appliedVoucher ? (
+                  <div className="p-3 rounded-xl bg-emerald-50/80 border border-emerald-300 text-xs flex items-center justify-between gap-3 animate-fade-in shadow-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
+                        <Tag className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-navy-950 uppercase tracking-wider">
+                            {appliedVoucher.code}
+                          </span>
+                          <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                            Applied
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-navy-600 truncate">
+                          {appliedVoucher.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-bold text-emerald-800 text-xs">
+                        -{appliedVoucher.discountFormatted}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveVoucher}
+                        className="p-1 rounded-md text-navy-400 hover:text-red-700 hover:bg-sand-200 transition-colors"
+                        title="Remove voucher"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleApplyVoucher} className="space-y-1.5">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="w-3.5 h-3.5 text-navy-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={voucherInput}
+                          onChange={(e) => {
+                            setVoucherInput(e.target.value.toUpperCase());
+                            if (voucherError) setVoucherError(null);
+                          }}
+                          placeholder="Gift card or discount code"
+                          className="w-full pl-8 pr-3 py-2 bg-sand-50 border border-sand-300 rounded-lg text-xs font-mono font-medium text-navy-950 placeholder:text-navy-400 placeholder:font-sans focus:outline-none focus:border-brass-500 uppercase tracking-wider"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isApplyingVoucher || !voucherInput.trim()}
+                        className="px-4 py-2 bg-navy-950 hover:bg-navy-900 disabled:opacity-40 disabled:cursor-not-allowed text-sand-50 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1 shadow-sm"
+                      >
+                        {isApplyingVoucher ? (
+                          <div className="w-3.5 h-3.5 border-2 border-sand-50/30 border-t-sand-50 rounded-full animate-spin" />
+                        ) : (
+                          "Apply"
+                        )}
+                      </button>
+                    </div>
+                    {voucherError && (
+                      <p className="text-[11px] text-red-600 font-medium pl-1 animate-fade-in flex items-center gap-1">
+                        <span>•</span>
+                        <span>{voucherError}</span>
+                      </p>
+                    )}
+                  </form>
+                )}
+              </div>
+
               {/* Cost & VAT Breakdown */}
               <div className="space-y-2 border-t border-sand-200 pt-4 text-xs text-navy-700">
                 <div className="flex justify-between">
                   <span>Net Goods (ex. VAT)</span>
-                  <span>{vatBreakdown?.formattedNet || formatGBP(0)}</span>
+                  <span>{effectiveGoodsVat?.formattedNet || vatBreakdown?.formattedNet || formatGBP(0)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>UK VAT (20%)</span>
-                  <span>{vatBreakdown?.formattedVat || formatGBP(0)}</span>
+                  <span>{effectiveGoodsVat?.formattedVat || vatBreakdown?.formattedVat || formatGBP(0)}</span>
                 </div>
+                {appliedVoucher && voucherDiscountPennies > 0 && (
+                  <div className="flex justify-between items-center text-emerald-800 font-medium bg-emerald-50/70 -mx-2 px-2 py-1.5 rounded-lg border border-emerald-200/60">
+                    <div className="flex items-center gap-1.5">
+                      <span>Voucher Discount</span>
+                      <span className="font-mono text-[10px] font-bold uppercase bg-emerald-100 px-1.5 py-0.5 rounded">
+                        ({appliedVoucher.code})
+                      </span>
+                    </div>
+                    <span className="font-bold text-emerald-800">-{formatGBP(voucherDiscountPennies)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <div>
                     <span className="block font-medium">Delivery</span>
