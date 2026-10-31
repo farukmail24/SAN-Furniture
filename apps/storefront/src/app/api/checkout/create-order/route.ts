@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { formatGBP, calculateNetAndVat, classifyUKPostcode } from "@san-furniture/types";
 import { hashPassword } from "@/lib/auth-token";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 import crypto from "node:crypto";
 import { dispatchOrderCreated } from "@/lib/notifications-dispatcher";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  await ensureVoucherSchema();
   const pool = getDbPool();
   const connection = await pool.getConnection();
 

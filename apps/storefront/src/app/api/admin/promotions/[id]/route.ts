@@ -1,8 +1,16 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 
 export const dynamic = "force-dynamic";
+
+function parseDbDate(val: any): string | null {
+  if (!val) return null;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace("T", " ");
+}
 
 export async function PATCH(
   request: Request,
@@ -13,6 +21,8 @@ export async function PATCH(
     if (!admin) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    await ensureVoucherSchema();
 
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
@@ -59,11 +69,11 @@ export async function PATCH(
     }
     if (typeof body.startsAt !== "undefined") {
       fields.push("starts_at = ?");
-      values.push(body.startsAt ? new Date(body.startsAt) : null);
+      values.push(parseDbDate(body.startsAt));
     }
     if (typeof body.expiresAt !== "undefined") {
       fields.push("expires_at = ?");
-      values.push(body.expiresAt ? new Date(body.expiresAt) : null);
+      values.push(parseDbDate(body.expiresAt));
     }
     if (typeof body.maxUses !== "undefined") {
       fields.push("max_uses = ?");

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { formatGBP, calculateNetAndVat } from "@san-furniture/types";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    await ensureVoucherSchema();
 
     const pool = getDbPool();
 

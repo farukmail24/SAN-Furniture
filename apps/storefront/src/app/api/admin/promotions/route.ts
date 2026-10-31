@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
+
+function parseDbDate(val: any): string | null {
+  if (!val) return null;
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().slice(0, 19).replace("T", " ");
+}
 
 export async function GET(request: Request) {
   try {
@@ -11,6 +19,9 @@ export async function GET(request: Request) {
     if (!admin) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    // Auto-heal / ensure tables and columns exist in active database
+    await ensureVoucherSchema();
 
     const pool = getDbPool();
     const [promotions]: any = await pool.query(
@@ -51,6 +62,9 @@ export async function POST(request: Request) {
     if (!admin) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    // Auto-heal / ensure tables and columns exist in active database
+    await ensureVoucherSchema();
 
     const pool = getDbPool();
     const body = await request.json();
@@ -103,8 +117,8 @@ export async function POST(request: Request) {
         maxDiscountPennies ? Number(maxDiscountPennies) : null,
         Number(minOrderPennies) || 0,
         isActive ? 1 : 0,
-        startsAt ? new Date(startsAt) : null,
-        expiresAt ? new Date(expiresAt) : null,
+        parseDbDate(startsAt),
+        parseDbDate(expiresAt),
         Number(maxUses) || 1000,
         Number(perCustomerLimit) || 1,
         firstOrderOnly ? 1 : 0,

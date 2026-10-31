@@ -5,6 +5,7 @@ import { promisify } from "node:util";
 import fs from "node:fs";
 import path from "node:path";
 import { getDbPool } from "@/lib/db";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 
 const execAsync = promisify(exec);
 
@@ -226,6 +227,7 @@ export async function POST(request: Request) {
 
           // Step E: Non-destructive DB Schema Alignment (ensure subsidiary tables have required columns)
           try {
+            await ensureVoucherSchema(true);
             await pool.query("ALTER TABLE order_po_dispatches ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP").catch(() => {});
             await pool.query("ALTER TABLE order_po_dispatches MODIFY COLUMN dispatched_at TIMESTAMP NULL DEFAULT NULL").catch(() => {});
           } catch {}

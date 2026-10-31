@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { formatGBP, classifyUKPostcode } from "@san-furniture/types";
 import { getDbPool } from "@/lib/db";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    await ensureVoucherSchema();
     const body = await request.json().catch(() => ({}));
     const { amountPennies, customer, shippingAddress, deliveryTier, items } = body;
 

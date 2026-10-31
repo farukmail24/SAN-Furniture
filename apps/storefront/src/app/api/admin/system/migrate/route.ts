@@ -3,6 +3,7 @@ import mysql from "mysql2/promise";
 import fs from "fs";
 import path from "path";
 import { getAdminFromRequest } from "@/lib/auth-token";
+import { ensureVoucherSchema } from "@/lib/ensure-voucher-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +94,8 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
+
+    await ensureVoucherSchema();
     const rawHost = process.env.DB_HOST || "127.0.0.1";
     const host = rawHost.toLowerCase() === "localhost" ? "127.0.0.1" : rawHost;
 
