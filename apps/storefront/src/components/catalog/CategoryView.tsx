@@ -25,6 +25,8 @@ import {
   Ruler,
   Percent,
   CheckCircle2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { type CatalogProduct, type ProductCategory } from "@/lib/catalog";
 import {
@@ -109,6 +111,41 @@ export function CategoryView({
 
   // UI Modals & Drawers
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    offers: false,
+    room: false,
+    colors: false,
+    dimensions: false,
+    price: false,
+    materials: false,
+    delivery: false,
+  });
+
+  const toggleSection = (key: string) => {
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const areAllSectionsCollapsed = useMemo(() => {
+    return Object.values(collapsedSections).every(Boolean);
+  }, [collapsedSections]);
+
+  const toggleCollapseAll = () => {
+    const targetState = !areAllSectionsCollapsed;
+    setCollapsedSections({
+      offers: targetState,
+      room: targetState,
+      colors: targetState,
+      dimensions: targetState,
+      price: targetState,
+      materials: targetState,
+      delivery: targetState,
+    });
+  };
+
   const [quickViewProduct, setQuickViewProduct] = useState<CatalogProduct | null>(null);
   const [comparedProducts, setComparedProducts] = useState<CatalogProduct[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -564,7 +601,7 @@ export function CategoryView({
       )}
 
       {/* Main Content: Sidebar + Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className={`grid grid-cols-1 ${isSidebarCollapsed ? "lg:grid-cols-1" : "lg:grid-cols-[250px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]"} gap-6 xl:gap-8 items-start`}>
         {/* Mobile Filter Toggle & Quick Bar */}
         <div className="lg:hidden col-span-1 flex items-center justify-between gap-3 p-3.5 bg-sand-100 rounded-xl border border-sand-200 shadow-xs">
           <button
@@ -594,298 +631,473 @@ export function CategoryView({
         </div>
 
         {/* Faceted Filter Sidebar (Desktop) */}
-        <aside className="hidden lg:block lg:col-span-1 space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-sand-200">
-            <h3 className="font-display font-semibold text-navy-950 text-base flex items-center gap-2">
-              <Filter className="w-4 h-4 text-brass-600" />
-              Faceted Filter
-            </h3>
-            {hasActiveFilters && (
+        <aside
+          className={`${
+            isSidebarCollapsed ? "hidden" : "hidden lg:block"
+          } w-full max-w-[260px] space-y-4 text-xs self-start sticky top-24`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-sand-200">
+            <div className="flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-brass-600" />
+              <h3 className="font-display font-bold text-navy-950 text-sm tracking-tight">
+                Faceted Filter
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={clearAllFilters}
-                className="text-xs font-semibold text-brass-700 hover:underline flex items-center gap-1"
+                onClick={toggleCollapseAll}
+                className="text-[11px] font-semibold text-navy-600 hover:text-navy-950 transition-colors"
+                title={areAllSectionsCollapsed ? "Expand all sections" : "Collapse all sections"}
               >
-                <RotateCcw className="w-3 h-3" />
-                Reset All
+                {areAllSectionsCollapsed ? "Expand All" : "Collapse"}
               </button>
+              {hasActiveFilters && (
+                <>
+                  <span className="text-sand-300">·</span>
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="text-[11px] font-semibold text-brass-700 hover:underline flex items-center gap-0.5"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" />
+                    Reset
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Offers & Availability Section */}
+          <div className="border-b border-sand-200/90 pb-3">
+            <button
+              type="button"
+              onClick={() => toggleSection("offers")}
+              className="w-full flex items-center justify-between py-1.5 text-left group"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                <Percent className="w-3.5 h-3.5 text-rose-600" />
+                <span>Offers & Stock</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {(onlyOnSale || onlyInStock) && (
+                  <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                    {(onlyOnSale ? 1 : 0) + (onlyInStock ? 1 : 0)}
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                    collapsedSections.offers ? "-rotate-90" : "rotate-0"
+                  }`}
+                />
+              </div>
+            </button>
+            {!collapsedSections.offers && (
+              <div className="space-y-2 pt-2">
+                <div className="p-2.5 rounded-xl bg-sand-100/90 border border-sand-200/90 space-y-1">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span className="text-[11px] font-bold text-navy-950">Special Price Drops</span>
+                    <input
+                      type="checkbox"
+                      checked={onlyOnSale}
+                      onChange={(e) => setOnlyOnSale(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-rose-600 focus:ring-rose-500 border-sand-300"
+                    />
+                  </label>
+                  <p className="text-[10px] text-navy-600">Verified price reductions</p>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-sand-100/90 border border-sand-200/90">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <span className="flex items-center gap-1.5 text-[11px] font-bold text-navy-950">
+                      <Truck className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>Immediate Dispatch</span>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={onlyInStock}
+                      onChange={(e) => setOnlyInStock(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-emerald-700 focus:ring-emerald-500 border-sand-300"
+                    />
+                  </label>
+                </div>
+              </div>
             )}
-          </div>
-
-          {/* Special Offers & Price Drop Switch */}
-          <div className="p-3.5 rounded-xl bg-sand-100/90 border border-sand-200/90 space-y-2">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="flex items-center gap-2 text-xs font-bold text-navy-950">
-                <Percent className="w-4 h-4 text-rose-600" />
-                Special Offers & Price Drops
-              </span>
-              <input
-                type="checkbox"
-                checked={onlyOnSale}
-                onChange={(e) => setOnlyOnSale(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-sand-300"
-              />
-            </label>
-            <p className="text-[11px] text-navy-600">Show exclusive promotions with verified price reductions.</p>
-          </div>
-
-          {/* In Stock Only Switch */}
-          <div className="p-3.5 rounded-xl bg-sand-100/90 border border-sand-200/90">
-            <label className="flex items-center justify-between cursor-pointer">
-              <span className="flex items-center gap-2 text-xs font-bold text-navy-950">
-                <Truck className="w-4 h-4 text-emerald-700" />
-                In Stock & Immediate Dispatch
-              </span>
-              <input
-                type="checkbox"
-                checked={onlyInStock}
-                onChange={(e) => setOnlyInStock(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-700 focus:ring-emerald-500 border-sand-300"
-              />
-            </label>
           </div>
 
           {/* Room / Category Filter in Sidebar */}
           {allCategories && allCategories.length > 0 && !category && (
-            <div className="space-y-3 pb-6 border-b border-sand-200">
-              <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">Room / Department</h4>
-              <div className="space-y-2 text-xs text-navy-800">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="sidebar_category"
-                    checked={!selectedCategoryHandle}
-                    onChange={() => setSelectedCategoryHandle(null)}
-                    className="rounded-full text-navy-950 focus:ring-brass-500"
+            <div className="border-b border-sand-200/90 pb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection("room")}
+                className="w-full flex items-center justify-between py-1.5 text-left group"
+              >
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                  <Layers className="w-3.5 h-3.5 text-brass-600" />
+                  <span>Room / Department</span>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {selectedCategoryHandle && !category && (
+                    <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                      1
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                      collapsedSections.room ? "-rotate-90" : "rotate-0"
+                    }`}
                   />
-                  <span>All Collections ({initialProducts.length})</span>
-                </label>
-                {allCategories.map((c) => {
-                  const count = initialProducts.filter((p) => p.categoryId === c.id).length;
-                  return (
-                    <label key={c.id} className="flex items-center justify-between gap-2.5 cursor-pointer">
-                      <span className="flex items-center gap-2.5">
-                        <input
-                          type="radio"
-                          name="sidebar_category"
-                          checked={selectedCategoryHandle === c.handle}
-                          onChange={() => setSelectedCategoryHandle(c.handle)}
-                          className="rounded-full text-navy-950 focus:ring-brass-500"
-                        />
-                        <span>{c.name}</span>
-                      </span>
-                      <span className="text-[10px] text-navy-400 font-medium">{count}</span>
-                    </label>
-                  );
-                })}
-              </div>
+                </div>
+              </button>
+              {!collapsedSections.room && (
+                <div className="space-y-1.5 pt-2 text-xs text-navy-800">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="sidebar_category"
+                      checked={!selectedCategoryHandle}
+                      onChange={() => setSelectedCategoryHandle(null)}
+                      className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                    />
+                    <span>All Collections ({initialProducts.length})</span>
+                  </label>
+                  {allCategories.map((c) => {
+                    const count = initialProducts.filter((p) => p.categoryId === c.id).length;
+                    return (
+                      <label key={c.id} className="flex items-center justify-between gap-2 cursor-pointer">
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="sidebar_category"
+                            checked={selectedCategoryHandle === c.handle}
+                            onChange={() => setSelectedCategoryHandle(c.handle)}
+                            className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                          />
+                          <span className="truncate">{c.name}</span>
+                        </span>
+                        <span className="text-[10px] text-navy-400 font-medium">{count}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
           {/* Color & Finish Swatch Filter */}
-          <div className="space-y-3 pb-6 border-b border-sand-200">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">Color & Finish</h4>
-              {selectedColorTones.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setSelectedColorTones([])}
-                  className="text-[11px] text-brass-700 hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {COLOR_PRESETS.map((preset) => {
-                const isSelected = selectedColorTones.includes(preset.id);
-                return (
+          <div className="border-b border-sand-200/90 pb-3">
+            <button
+              type="button"
+              onClick={() => toggleSection("colors")}
+              className="w-full flex items-center justify-between py-1.5 text-left group"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                <Sparkles className="w-3.5 h-3.5 text-brass-600" />
+                <span>Color & Finish</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {selectedColorTones.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                    {selectedColorTones.length}
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                    collapsedSections.colors ? "-rotate-90" : "rotate-0"
+                  }`}
+                />
+              </div>
+            </button>
+            {!collapsedSections.colors && (
+              <div className="pt-2 space-y-2">
+                <div className="grid grid-cols-2 gap-1.5 text-xs">
+                  {COLOR_PRESETS.map((preset) => {
+                    const isSelected = selectedColorTones.includes(preset.id);
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => toggleColorTone(preset.id)}
+                        className={`flex items-center gap-1.5 p-1.5 rounded-lg border text-left transition-all ${
+                          isSelected
+                            ? "bg-navy-950 text-sand-50 border-navy-950 shadow-xs"
+                            : "bg-sand-50 text-navy-800 border-sand-200 hover:bg-sand-100"
+                        }`}
+                      >
+                        <span
+                          className={`w-3 h-3 rounded-full shrink-0 ${preset.border ? "border border-sand-400" : ""}`}
+                          style={{ backgroundColor: preset.hex }}
+                        />
+                        <span className="truncate text-[10.5px] font-medium leading-tight">{preset.label.split("&")[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedColorTones.length > 0 && (
                   <button
-                    key={preset.id}
                     type="button"
-                    onClick={() => toggleColorTone(preset.id)}
-                    className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
-                      isSelected
-                        ? "bg-navy-950 text-sand-50 border-navy-950 shadow-xs"
-                        : "bg-sand-50 text-navy-800 border-sand-200 hover:bg-sand-100"
-                    }`}
+                    onClick={() => setSelectedColorTones([])}
+                    className="text-[10px] text-brass-700 hover:underline pt-0.5 block"
                   >
-                    <span
-                      className={`w-3.5 h-3.5 rounded-full shrink-0 ${preset.border ? "border border-sand-400" : ""}`}
-                      style={{ backgroundColor: preset.hex }}
-                    />
-                    <span className="truncate text-[11px] font-medium">{preset.label.split("&")[0]}</span>
+                    Clear selected colors
                   </button>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Width / Dimension Scale Filter */}
-          <div className="space-y-3 pb-6 border-b border-sand-200">
-            <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900 flex items-center gap-1.5">
-              <Ruler className="w-3.5 h-3.5 text-brass-600" />
-              Width / Dimension Scale
-            </h4>
-            <div className="space-y-2 text-xs text-navy-800">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="width_range"
-                  checked={selectedWidthRange === "all"}
-                  onChange={() => setSelectedWidthRange("all")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
+          <div className="border-b border-sand-200/90 pb-3">
+            <button
+              type="button"
+              onClick={() => toggleSection("dimensions")}
+              className="w-full flex items-center justify-between py-1.5 text-left group"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                <Ruler className="w-3.5 h-3.5 text-brass-600" />
+                <span>Width / Scale</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {selectedWidthRange !== "all" && (
+                  <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                    1
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                    collapsedSections.dimensions ? "-rotate-90" : "rotate-0"
+                  }`}
                 />
-                <span>All Widths</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="width_range"
-                  checked={selectedWidthRange === "compact"}
-                  onChange={() => setSelectedWidthRange("compact")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>Compact (Under 100 cm)</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="width_range"
-                  checked={selectedWidthRange === "medium"}
-                  onChange={() => setSelectedWidthRange("medium")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>Standard (100 cm – 160 cm)</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="width_range"
-                  checked={selectedWidthRange === "wide"}
-                  onChange={() => setSelectedWidthRange("wide")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>Grand / Wide (Over 160 cm)</span>
-              </label>
-            </div>
+              </div>
+            </button>
+            {!collapsedSections.dimensions && (
+              <div className="space-y-1.5 pt-2 text-xs text-navy-800">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="width_range"
+                    checked={selectedWidthRange === "all"}
+                    onChange={() => setSelectedWidthRange("all")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>All Widths</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="width_range"
+                    checked={selectedWidthRange === "compact"}
+                    onChange={() => setSelectedWidthRange("compact")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>Compact (&lt; 100 cm)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="width_range"
+                    checked={selectedWidthRange === "medium"}
+                    onChange={() => setSelectedWidthRange("medium")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>Standard (100–160 cm)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="width_range"
+                    checked={selectedWidthRange === "wide"}
+                    onChange={() => setSelectedWidthRange("wide")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>Grand (&gt; 160 cm)</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Price Range Filter */}
-          <div className="space-y-3 pb-6 border-b border-sand-200">
-            <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">
-              Price Range (20% UK VAT Incl.)
-            </h4>
-            <div className="space-y-2 text-xs text-navy-800">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="price_range"
-                  checked={priceRange === "all"}
-                  onChange={() => setPriceRange("all")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
+          <div className="border-b border-sand-200/90 pb-3">
+            <button
+              type="button"
+              onClick={() => toggleSection("price")}
+              className="w-full flex items-center justify-between py-1.5 text-left group"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                <span>Price (20% VAT)</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {priceRange !== "all" && (
+                  <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                    1
+                  </span>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                    collapsedSections.price ? "-rotate-90" : "rotate-0"
+                  }`}
                 />
-                <span>All Prices</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="price_range"
-                  checked={priceRange === "under_300"}
-                  onChange={() => setPriceRange("under_300")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>Under £300</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="price_range"
-                  checked={priceRange === "300_600"}
-                  onChange={() => setPriceRange("300_600")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>£300 – £600</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="price_range"
-                  checked={priceRange === "600_1200"}
-                  onChange={() => setPriceRange("600_1200")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>£600 – £1,200</span>
-              </label>
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="radio"
-                  name="price_range"
-                  checked={priceRange === "over_1200"}
-                  onChange={() => setPriceRange("over_1200")}
-                  className="rounded-full text-navy-950 focus:ring-brass-500"
-                />
-                <span>Over £1,200</span>
-              </label>
-            </div>
+              </div>
+            </button>
+            {!collapsedSections.price && (
+              <div className="space-y-1.5 pt-2 text-xs text-navy-800">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price_range"
+                    checked={priceRange === "all"}
+                    onChange={() => setPriceRange("all")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>All Prices</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price_range"
+                    checked={priceRange === "under_300"}
+                    onChange={() => setPriceRange("under_300")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>Under £300</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price_range"
+                    checked={priceRange === "300_600"}
+                    onChange={() => setPriceRange("300_600")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>£300 – £600</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price_range"
+                    checked={priceRange === "600_1200"}
+                    onChange={() => setPriceRange("600_1200")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>£600 – £1,200</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="price_range"
+                    checked={priceRange === "over_1200"}
+                    onChange={() => setPriceRange("over_1200")}
+                    className="rounded-full text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                  />
+                  <span>Over £1,200</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Material & Upholstery Filter */}
           {materials.length > 0 && (
-            <div className="space-y-3 pb-6 border-b border-sand-200">
-              <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">Upholstery & Material</h4>
-              <div className="space-y-2 text-xs text-navy-800 capitalize">
-                {materials.map((mat) => (
-                  <label key={mat} className="flex items-center gap-2.5 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedMaterials.includes(mat)}
-                      onChange={() => toggleMaterial(mat)}
-                      className="rounded border-sand-300 text-navy-950 focus:ring-brass-500"
-                    />
-                    <span>{mat.replace("_", " ")}</span>
-                  </label>
-                ))}
-              </div>
+            <div className="border-b border-sand-200/90 pb-3">
+              <button
+                type="button"
+                onClick={() => toggleSection("materials")}
+                className="w-full flex items-center justify-between py-1.5 text-left group"
+              >
+                <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                  <span>Upholstery & Material</span>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {selectedMaterials.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                      {selectedMaterials.length}
+                    </span>
+                  )}
+                  <ChevronDown
+                    className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                      collapsedSections.materials ? "-rotate-90" : "rotate-0"
+                    }`}
+                  />
+                </div>
+              </button>
+              {!collapsedSections.materials && (
+                <div className="space-y-1.5 pt-2 text-xs text-navy-800 capitalize max-h-48 overflow-y-auto pr-1">
+                  {materials.map((mat) => (
+                    <label key={mat} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedMaterials.includes(mat)}
+                        onChange={() => toggleMaterial(mat)}
+                        className="rounded border-sand-300 text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                      />
+                      <span className="truncate">{mat.replace("_", " ")}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {/* Delivery Logistics Tier Filter */}
-          <div className="space-y-3 pb-6 border-b border-sand-200">
-            <h4 className="text-xs uppercase tracking-wider font-semibold text-navy-900">UK Delivery Tier</h4>
-            <div className="space-y-2 text-xs text-navy-800">
-              {deliveryTiers.map((tier) => (
-                <label key={tier} className="flex items-center gap-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedDeliveryTiers.includes(tier)}
-                    onChange={() => toggleDeliveryTier(tier)}
-                    className="rounded border-sand-300 text-navy-950 focus:ring-brass-500"
-                  />
-                  <span>
-                    {tier === "two_man_white_glove" && "White Glove (Room of Choice)"}
-                    {tier === "pallet" && "Pallet Freight (Kerbside)"}
-                    {tier === "standard_parcel" && "Standard Parcel Courier"}
+          <div className="border-b border-sand-200/90 pb-3">
+            <button
+              type="button"
+              onClick={() => toggleSection("delivery")}
+              className="w-full flex items-center justify-between py-1.5 text-left group"
+            >
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-navy-900 group-hover:text-brass-700 transition-colors">
+                <Truck className="w-3.5 h-3.5 text-brass-600" />
+                <span>UK Delivery Tier</span>
+              </span>
+              <div className="flex items-center gap-1.5">
+                {selectedDeliveryTiers.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-navy-950 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                    {selectedDeliveryTiers.length}
                   </span>
-                </label>
-              ))}
-            </div>
+                )}
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-navy-400 group-hover:text-navy-950 transition-transform duration-200 ${
+                    collapsedSections.delivery ? "-rotate-90" : "rotate-0"
+                  }`}
+                />
+              </div>
+            </button>
+            {!collapsedSections.delivery && (
+              <div className="space-y-1.5 pt-2 text-xs text-navy-800">
+                {deliveryTiers.map((tier) => (
+                  <label key={tier} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedDeliveryTiers.includes(tier)}
+                      onChange={() => toggleDeliveryTier(tier)}
+                      className="rounded border-sand-300 text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
+                    />
+                    <span className="truncate">
+                      {tier === "two_man_white_glove" && "White Glove"}
+                      {tier === "pallet" && "Pallet Freight"}
+                      {tier === "standard_parcel" && "Standard Parcel"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Quality Checked Furniture Banner */}
-          <div className="p-4 rounded-xl bg-sand-100 border border-sand-200 text-xs space-y-1.5">
+          <div className="p-3.5 rounded-xl bg-sand-100/90 border border-sand-200/90 text-xs space-y-1">
             <div className="flex items-center gap-1.5 text-sage-700 font-semibold">
-              <ShieldCheck className="w-4 h-4 text-brass-600" />
-              <span>UK Quality Checked</span>
+              <ShieldCheck className="w-3.5 h-3.5 text-brass-600" />
+              <span className="text-[11px]">UK Quality Checked</span>
             </div>
-            <p className="text-navy-600 text-[11px] leading-relaxed">
+            <p className="text-navy-600 text-[10.5px] leading-relaxed">
               Rigorous structural durability, robust joinery, and protective packaging on every order.
             </p>
           </div>
         </aside>
 
         {/* Product Grid & Controls Area */}
-        <section className="lg:col-span-3 space-y-6">
+        <section className={`${isSidebarCollapsed ? "w-full" : "min-w-0"} space-y-6`}>
           {/* In-Catalog Live Search Bar & Top Action Bar */}
           <div className="p-4 rounded-2xl bg-sand-100/70 border border-sand-200/90 shadow-xs space-y-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -911,8 +1123,36 @@ export function CategoryView({
                 )}
               </div>
 
-              {/* Share Curation & Reset Button */}
+              {/* Top Action Buttons (Master Filter Toggle, Share, Reset) */}
               <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+                  className={`hidden lg:inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition-all border ${
+                    isSidebarCollapsed
+                      ? "bg-navy-950 text-sand-50 border-navy-950 shadow-sm hover:bg-navy-900"
+                      : "bg-sand-50 border-sand-300 text-navy-800 hover:bg-sand-200"
+                  }`}
+                  title={isSidebarCollapsed ? "Show Filters Sidebar" : "Hide Filters Sidebar"}
+                >
+                  {isSidebarCollapsed ? (
+                    <>
+                      <PanelLeftOpen className="w-3.5 h-3.5 text-brass-400" />
+                      <span>Show Filters</span>
+                      {hasActiveFilters && (
+                        <span className="w-4 h-4 rounded-full bg-brass-500 text-navy-950 text-[10px] font-bold flex items-center justify-center">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <PanelLeftClose className="w-3.5 h-3.5 text-navy-600" />
+                      <span>Hide Filters</span>
+                    </>
+                  )}
+                </button>
+
                 <button
                   type="button"
                   onClick={handleShareCuration}
@@ -1157,11 +1397,13 @@ export function CategoryView({
           ) : (
             /* Product Cards View Container */
             <div className="space-y-8">
-              {/* Standard Grid Mode (4 cols on xl, 3 on lg, 2 on sm) */}
+              {/* Standard Grid Mode (4 cols on xl with sidebar, 5 cols when collapsed) */}
               {viewMode === "grid_standard" && (
                 <StaggerContainer
-                  key={`std-${selectedSubTypeId}-${sortBy}-${priceRange}-${searchQuery}-${displayedProducts.length}`}
-                  className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6"
+                  key={`std-${selectedSubTypeId}-${sortBy}-${priceRange}-${searchQuery}-${displayedProducts.length}-${isSidebarCollapsed}`}
+                  className={`grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 ${
+                    isSidebarCollapsed ? "xl:grid-cols-5" : "xl:grid-cols-4"
+                  } gap-3 sm:gap-6`}
                 >
                   {displayedProducts.map((product) => {
                     const isSaved = isWishlisted(product.id);
@@ -1298,9 +1540,13 @@ export function CategoryView({
                 </StaggerContainer>
               )}
 
-              {/* Editorial / Comfort Grid Mode (2 columns on desktop) */}
+              {/* Editorial / Comfort Grid Mode (2 columns with sidebar, 3 when collapsed) */}
               {viewMode === "grid_editorial" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div
+                  className={`grid grid-cols-1 ${
+                    isSidebarCollapsed ? "md:grid-cols-2 lg:grid-cols-3" : "md:grid-cols-2"
+                  } gap-6`}
+                >
                   {displayedProducts.map((product) => {
                     const isSaved = isWishlisted(product.id);
                     const isCompared = comparedProducts.some((p) => p.id === product.id);
