@@ -21,5 +21,11 @@
       "static/chunks/6890-4054d7fc00fcd1e1.js",
       "static/chunks/2668.f3bc6daaaa000d45.js"
     ]
+  },
+  "lib\\catalog.ts -> ./products-seed-data.json": {
+    "id": 893,
+    "files": [
+      "static/chunks/893.2b314a4623c22883.js"
+    ]
   }
 }

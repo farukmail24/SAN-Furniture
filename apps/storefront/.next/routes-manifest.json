@@ -307,6 +307,14 @@
       "namedRegex": "^/api/orders/(?<nxtPid>[^/]+?)/invoice(?:/)?$"
     },
     {
+      "page": "/api/products/[handle]",
+      "regex": "^/api/products/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPhandle": "nxtPhandle"
+      },
+      "namedRegex": "^/api/products/(?<nxtPhandle>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/api/support/tickets/[id]",
       "regex": "^/api/support/tickets/([^/]+?)(?:/)?$",
       "routeKeys": {

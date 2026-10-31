@@ -1208,6 +1208,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/products/[handle]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/products/[handle]">> = Specific
+  const handler = {} as typeof import("../../src/app/api/products/[handle]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/products/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/products">> = Specific

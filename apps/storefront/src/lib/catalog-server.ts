@@ -6,6 +6,81 @@ import { CATALOG_CATEGORIES, cleanHtmlDescription, formatProductSku } from "./ca
 let cachedProducts: CatalogProduct[] = [];
 let lastProductsFetch = 0;
 const CACHE_TTL = 30000; // 30 seconds
+let isCatalogSyncAttempted = false;
+
+async function autoSyncMissingProducts(pool: any): Promise<void> {
+  if (isCatalogSyncAttempted) return;
+  isCatalogSyncAttempted = true;
+
+  try {
+    const seedData = (await import("./products-seed-data.json")).default;
+    const { products, specs } = seedData;
+    if (!Array.isArray(products) || products.length === 0) return;
+
+    const [existingIds]: any = await pool.query("SELECT id FROM products").catch(() => [[]]);
+    const existingSet = new Set(
+      Array.isArray(existingIds) ? existingIds.map((r: any) => r.id) : []
+    );
+
+    const missingProducts = products.filter((p: any) => !existingSet.has(p.id));
+    if (missingProducts.length > 0) {
+      console.log(`[catalog-server] Auto-syncing ${missingProducts.length} missing products to MySQL...`);
+      const productCols = [
+        "id", "handle", "sku", "title", "subtitle", "description", "category_id", "status",
+        "price_pennies", "compare_at_price_pennies", "cost_price_pennies", "vat_rate_percent",
+        "gtin_barcode", "thumbnail_url", "images_json", "variants_json", "created_at", "updated_at"
+      ];
+
+      for (const p of missingProducts) {
+        await pool.query(
+          `INSERT IGNORE INTO products (${productCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${productCols.map(() => "?").join(", ")})`,
+          productCols.map((c) => (p as any)[c] ?? null)
+        ).catch(() => {});
+      }
+    }
+
+    if (Array.isArray(specs) && specs.length > 0) {
+      const [existingSpecIds]: any = await pool.query("SELECT id FROM furniture_specs").catch(() => [[]]);
+      const existingSpecSet = new Set(
+        Array.isArray(existingSpecIds) ? existingSpecIds.map((r: any) => r.id) : []
+      );
+      const missingSpecs = specs.filter((s: any) => !existingSpecSet.has(s.id));
+      if (missingSpecs.length > 0) {
+        const specCols = [
+          "id", "product_id", "width_cm", "height_cm", "depth_cm", "seat_height_cm",
+          "seat_depth_cm", "arm_height_cm", "weight_kg", "material", "frame_material",
+          "color", "assembly_required", "assembly_time_mins", "assembly_instructions_url",
+          "doorway_clearance_min_cm", "delivery_tier", "fire_safety_compliant",
+          "fire_safety_standard", "fire_safety_cert", "lead_time_days", "created_at"
+        ];
+
+        for (const s of missingSpecs) {
+          await pool.query(
+            `INSERT IGNORE INTO furniture_specs (${specCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${specCols.map(() => "?").join(", ")})`,
+            specCols.map((c) => (s as any)[c] ?? null)
+          ).catch(() => {});
+        }
+      }
+    }
+  } catch (err) {
+    console.warn("[autoSyncMissingProducts] Warning:", err);
+  }
+}
+
+export async function syncSingleProductToDb(p: any): Promise<void> {
+  try {
+    const pool = getDbPool();
+    const productCols = [
+      "id", "handle", "sku", "title", "subtitle", "description", "category_id", "status",
+      "price_pennies", "compare_at_price_pennies", "cost_price_pennies", "vat_rate_percent",
+      "gtin_barcode", "thumbnail_url", "images_json", "variants_json", "created_at", "updated_at"
+    ];
+    await pool.query(
+      `INSERT IGNORE INTO products (${productCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${productCols.map(() => "?").join(", ")})`,
+      productCols.map((c) => (p as any)[c] ?? null)
+    ).catch(() => {});
+  } catch {}
+}
 
 export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<CatalogProduct[]> {
   const now = Date.now();
@@ -35,10 +110,15 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 
     let [rows]: any = await pool.query(fetchQuery).catch(() => [[]]);
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      await autoSeedDatabaseIfNeeded();
+    if (!Array.isArray(rows) || rows.length < 105) {
+      if (!Array.isArray(rows) || rows.length === 0) {
+        await autoSeedDatabaseIfNeeded();
+      }
+      await autoSyncMissingProducts(pool);
       const [reFetched]: any = await pool.query(fetchQuery).catch(() => [[]]);
-      rows = reFetched;
+      if (Array.isArray(reFetched) && reFetched.length > 0) {
+        rows = reFetched;
+      }
     }
 
     const rawProducts = Array.isArray(rows) ? rows : [];

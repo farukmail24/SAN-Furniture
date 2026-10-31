@@ -214,10 +214,46 @@ export async function getLiveCategoryByHandle(handle: string): Promise<ProductCa
 export async function getLiveProductByHandle(handle: string): Promise<CatalogProduct | undefined> {
   const normalized = normalizeProductHandle(handle);
   const products = await getLiveProducts();
-  const match = products.find(
-    (p) => p.handle === normalized || p.id === normalized || p.handle === handle || p.id === handle
+  let match = products.find(
+    (p) =>
+      p.handle === normalized ||
+      p.id === normalized ||
+      p.handle === handle ||
+      p.id === handle ||
+      p.handle.toLowerCase() === handle.toLowerCase()
   );
   if (match) return match;
+
+  // Direct check in products-seed-data.json if not yet synced in memory
+  try {
+    const seedData = (await import("./products-seed-data.json")).default;
+    const seedMatch = seedData.products.find(
+      (p: any) =>
+        p.handle === normalized ||
+        p.id === normalized ||
+        p.handle === handle ||
+        p.id === handle ||
+        p.handle.toLowerCase() === handle.toLowerCase()
+    );
+    if (seedMatch) {
+      if (typeof window === "undefined") {
+        const { syncSingleProductToDb } = await import("./catalog-server");
+        await syncSingleProductToDb(seedMatch);
+      }
+      const refreshed = await getLiveProducts();
+      match = refreshed.find(
+        (p) =>
+          p.handle === normalized ||
+          p.id === normalized ||
+          p.handle === handle ||
+          p.id === handle ||
+          p.handle.toLowerCase() === handle.toLowerCase()
+      );
+      if (match) return match;
+    }
+  } catch (err) {
+    console.warn("getLiveProductByHandle fallback error:", err);
+  }
 
   // Direct fallback to API in case product was just imported
   try {
