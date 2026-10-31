@@ -143,7 +143,15 @@ export async function getLiveProducts(): Promise<CatalogProduct[]> {
 export function getProductByHandle(handle: string): CatalogProduct | undefined {
   const normalized = normalizeProductHandle(handle);
   return inMemoryLiveProducts.find(
-    (p) => p.handle === normalized || p.id === normalized || p.handle === handle || p.id === handle
+    (p) =>
+      p.handle === normalized ||
+      p.id === normalized ||
+      p.handle === handle ||
+      p.id === handle ||
+      p.handle.toLowerCase() === handle.toLowerCase() ||
+      p.handle.toLowerCase() === normalized.toLowerCase() ||
+      normalizeProductHandle(p.handle).toLowerCase() === normalized.toLowerCase() ||
+      normalizeProductHandle(p.handle).toLowerCase() === handle.toLowerCase()
   );
 }
 
@@ -220,7 +228,10 @@ export async function getLiveProductByHandle(handle: string): Promise<CatalogPro
       p.id === normalized ||
       p.handle === handle ||
       p.id === handle ||
-      p.handle.toLowerCase() === handle.toLowerCase()
+      p.handle.toLowerCase() === handle.toLowerCase() ||
+      p.handle.toLowerCase() === normalized.toLowerCase() ||
+      normalizeProductHandle(p.handle).toLowerCase() === normalized.toLowerCase() ||
+      normalizeProductHandle(p.handle).toLowerCase() === handle.toLowerCase()
   );
   if (match) return match;
 
@@ -233,23 +244,18 @@ export async function getLiveProductByHandle(handle: string): Promise<CatalogPro
         p.id === normalized ||
         p.handle === handle ||
         p.id === handle ||
-        p.handle.toLowerCase() === handle.toLowerCase()
+        p.handle.toLowerCase() === handle.toLowerCase() ||
+        p.handle.toLowerCase() === normalized.toLowerCase() ||
+        normalizeProductHandle(p.handle).toLowerCase() === normalized.toLowerCase() ||
+        normalizeProductHandle(p.handle).toLowerCase() === handle.toLowerCase()
     );
     if (seedMatch) {
+      const specMatch = seedData.specs?.find((s: any) => s.product_id === seedMatch.id);
       if (typeof window === "undefined") {
-        const { syncSingleProductToDb } = await import("./catalog-server");
-        await syncSingleProductToDb(seedMatch);
+        const { syncSingleProductToDb, formatRawDbProduct } = await import("./catalog-server");
+        syncSingleProductToDb(seedMatch, specMatch).catch(() => {});
+        return formatRawDbProduct(seedMatch, specMatch);
       }
-      const refreshed = await getLiveProducts();
-      match = refreshed.find(
-        (p) =>
-          p.handle === normalized ||
-          p.id === normalized ||
-          p.handle === handle ||
-          p.id === handle ||
-          p.handle.toLowerCase() === handle.toLowerCase()
-      );
-      if (match) return match;
     }
   } catch (err) {
     console.warn("getLiveProductByHandle fallback error:", err);

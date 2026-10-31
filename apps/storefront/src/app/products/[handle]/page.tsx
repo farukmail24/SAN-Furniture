@@ -123,7 +123,7 @@ function ProductDescriptionNotes({ description }: { description?: string }) {
 export default async function ProductDetailPage({ params }: ProductPageProps) {
   const { handle } = await params;
   const aliasedHandle = PRODUCT_HANDLE_ALIASES[handle.toLowerCase()];
-  if (aliasedHandle) {
+  if (aliasedHandle && aliasedHandle.toLowerCase() !== handle.toLowerCase()) {
     redirect(`/products/${aliasedHandle}`);
   }
 

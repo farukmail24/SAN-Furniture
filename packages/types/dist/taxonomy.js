@@ -87,6 +87,12 @@ export const PRODUCT_HANDLE_ALIASES = {
     // Bedside tables
     "venice-alpine-white-bedside-2394": "venice-alpine-white-bedside",
     "louise-white-gloss-bedside-table-2413": "louise-white-gloss-bedside-table",
+    // Chelsea Living Collection
+    "chelsea-living-1-drawer-2-door-sideboard-in-white-with-a-truffle-oak-trim": "chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim",
+    "chelsea-living-wide-tv-unit-in-white-gloss-with-an-oak-trim": "chelsea-living-wide-tv-unit-in-white-with-a-truffle-oak-trim",
+    // Lyon Extending Dining Tables
+    "lyon-small-extending-dining-table-in-riviera-oak-white-high-gloss-90-180cm": "lyon-small-extending-dining-table-90-180cm-in-riviera-oak-white-high-gloss",
+    "lyon-medium-extending-dining-table-in-riviera-oak-white-high-gloss-140-180cm": "lyon-medium-extending-dining-table-140-180-cm-in-riviera-oak-white-high-gloss",
 };
 export function normalizeProductHandle(handle) {
     const clean = handle.trim().toLowerCase();

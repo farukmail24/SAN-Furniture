@@ -67,7 +67,89 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
   }
 }
 
-export async function syncSingleProductToDb(p: any): Promise<void> {
+export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct {
+  let images: string[] = [];
+  try {
+    images = p.images_json
+      ? typeof p.images_json === "string"
+        ? JSON.parse(p.images_json)
+        : p.images_json
+      : Array.isArray(p.images)
+      ? p.images
+      : [];
+  } catch {
+    images = [];
+  }
+  const thumb = p.thumbnailUrl || p.thumbnail_url || (images.length > 0 ? images[0] : "");
+  if (images.length === 0 && thumb) {
+    images = [thumb];
+  }
+
+  let variants: any[] = [];
+  try {
+    variants = p.variants_json
+      ? typeof p.variants_json === "string"
+        ? JSON.parse(p.variants_json)
+        : p.variants_json
+      : Array.isArray(p.variants)
+      ? p.variants
+      : [];
+  } catch {
+    variants = [];
+  }
+
+  const s = specsOverride || p;
+
+  return {
+    id: p.id,
+    sku: p.sku ? formatProductSku(p.sku) : undefined,
+    createdAt: p.createdAt ? String(p.createdAt) : p.created_at ? String(p.created_at) : undefined,
+    title: p.title,
+    handle: p.handle,
+    subtitle: p.subtitle || "",
+    description: cleanHtmlDescription(p.description),
+    categoryId: p.categoryId || p.category_id,
+    status: (p.status === "active" ? "published" : p.status) || "published",
+    pricePennies: Number(p.pricePennies ?? p.price_pennies) || 0,
+    compareAtPricePennies: (p.compareAtPricePennies ?? p.compare_at_price_pennies)
+      ? Number(p.compareAtPricePennies ?? p.compare_at_price_pennies)
+      : undefined,
+    vatRatePercent: Number(p.vatRatePercent ?? p.vat_rate_percent) || 20,
+    gtinBarcode: p.gtinBarcode || p.gtin_barcode || "",
+    thumbnailUrl: thumb,
+    images,
+    variants,
+    specs: {
+      width_cm: Number(s.width_cm) || 0,
+      height_cm: Number(s.height_cm) || 0,
+      depth_cm: Number(s.depth_cm) || 0,
+      seat_height_cm: s.seat_height_cm ? Number(s.seat_height_cm) : undefined,
+      seat_depth_cm: s.seat_depth_cm ? Number(s.seat_depth_cm) : undefined,
+      arm_height_cm: s.arm_height_cm ? Number(s.arm_height_cm) : undefined,
+      weight_kg: Number(s.weight_kg) || 0,
+      material: s.material || "Hardwood",
+      frame_material: s.frame_material || "Solid Wood",
+      color: s.color || "Natural",
+      assembly_required: Boolean(Number(s.assembly_required)),
+      assembly_time_mins: s.assembly_time_mins ? Number(s.assembly_time_mins) : undefined,
+      assembly_instructions_url:
+        s.assembly_instructions_url && !s.assembly_instructions_url.includes("dropbox.com")
+          ? s.assembly_instructions_url
+          : undefined,
+      doorway_clearance_min_cm: s.doorway_clearance_min_cm ? Number(s.doorway_clearance_min_cm) : undefined,
+      delivery_tier: s.delivery_tier || "two_man_white_glove",
+      fire_safety: {
+        compliant: Boolean(Number(s.fire_safety_compliant)),
+        standard: s.fire_safety_standard || "UK Furniture & Furnishings Regulations 1988",
+        certificate_ref: s.fire_safety_cert || "UK-COMPLIANT-VERIFIED",
+        label_attached: true,
+      },
+      lead_time_days: Number(s.lead_time_days) || 5,
+    },
+  };
+}
+
+export async function syncSingleProductToDb(p: any, s?: any): Promise<void> {
   try {
     const pool = getDbPool();
     const productCols = [
@@ -79,6 +161,20 @@ export async function syncSingleProductToDb(p: any): Promise<void> {
       `INSERT IGNORE INTO products (${productCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${productCols.map(() => "?").join(", ")})`,
       productCols.map((c) => (p as any)[c] ?? null)
     ).catch(() => {});
+
+    if (s) {
+      const specCols = [
+        "id", "product_id", "width_cm", "height_cm", "depth_cm", "seat_height_cm",
+        "seat_depth_cm", "arm_height_cm", "weight_kg", "material", "frame_material",
+        "color", "assembly_required", "assembly_time_mins", "assembly_instructions_url",
+        "doorway_clearance_min_cm", "delivery_tier", "fire_safety_compliant",
+        "fire_safety_standard", "fire_safety_cert", "lead_time_days", "created_at"
+      ];
+      await pool.query(
+        `INSERT IGNORE INTO furniture_specs (${specCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${specCols.map(() => "?").join(", ")})`,
+        specCols.map((c) => (s as any)[c] ?? null)
+      ).catch(() => {});
+    }
   } catch {}
 }
 
@@ -110,7 +206,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 
     let [rows]: any = await pool.query(fetchQuery).catch(() => [[]]);
 
-    if (!Array.isArray(rows) || rows.length < 105) {
+    if (!isCatalogSyncAttempted || !Array.isArray(rows) || rows.length === 0) {
       if (!Array.isArray(rows) || rows.length === 0) {
         await autoSeedDatabaseIfNeeded();
       }
@@ -122,79 +218,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
     }
 
     const rawProducts = Array.isArray(rows) ? rows : [];
-
-    const products: CatalogProduct[] = rawProducts.map((p: any) => {
-      let images: string[] = [];
-      try {
-        images = p.images_json
-          ? typeof p.images_json === "string"
-            ? JSON.parse(p.images_json)
-            : p.images_json
-          : [];
-      } catch {
-        images = [];
-      }
-      if (images.length === 0 && p.thumbnailUrl) {
-        images = [p.thumbnailUrl];
-      }
-
-      let variants: any[] = [];
-      try {
-        variants = p.variants_json
-          ? typeof p.variants_json === "string"
-            ? JSON.parse(p.variants_json)
-            : p.variants_json
-          : [];
-      } catch {
-        variants = [];
-      }
-
-      return {
-        id: p.id,
-        sku: p.sku ? formatProductSku(p.sku) : undefined,
-        createdAt: p.createdAt ? String(p.createdAt) : undefined,
-        title: p.title,
-        handle: p.handle,
-        subtitle: p.subtitle || "",
-        description: cleanHtmlDescription(p.description),
-        categoryId: p.categoryId,
-        status: (p.status === "active" ? "published" : p.status) || "published",
-        pricePennies: Number(p.pricePennies) || 0,
-        compareAtPricePennies: p.compareAtPricePennies ? Number(p.compareAtPricePennies) : undefined,
-        vatRatePercent: Number(p.vatRatePercent) || 20,
-        gtinBarcode: p.gtinBarcode || "",
-        thumbnailUrl: p.thumbnailUrl || images[0] || "",
-        images,
-        variants,
-        specs: {
-          width_cm: Number(p.width_cm) || 0,
-          height_cm: Number(p.height_cm) || 0,
-          depth_cm: Number(p.depth_cm) || 0,
-          seat_height_cm: p.seat_height_cm ? Number(p.seat_height_cm) : undefined,
-          seat_depth_cm: p.seat_depth_cm ? Number(p.seat_depth_cm) : undefined,
-          arm_height_cm: p.arm_height_cm ? Number(p.arm_height_cm) : undefined,
-          weight_kg: Number(p.weight_kg) || 0,
-          material: p.material || "Hardwood",
-          frame_material: p.frame_material || "Solid Wood",
-          color: p.color || "Natural",
-          assembly_required: Boolean(p.assembly_required),
-          assembly_time_mins: p.assembly_time_mins ? Number(p.assembly_time_mins) : undefined,
-          assembly_instructions_url:
-            p.assembly_instructions_url && !p.assembly_instructions_url.includes("dropbox.com")
-              ? p.assembly_instructions_url
-              : undefined,
-          doorway_clearance_min_cm: p.doorway_clearance_min_cm ? Number(p.doorway_clearance_min_cm) : undefined,
-          delivery_tier: p.delivery_tier || "two_man_white_glove",
-          fire_safety: {
-            compliant: Boolean(p.fire_safety_compliant),
-            standard: p.fire_safety_standard || "UK Furniture & Furnishings Regulations 1988",
-            certificate_ref: p.fire_safety_cert || "UK-COMPLIANT-VERIFIED",
-            label_attached: true,
-          },
-          lead_time_days: Number(p.lead_time_days) || 5,
-        },
-      };
-    });
+    const products: CatalogProduct[] = rawProducts.map((p: any) => formatRawDbProduct(p));
 
     if (products.length > 0) {
       cachedProducts = products;

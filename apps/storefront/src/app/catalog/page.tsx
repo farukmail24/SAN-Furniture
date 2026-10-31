@@ -5,6 +5,8 @@ import { CATALOG_CATEGORIES, getLiveProducts } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
 import { getLiveSections } from "@/lib/cms-server";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "All Luxury Furniture Collections | SAN Furniture UK",
   description:
