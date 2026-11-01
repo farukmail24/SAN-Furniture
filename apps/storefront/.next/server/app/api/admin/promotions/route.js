@@ -13,7 +13,7 @@
         INDEX idx_customer_email (customer_email),
         INDEX idx_order_id (order_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-    `),c.push("voucher_redemptions_table_ready");let[a]=await b.query("SHOW COLUMNS FROM promotions").catch(()=>[[]]),d=new Set(Array.isArray(a)?a.map(a=>a.Field.toLowerCase()):[]);d.has("starts_at")||(await b.query("ALTER TABLE promotions ADD COLUMN starts_at DATETIME NULL AFTER is_active").catch(()=>{}),c.push("added_starts_at")),d.has("expires_at")||(await b.query("ALTER TABLE promotions ADD COLUMN expires_at DATETIME NULL AFTER starts_at").catch(()=>{}),c.push("added_expires_at")),d.has("per_customer_limit")||(await b.query("ALTER TABLE promotions ADD COLUMN per_customer_limit INT NOT NULL DEFAULT 1 AFTER max_uses").catch(()=>{}),c.push("added_per_customer_limit")),d.has("first_order_only")||(await b.query("ALTER TABLE promotions ADD COLUMN first_order_only TINYINT(1) NOT NULL DEFAULT 0 AFTER per_customer_limit").catch(()=>{}),c.push("added_first_order_only")),d.has("max_discount_pennies")||(await b.query("ALTER TABLE promotions ADD COLUMN max_discount_pennies INT NULL AFTER discount_value").catch(()=>{}),c.push("added_max_discount_pennies"));let[e]=await b.query("SHOW COLUMNS FROM orders").catch(()=>[[]]),f=new Set(Array.isArray(e)?e.map(a=>a.Field.toLowerCase()):[]);f.has("discount_pennies")||(await b.query("ALTER TABLE orders ADD COLUMN discount_pennies INT NOT NULL DEFAULT 0 AFTER subtotal_pennies").catch(()=>{}),c.push("added_discount_pennies")),f.has("voucher_code")||(await b.query("ALTER TABLE orders ADD COLUMN voucher_code VARCHAR(50) DEFAULT NULL AFTER discount_pennies").catch(()=>{}),c.push("added_voucher_code"));let[g]=await b.query("SELECT COUNT(*) as count FROM promotions").catch(()=>[[{count:1}]]);return g?.[0]?.count===0&&(await b.query(`
+    `),c.push("voucher_redemptions_table_ready");let[a]=await b.query("SHOW COLUMNS FROM promotions").catch(()=>[[]]),d=new Set(Array.isArray(a)?a.map(a=>a.Field.toLowerCase()):[]);d.has("starts_at")||(await b.query("ALTER TABLE promotions ADD COLUMN starts_at DATETIME NULL AFTER is_active").catch(()=>{}),c.push("added_starts_at")),d.has("expires_at")||(await b.query("ALTER TABLE promotions ADD COLUMN expires_at DATETIME NULL AFTER starts_at").catch(()=>{}),c.push("added_expires_at")),d.has("per_customer_limit")||(await b.query("ALTER TABLE promotions ADD COLUMN per_customer_limit INT NOT NULL DEFAULT 1 AFTER max_uses").catch(()=>{}),c.push("added_per_customer_limit")),d.has("first_order_only")||(await b.query("ALTER TABLE promotions ADD COLUMN first_order_only TINYINT(1) NOT NULL DEFAULT 0 AFTER per_customer_limit").catch(()=>{}),c.push("added_first_order_only")),d.has("max_discount_pennies")||(await b.query("ALTER TABLE promotions ADD COLUMN max_discount_pennies INT NULL AFTER discount_value").catch(()=>{}),c.push("added_max_discount_pennies"));let[e]=await b.query("SHOW COLUMNS FROM orders").catch(()=>[[]]),f=new Set(Array.isArray(e)?e.map(a=>a.Field.toLowerCase()):[]);f.has("discount_pennies")||(await b.query("ALTER TABLE orders ADD COLUMN discount_pennies INT NOT NULL DEFAULT 0 AFTER subtotal_pennies").catch(()=>{}),c.push("added_discount_pennies")),f.has("voucher_code")||(await b.query("ALTER TABLE orders ADD COLUMN voucher_code VARCHAR(50) DEFAULT NULL AFTER discount_pennies").catch(()=>{}),c.push("added_voucher_code"));let[g]=await b.query("SELECT COUNT(*) as count FROM promotions").catch(()=>[[{count:1}]]);g?.[0]?.count===0&&(await b.query(`
         INSERT INTO promotions (
           id, code, description, discount_type, discount_value, min_order_pennies,
           max_uses, usage_count, is_active, per_customer_limit, first_order_only, created_at
@@ -21,7 +21,57 @@
         ('promo_welcome50', 'WELCOME50', 'Welcome to SAN: \xa350 off your first handcrafted order over \xa3300', 'fixed_pennies', 5000, 30000, 1000, 0, 1, 1, 1, NOW()),
         ('promo_bankholiday20', 'BANKHOLIDAY20', 'Spring Bank Holiday Special: 20% off orders over \xa3500', 'percentage', 20, 50000, 1000, 0, 1, 1, 0, NOW()),
         ('promo_luxury100', 'LUXURY100', 'Bespoke VIP Voucher: \xa3100 off orders over \xa31,000', 'fixed_pennies', 10000, 100000, 1000, 0, 1, 1, 0, NOW())
-      `).catch(()=>{}),c.push("seeded_promotions")),globalThis.__sanVoucherSchemaEnsured=!0,{success:!0,changes:c}}catch(a){return console.error("[ensureVoucherSchema] Migration error:",a?.message||a),{success:!1,changes:[a?.message||String(a)]}}}},53957:(a,b,c)=>{"use strict";c.r(b),c.d(b,{handler:()=>K,patchFetch:()=>J,routeModule:()=>F,serverHooks:()=>I,workAsyncStorage:()=>G,workUnitAsyncStorage:()=>H});var d={};c.r(d),c.d(d,{GET:()=>D,POST:()=>E,dynamic:()=>B});var e=c(26421),f=c(97714),g=c(85681),h=c(22369),i=c(37587),j=c(261),k=c(46537),l=c(3463),m=c(1889),n=c(85250),o=c(23620),p=c(29790),q=c(67876),r=c(57749),s=c(86439),t=c(51538),u=c(40139),v=c(53444),w=c(16434),x=c(69378),y=c(45317),z=c(77598),A=c.n(z);let B="force-dynamic";function C(a){if(!a)return null;let b=new Date(a);return isNaN(b.getTime())?null:b.toISOString().slice(0,19).replace("T"," ")}async function D(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});await (0,y.U)();let b=(0,w.getDbPool)(),[c]=await b.query(`SELECT p.*,
+      `).catch(()=>{}),c.push("seeded_promotions"));try{await b.query(`
+        UPDATE products 
+        SET subtitle = REPLACE(subtitle, 'Danish Design by Furniture To Go', 'Danish Artisan Design by SAN Furniture'),
+            subtitle = REPLACE(subtitle, 'Furniture To Go', 'SAN Furniture'),
+            description = REPLACE(description, 'Crafted in Denmark by Furniture To Go', 'Crafted in Denmark for SAN Furniture'),
+            description = REPLACE(description, 'from Furniture To Go', 'from SAN Furniture'),
+            description = REPLACE(description, 'Distributed via Furniture To Go Wiltshire logistics hub.', 'Dispatched directly via SAN Dedicated UK Logistics Centre.'),
+            description = REPLACE(description, 'Furniture To Go', 'SAN Furniture'),
+            description = REPLACE(description, 'Amos Mann', 'SAN Furniture')
+        WHERE subtitle LIKE '%Furniture To Go%' 
+           OR subtitle LIKE '%Amos Mann%' 
+           OR description LIKE '%Furniture To Go%' 
+           OR description LIKE '%Amos Mann%'
+      `),await b.query(`
+        UPDATE delivery_options 
+        SET name = 'Room of Choice Placement & Packaging Disposal',
+            description = 'Delivered into your room of choice. Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.'
+        WHERE id = 'del_opt_002' AND name LIKE '%White Glove%'
+      `),await b.query(`
+        UPDATE delivery_options 
+        SET name = 'Priority Saturday / Weekend Room of Choice Delivery',
+            description = 'Guaranteed Saturday delivery slot with priority loading at SAN Central Distribution Hub and live driver SMS GPS tracking.'
+        WHERE id = 'del_opt_003' AND name LIKE '%White Glove%'
+      `);let[a]=await b.query(`
+        SELECT id, content_json FROM site_page_sections 
+        WHERE content_json LIKE '%White Glove%' 
+           OR content_json LIKE '%2 Man%' 
+           OR content_json LIKE '%2-Man%' 
+           OR content_json LIKE '%Two-Man%' 
+           OR content_json LIKE '%Furniture To Go%' 
+           OR content_json LIKE '%Amos Mann%'
+      `).catch(()=>[[]]);if(Array.isArray(a)&&a.length>0)for(let c of a){let a=c.content_json.replace(/Two-Man White Glove Service/gi,"Room of Choice Delivery Service").replace(/2-Man White Glove/gi,"Room of Choice Delivery").replace(/Two-Man White-Glove/gi,"Room of Choice Delivery").replace(/Two-Man/gi,"Specialist").replace(/2-Man/gi,"Specialist").replace(/White Glove Delivery/gi,"Room of Choice Delivery").replace(/White Glove/gi,"Room of Choice").replace(/white-glove/gi,"room of choice").replace(/white glove/gi,"room of choice").replace(/Furniture To Go/gi,"SAN Furniture").replace(/Amos Mann/gi,"SAN Furniture");await b.query("UPDATE site_page_sections SET content_json = ? WHERE id = ?",[a,c.id])}await b.query(`
+        UPDATE order_po_dispatches 
+        SET carrier = 'SAN Dedicated Delivery Fleet' 
+        WHERE carrier LIKE '%Amos Mann%' OR carrier LIKE '%2-Man%' OR carrier LIKE '%White Glove%'
+      `),await b.query(`
+        UPDATE support_messages 
+        SET sender_name = REPLACE(sender_name, 'White Glove Lead', 'Logistics Lead'),
+            message = REPLACE(REPLACE(REPLACE(message, 'white-glove', 'room of choice'), 'White Glove', 'Room of Choice'), 'white glove', 'room of choice')
+        WHERE sender_name LIKE '%White Glove%' OR message LIKE '%White Glove%' OR message LIKE '%white glove%'
+      `),await b.query(`
+        UPDATE support_tickets 
+        SET subject = REPLACE(subject, 'White Glove', 'Room of Choice')
+        WHERE subject LIKE '%White Glove%'
+      `),await b.query(`
+        UPDATE notifications 
+        SET title = REPLACE(REPLACE(title, 'White Glove White Glove', 'Room of Choice'), 'White Glove', 'Room of Choice'),
+            title = REPLACE(title, 'Amos Mann', 'SAN Logistics'),
+            message = REPLACE(REPLACE(REPLACE(message, 'white-glove', 'room of choice'), 'White Glove', 'Room of Choice'), 'Amos Mann', 'SAN Logistics')
+        WHERE title LIKE '%White Glove%' OR title LIKE '%Amos Mann%' OR message LIKE '%White Glove%' OR message LIKE '%Amos Mann%'
+      `),c.push("cleansed_brand_and_logistics_terms")}catch(a){console.warn("[ensureVoucherSchema] Terminology cleanse notice:",a?.message)}return globalThis.__sanVoucherSchemaEnsured=!0,{success:!0,changes:c}}catch(a){return console.error("[ensureVoucherSchema] Migration error:",a?.message||a),{success:!1,changes:[a?.message||String(a)]}}}},53957:(a,b,c)=>{"use strict";c.r(b),c.d(b,{handler:()=>K,patchFetch:()=>J,routeModule:()=>F,serverHooks:()=>I,workAsyncStorage:()=>G,workUnitAsyncStorage:()=>H});var d={};c.r(d),c.d(d,{GET:()=>D,POST:()=>E,dynamic:()=>B});var e=c(26421),f=c(97714),g=c(85681),h=c(22369),i=c(37587),j=c(261),k=c(46537),l=c(3463),m=c(1889),n=c(85250),o=c(23620),p=c(29790),q=c(67876),r=c(57749),s=c(86439),t=c(51538),u=c(40139),v=c(53444),w=c(16434),x=c(69378),y=c(45317),z=c(77598),A=c.n(z);let B="force-dynamic";function C(a){if(!a)return null;let b=new Date(a);return isNaN(b.getTime())?null:b.toISOString().slice(0,19).replace("T"," ")}async function D(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});await (0,y.U)();let b=(0,w.getDbPool)(),[c]=await b.query(`SELECT p.*,
               COALESCE((SELECT SUM(discount_pennies) FROM voucher_redemptions WHERE voucher_code = p.code), 0) as total_savings_pennies
        FROM promotions p 
        ORDER BY p.created_at DESC`),d=Array.isArray(c)?c:[],e=d.reduce((a,b)=>a+(Number(b.usage_count)||0),0),f=d.reduce((a,b)=>a+(Number(b.total_savings_pennies)||0),0);return v.NextResponse.json({success:!0,promotions:d,summary:{totalVouchers:d.length,activeCampaigns:d.filter(a=>a.is_active).length,totalRedeemed:e,totalSavingsPennies:f}})}catch(a){return v.NextResponse.json({success:!1,error:"Failed to fetch promotions",details:a?.message||String(a)},{status:500})}}async function E(a){try{if(!await (0,x.rA)(a))return v.NextResponse.json({success:!1,error:"Unauthorized"},{status:401});await (0,y.U)();let b=(0,w.getDbPool)(),{code:c,description:d,discountType:e="percentage",discountValue:f=10,maxDiscountPennies:g=null,minOrderPennies:h=0,maxUses:i=1e3,perCustomerLimit:j=1,firstOrderOnly:k=0,startsAt:l=null,expiresAt:m=null,isActive:n=1}=await a.json(),o=(c||"").toString().trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"");if(!o)return v.NextResponse.json({error:"A valid alphanumeric voucher code is required"},{status:400});let p=`promo_${o.toLowerCase()}_${A().randomBytes(3).toString("hex")}`;return await b.query(`INSERT INTO promotions (

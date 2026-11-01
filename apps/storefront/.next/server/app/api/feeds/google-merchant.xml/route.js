@@ -14,7 +14,7 @@
       <g:google_product_category>${y(f)}</g:google_product_category>
       <g:shipping>
         <g:country>GB</g:country>
-        <g:service>UK 2-Man White Glove Delivery</g:service>
+        <g:service>UK Room of Choice Delivery</g:service>
         <g:price>${g}</g:price>
       </g:shipping>
       <g:material>${y(b?.specs?.material)}</g:material>

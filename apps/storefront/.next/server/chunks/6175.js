@@ -44,12 +44,12 @@ exports.id=6175,exports.ids=[1365,6175],exports.modules={16434:(a,b,c)=>{"use st
 </body>
 </html>`}async function r(a){try{let b=await i(),c=l(b),d=m(b);if(!c&&!d)return{emailSent:!1,smsSent:!1};let e=p(),f=[];if(c&&a.email){let b=q("Welcome to SAN Furniture",`
         <h2 style="font-size: 20px; color: #0e1526; margin-top: 0;">Welcome, ${a.firstName}!</h2>
-        <p>Thank you for joining <strong>SAN Furniture</strong>. Your private customer portal is now active, granting you seamless order management, real-time white-glove GPS consignment tracking, and verified UK VAT receipts.</p>
+        <p>Thank you for joining <strong>SAN Furniture</strong>. Your private customer portal is now active, granting you seamless order management, real-time room-of-choice GPS consignment tracking, and verified UK VAT receipts.</p>
         
         <div class="card">
           <div class="card-title">Your Member Credentials</div>
           <p style="margin: 0 0 6px 0;"><strong>Registered Email:</strong> ${a.email}</p>
-          <p style="margin: 0;"><strong>Customer Care:</strong> 2-Man Delivery Concierge &amp; Room of Choice Assembly included on eligible pieces.</p>
+          <p style="margin: 0;"><strong>Customer Care:</strong> Specialist Delivery Concierge &amp; Room of Choice Placement included on eligible pieces.</p>
         </div>
 
         <p>Every piece in our collection is strictly compliant with UK Fire Safety Regulations 1988 and crafted for discerning British homes.</p>
@@ -66,7 +66,7 @@ exports.id=6175,exports.ids=[1365,6175],exports.modules={16434:(a,b,c)=>{"use st
             <td style="padding: 10px 12px; text-align: center; border-bottom: 1px solid #ede8de; font-family: monospace;">&times;${a.quantity}</td>
             <td style="padding: 10px 0; text-align: right; border-bottom: 1px solid #ede8de; font-weight: bold; font-family: monospace;">${(0,f.j5)(a.pricePennies*a.quantity)}</td>
           </tr>
-        `).join(""),c="two_man_white_glove"===a.deliveryTier||"white_glove_assembly"===a.deliveryTier?"2-Man White Glove (Room of Choice + Assembly)":"pallet"===a.deliveryTier?"Pallet Curbside Delivery":"Standard UK Delivery",d=q(`Order Confirmation #${a.orderNumber}`,`
+        `).join(""),c="two_man_white_glove"===a.deliveryTier||"white_glove_assembly"===a.deliveryTier?"Room of Choice Delivery (Room Placement & Packaging Removal)":"pallet"===a.deliveryTier?"Pallet Curbside Delivery":"Standard UK Delivery",d=q(`Order Confirmation #${a.orderNumber}`,`
         <div style="margin-bottom: 20px;">
           <span class="badge badge-success">Payment Confirmed &bull; Order Received</span>
         </div>

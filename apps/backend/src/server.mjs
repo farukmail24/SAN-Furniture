@@ -553,6 +553,92 @@ async function ensureDatabaseSchema() {
       `);
       console.log("[DB Migration] Seeded default delivery_options successfully.");
     }
+    // Idempotent brand de-leakage and delivery terminology cleanse
+    try {
+      await pool.query(`
+        UPDATE products 
+        SET subtitle = REPLACE(subtitle, 'Danish Design by Furniture To Go', 'Danish Artisan Design by SAN Furniture'),
+            subtitle = REPLACE(subtitle, 'Furniture To Go', 'SAN Furniture'),
+            description = REPLACE(description, 'Crafted in Denmark by Furniture To Go', 'Crafted in Denmark for SAN Furniture'),
+            description = REPLACE(description, 'from Furniture To Go', 'from SAN Furniture'),
+            description = REPLACE(description, 'Distributed via Furniture To Go Wiltshire logistics hub.', 'Dispatched directly via SAN Dedicated UK Logistics Centre.'),
+            description = REPLACE(description, 'Furniture To Go', 'SAN Furniture'),
+            description = REPLACE(description, 'Amos Mann', 'SAN Furniture')
+        WHERE subtitle LIKE '%Furniture To Go%' 
+           OR subtitle LIKE '%Amos Mann%' 
+           OR description LIKE '%Furniture To Go%' 
+           OR description LIKE '%Amos Mann%'
+      `);
+
+      await pool.query(`
+        UPDATE delivery_options 
+        SET name = 'Room of Choice Placement & Packaging Disposal',
+            description = 'Delivered into your room of choice. Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.'
+        WHERE id = 'del_opt_002' AND name LIKE '%White Glove%'
+      `);
+      await pool.query(`
+        UPDATE delivery_options 
+        SET name = 'Priority Saturday / Weekend Room of Choice Delivery',
+            description = 'Guaranteed Saturday delivery slot with priority loading at SAN Central Distribution Hub and live driver SMS GPS tracking.'
+        WHERE id = 'del_opt_003' AND name LIKE '%White Glove%'
+      `);
+
+      const [sectionsToSanitize] = await pool.query(`
+        SELECT id, content_json FROM site_page_sections 
+        WHERE content_json LIKE '%White Glove%' 
+           OR content_json LIKE '%2 Man%' 
+           OR content_json LIKE '%2-Man%' 
+           OR content_json LIKE '%Two-Man%' 
+           OR content_json LIKE '%Furniture To Go%' 
+           OR content_json LIKE '%Amos Mann%'
+      `);
+      if (Array.isArray(sectionsToSanitize) && sectionsToSanitize.length > 0) {
+        for (const sec of sectionsToSanitize) {
+          const cleanJson = sec.content_json
+            .replace(/Two-Man White Glove Service/gi, "Room of Choice Delivery Service")
+            .replace(/2-Man White Glove/gi, "Room of Choice Delivery")
+            .replace(/Two-Man White-Glove/gi, "Room of Choice Delivery")
+            .replace(/Two-Man/gi, "Specialist")
+            .replace(/2-Man/gi, "Specialist")
+            .replace(/White Glove Delivery/gi, "Room of Choice Delivery")
+            .replace(/White Glove/gi, "Room of Choice")
+            .replace(/white-glove/gi, "room of choice")
+            .replace(/white glove/gi, "room of choice")
+            .replace(/Furniture To Go/gi, "SAN Furniture")
+            .replace(/Amos Mann/gi, "SAN Furniture");
+          await pool.query("UPDATE site_page_sections SET content_json = ? WHERE id = ?", [cleanJson, sec.id]);
+        }
+      }
+
+      await pool.query(`
+        UPDATE order_po_dispatches 
+        SET carrier = 'SAN Dedicated Delivery Fleet' 
+        WHERE carrier LIKE '%Amos Mann%' OR carrier LIKE '%2-Man%' OR carrier LIKE '%White Glove%'
+      `);
+
+      await pool.query(`
+        UPDATE support_messages 
+        SET sender_name = REPLACE(sender_name, 'White Glove Lead', 'Logistics Lead'),
+            message = REPLACE(REPLACE(REPLACE(message, 'white-glove', 'room of choice'), 'White Glove', 'Room of Choice'), 'white glove', 'room of choice')
+        WHERE sender_name LIKE '%White Glove%' OR message LIKE '%White Glove%' OR message LIKE '%white glove%'
+      `);
+
+      await pool.query(`
+        UPDATE support_tickets 
+        SET subject = REPLACE(subject, 'White Glove', 'Room of Choice')
+        WHERE subject LIKE '%White Glove%'
+      `);
+
+      await pool.query(`
+        UPDATE notifications 
+        SET title = REPLACE(REPLACE(title, 'White Glove White Glove', 'Room of Choice'), 'White Glove', 'Room of Choice'),
+            title = REPLACE(title, 'Amos Mann', 'SAN Logistics'),
+            message = REPLACE(REPLACE(REPLACE(message, 'white-glove', 'room of choice'), 'White Glove', 'Room of Choice'), 'Amos Mann', 'SAN Logistics')
+        WHERE title LIKE '%White Glove%' OR title LIKE '%Amos Mann%' OR message LIKE '%White Glove%' OR message LIKE '%Amos Mann%'
+      `);
+    } catch (cleanseErr) {
+      console.warn("[ensureDatabaseSchema] Terminology cleanse notice:", cleanseErr.message);
+    }
   } catch (e) {
     console.warn("[DB Migration Notice - delivery_options]:", e.message);
   }
