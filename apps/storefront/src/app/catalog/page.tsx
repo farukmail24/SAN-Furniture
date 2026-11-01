@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "All Luxury Furniture Collections | SAN Furniture UK",
   description:
-    "Explore our complete collection of handcrafted British sofas, dining sets, accent armchairs, ottoman beds, and designer coffee tables. Delivered with white glove room of choice service.",
+    "Explore our complete collection of handcrafted British sofas, dining sets, accent armchairs, ottoman beds, and designer coffee tables. Delivered with room of choice service.",
   alternates: {
     canonical: "https://sanfurniture.com/catalog",
   },
