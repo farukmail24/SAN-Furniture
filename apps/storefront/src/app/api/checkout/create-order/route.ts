@@ -243,60 +243,124 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(", ");
 
-    // Customer Account Resolution
+    // Customer Account Resolution: Check if customer already exists to preserve their original account ID
+    const cleanCustomerEmail = customer.email.trim().toLowerCase();
     const [nameFirst, ...nameRest] = (customer.name || "").trim().split(" ");
     const firstName = customer.firstName || nameFirst || "Client";
     const lastName = customer.lastName || nameRest.join(" ") || "Client";
-    const customerId = `cust_${crypto.createHash("md5").update(customer.email.toLowerCase()).digest("hex").slice(0, 12)}`;
 
     // 4. ACID Database Transaction
     await connection.beginTransaction();
 
-    let passwordHash = "GUEST_CHECKOUT";
-    if (createAccount && accountPassword && accountPassword.length >= 8) {
-      passwordHash = hashPassword(accountPassword);
+    let customerId: string;
+    const [existingCustRows]: any = await connection.query(
+      "SELECT id, phone, first_name, last_name FROM customers WHERE LOWER(email) = ? LIMIT 1",
+      [cleanCustomerEmail]
+    );
+
+    if (existingCustRows && existingCustRows.length > 0) {
+      customerId = existingCustRows[0].id;
+      // Update phone if previously blank
+      if (!existingCustRows[0].phone && customer.phone) {
+        await connection.query(
+          "UPDATE customers SET phone = ? WHERE id = ?",
+          [customer.phone, customerId]
+        ).catch(() => {});
+      }
+    } else {
+      customerId = `cust_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+      let passwordHash = "GUEST_CHECKOUT";
+      if (createAccount && accountPassword && accountPassword.length >= 8) {
+        passwordHash = hashPassword(accountPassword);
+      }
+
+      try {
+        await connection.query(
+          `INSERT INTO customers (id, email, username, password_hash, first_name, last_name, phone)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON DUPLICATE KEY UPDATE 
+             phone = COALESCE(VALUES(phone), phone),
+             first_name = COALESCE(VALUES(first_name), first_name),
+             last_name = COALESCE(VALUES(last_name), last_name)`,
+          [
+            customerId,
+            cleanCustomerEmail,
+            customer.username || cleanCustomerEmail.split("@")[0],
+            passwordHash,
+            firstName,
+            lastName,
+            customer.phone || null,
+          ]
+        );
+
+        // In case of duplicate key race, get the authoritative customer ID
+        const [verifiedCust]: any = await connection.query(
+          "SELECT id FROM customers WHERE LOWER(email) = ? LIMIT 1",
+          [cleanCustomerEmail]
+        );
+        if (verifiedCust && verifiedCust.length > 0) {
+          customerId = verifiedCust[0].id;
+        }
+      } catch (custErr: any) {
+        console.warn("[create-order: customers upsert warning]:", custErr?.message || custErr);
+      }
     }
 
-    // Upsert customer (resilient: profile collisions must never abort paid order)
+    // Save shipping address to customer_addresses (avoiding duplicates if address already saved)
+    const cleanShippingPostcode = (shippingAddress.postcode || "").trim().toUpperCase();
+    const cleanShippingLine1 = (shippingAddress.addressLine1 || "").trim();
+
     try {
-      await connection.query(
-        `INSERT INTO customers (id, email, username, password_hash, first_name, last_name, phone)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE 
-           phone = COALESCE(VALUES(phone), phone),
-           first_name = COALESCE(VALUES(first_name), first_name),
-           last_name = COALESCE(VALUES(last_name), last_name)`,
-        [
-          customerId,
-          customer.email.trim().toLowerCase(),
-          customer.username || customer.email.split("@")[0],
-          passwordHash,
-          firstName,
-          lastName,
-          customer.phone || null,
-        ]
+      const [existingAddrs]: any = await connection.query(
+        `SELECT id FROM customer_addresses 
+         WHERE customer_id = ? 
+           AND LOWER(TRIM(address_line1)) = LOWER(TRIM(?))
+           AND UPPER(REPLACE(postcode, ' ', '')) = UPPER(REPLACE(?, ' ', ''))
+         LIMIT 1`,
+        [customerId, cleanShippingLine1, cleanShippingPostcode]
       );
-    } catch (custErr: any) {
-      console.warn("[create-order: customers upsert warning]:", custErr?.message || custErr);
-    }
 
-    // Save shipping address to customer_addresses
-    const addrId = `addr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
-    await connection.query(
-      `INSERT INTO customer_addresses (id, customer_id, label, recipient, address_line1, address_line2, city, postcode, phone, is_default_delivery, created_at)
-       VALUES (?, ?, 'Delivery Address', ?, ?, ?, ?, ?, ?, 1, NOW())
-       ON DUPLICATE KEY UPDATE updated_at = NOW()`,
-      [
-        addrId,
-        customerId,
-        customer.name,
-        shippingAddress.addressLine1,
-        shippingAddress.addressLine2 || null,
-        shippingAddress.city,
-        shippingAddress.postcode.toUpperCase(),
-        customer.phone || null,
-      ]
-    ).catch(() => {});
+      if (existingAddrs && existingAddrs.length > 0) {
+        // Address already exists in account! Do not insert duplicate; promote to default delivery
+        const matchedAddrId = existingAddrs[0].id;
+        await connection.query(
+          "UPDATE customer_addresses SET is_default_delivery = 0 WHERE customer_id = ?",
+          [customerId]
+        ).catch(() => {});
+        await connection.query(
+          "UPDATE customer_addresses SET is_default_delivery = 1 WHERE id = ?",
+          [matchedAddrId]
+        ).catch(() => {});
+      } else {
+        // New address: Set previous addresses non-default and insert this new one
+        await connection.query(
+          "UPDATE customer_addresses SET is_default_delivery = 0 WHERE customer_id = ?",
+          [customerId]
+        ).catch(() => {});
+
+        const addrId = `addr_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+        await connection.query(
+          `INSERT INTO customer_addresses (
+            id, customer_id, label, recipient, company, address_line1, address_line2, 
+            city, county, postcode, phone, country, is_default_delivery, created_at
+          ) VALUES (?, ?, 'Delivery Address', ?, ?, ?, ?, ?, ?, ?, ?, 'United Kingdom', 1, NOW())`,
+          [
+            addrId,
+            customerId,
+            customer.name || `${firstName} ${lastName}`,
+            shippingAddress.company || null,
+            cleanShippingLine1,
+            shippingAddress.addressLine2 || null,
+            shippingAddress.city,
+            shippingAddress.state || null,
+            cleanShippingPostcode,
+            customer.phone || null,
+          ]
+        );
+      }
+    } catch (addrErr: any) {
+      console.warn("[create-order: address save warning]:", addrErr?.message || addrErr);
+    }
 
     // Insert Order
     await connection.query(

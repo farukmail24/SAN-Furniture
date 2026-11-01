@@ -63,6 +63,23 @@ const DEFAULT_FALLBACK_DELIVERY: DeliveryTierOption = {
   sortOrder: 1,
 };
 
+interface SavedCustomerAddress {
+  id: string;
+  label?: string;
+  recipient?: string;
+  company?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  county?: string;
+  postcode: string;
+  phone?: string;
+  country?: string;
+  accessNotes?: string;
+  isDefaultDelivery?: boolean;
+  isDefaultBilling?: boolean;
+}
+
 interface ConfirmedOrderDetails {
   orderId: string;
   orderNumber: string;
@@ -231,6 +248,69 @@ export default function CheckoutPage() {
   const [savedCardCvc, setSavedCardCvc] = useState("123");
   const [isLoadingSavedCards, setIsLoadingSavedCards] = useState(false);
   const [loggedInCustomer, setLoggedInCustomer] = useState<any>(null);
+  const [savedAddresses, setSavedAddresses] = useState<SavedCustomerAddress[]>([]);
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string>("new");
+  const [isLoadingSavedAddresses, setIsLoadingSavedAddresses] = useState(false);
+
+  const applySavedAddress = (addr: SavedCustomerAddress) => {
+    setBillingAddress1(addr.addressLine1 || "");
+    setBillingAddress2(addr.addressLine2 || "");
+    setBillingCity(addr.city || "");
+    setBillingPostcode(addr.postcode || "");
+    setBillingState(addr.county || "");
+    setBillingCompany(addr.company || "");
+
+    if (addr.recipient) {
+      const parts = addr.recipient.trim().split(" ");
+      if (parts.length > 0) setBillingFirstName(parts[0]);
+      if (parts.length > 1) setBillingLastName(parts.slice(1).join(" "));
+    }
+    if (addr.phone) {
+      setBillingPhone(addr.phone);
+      if (!accountPhone) setAccountPhone(addr.phone);
+    }
+
+    setShippingAddress1(addr.addressLine1 || "");
+    setShippingAddress2(addr.addressLine2 || "");
+    setShippingCity(addr.city || "");
+    setShippingPostcode(addr.postcode || "");
+    setShippingState(addr.county || "");
+    setShippingCompany(addr.company || "");
+    if (addr.recipient) {
+      const parts = addr.recipient.trim().split(" ");
+      if (parts.length > 0) setShippingFirstName(parts[0]);
+      if (parts.length > 1) setShippingLastName(parts.slice(1).join(" "));
+    }
+  };
+
+  const loadSavedAddresses = (targetEmail?: string) => {
+    const emailToUse = targetEmail || accountEmail.trim() || billingEmail.trim() || loggedInCustomer?.email;
+    if (!emailToUse) return;
+
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_customer_token") : null;
+    const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+    setIsLoadingSavedAddresses(true);
+    fetch(apiUrl(`/api/customer/addresses?email=${encodeURIComponent(emailToUse)}`), {
+      headers: { ...authHeaders },
+      credentials: "include",
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.addresses) && data.addresses.length > 0) {
+          setSavedAddresses(data.addresses);
+          const def = data.addresses.find((a: SavedCustomerAddress) => a.isDefaultDelivery) || data.addresses[0];
+          if (def) {
+            setSelectedSavedAddressId(def.id);
+            applySavedAddress(def);
+          }
+        } else {
+          setSavedAddresses([]);
+        }
+      })
+      .catch((err) => console.error("Error loading customer addresses:", err))
+      .finally(() => setIsLoadingSavedAddresses(false));
+  };
 
   // Auto-fill logged in user on mount
   useEffect(() => {
@@ -253,6 +333,7 @@ export default function CheckoutPage() {
         setBillingLastName(u.lastName || "");
         setBillingEmail(u.email || "");
         setBillingPhone(u.phone || "");
+        loadSavedAddresses(u.email);
 
         if (u.addresses && u.addresses.length > 0) {
           const def = u.addresses.find((a: any) => a.is_default_delivery) || u.addresses[0];
@@ -296,6 +377,13 @@ export default function CheckoutPage() {
       // ignore
     }
   }, []);
+
+  // Automatically fetch saved customer addresses when session is active
+  useEffect(() => {
+    if (loggedInCustomer?.email) {
+      loadSavedAddresses(loggedInCustomer.email);
+    }
+  }, [loggedInCustomer]);
 
   // Ensure createAccount is always false when loggedInCustomer is active
   useEffect(() => {
@@ -1539,6 +1627,106 @@ export default function CheckoutPage() {
                     <span>Copy from Account</span>
                   </button>
                 </div>
+
+                {/* Saved Address Selection Cards for Returning Customers */}
+                {savedAddresses.length > 0 && (
+                  <div className="p-4 bg-sand-200/60 rounded-xl border border-sand-300 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-navy-950 flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-brass-600" />
+                        <span>Saved Delivery &amp; Billing Addresses:</span>
+                      </label>
+                      <span className="text-[11px] text-navy-600 font-medium">
+                        {savedAddresses.length} saved address{savedAddresses.length > 1 ? "es" : ""} found
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {savedAddresses.map((addr) => {
+                        const isSelected = selectedSavedAddressId === addr.id;
+                        return (
+                          <div
+                            key={addr.id}
+                            onClick={() => {
+                              setSelectedSavedAddressId(addr.id);
+                              applySavedAddress(addr);
+                            }}
+                            className={`p-3 rounded-xl border cursor-pointer text-left transition-all ${
+                              isSelected
+                                ? "bg-white border-brass-600 shadow-sm ring-2 ring-brass-500/40"
+                                : "bg-sand-50/70 border-sand-300 hover:border-sand-400 hover:bg-white"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 ${isSelected ? "border-brass-600 bg-brass-600" : "border-sand-400 bg-white"}`}>
+                                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                </div>
+                                <span className="text-xs font-bold text-navy-950 truncate max-w-[140px]">{addr.label || "Delivery Address"}</span>
+                              </div>
+                              {addr.isDefaultDelivery && (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-navy-700 space-y-0.5 pl-5">
+                              {addr.recipient && <p className="font-semibold text-navy-950">{addr.recipient}</p>}
+                              <p className="line-clamp-1">{addr.addressLine1}{addr.addressLine2 ? `, ${addr.addressLine2}` : ""}</p>
+                              <p>{addr.city}, <span className="font-mono font-bold text-navy-950">{addr.postcode}</span></p>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Deliver to a New Address Card */}
+                      <div
+                        onClick={() => {
+                          setSelectedSavedAddressId("new");
+                          setBillingAddress1("");
+                          setBillingAddress2("");
+                          setBillingCity("");
+                          setBillingPostcode("");
+                          setBillingState("");
+                          setBillingCompany("");
+                          setBillingAddressOptions([]);
+                          setShippingAddress1("");
+                          setShippingAddress2("");
+                          setShippingCity("");
+                          setShippingPostcode("");
+                          setShippingState("");
+                          setShippingCompany("");
+                        }}
+                        className={`p-3 rounded-xl border border-dashed cursor-pointer text-left transition-all flex flex-col justify-center items-center gap-1 min-h-[90px] ${
+                          selectedSavedAddressId === "new"
+                            ? "bg-white border-brass-600 ring-2 ring-brass-500/40"
+                            : "bg-sand-50/50 border-sand-300 hover:border-sand-400 hover:bg-white text-navy-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-navy-950">
+                          <Plus className="w-4 h-4 text-brass-600" />
+                          <span>Deliver to a New Address</span>
+                        </div>
+                        <p className="text-[10px] text-navy-500 text-center">
+                          Enter or search a new delivery destination
+                        </p>
+                      </div>
+                    </div>
+
+                    {selectedSavedAddressId !== "new" && (
+                      <p className="text-[11px] text-emerald-800 font-medium flex items-center gap-1 mt-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Using saved address. You can review or adjust the fields below if needed.</span>
+                      </p>
+                    )}
+                    {selectedSavedAddressId === "new" && (
+                      <p className="text-[11px] text-navy-600 font-medium flex items-center gap-1 mt-1">
+                        <MapPin className="w-3.5 h-3.5 text-brass-600 shrink-0" />
+                        <span>Entering a new address. It will automatically be saved to your address book upon ordering.</span>
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

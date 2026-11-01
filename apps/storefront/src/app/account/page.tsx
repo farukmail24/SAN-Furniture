@@ -176,7 +176,7 @@ export default function CustomerAccountPage() {
 
   // Interactive Modals
   const [trackingModalOrder, setTrackingModalOrder] = useState<CustomerOrder | null>(null);
-  const [rescheduleModalOrder, setRescheduleModalOrder] = useState<CustomerOrder | null>(null);
+
   const [returnModalOrder, setReturnModalOrder] = useState<CustomerOrder | null>(null);
   const [cancelModalOrder, setCancelModalOrder] = useState<CustomerOrder | null>(null);
   const [cancelReason, setCancelReason] = useState("Found alternative / changed mind");
@@ -589,31 +589,7 @@ export default function CustomerAccountPage() {
     }
   };
 
-  const handleConfirmReschedule = async () => {
-    if (rescheduleModalOrder) {
-      try {
-        const res = await fetch(apiUrl(`/api/customer/orders/${rescheduleModalOrder.id}/reschedule`), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-          body: JSON.stringify({ slot: selectedSlot }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to update slot");
 
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === rescheduleModalOrder.id
-              ? { ...o, deliverySlot: selectedSlot }
-              : o
-          )
-        );
-        showToast(`Delivery slot confirmed for: ${selectedSlot}`);
-      } catch (err: any) {
-        showToast(err.message || "Failed to reschedule delivery slot");
-      }
-    }
-    setRescheduleModalOrder(null);
-  };
 
   const handleSubmitReturnRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1168,21 +1144,14 @@ export default function CustomerAccountPage() {
                       <Compass className="w-3.5 h-3.5" />
                       <span>Live Van Waypoints</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setRescheduleModalOrder(orders[0])}
-                      className="px-4 py-2 rounded-lg border border-sand-300 bg-sand-50 text-navy-950 text-xs font-bold hover:bg-sand-200 transition-colors shadow-sm inline-flex items-center gap-2"
-                    >
-                      <Calendar className="w-3.5 h-3.5 text-navy-700" />
-                      <span>Reschedule Slot</span>
-                    </button>
+
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 text-xs">
                   <div>
-                    <span className="text-navy-500 block text-[11px]">Booked Delivery Window:</span>
-                    <strong className="text-navy-950 text-sm font-semibold">{orders[0].deliverySlot || "Carrier scheduled slot"}</strong>
+                    <span className="text-navy-500 block text-[11px]">Delivery Schedule:</span>
+                    <strong className="text-navy-950 text-sm font-semibold">Scheduled by Carrier</strong>
                     <span className="text-[11px] text-forest-700 block mt-0.5">Tracking link &amp; updates provided</span>
                   </div>
                   <div>
@@ -1658,17 +1627,7 @@ export default function CustomerAccountPage() {
                           </button>
                         )}
 
-                        {/* Reschedule 2hr Delivery Window */}
-                        {!isCancelled && (
-                          <button
-                            type="button"
-                            onClick={() => setRescheduleModalOrder(order)}
-                            className="px-3 py-2 rounded-lg border border-sand-300 bg-sand-50 hover:bg-sand-200 text-navy-950 text-xs font-semibold inline-flex items-center gap-1.5 transition-colors"
-                          >
-                            <Calendar className="w-3.5 h-3.5 text-brass-700" />
-                            <span>Delivery Window</span>
-                          </button>
-                        )}
+
 
                         {/* Live Waypoint GPS Modal */}
                         {!isCancelled && (
@@ -3194,7 +3153,7 @@ export default function CustomerAccountPage() {
                 <div>
                   <strong className="text-navy-950 block">Out for Delivery</strong>
                   <span className="text-navy-700 font-semibold text-[11px]">
-                    Scheduled Slot: {trackingModalOrder.deliverySlot || "Confirmed upon routing"}
+                    Courier Updates: Dispatched directly by carrier
                   </span>
                 </div>
               </div>
@@ -3203,7 +3162,7 @@ export default function CustomerAccountPage() {
                 <Package className="w-4 h-4 text-navy-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <strong className="text-navy-950 block">Delivered to Residence</strong>
-                  <span className="text-navy-500 text-[11px]">Pending delivery window arrival</span>
+                  <span className="text-navy-500 text-[11px]">Direct residential delivery</span>
                 </div>
               </div>
             </div>
@@ -3221,84 +3180,6 @@ export default function CustomerAccountPage() {
         </div>
       )}
 
-      {/* ============================================================== */}
-      {/* MODAL 2: RESCHEDULE 2-HOUR DELIVERY WINDOW                     */}
-      {/* ============================================================== */}
-      {rescheduleModalOrder && (
-        <div className="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-sand-50 border border-sand-300 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl relative">
-            <button
-              type="button"
-              onClick={() => setRescheduleModalOrder(null)}
-              className="absolute top-4 right-4 p-1.5 rounded-lg text-navy-500 hover:text-navy-950 hover:bg-sand-200 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-brass-800 bg-sand-200 px-2 py-0.5 rounded">
-                Delivery Time Slot
-              </span>
-              <h3 className="font-display text-lg font-bold text-navy-950 mt-1">
-                Select Your 2-Hour Delivery Slot
-              </h3>
-              <p className="text-xs text-navy-600">
-                Order: <span className="font-mono">{rescheduleModalOrder.order_number}</span> to {rescheduleModalOrder.shipping_postcode}
-              </p>
-            </div>
-
-            <div className="space-y-2.5 pt-2 text-xs">
-              {[
-                "Thursday 22 Oct: 10:00 - 12:00 BST",
-                "Thursday 22 Oct: 14:00 - 16:00 BST",
-                "Friday 23 Oct: 09:00 - 11:00 BST",
-                "Friday 23 Oct: 13:00 - 15:00 BST",
-                "Saturday 24 Oct: 11:00 - 13:00 (Weekend Priority Slot)",
-              ].map((slot, idx) => (
-                <label
-                  key={idx}
-                  className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
-                    selectedSlot === slot
-                      ? "bg-sand-100 border-brass-600 font-bold text-navy-950 shadow-sm"
-                      : "bg-sand-50 border-sand-200 text-navy-800 hover:bg-sand-100"
-                  }`}
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className={`w-3.5 h-3.5 rounded-full border ${selectedSlot === slot ? "bg-brass-600 border-brass-600" : "border-sand-400"}`} />
-                    <span>{slot}</span>
-                  </span>
-                  <input
-                    type="radio"
-                    name="slot"
-                    className="hidden"
-                    checked={selectedSlot === slot}
-                    onChange={() => setSelectedSlot(slot)}
-                  />
-                </label>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-sand-200 flex justify-end gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => setRescheduleModalOrder(null)}
-                className="px-4 py-2 rounded-lg border border-sand-300 text-navy-800 hover:bg-sand-200"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmReschedule}
-                className="px-5 py-2 rounded-lg bg-navy-950 text-sand-50 font-bold hover:bg-brass-600 transition-colors"
-              >
-                Confirm Booking Slot
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ============================================================== */}
       {/* MODAL 3: ORDER RESOLUTION & ASSISTANCE REQUEST                 */}
       {/* ============================================================== */}
       {returnModalOrder && (
