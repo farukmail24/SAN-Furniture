@@ -248,7 +248,7 @@ export function ConciergeSupportWidget() {
     e.preventDefault();
     if (!trackingOrderNum.trim()) return;
     setTrackingResult(
-      `Order ${trackingOrderNum.trim()} verified: White Glove delivery booked with dedicated logistics fleet. Delivery slot updates are dispatched via SMS 30 mins prior to delivery.`
+      `Order ${trackingOrderNum.trim()} verified: Room of Choice delivery booked with dedicated logistics fleet. Delivery slot updates are dispatched via SMS 30 mins prior to delivery.`
     );
   };
 

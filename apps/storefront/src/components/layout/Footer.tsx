@@ -80,7 +80,7 @@ export function Footer() {
             />
           </Link>
           <p className="text-sand-400 text-xs mt-2.5 leading-relaxed">
-            {brandSec.content.brand_bio || "Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes."}
+            {brandSec.content.brand_bio || "Delivering bespoke craftsmanship, architectural aesthetics, and dedicated customer care straight to British homes."}
           </p>
         </div>
 
@@ -152,7 +152,7 @@ export function Footer() {
             />
           </Link>
           <p className="text-sand-300 text-xs mt-3 max-w-sm leading-relaxed">
-            {brandSec.content.brand_bio || "Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes."}
+            {brandSec.content.brand_bio || "Delivering bespoke craftsmanship, architectural aesthetics, and dedicated customer care straight to British homes."}
           </p>
           <div className="mt-6 text-xs text-sand-400">
             <p className="font-medium text-sand-200">{brandSec.content.support_title || "Customer Support (UK)"}</p>

@@ -401,7 +401,7 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex flex-col justify-end p-2.5 sm:p-4 text-sand-50">
-                        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-sage-400 font-semibold">{prod.specs?.delivery_tier === "two_man_white_glove" ? "White Glove" : "In Stock"}</span>
+                        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-sage-400 font-semibold">{prod.specs?.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "In Stock"}</span>
                         <h3 className="font-display font-bold text-xs sm:text-base text-sand-50 group-hover:text-brass-300 transition-colors truncate">{prod.title}</h3>
                         <div className="flex items-baseline justify-between mt-0.5">
                           <span className="font-bold text-xs sm:text-sm text-sand-50">{formatGBP(prod.pricePennies)}</span>
@@ -496,7 +496,7 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
 
                   {/* Delivery Tier Badge */}
                   <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 text-sand-50 shadow-sm">
-                    {product.specs.delivery_tier === "two_man_white_glove" ? "White Glove" : "Parcel"}
+                    {product.specs.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "Parcel"}
                   </span>
 
                   {/* Compare at price discount pill */}

@@ -109,7 +109,7 @@ export function Header({ initialProducts }: { initialProducts?: CatalogProduct[]
     },
     {
       icon: <Sparkles className="w-3.5 h-3.5 text-brass-300 shrink-0" />,
-      text: "Bespoke White Glove Assembly Available",
+      text: "Dedicated Room of Choice Placement Available",
     },
   ];
 

@@ -49,7 +49,7 @@ export async function GET() {
       <g:google_product_category>${escapeXml(googleCat)}</g:google_product_category>
       <g:shipping>
         <g:country>GB</g:country>
-        <g:service>UK 2-Man White Glove Delivery</g:service>
+        <g:service>UK Room of Choice Delivery</g:service>
         <g:price>${shippingCost}</g:price>
       </g:shipping>
       <g:material>${escapeXml(p?.specs?.material)}</g:material>

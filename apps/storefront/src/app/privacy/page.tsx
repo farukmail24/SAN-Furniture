@@ -64,7 +64,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1.5 text-navy-700 text-xs sm:text-sm">
             <li><strong>Identity & Contact:</strong> Full name, billing address, delivery postcode, telephone number, and email.</li>
             <li><strong>Transactional Data:</strong> Items ordered, payment references (we never store raw credit/debit card numbers; all payments are processed under Level 1 PCI-DSS compliance via Stripe UK Gateway).</li>
-            <li><strong>Logistics Coordination:</strong> Delivery access notes (e.g. lift access, floor level, parking restrictions) provided for two-man delivery fleets.</li>
+            <li><strong>Logistics Coordination:</strong> Delivery access notes (e.g. lift access, floor level, parking restrictions) provided for specialist delivery fleets.</li>
           </ul>
         </div>
 

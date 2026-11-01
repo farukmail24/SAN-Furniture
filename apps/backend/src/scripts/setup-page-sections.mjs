@@ -228,12 +228,12 @@ const DEFAULT_SECTIONS = [
     is_enabled: 1,
     sort_order: 2,
     content_json: JSON.stringify({
-      brand_bio: "Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes.",
+      brand_bio: "Delivering bespoke craftsmanship, architectural aesthetics, and dedicated customer care straight to British homes.",
       support_title: "Customer Support (UK)",
       support_hours: "Monday – Friday: 09:00 – 18:00 GMT",
       support_email: "support@sanfurniture.com",
       support_phone: "+44 20 7946 0192",
-      legal_note: "SAN Furniture Ltd • Registered in England & Wales • Timeless British Luxury & White-Glove Mainland Delivery",
+      legal_note: "SAN Furniture Ltd • Registered in England & Wales • Timeless British Luxury & Free Mainland Delivery",
     }),
   },
 

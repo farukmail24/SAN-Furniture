@@ -273,7 +273,7 @@ export function ProductCompareDrawer({
                         <span className="inline-flex items-center gap-1 font-semibold text-navy-900">
                           <Truck className="w-3.5 h-3.5 text-brass-600" />
                           {p.specs?.delivery_tier === "two_man_white_glove"
-                            ? "White Glove (Room of Choice)"
+                            ? "Room of Choice Delivery"
                             : "Free UK Mainland Freight"}
                         </span>
                       </td>

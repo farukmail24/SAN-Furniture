@@ -97,7 +97,7 @@ export const DEFAULT_PAGE_SECTIONS = [
             cta_href: "/products/sandringham-large-boucl-3-seater-sofa",
           },
           featured_product: {
-            tag: "White Glove Delivery",
+            tag: "Room of Choice Delivery",
             title: "Sandringham Large Bouclé Sofa",
             price_str: "£1,495.00",
             image_url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80",
@@ -560,7 +560,7 @@ export const DEFAULT_PAGE_SECTIONS = [
     sort_order: 2,
     content_json: JSON.stringify({
       box_title: "UK Delivery & Postcode Estimator",
-      free_threshold_notice: "Free Free White Glove delivery automatically applies on orders over £500 across Mainland UK.",
+      free_threshold_notice: "Free Room of Choice delivery automatically applies on orders over £500 across Mainland UK.",
       regional_surcharge_notice: "Scottish Highlands (IV, KW, HS) and Northern Ireland (BT) incur standard carrier surcharges calculated at checkout.",
       room_of_choice_label: "Delivered directly to your room of choice with packaging removal.",
     }),
@@ -609,8 +609,8 @@ export const DEFAULT_PAGE_SECTIONS = [
     sort_order: 1,
     content_json: JSON.stringify({
       threshold_amount_gbp: 500,
-      unqualified_message: "Add {amount_remaining} more for Free White Glove Delivery!",
-      qualified_message: "You have unlocked Free UK White Glove Delivery!",
+      unqualified_message: "Add {amount_remaining} more for Free Room of Choice Delivery!",
+      qualified_message: "You have unlocked Free UK Room of Choice Delivery!",
       vat_summary_label: "Inclusive Transparent UK Pricing",
     }),
   },
@@ -657,7 +657,7 @@ export const DEFAULT_PAGE_SECTIONS = [
     content_json: JSON.stringify({
       standard_tier_title: "Standard Tracked Parcel (£9.99 or Free over £100)",
       pallet_tier_title: "Heavy Goods Pallet Delivery (£29.99 or Free over £500)",
-      white_glove_title: "Room of Choice White Glove (£49.99 or Free over £500)",
+      white_glove_title: "Room of Choice Delivery (£49.99 or Free over £500)",
       surcharge_disclaimer: "Deliveries to Scottish Highlands, Isle of Man, and Northern Ireland are subject to automated regional surcharges.",
     }),
   },
@@ -780,7 +780,7 @@ export const DEFAULT_PAGE_SECTIONS = [
       tier_1_desc: "Tracked next-day courier delivery for lamps, cushions, stools, and care kits.",
       tier_2_title: "2. Heavy Goods Pallet Delivery",
       tier_2_desc: "Kerbside palletized delivery for solid wood dining tables and flatpack modular storage.",
-      tier_3_title: "3. Two-Man White Glove Service",
+      tier_3_title: "3. Specialist Room of Choice Service",
       tier_3_desc: "Delivered into your room of choice, unpackaged, and inspected. Packaging materials are removed for recycling.",
     }),
   },

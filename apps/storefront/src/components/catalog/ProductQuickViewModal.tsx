@@ -139,7 +139,7 @@ export function ProductQuickViewModal({
               <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
                 <Truck className="w-3 h-3 text-brass-400" />
                 {product.specs.delivery_tier === "two_man_white_glove"
-                  ? "White Glove (Room of Choice)"
+                  ? "Room of Choice Delivery"
                   : "Free UK Mainland Delivery"}
               </span>
 

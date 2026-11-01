@@ -152,7 +152,7 @@ export default function CustomerAccountPage() {
   const { getSection } = usePageSections("account");
   const welcomeBanner = getSection("account_welcome_banner", {
     welcome_title: "SAN Client Portal",
-    welcome_subtitle: "Manage your active furniture orders, download official VAT invoices, request swatch samples, and track white-glove dispatches.",
+    welcome_subtitle: "Manage your active furniture orders, download official VAT invoices, request swatch samples, and track mainland dispatches.",
     vip_perk_badge: "UK Verified Client",
     support_shortcut_text: "Need urgent delivery rescheduling? Speak to dispatch directly via our live helpdesk.",
   });
@@ -977,7 +977,7 @@ export default function CustomerAccountPage() {
                   </span>
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full border border-emerald-200">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    White Glove Priority VIP
+                    Priority Client VIP
                   </span>
                 </div>
 
@@ -1072,7 +1072,7 @@ export default function CustomerAccountPage() {
                 {totalSpentPennies >= 250000
                   ? "5% Credit on Next Order"
                   : totalSpentPennies >= 100000
-                  ? "Complimentary White Glove"
+                  ? "Complimentary Room of Choice"
                   : totalSpentPennies > 0
                   ? "Priority Concierge Dispatch"
                   : "Complimentary Swatch Samples"}
@@ -1684,7 +1684,7 @@ export default function CustomerAccountPage() {
                       </div>
                     </div>
 
-                    {/* 4-Step Interactive White Glove Progress Timeline OR Cancellation Audit */}
+                    {/* 4-Step Interactive Delivery Progress Timeline OR Cancellation Audit */}
                     {isCancelled ? (
                       <div
                         className={`p-4 rounded-xl text-xs space-y-2 ${
@@ -1823,7 +1823,7 @@ export default function CustomerAccountPage() {
                               <div className="min-w-0">
                                 <h5 className="text-xs font-bold text-navy-950 truncate">{item.title}</h5>
                                 <p className="text-[11px] text-navy-600 mt-0.5">
-                                  Qty: {item.quantity || 1} &bull; Finish: {item.finish || "Standard White Glove Finish"}
+                                  Qty: {item.quantity || 1} &bull; Finish: {item.finish || "Standard Finish"}
                                 </p>
                                 <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
                                   <ShieldCheck className="w-3 h-3 text-emerald-600" />
@@ -2381,7 +2381,7 @@ export default function CustomerAccountPage() {
                     <div className="p-3.5 rounded-xl bg-sand-100/80 border border-sand-200 space-y-1">
                       <span className="text-navy-500 block text-[10px] uppercase font-bold tracking-wider">Account Status</span>
                       <strong className="text-navy-950 font-semibold block">Verified UK Customer</strong>
-                      <span className="text-[11px] text-forest-700 block">Eligible for White Glove delivery</span>
+                      <span className="text-[11px] text-forest-700 block">Eligible for Room of Choice delivery</span>
                     </div>
 
                     <div className="p-3.5 rounded-xl bg-sand-100/80 border border-sand-200 space-y-1">
@@ -2623,7 +2623,7 @@ export default function CustomerAccountPage() {
                   <span>Client Profile &amp; Account Security</span>
                 </h3>
                 <p className="text-xs text-navy-600 mt-0.5">
-                  Manage your delivery credentials, White Glove dispatch alerts, and cryptographic authentication settings.
+                  Manage your delivery credentials, dispatch alerts, and cryptographic authentication settings.
                 </p>
               </div>
 
@@ -2732,7 +2732,7 @@ export default function CustomerAccountPage() {
                         <span>Personal Credentials &amp; Delivery Identity</span>
                       </h4>
                       <p className="text-xs text-navy-500 mt-0.5">
-                        Used for UK delivery manifests, HMRC VAT receipts, and White Glove assembly bookings.
+                        Used for UK delivery manifests, HMRC VAT receipts, and delivery bookings.
                       </p>
                     </div>
                     <span className="text-[10px] font-bold text-brass-800 bg-sand-200/90 border border-sand-300 px-2.5 py-1 rounded-lg shrink-0">
@@ -2801,7 +2801,7 @@ export default function CustomerAccountPage() {
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-navy-900 font-semibold text-xs flex items-center gap-1.5">
                           <Phone className="w-3.5 h-3.5 text-brass-700" />
-                          <span>UK Phone for White Glove Pre-call &amp; SMS Dispatch</span>
+                          <span>UK Phone for Delivery Pre-call &amp; SMS Dispatch</span>
                         </label>
                         <span className="text-[10px] font-bold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
                           Active Courier Line

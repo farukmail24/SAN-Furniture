@@ -1464,7 +1464,7 @@ export default function CheckoutPage() {
                     className="w-full px-3 py-2 text-xs rounded-lg border border-sand-300 bg-sand-50 text-navy-950 focus:ring-2 focus:ring-brass-500 outline-none"
                   />
                   <p className="text-[10px] text-navy-500 mt-1">
-                    The white glove courier team will send SMS dispatch updates and call to book your 2-hour delivery slot.
+                    The specialist courier team will send SMS dispatch updates and call to book your 2-hour delivery slot.
                   </p>
                 </div>
 
@@ -1797,7 +1797,7 @@ export default function CheckoutPage() {
                         3. Shipping / Delivery Address
                       </h2>
                       <span className="text-[11px] text-navy-500">
-                        Room of Choice White Glove Delivery
+                        Room of Choice Delivery
                       </span>
                     </div>
                   </div>
@@ -2705,7 +2705,7 @@ export default function CheckoutPage() {
                 </p>
               </div>
 
-              {/* White Glove Delivery Assurance */}
+              {/* Room of Choice Delivery Assurance */}
               <div className="p-3 rounded-lg bg-sand-200/50 border border-sand-300 text-xs text-navy-800 space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-navy-950">
                   <Truck className="w-4 h-4 text-brass-600" />

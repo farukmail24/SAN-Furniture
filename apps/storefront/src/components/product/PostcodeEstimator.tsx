@@ -40,7 +40,7 @@ export function PostcodeEstimator({ deliveryTier, leadTimeDays }: PostcodeEstima
   const getTierLabel = (tier: DeliveryTier) => {
     switch (tier) {
       case "two_man_white_glove":
-        return "White Glove Delivery (Room of Choice + Packaging Removal)";
+        return "Room of Choice Delivery (Room Placement + Packaging Removal)";
       case "pallet":
         return "Kerbside Pallet Delivery (Protected Wooden Crate)";
       case "standard_parcel":

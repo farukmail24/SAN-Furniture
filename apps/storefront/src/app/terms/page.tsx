@@ -4,7 +4,7 @@ import { ChevronRight, FileCheck, Scale, AlertCircle, ShieldAlert } from "lucide
 
 export const metadata: Metadata = {
   title: "Terms of Service & UK Consumer Rights | SAN Furniture",
-  description: "Terms and conditions governing purchases, white-glove deliveries, warranties, and cancellations under the UK Consumer Rights Act 2015.",
+  description: "Terms and conditions governing purchases, specialist deliveries, warranties, and cancellations under the UK Consumer Rights Act 2015.",
 };
 
 export default function TermsPage() {
@@ -54,9 +54,9 @@ export default function TermsPage() {
         </div>
 
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-sand-200 space-y-3">
-          <h2 className="font-display text-lg font-bold text-navy-950">3. White-Glove & Specialist Delivery</h2>
+          <h2 className="font-display text-lg font-bold text-navy-950">3. Room of Choice &amp; Specialist Delivery</h2>
           <p className="text-navy-700">
-            For items marked as two-man white-glove delivery, our logistics partners will carry items into your room of choice provided safe and clear access exists. It is the customer&apos;s responsibility to measure doorways, stairwells, and hallways prior to dispatch.
+            For items marked as room of choice delivery, our logistics partners will carry items into your room of choice provided safe and clear access exists. It is the customer&apos;s responsibility to measure doorways, stairwells, and hallways prior to dispatch.
           </p>
         </div>
 

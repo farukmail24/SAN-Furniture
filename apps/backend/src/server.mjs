@@ -317,7 +317,7 @@ const FALLBACK_DELIVERY_OPTIONS = [
   },
   {
     id: "del_opt_002",
-    name: "White Glove Delivery & Packaging Disposal",
+    name: "Room of Choice Placement & Packaging Disposal",
     badge: "Assembly Included",
     price_pennies: 2900,
     description: "Delivered into any room (up to 3rd floor). Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.",
@@ -332,7 +332,7 @@ const FALLBACK_DELIVERY_OPTIONS = [
   },
   {
     id: "del_opt_003",
-    name: "Priority Saturday / Weekend White Glove Delivery",
+    name: "Priority Saturday / Weekend Room of Choice Delivery",
     badge: "Fastest Weekend Slot",
     price_pennies: 4900,
     description: "Guaranteed Saturday delivery slot with priority loading at SAN Central Distribution Hub and live driver SMS GPS tracking.",
@@ -548,8 +548,8 @@ async function ensureDatabaseSchema() {
       await pool.query(`
         INSERT INTO delivery_options (id, name, badge, price_pennies, description, timeframe, is_active, sort_order) VALUES
         ('del_opt_001', 'Free UK Mainland Delivery', 'FREE DELIVERY', 0, 'Complimentary room of choice delivery across mainland UK. Direct from SAN Central Distribution Hub with a 2-hour pre-delivery booking call.', '3 - 7 business days', 1, 1),
-        ('del_opt_002', 'White Glove Delivery & Packaging Disposal', 'Assembly Included', 2900, 'Delivered into any room (up to 3rd floor). Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.', '3 - 7 business days', 1, 2),
-        ('del_opt_003', 'Priority Saturday / Weekend White Glove Delivery', 'Fastest Weekend Slot', 4900, 'Guaranteed Saturday delivery slot with priority loading at SAN Central Distribution Hub and live driver SMS GPS tracking.', 'Guaranteed Weekend Slot', 1, 3);
+        ('del_opt_002', 'Room of Choice Placement & Packaging Disposal', 'Placement Included', 2900, 'Delivered into any room (up to 3rd floor). Full unboxing, inspection, item placement, and 100% eco-friendly packaging disposal & recycling.', '3 - 7 business days', 1, 2),
+        ('del_opt_003', 'Priority Saturday / Weekend Room of Choice Delivery', 'Fastest Weekend Slot', 4900, 'Guaranteed Saturday delivery slot with priority loading at SAN Central Distribution Hub and live driver SMS GPS tracking.', 'Guaranteed Weekend Slot', 1, 3);
       `);
       console.log("[DB Migration] Seeded default delivery_options successfully.");
     }
@@ -1336,7 +1336,7 @@ const server = http.createServer(async (req, res) => {
             {
               id: o.id || "item_1",
               title: "SAN Bespoke Furniture Commission",
-              finish: "Standard White Glove Finish",
+              finish: "Standard Finish",
               quantity: 1,
               pricePennies: Number(o.total_pennies) || 0,
               thumbnailUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=400&q=80",
@@ -1455,7 +1455,7 @@ const server = http.createServer(async (req, res) => {
         orderId: order.id,
         orderNumber: order.order_number,
         fulfillment_status: "return_requested",
-        message: "Your 14-day statutory return request has been recorded. Our London logistics concierge will arrange white glove room-of-choice collection.",
+        message: "Your 14-day statutory return request has been recorded. Our logistics concierge will arrange specialist room-of-choice collection.",
       });
     }
 
@@ -2077,7 +2077,7 @@ const server = http.createServer(async (req, res) => {
       </td>
       <td style="width: 50%; text-align: right;">
         <strong>Delivery Method:</strong><br/>
-        ${invoiceData.deliveryTier === 'two_man_white_glove' ? 'UK White Glove (Room of Choice)' : 'Pallet Freight'}<br/>
+        ${invoiceData.deliveryTier === 'two_man_white_glove' ? 'UK Room of Choice Delivery' : 'Pallet Freight'}<br/>
         Payment Status: <strong>PAID IN FULL (20% UK VAT INCLUDED)</strong>
       </td>
     </tr>
@@ -2097,7 +2097,7 @@ const server = http.createServer(async (req, res) => {
       <tr>
         <td>Bespoke Handcrafted Furniture Order (${order.id})</td>
         <td>1</td>
-        <td>White Glove (Room of Choice)</td>
+        <td>Room of Choice Delivery</td>
         <td>20% (Standard)</td>
         <td style="text-align: right;">${invoiceData.breakdown.grossTotalFormatted}</td>
       </tr>
@@ -2468,8 +2468,8 @@ const server = http.createServer(async (req, res) => {
       const poNumber = `PO-SAN-${Math.floor(100000 + Math.random() * 900000)}`;
       await pool.query(
         `INSERT INTO order_po_dispatches (id, po_number, order_id, supplier_id, item_count, delivery_tier, status, carrier, tracking_number, dispatched_at)
-         VALUES (?, ?, ?, 'uk_craft_sofas', ?, ?, 'dispatched', 'Amos Mann 2-Man Dedicated Fleet', ?, NOW())`,
-        [`po_${Date.now()}`, poNumber, orderId, formattedItems.length, delivery_tier, `TRX-AM-${Math.floor(100000 + Math.random() * 900000)}`]
+         VALUES (?, ?, ?, 'uk_craft_sofas', ?, ?, 'dispatched', 'SAN Dedicated Delivery Fleet', ?, NOW())`,
+        [`po_${Date.now()}`, poNumber, orderId, formattedItems.length, delivery_tier, `TRX-SAN-${Math.floor(100000 + Math.random() * 900000)}`]
       );
 
       // Create Admin notification
@@ -2888,7 +2888,7 @@ const server = http.createServer(async (req, res) => {
               ? "Standard Courier Delivery"
               : p.delivery_tier === "pallet"
               ? "Pallet Freight Delivery"
-              : "White Glove Delivery";
+              : "Room of Choice Delivery";
           return `
     <item>
       <g:id>${p.id}</g:id>
@@ -4196,7 +4196,7 @@ const server = http.createServer(async (req, res) => {
         await connection.query(`
           INSERT INTO order_po_dispatches (
             id, po_number, order_id, supplier_id, item_count, delivery_tier, status, carrier, tracking_number, dispatched_at
-          ) VALUES (?, ?, ?, 'amos_mann_furniture', ?, ?, 'dispatched', 'Amos Mann 2-Man Dedicated Fleet', ?, NOW())
+          ) VALUES (?, ?, ?, 'amos_mann_furniture', ?, ?, 'dispatched', 'SAN Dedicated Delivery Fleet', ?, NOW())
         `, [
           `pod_${Date.now()}`,
           poNumber,
@@ -4284,7 +4284,7 @@ const server = http.createServer(async (req, res) => {
         billingAddress: fullBillingAddress,
         paymentMethod: resolvedPaymentMethod,
         deliveryTier: tier,
-        deliveryLabel: tier === "white_glove_assembly" ? "White Glove & Packaging Disposal" : (tier === "priority_saturday" ? "Priority Saturday Delivery" : (tier === "free_delivery" || tier === "standard_2man" ? "Free UK Mainland Delivery" : "Home Delivery To Customer")),
+        deliveryLabel: tier === "white_glove_assembly" ? "Room of Choice Placement & Packaging Disposal" : (tier === "priority_saturday" ? "Priority Saturday Delivery" : (tier === "free_delivery" || tier === "standard_2man" ? "Free UK Mainland Delivery" : "Home Delivery To Customer")),
         estimatedDays: `${3 + zoneResult.leadTimeExtraDays} - ${7 + zoneResult.leadTimeExtraDays} business days`,
         items: canonicalItems,
         invoiceHtmlUrl: `/api/orders/${orderId}/invoice`
@@ -4472,7 +4472,7 @@ const server = http.createServer(async (req, res) => {
         deliveryTiers: [
           { code: "standard_parcel", name: "Standard Parcel (Small Accents & Stools)", basePricePennies: 1900, leadTimeDays: 2 },
           { code: "pallet", name: "Kerbside Pallet Freight (Flatpack Dining & Storage)", basePricePennies: 4900, leadTimeDays: 4 },
-          { code: "two_man_white_glove", name: "UK 2-Man White Glove (Room of Choice + Unpack + Debris Removal)", basePricePennies: 9900, leadTimeDays: 7 },
+          { code: "two_man_white_glove", name: "UK Room of Choice Delivery (Room Placement + Unpack + Debris Removal)", basePricePennies: 9900, leadTimeDays: 7 },
         ]
       });
     }
@@ -6284,7 +6284,7 @@ ${testPo.notes}
           if (orderRows.length > 0) {
             linkedOrder = {
               ...orderRows[0],
-              carrier: orderRows[0].delivery_tier === "two_man_white_glove" ? "SAN 2-Man White Glove Fleet" : "DX Express / Freight",
+              carrier: orderRows[0].delivery_tier === "two_man_white_glove" ? "SAN Dedicated Delivery Fleet" : "DX Express / Freight",
               total_formatted: formatGBP(orderRows[0].total_pennies),
             };
           }
@@ -6350,7 +6350,7 @@ ${testPo.notes}
               notifId,
               t.customer_email,
               `Support Ticket ${t.ticket_number} Resolved`,
-              `Your inquiry "${t.subject}" has been marked as resolved by our White Glove team.`,
+              `Your inquiry "${t.subject}" has been marked as resolved by our customer concierge team.`,
             ]
           );
         }

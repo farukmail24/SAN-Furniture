@@ -407,12 +407,12 @@ export async function dispatchCustomerRegistered(data: {
         "Welcome to SAN Furniture",
         `
         <h2 style="font-size: 20px; color: #0e1526; margin-top: 0;">Welcome, ${data.firstName}!</h2>
-        <p>Thank you for joining <strong>SAN Furniture</strong>. Your private customer portal is now active, granting you seamless order management, real-time white-glove GPS consignment tracking, and verified UK VAT receipts.</p>
+        <p>Thank you for joining <strong>SAN Furniture</strong>. Your private customer portal is now active, granting you seamless order management, real-time room-of-choice GPS consignment tracking, and verified UK VAT receipts.</p>
         
         <div class="card">
           <div class="card-title">Your Member Credentials</div>
           <p style="margin: 0 0 6px 0;"><strong>Registered Email:</strong> ${data.email}</p>
-          <p style="margin: 0;"><strong>Customer Care:</strong> 2-Man Delivery Concierge &amp; Room of Choice Assembly included on eligible pieces.</p>
+          <p style="margin: 0;"><strong>Customer Care:</strong> Specialist Delivery Concierge &amp; Room of Choice Placement included on eligible pieces.</p>
         </div>
 
         <p>Every piece in our collection is strictly compliant with UK Fire Safety Regulations 1988 and crafted for discerning British homes.</p>
@@ -506,7 +506,7 @@ export async function dispatchOrderCreated(data: {
 
       const tierName =
         data.deliveryTier === "two_man_white_glove" || data.deliveryTier === "white_glove_assembly"
-          ? "2-Man White Glove (Room of Choice + Assembly)"
+          ? "Room of Choice Delivery (Room Placement & Packaging Removal)"
           : data.deliveryTier === "pallet"
           ? "Pallet Curbside Delivery"
           : "Standard UK Delivery";

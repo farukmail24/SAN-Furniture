@@ -504,7 +504,7 @@ export function CategoryView({
           <p className="mt-3 text-sm sm:text-base text-navy-700 max-w-2xl leading-relaxed">
             {category
               ? category.description
-              : "Handcrafted British furniture designed with architectural proportions, premium fabrics, and white glove delivery."}
+              : "Handcrafted British furniture designed with architectural proportions, premium fabrics, and room of choice delivery."}
           </p>
         </div>
       )}
@@ -1074,7 +1074,7 @@ export function CategoryView({
                       className="rounded border-sand-300 text-navy-950 focus:ring-brass-500 w-3.5 h-3.5"
                     />
                     <span className="truncate">
-                      {tier === "two_man_white_glove" && "White Glove"}
+                      {tier === "two_man_white_glove" && "Room of Choice"}
                       {tier === "pallet" && "Pallet Freight"}
                       {tier === "standard_parcel" && "Standard Parcel"}
                     </span>
@@ -1349,7 +1349,7 @@ export function CategoryView({
                   key={t}
                   className="inline-flex items-center gap-1.5 px-3 py-1 bg-sand-100 border border-sand-300 rounded-full text-xs text-navy-800"
                 >
-                  <span>{t === "two_man_white_glove" ? "White Glove" : t}</span>
+                  <span>{t === "two_man_white_glove" ? "Room of Choice" : t}</span>
                   <button type="button" onClick={() => toggleDeliveryTier(t)} aria-label="Remove tier">
                     <X className="w-3 h-3 text-navy-600 hover:text-navy-950" />
                   </button>
@@ -1431,7 +1431,7 @@ export function CategoryView({
                               <Truck className="w-2.5 h-2.5 text-brass-400" />
                               <span className="truncate max-w-[85px] sm:max-w-none">
                                 {product.specs?.delivery_tier === "two_man_white_glove"
-                                  ? "White Glove"
+                                  ? "Room of Choice"
                                   : "Free UK Delivery"}
                               </span>
                             </span>
@@ -1569,7 +1569,7 @@ export function CategoryView({
                           <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
                             <Truck className="w-3 h-3 text-brass-400" />
                             {product.specs?.delivery_tier === "two_man_white_glove"
-                              ? "White Glove (Room of Choice)"
+                              ? "Room of Choice Delivery"
                               : "Free Mainland UK Delivery"}
                           </span>
                           <button
@@ -1720,7 +1720,7 @@ export function CategoryView({
                             <span>·</span>
                             <span className="inline-flex items-center gap-1 text-navy-800">
                               <Truck className="w-3 h-3 text-brass-600" />
-                              {product.specs?.delivery_tier === "two_man_white_glove" ? "White Glove" : "Free UK Freight"}
+                              {product.specs?.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "Free UK Freight"}
                             </span>
                           </div>
                         </div>
@@ -2008,7 +2008,7 @@ export function CategoryView({
                         onChange={() => toggleDeliveryTier(tier)}
                       />
                       <span>
-                        {tier === "two_man_white_glove" ? "White Glove" : tier === "pallet" ? "Pallet" : "Standard"}
+                        {tier === "two_man_white_glove" ? "Room of Choice" : tier === "pallet" ? "Pallet" : "Standard"}
                       </span>
                     </label>
                   ))}

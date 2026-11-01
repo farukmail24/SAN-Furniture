@@ -153,7 +153,7 @@ export async function POST(request: Request) {
         body.delivery_tier || "two_man_white_glove",
         body.status === "delivered" ? "delivered" : "dispatched",
         `TRK-${Math.floor(100000 + Math.random() * 900000)}`,
-        body.carrier || "Amos Mann 2-Man Dedicated Fleet",
+        body.carrier || "SAN Dedicated Delivery Fleet",
       ]
     );
 

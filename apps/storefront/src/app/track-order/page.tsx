@@ -100,7 +100,7 @@ export default function TrackOrderPage() {
       case "po_dispatched":
       case "dispatched":
       case "in_transit":
-        return { label: "In Transit with White-Glove Fleet", color: "bg-blue-50 text-blue-800 border-blue-200" };
+        return { label: "In Transit with Dedicated Fleet", color: "bg-blue-50 text-blue-800 border-blue-200" };
       case "cancelled":
         return { label: "Order Cancelled", color: "bg-rose-50 text-rose-800 border-rose-200" };
       case "return_requested":
@@ -113,7 +113,7 @@ export default function TrackOrderPage() {
   const getDeliveryTierLabel = (tier: string) => {
     switch (tier) {
       case "two_man_white_glove":
-        return "Two-Man White-Glove Delivery (Room of Choice + Packaging Removal)";
+        return "Room of Choice Delivery (Room Placement + Packaging Removal)";
       case "pallet":
         return "Specialist Pallet Freight (Kerbside Scheduled)";
       default:

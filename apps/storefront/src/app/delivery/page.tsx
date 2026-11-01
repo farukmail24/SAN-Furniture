@@ -7,7 +7,7 @@ import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 export const metadata: Metadata = {
   title: "UK Delivery Services & Surcharge Zones | SAN Furniture",
   description:
-    "Explore our UK delivery tiers: Standard Parcel, Pallet, and White Glove room of choice. Full details on lead times and postcode zones.",
+    "Explore our UK delivery tiers: Standard Parcel, Pallet, and Room of Choice delivery. Full details on lead times and postcode zones.",
   alternates: {
     canonical: "https://sanfurniture.com/delivery",
   },

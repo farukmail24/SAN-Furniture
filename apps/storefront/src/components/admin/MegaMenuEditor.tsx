@@ -671,7 +671,7 @@ export function MegaMenuEditor({
                         type="text"
                         value={activeTab.featured_product?.tag || ""}
                         onChange={(e) => handleProductChange("tag", e.target.value)}
-                        placeholder="e.g. 2-Man Delivery"
+                        placeholder="e.g. Room of Choice"
                         className="w-full px-2.5 py-1.5 text-xs bg-sand-50 rounded-lg border border-sand-300 focus:outline-none focus:border-brass-600"
                       />
                     </div>

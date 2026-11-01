@@ -236,7 +236,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
     sectionName: "Brand Story & UK Customer Care Hours",
     content: {
       brand_bio:
-        "Delivering bespoke craftsmanship, architectural aesthetics, and white-glove customer care straight to British homes.",
+        "Delivering bespoke craftsmanship, architectural aesthetics, and dedicated customer care straight to British homes.",
       support_title: "Customer Support (UK)",
       support_hours: "Monday – Friday: 09:00 – 18:00 GMT",
       support_email: "support@sanfurniture.com",
@@ -343,7 +343,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             cta_href: "/products/sandringham-large-boucl-3-seater-sofa",
           },
           featured_product: {
-            tag: "White Glove Delivery",
+            tag: "Room of Choice Delivery",
             title: "Sandringham Large Bouclé Sofa",
             price_str: "£1,495.00",
             image_url: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80",
@@ -653,7 +653,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       unqualified_message:
         "Free UK Mainland Delivery on all orders!",
       qualified_message:
-        "You have unlocked Free UK White Glove Delivery!",
+        "You have unlocked Free UK Room of Choice Delivery!",
       vat_summary_label: "Inclusive Transparent UK Pricing",
     },
   },
@@ -731,7 +731,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       tier_2_title: "2. Heavy Goods Pallet Delivery",
       tier_2_desc:
         "Kerbside palletized delivery for solid wood dining tables and flatpack modular storage.",
-      tier_3_title: "3. Two-Man White Glove Service",
+      tier_3_title: "3. Specialist Room of Choice Service",
       tier_3_desc:
         "Delivered into your room of choice, unpackaged, and inspected. Packaging materials are removed for recycling.",
     },

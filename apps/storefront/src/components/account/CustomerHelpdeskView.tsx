@@ -206,7 +206,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
 
       if (res.ok) {
         setReplyText("");
-        showToast("Reply sent to SAN White Glove Concierge.");
+        showToast("Reply sent to SAN Logistics Concierge.");
         await fetchTicketDetails(selectedTicketId);
         fetchTickets();
       }
@@ -238,7 +238,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
       <div className="bg-sand-100/90 border border-sand-300 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
         <div>
           <span className="text-[11px] font-bold uppercase tracking-wider text-brass-700 bg-brass-500/10 px-2.5 py-0.5 rounded-full border border-brass-500/20">
-            White Glove Concierge Service
+            Dedicated Concierge Service
           </span>
           <h2 className="font-display text-2xl font-bold text-navy-950 mt-1 flex items-center gap-2">
             <Headphones className="w-6 h-6 text-brass-600" />
@@ -345,7 +345,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
             <div className="m-auto text-center p-12 text-xs text-navy-500 space-y-2">
               <Headphones className="w-10 h-10 text-sand-400 mx-auto" />
               <p className="font-semibold text-navy-800">Select an Inquiry</p>
-              <p>Choose a ticket to read responses from our White Glove support team.</p>
+              <p>Choose a ticket to read responses from our customer support team.</p>
             </div>
           ) : (
             <>
@@ -450,7 +450,7 @@ export function CustomerHelpdeskView({ customer, orders, showToast }: CustomerHe
 
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-brass-700 bg-brass-100 px-2 py-0.5 rounded">
-                White Glove Assistance
+                Dedicated Concierge Assistance
               </span>
               <h3 className="font-display text-xl font-bold text-navy-950 mt-1">
                 Open Support Inquiry

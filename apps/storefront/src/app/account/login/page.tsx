@@ -80,7 +80,7 @@ export default function CustomerLoginPage() {
             Sign In to Your Account
           </h1>
           <p className="text-xs text-navy-600 mt-2">
-            Track your white glove delivery, view VAT invoices, and manage saved UK addresses.
+            Track your furniture delivery, view VAT invoices, and manage saved UK addresses.
           </p>
         </div>
 
