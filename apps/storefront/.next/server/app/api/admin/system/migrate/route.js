@@ -54,7 +54,7 @@
            OR content_json LIKE '%Amos Mann%'
       `).catch(()=>[[]]);if(Array.isArray(a)&&a.length>0)for(let c of a){let a=c.content_json.replace(/Two-Man White Glove Service/gi,"Room of Choice Delivery Service").replace(/2-Man White Glove/gi,"Room of Choice Delivery").replace(/Two-Man White-Glove/gi,"Room of Choice Delivery").replace(/Two-Man/gi,"Specialist").replace(/2-Man/gi,"Specialist").replace(/White Glove Delivery/gi,"Room of Choice Delivery").replace(/White Glove/gi,"Room of Choice").replace(/white-glove/gi,"room of choice").replace(/white glove/gi,"room of choice").replace(/Furniture To Go/gi,"SAN Furniture").replace(/Amos Mann/gi,"SAN Furniture");await b.query("UPDATE site_page_sections SET content_json = ? WHERE id = ?",[a,c.id])}await b.query(`
         UPDATE order_po_dispatches 
-        SET carrier = 'SAN Dedicated Delivery Fleet' 
+        SET carrier = 'Specialist Furniture Courier' 
         WHERE carrier LIKE '%Amos Mann%' OR carrier LIKE '%2-Man%' OR carrier LIKE '%White Glove%'
       `),await b.query(`
         UPDATE support_messages 

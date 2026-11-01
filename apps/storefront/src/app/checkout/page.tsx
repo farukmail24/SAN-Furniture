@@ -1087,7 +1087,7 @@ export default function CheckoutPage() {
         poNumber: orderData.poNumber,
         invoiceNumber: orderData.invoiceNumber,
         trackingNumber: orderData.trackingNumber,
-        carrier: orderData.carrier && !orderData.carrier.includes("Amos Mann") ? orderData.carrier : "SAN Dedicated Delivery Fleet",
+        carrier: orderData.carrier && !orderData.carrier.includes("SAN Dedicated") && !orderData.carrier.includes("Amos Mann") ? orderData.carrier : "Specialist Furniture Courier",
         totalPennies: orderData.totalPennies,
         formattedTotal: orderData.formattedTotal || formatGBP(orderData.totalPennies),
         customerName: orderData.customerName,
@@ -1240,8 +1240,8 @@ export default function CheckoutPage() {
                   <span className="font-semibold text-navy-950">SAN Central Distribution Centre</span>
                 </div>
                 <div>
-                  <span className="text-navy-500 block text-[11px]">Carrier / Delivery Fleet:</span>
-                  <span className="font-semibold text-navy-950">{confirmedOrder.carrier && !confirmedOrder.carrier.includes("Amos Mann") ? confirmedOrder.carrier : "SAN Dedicated Delivery Fleet"}</span>
+                  <span className="text-navy-500 block text-[11px]">Delivery Service:</span>
+                  <span className="font-semibold text-navy-950">{confirmedOrder.carrier && !confirmedOrder.carrier.includes("SAN Dedicated") && !confirmedOrder.carrier.includes("Amos Mann") ? confirmedOrder.carrier : "Specialist Furniture Courier"}</span>
                 </div>
                 <div>
                   <span className="text-navy-500 block text-[11px]">Consignment Tracking No:</span>

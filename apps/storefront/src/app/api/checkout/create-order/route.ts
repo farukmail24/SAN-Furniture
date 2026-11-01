@@ -517,7 +517,7 @@ export async function POST(request: Request) {
       await connection.query(
         `INSERT INTO order_po_dispatches (
           id, po_number, order_id, supplier_id, item_count, delivery_tier, status, tracking_number, carrier
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 'SAN Dedicated Delivery Fleet')`,
+        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, 'Specialist Furniture Courier')`,
         [
           `po_${orderId}`,
           poNumber,
@@ -574,7 +574,7 @@ export async function POST(request: Request) {
       poNumber,
       invoiceNumber: `INV-${orderNumber}`,
       trackingNumber,
-      carrier: "SAN Dedicated Delivery Fleet",
+      carrier: "Specialist Furniture Courier",
       totalPennies: grandTotalPennies,
       formattedTotal: formatGBP(grandTotalPennies),
       subtotalPennies,

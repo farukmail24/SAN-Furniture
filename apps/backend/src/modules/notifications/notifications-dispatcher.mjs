@@ -333,7 +333,7 @@ export async function dispatchOrderStatusChanged(pool, data) {
       data.newStatus === "po_dispatched";
     const isDelivered = data.newStatus === "delivered";
 
-    const carrierName = data.carrier || "SAN Dedicated Delivery Fleet";
+    const carrierName = data.carrier || "Specialist Furniture Courier";
     const trackingCode = data.trackingNumber || "Allocated on Route";
 
     const statusBadge = isDelivered

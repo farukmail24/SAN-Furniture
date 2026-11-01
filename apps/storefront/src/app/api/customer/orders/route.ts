@@ -98,7 +98,7 @@ export async function GET(request: Request) {
       const isReturnRequested = o.fulfillment_status === "return_requested" || o.fulfillment_status === "returned";
       const isCancelled = o.fulfillment_status === "cancelled";
 
-      const carrierName = o.carrier && !o.carrier.includes("Awaiting") ? o.carrier : "Dedicated Delivery Fleet";
+      const carrierName = o.carrier && !o.carrier.includes("Awaiting") && !o.carrier.includes("SAN Dedicated") ? o.carrier : "Specialist Furniture Courier";
 
       let deliveryTimeline: Array<{ step: string; done: boolean; time: string; note: string }> = [];
       if (isCancelled) {
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
         shipping_address: o.shipping_address,
         shippingPostcode: o.shipping_postcode,
         shipping_postcode: o.shipping_postcode,
-        carrier: o.carrier || "SAN Dedicated Delivery Fleet",
+        carrier: (o.carrier && !o.carrier.includes("SAN Dedicated") && !o.carrier.includes("Amos Mann")) ? o.carrier : (isDispatched ? "Specialist Furniture Courier" : null),
         trackingNumber: o.tracking_number || "Awaiting allocation",
         tracking_number: o.tracking_number || "Awaiting allocation",
         poNumber: o.po_number || `PO-${o.id}`,

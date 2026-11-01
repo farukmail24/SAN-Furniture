@@ -156,7 +156,7 @@ export async function ensureVoucherSchema(force = false): Promise<{ success: boo
 
       await pool.query(`
         UPDATE order_po_dispatches 
-        SET carrier = 'SAN Dedicated Delivery Fleet' 
+        SET carrier = 'Specialist Furniture Courier' 
         WHERE carrier LIKE '%Amos Mann%' OR carrier LIKE '%2-Man%' OR carrier LIKE '%White Glove%'
       `);
 

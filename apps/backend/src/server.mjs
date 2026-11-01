@@ -612,7 +612,7 @@ async function ensureDatabaseSchema() {
 
       await pool.query(`
         UPDATE order_po_dispatches 
-        SET carrier = 'SAN Dedicated Delivery Fleet' 
+        SET carrier = 'Specialist Furniture Courier' 
         WHERE carrier LIKE '%Amos Mann%' OR carrier LIKE '%2-Man%' OR carrier LIKE '%White Glove%'
       `);
 
@@ -1476,7 +1476,7 @@ const server = http.createServer(async (req, res) => {
           vatFormatted: formatGBP(vatPennies),
           invoiceHtmlUrl: `/api/orders/${o.id}/invoice`,
           trackingNumber: o.tracking_number || o.order_number || "Awaiting allocation",
-          carrier: o.carrier && !o.carrier.includes("Amos Mann") ? o.carrier : "SAN Dedicated Delivery Fleet",
+          carrier: o.carrier && !o.carrier.includes("Amos Mann") ? o.carrier : "Specialist Furniture Courier",
           deliverySlot: o.delivery_slot || "Slot to be allocated upon dispatch",
           deliveryTimeline,
         };
@@ -2554,7 +2554,7 @@ const server = http.createServer(async (req, res) => {
       const poNumber = `PO-SAN-${Math.floor(100000 + Math.random() * 900000)}`;
       await pool.query(
         `INSERT INTO order_po_dispatches (id, po_number, order_id, supplier_id, item_count, delivery_tier, status, carrier, tracking_number, dispatched_at)
-         VALUES (?, ?, ?, 'uk_craft_sofas', ?, ?, 'dispatched', 'SAN Dedicated Delivery Fleet', ?, NOW())`,
+         VALUES (?, ?, ?, 'uk_craft_sofas', ?, ?, 'dispatched', 'Specialist Furniture Courier', ?, NOW())`,
         [`po_${Date.now()}`, poNumber, orderId, formattedItems.length, delivery_tier, `TRX-SAN-${Math.floor(100000 + Math.random() * 900000)}`]
       );
 
@@ -4282,7 +4282,7 @@ const server = http.createServer(async (req, res) => {
         await connection.query(`
           INSERT INTO order_po_dispatches (
             id, po_number, order_id, supplier_id, item_count, delivery_tier, status, carrier, tracking_number, dispatched_at
-          ) VALUES (?, ?, ?, 'amos_mann_furniture', ?, ?, 'dispatched', 'SAN Dedicated Delivery Fleet', ?, NOW())
+          ) VALUES (?, ?, ?, 'amos_mann_furniture', ?, ?, 'dispatched', 'Specialist Furniture Courier', ?, NOW())
         `, [
           `pod_${Date.now()}`,
           poNumber,
@@ -4361,7 +4361,7 @@ const server = http.createServer(async (req, res) => {
         poNumber,
         invoiceNumber: invoiceData.invoiceNumber,
         trackingNumber,
-        carrier: "SAN Dedicated Delivery Fleet",
+        carrier: "Specialist Furniture Courier",
         totalPennies: grandTotalPennies,
         formattedTotal: formatGBP(grandTotalPennies),
         customerName: customer.name,
@@ -6370,7 +6370,7 @@ ${testPo.notes}
           if (orderRows.length > 0) {
             linkedOrder = {
               ...orderRows[0],
-              carrier: orderRows[0].delivery_tier === "two_man_white_glove" ? "SAN Dedicated Delivery Fleet" : "DX Express / Freight",
+              carrier: orderRows[0].delivery_tier === "two_man_white_glove" ? "Specialist Furniture Courier" : "DX Express / Freight",
               total_formatted: formatGBP(orderRows[0].total_pennies),
             };
           }

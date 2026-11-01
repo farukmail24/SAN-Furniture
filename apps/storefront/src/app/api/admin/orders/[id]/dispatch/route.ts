@@ -60,7 +60,7 @@ export async function PATCH(
           id,
           status || "in_transit",
           tracking_number || `TRK-${Date.now()}`,
-          carrier || "SAN Dedicated Delivery Fleet",
+          carrier || "Specialist Furniture Courier",
           isDispatched ? new Date() : null,
         ]
       );
@@ -79,7 +79,7 @@ export async function PATCH(
         customerEmail: o.customer_email,
         customerPhone: o.customer_phone,
         newStatus: status || "dispatched",
-        carrier: carrier || "SAN Dedicated Delivery Fleet",
+        carrier: carrier || "Specialist Furniture Courier",
         trackingNumber: tracking_number,
       }).catch((err) => console.warn("[Dispatch] Notification warning:", err?.message || err));
     }

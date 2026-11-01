@@ -104,7 +104,7 @@ export async function GET(
       })),
       dispatches: (Array.isArray(dispatchRows) ? dispatchRows : []).map((d: any) => ({
         id: d.id,
-        carrier: d.carrier || "SAN Dedicated Fleet",
+        carrier: d.carrier || "Specialist Furniture Courier",
         tracking_number: d.tracking_number || "TRK-SAN-DIRECT",
         status: d.status || "dispatched",
         created_at: String(d.created_at || order.created_at),

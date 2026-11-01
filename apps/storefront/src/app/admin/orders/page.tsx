@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
   const [isSubmittingDelete, setIsSubmittingDelete] = useState(false);
 
   // Dispatch Form State
-  const [carrier, setCarrier] = useState("SAN Dedicated Delivery Fleet");
+  const [carrier, setCarrier] = useState("Specialist Furniture Courier");
   const [trackingCode, setTrackingCode] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("2026-10-20");
   const [deliverySlot, setDeliverySlot] = useState("10:00 - 12:00 BST");
@@ -270,8 +270,8 @@ export default function AdminOrdersPage() {
     const defaultCarrier = tier.includes("pallet")
       ? "Palletways UK Freight"
       : tier.includes("white_glove")
-      ? "SAN 2-Man Dedicated Fleet"
-      : "SAN Dedicated Delivery Fleet";
+      ? "Specialist 2-Person Courier"
+      : "Specialist Furniture Courier";
     setCarrier(o.carrier && !o.carrier.includes("Awaiting") ? o.carrier : defaultCarrier);
     setTrackingCode(o.tracking_number && o.tracking_number !== "Awaiting allocation" ? o.tracking_number : `TRX-SAN-${Date.now().toString().slice(-6)}`);
     setStatusVal(o.status === "delivered" ? "delivered" : "in_transit");
@@ -1699,7 +1699,7 @@ export default function AdminOrdersPage() {
                   <div>
                     <span className="text-[10px] text-navy-500 block">Carrier Partner:</span>
                     <strong className="text-navy-950 block mt-0.5">
-                      {selectedOrder.carrier || (selectedOrder.delivery_tier === "two_man_white_glove" ? "SAN 2-Man Dedicated Fleet" : selectedOrder.delivery_tier === "pallet" ? "Palletways UK Freight" : "SAN Dedicated Delivery Fleet")}
+                      {selectedOrder.carrier || (selectedOrder.delivery_tier === "two_man_white_glove" ? "Specialist 2-Person Courier" : selectedOrder.delivery_tier === "pallet" ? "Palletways UK Freight" : "Specialist Furniture Courier")}
                     </strong>
                   </div>
                   <div>
@@ -2122,9 +2122,9 @@ export default function AdminOrdersPage() {
                   onChange={(e) => setCarrier(e.target.value)}
                   className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950 focus:outline-none focus:border-brass-500"
                 >
-                  <option value="SAN Dedicated Delivery Fleet">SAN Dedicated Delivery Fleet (UK Hub)</option>
+                  <option value="Specialist Furniture Courier">Specialist Furniture Courier (UK Nationwide)</option>
                   <option value="Palletways UK Freight">Palletways UK Freight</option>
-                  <option value="Amos Mann Logistics">Amos Mann Logistics</option>
+                  
                   <option value="BJS Home Delivery">BJS Home Delivery (Specialist 2-Man White Glove)</option>
                   <option value="ArrowXL 2-Man White Glove">ArrowXL 2-Man White Glove</option>
                   <option value="Furdeco Delivery">Furdeco (Room of Choice Delivery)</option>
@@ -2479,7 +2479,7 @@ export default function AdminOrdersPage() {
                     Carrier Consignment Details
                   </strong>
                   <p>Order: <strong className="font-mono">{manifestOrder.order_number || manifestOrder.id}</strong></p>
-                  <p>Carrier: <strong>{manifestOrder.carrier || (manifestOrder.delivery_tier === "two_man_white_glove" ? "SAN 2-Man Dedicated Logistics" : manifestOrder.delivery_tier === "pallet" ? "Palletways UK Freight" : "SAN Dedicated Logistics")}</strong></p>
+                  <p>Carrier: <strong>{manifestOrder.carrier || (manifestOrder.delivery_tier === "two_man_white_glove" ? "Specialist 2-Person Logistics" : manifestOrder.delivery_tier === "pallet" ? "Palletways UK Freight" : "Specialist Furniture Courier")}</strong></p>
                   <p>Consignment: <strong className="font-mono text-brass-800">{manifestOrder.tracking_number || "TRX-SAN-446575"}</strong></p>
                   <p>Delivery Slot: <strong>10:00 - 12:00 BST</strong></p>
                   <p>Tier: <strong className="text-forest-800">{manifestOrder.delivery_tier === "two_man_white_glove" ? "2-Man White Glove & Assembly" : manifestOrder.delivery_tier === "pallet" ? "Pallet Freight" : "Standard Delivery"}</strong></p>

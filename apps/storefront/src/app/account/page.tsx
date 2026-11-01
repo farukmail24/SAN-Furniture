@@ -1155,9 +1155,9 @@ export default function CustomerAccountPage() {
                     <span className="text-[11px] text-forest-700 block mt-0.5">Tracking link &amp; updates provided</span>
                   </div>
                   <div>
-                    <span className="text-navy-500 block text-[11px]">Assigned Delivery Fleet:</span>
-                    <strong className="text-navy-950 text-sm font-semibold">{orders[0].carrier && !orders[0].carrier.includes("Amos Mann") ? orders[0].carrier : "SAN Dedicated Delivery Fleet"}</strong>
-                    <span className="text-[11px] text-navy-600 block mt-0.5">Direct home delivery &amp; scheduled arrival</span>
+                    <span className="text-navy-500 block text-[11px]">Delivery Partner:</span>
+                    <strong className="text-navy-950 text-sm font-semibold">{orders[0].carrier && !orders[0].carrier.includes("SAN Dedicated") && !orders[0].carrier.includes("Amos Mann") ? orders[0].carrier : "Specialist Furniture Courier"}</strong>
+                    <span className="text-[11px] text-navy-600 block mt-0.5">Specialist direct delivery &amp; scheduled arrival</span>
                   </div>
                   <div>
                     <span className="text-navy-500 block text-[11px]">Destination Sanctuary:</span>
@@ -1525,6 +1525,7 @@ export default function CustomerAccountPage() {
                   const isDelivered = status === "delivered";
                   const isReturnRequested = status === "return_requested" || status === "returned";
                   const isCancelled = status === "cancelled";
+                  const isDispatched = status === "dispatched" || status === "in_transit" || status === "in_transit_two_man" || isDelivered;
                   const canCancel = !isCancelled && !isDelivered && !isReturnRequested && status !== "in_transit";
 
                   return (
@@ -1587,7 +1588,7 @@ export default function CustomerAccountPage() {
                         </div>
 
                         <p className="text-xs text-navy-600 mt-1">
-                          Delivery Sanctuary: <strong className="font-mono text-navy-950">{order.shipping_postcode}</strong> &bull; Carrier: <strong>{order.carrier && !order.carrier.includes("Amos Mann") ? order.carrier : "SAN Dedicated Delivery Fleet"}</strong>
+                          Delivery Destination: <strong className="font-mono text-navy-950">{order.shipping_postcode}</strong>{order.carrier && !order.carrier.includes("SAN Dedicated") && !order.carrier.includes("Amos Mann") ? (<> &bull; Carrier: <strong>{order.carrier}</strong></>) : isDispatched ? (<> &bull; Carrier: <strong>Specialist Courier</strong></>) : null}
                         </p>
                       </div>
 
@@ -3117,7 +3118,7 @@ export default function CustomerAccountPage() {
                 Consignment #{trackingModalOrder.tracking_number || trackingModalOrder.order_number}
               </h3>
               <p className="text-xs text-navy-600">
-                Carrier: <strong>{trackingModalOrder.carrier && !trackingModalOrder.carrier.includes("Amos Mann") ? trackingModalOrder.carrier : "SAN Dedicated Delivery Fleet"}</strong>
+                Carrier: <strong>{trackingModalOrder.carrier && !trackingModalOrder.carrier.includes("SAN Dedicated") && !trackingModalOrder.carrier.includes("Amos Mann") ? trackingModalOrder.carrier : "Specialist Furniture Courier"}</strong>
               </p>
             </div>
 
