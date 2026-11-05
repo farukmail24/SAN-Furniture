@@ -21,12 +21,16 @@ test("Taxonomy Handle Aliases and Canonical Resolution", () => {
   assert.equal(normalizeCategoryHandle("living-room"), "living-room");
   assert.equal(normalizeCategoryHandle("dining"), "dining");
   assert.equal(normalizeCategoryHandle("sofas"), "sofas");
-  assert.equal(normalizeCategoryHandle("armchairs"), "sofas");
+  assert.equal(normalizeCategoryHandle("armchairs"), "armchairs");
+  assert.equal(normalizeCategoryHandle("accent-armchairs"), "armchairs");
   assert.equal(normalizeCategoryHandle("home-office"), "home-office");
   assert.equal(normalizeCategoryHandle("office"), "home-office");
   assert.equal(normalizeCategoryHandle("desks"), "home-office");
 
   // getCategoryByHandle should resolve both new and legacy handles
+  const armchairCat = getCategoryByHandle("armchairs");
+  assert.ok(armchairCat);
+  assert.equal(armchairCat.id, "cat_armchairs");
   const bedroomCat = getCategoryByHandle("bedroom");
   const bedsCat = getCategoryByHandle("beds");
   assert.ok(bedroomCat);
@@ -66,10 +70,14 @@ test("Sub-Type Resolution & Aliases", () => {
   assert.equal(resolveSubType("cat_beds", "mirrors")?.id, "mirrors");
   assert.equal(resolveSubType("cat_beds", "mirror")?.id, "mirrors");
 
+  // Accent Armchairs Sub-Types
+  assert.equal(resolveSubType("cat_armchairs", "armchairs")?.id, "armchairs");
+  assert.equal(resolveSubType("cat_armchairs", "swivel-chairs")?.id, "swivel-chairs");
+  assert.equal(resolveSubType("cat_armchairs", "lounge-chairs")?.id, "lounge-chairs");
+  assert.equal(resolveSubType("cat_armchairs", "fireside-chairs")?.id, "fireside-chairs");
+  assert.equal(resolveSubType("cat_armchairs", "stools-poufs")?.id, "stools-poufs");
+
   // Living Room Sub-Types
-  assert.equal(resolveSubType("cat_living", "desks")?.id, "desks");
-  assert.equal(resolveSubType("cat_living", "desk")?.id, "desks");
-  assert.equal(resolveSubType("cat_living", "writing-desk")?.id, "desks");
 
   assert.equal(resolveSubType("cat_living", "bookcases")?.id, "bookcases");
   assert.equal(resolveSubType("cat_living", "bookcase")?.id, "bookcases");

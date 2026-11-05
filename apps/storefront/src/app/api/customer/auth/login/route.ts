@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { signAuthToken, verifyPassword } from "@/lib/auth-token";
+import { getClientIp, checkIpSecurity, recordFailedAuth, recordSuccessfulAuth } from "@/lib/security-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const securityCheck = await checkIpSecurity(clientIp);
+    if (!securityCheck.allowed) {
+      return NextResponse.json(
+        { success: false, error: securityCheck.message || "Too many authentication attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const rawIdentifier = (body.email || body.phone || body.identifier || "").trim();
     const password = (body.password || "").trim();
@@ -36,6 +46,7 @@ export async function POST(request: Request) {
     );
 
     if (!rows || rows.length === 0) {
+      await recordFailedAuth(clientIp, "failed_customer_login");
       return NextResponse.json(
         { success: false, error: "Invalid login credentials. Please check your email or mobile number and password." },
         { status: 401 }
@@ -45,11 +56,14 @@ export async function POST(request: Request) {
     const customer = rows[0];
     const isPasswordValid = verifyPassword(password, customer.password_hash);
     if (!isPasswordValid) {
+      await recordFailedAuth(clientIp, "failed_customer_login");
       return NextResponse.json(
         { success: false, error: "Invalid login credentials. Please check your email and password." },
         { status: 401 }
       );
     }
+
+    await recordSuccessfulAuth(clientIp);
 
     const token = signAuthToken("cust", customer.id);
 

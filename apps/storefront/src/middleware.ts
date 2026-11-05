@@ -73,9 +73,10 @@ export async function middleware(request: NextRequest) {
 
   if (isAdminApi) {
     const deploySecret = request.headers.get("x-deploy-secret") || "";
+    const configuredDeploySecret = process.env.DEPLOY_SECRET;
     const isDeploySecretValid =
-      Boolean(deploySecret) &&
-      deploySecret === (process.env.DEPLOY_SECRET || "san_furniture_auto_deploy_master_secret_2026");
+      Boolean(configuredDeploySecret && configuredDeploySecret.length >= 16) &&
+      deploySecret === configuredDeploySecret;
 
     if (!isDeploySecretValid) {
       const adminToken = extractAdminToken(request);

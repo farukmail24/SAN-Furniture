@@ -11,10 +11,12 @@ export class GoogleMerchantFeedGenerator {
         this.baseUrl = baseUrl.replace(/\/$/, "");
     }
     /**
-     * Escape XML special characters
+     * Escape XML special characters and purge disallowed XML 1.0 control codes
      */
     escapeXml(unsafe) {
-        return unsafe
+        return String(unsafe ?? "")
+            // eslint-disable-next-line no-control-regex
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F]/g, "")
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
@@ -53,7 +55,7 @@ ${additionalImagesXml ? additionalImagesXml + "\n" : ""}\
       <g:google_product_category>${this.escapeXml(googleCat)}</g:google_product_category>
       <g:shipping>
         <g:country>GB</g:country>
-        <g:service>UK 2-Man White Glove Delivery</g:service>
+        <g:service>UK Room of Choice Delivery</g:service>
         <g:price>${shippingCost}</g:price>
       </g:shipping>
       <g:material>${this.escapeXml(p.specs.material)}</g:material>

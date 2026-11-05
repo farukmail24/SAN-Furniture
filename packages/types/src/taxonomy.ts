@@ -11,8 +11,15 @@ export const CATALOG_CATEGORIES: ProductCategory[] = [
     id: "cat_sofas",
     name: "Sofas & Seating",
     handle: "sofas",
-    description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and sculptural accent armchairs upholstered in durable bouclé and velvet.",
+    description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals upholstered in durable bouclé, linen, and velvet.",
     heroImage: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85"
+  },
+  {
+    id: "cat_armchairs",
+    name: "Accent Armchairs & Stools",
+    handle: "armchairs",
+    description: "Sculptural statement armchairs, luxury bouclé fireside reading chairs, and ergonomic occasional seating handcrafted for modern British homes.",
+    heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
   },
   {
     id: "cat_living",
@@ -56,8 +63,10 @@ export const CATEGORY_HANDLE_ALIASES: Record<string, string> = {
   "dining-room-furniture": "dining",
   "sofas-seating": "sofas",
   sofas: "sofas",
-  armchairs: "sofas",
-  "accent-armchairs": "sofas",
+  armchairs: "armchairs",
+  "accent-armchairs": "armchairs",
+  "accent-chairs": "armchairs",
+  "arm-chairs": "armchairs",
   "home-office": "home-office",
   office: "home-office",
   desks: "home-office",
@@ -217,17 +226,6 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
 
   // Living Room Sub-Types (cat_living)
   {
-    id: "desks",
-    label: "Desks & Office",
-    categoryId: "cat_living",
-    aliases: ["desks", "desk", "writing-desk", "office"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      const h = p.handle.toLowerCase();
-      return t.includes("desk") || h.includes("desk");
-    }
-  },
-  {
     id: "bookcases",
     label: "Bookcases & Shelves",
     categoryId: "cat_living",
@@ -355,12 +353,20 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
   },
   {
     id: "3-seater",
-    label: "3-Seater Sofas",
+    label: "3 & 4-Seater Sofas",
     categoryId: "cat_sofas",
-    aliases: ["3-seater", "3-seater-sofas", "large-sofa"],
+    aliases: ["3-seater", "3-seater-sofas", "large-sofa", "4-seater", "family-sofas"],
     matches: (p) => {
       const t = p.title.toLowerCase();
-      return t.includes("3-seater") || t.includes("3 seater") || t.includes("three seater");
+      return (
+        t.includes("3-seater") ||
+        t.includes("3 seater") ||
+        t.includes("three seater") ||
+        t.includes("4-seater") ||
+        t.includes("4 seater") ||
+        t.includes("four seater") ||
+        t.includes("large")
+      );
     }
   },
   {
@@ -405,12 +411,12 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
   },
   {
     id: "loungers",
-    label: "Bouclé Loungers",
+    label: "Deep Lounge Sofas",
     categoryId: "cat_sofas",
-    aliases: ["loungers", "lounger", "chaise-lounger"],
+    aliases: ["loungers", "lounger", "chaise-lounger", "lounge-sofa"],
     matches: (p) => {
       const t = p.title.toLowerCase();
-      return t.includes("lounger") || t.includes("snuggler");
+      return t.includes("lounger") || t.includes("lounge") || t.includes("snuggler");
     }
   },
   {
@@ -421,6 +427,66 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     matches: (p) => {
       const t = p.title.toLowerCase();
       return t.includes("footstool") || t.includes("pouf") || t.includes("pouffe") || t.includes("stool");
+    }
+  },
+
+  // Accent Armchairs Sub-Types (cat_armchairs)
+  {
+    id: "armchairs",
+    label: "Accent Armchairs",
+    categoryId: "cat_armchairs",
+    aliases: ["armchairs", "armchair", "accent-chairs", "chairs", "accent-armchairs"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return (
+        t.includes("armchair") ||
+        h.includes("armchair") ||
+        t.includes("lounge chair") ||
+        t.includes("cocktail chair") ||
+        t.includes("fireside") ||
+        t.includes("swivel")
+      );
+    }
+  },
+  {
+    id: "swivel-chairs",
+    label: "Swivel Chairs",
+    categoryId: "cat_armchairs",
+    aliases: ["swivel-chairs", "swivel", "swivel-armchair"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("swivel");
+    }
+  },
+  {
+    id: "lounge-chairs",
+    label: "Lounge Chairs",
+    categoryId: "cat_armchairs",
+    aliases: ["lounge-chairs", "lounge", "leather-chair", "mid-century"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("lounge") || t.includes("mid-century") || t.includes("leather");
+    }
+  },
+  {
+    id: "fireside-chairs",
+    label: "Fireside & Wingback",
+    categoryId: "cat_armchairs",
+    aliases: ["fireside-chairs", "fireside", "wingback"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("fireside") || t.includes("wingback");
+    }
+  },
+  {
+    id: "stools-poufs",
+    label: "Footstools & Poufs",
+    categoryId: "cat_armchairs",
+    aliases: ["stools-poufs", "footstools", "pouf", "pouffe", "bench", "ottoman"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("stool") || t.includes("bench") || t.includes("pouf") || t.includes("pouffe") || t.includes("ottoman");
     }
   },
 

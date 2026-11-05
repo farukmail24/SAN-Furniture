@@ -70,15 +70,28 @@ export function CategoryView({
   const { addItem, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  // Search input query
-  const [searchQuery, setSearchQuery] = useState("");
+  // Search input query initialized from searchParams (supports q, search, filter=scandi)
+  const initialSearchParam =
+    typeof initialSearchParams?.q === "string"
+      ? initialSearchParams.q
+      : typeof initialSearchParams?.search === "string"
+      ? initialSearchParams.search
+      : initialSearchParams?.filter === "scandi"
+      ? "scandinavian"
+      : "";
 
-  // Sub-type filter from URL
+  const [searchQuery, setSearchQuery] = useState(initialSearchParam);
+
+  // Sub-type filter from URL (supports type, style, seats)
   const initialTypeParam =
     typeof initialSearchParams?.type === "string"
       ? initialSearchParams.type
       : Array.isArray(initialSearchParams?.type)
       ? initialSearchParams.type[0]
+      : typeof initialSearchParams?.style === "string"
+      ? initialSearchParams.style
+      : typeof initialSearchParams?.seats === "string"
+      ? `${initialSearchParams.seats}-seater`
       : undefined;
 
   const [selectedSubTypeId, setSelectedSubTypeId] = useState<string | null>(() => {
@@ -92,9 +105,20 @@ export function CategoryView({
     category?.handle || null
   );
 
-  // Faceted filter states
-  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
-  const [selectedColorTones, setSelectedColorTones] = useState<string[]>([]);
+  // Faceted filter states initialized from URL
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>(() => {
+    const rawMat = initialSearchParams?.material || initialSearchParams?.fabric;
+    if (typeof rawMat === "string") return [rawMat.toLowerCase()];
+    if (Array.isArray(rawMat) && typeof rawMat[0] === "string") return [rawMat[0].toLowerCase()];
+    return [];
+  });
+
+  const [selectedColorTones, setSelectedColorTones] = useState<string[]>(() => {
+    const filterParam = typeof initialSearchParams?.filter === "string" ? initialSearchParams.filter.toLowerCase() : "";
+    if (filterParam === "oak") return ["oak"];
+    if (filterParam === "gloss" || filterParam === "white") return ["white"];
+    return [];
+  });
   const [selectedWidthRange, setSelectedWidthRange] = useState<"all" | "compact" | "medium" | "wide">("all");
   const [selectedDeliveryTiers, setSelectedDeliveryTiers] = useState<string[]>([]);
   const [onlyOnSale, setOnlyOnSale] = useState(false);

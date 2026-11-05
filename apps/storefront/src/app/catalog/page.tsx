@@ -21,7 +21,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function CatalogPage() {
+interface CatalogPageProps {
+  searchParams?: Promise<{
+    [key: string]: string | string[] | undefined;
+  }>;
+}
+
+export default async function CatalogPage({ searchParams }: CatalogPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const [liveProducts, sections] = await Promise.all([
     getLiveProducts(),
     getLiveSections("catalog"),
@@ -74,6 +81,7 @@ export default async function CatalogPage() {
         <CategoryView
           initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}
+          initialSearchParams={resolvedSearchParams}
           hideHeaderBanner={true}
         />
       </div>

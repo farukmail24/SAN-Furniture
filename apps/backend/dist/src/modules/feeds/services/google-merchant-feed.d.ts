@@ -25,7 +25,7 @@ export declare class GoogleMerchantFeedGenerator {
     private baseUrl;
     constructor(baseUrl?: string);
     /**
-     * Escape XML special characters
+     * Escape XML special characters and purge disallowed XML 1.0 control codes
      */
     private escapeXml;
     /**

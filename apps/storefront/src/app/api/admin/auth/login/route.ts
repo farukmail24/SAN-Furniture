@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { signAuthToken, verifyPassword } from "@/lib/auth-token";
+import { getClientIp, checkIpSecurity, recordFailedAuth, recordSuccessfulAuth } from "@/lib/security-guard";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getClientIp(request);
+    const securityCheck = await checkIpSecurity(clientIp);
+    if (!securityCheck.allowed) {
+      return NextResponse.json(
+        { error: securityCheck.message || "Too many authentication attempts. Please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const email = (body.email || "").trim().toLowerCase();
     const password = (body.password || "").trim();
@@ -24,6 +34,7 @@ export async function POST(request: Request) {
     );
 
     if (!rows || rows.length === 0 || !rows[0].is_active) {
+      await recordFailedAuth(clientIp, "failed_admin_login");
       return NextResponse.json(
         { error: "Invalid admin credentials" },
         { status: 401 }
@@ -33,11 +44,14 @@ export async function POST(request: Request) {
     const user = rows[0];
     const isPasswordValid = verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
+      await recordFailedAuth(clientIp, "failed_admin_login");
       return NextResponse.json(
         { error: "Invalid admin credentials" },
         { status: 401 }
       );
     }
+
+    await recordSuccessfulAuth(clientIp);
 
     // Update last login
     await pool.query("UPDATE admin_users SET last_login_at = NOW() WHERE id = ?", [user.id]).catch(() => {});
@@ -46,7 +60,6 @@ export async function POST(request: Request) {
     const token = signAuthToken("adm", user.id);
 
     // Audit log
-    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
     await pool.query(
       "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
       [`log_${Date.now()}`, user.email, "ADMIN_LOGIN", "admin_users", JSON.stringify({ role: user.role }), clientIp]

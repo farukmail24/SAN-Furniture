@@ -138,7 +138,7 @@ export class VatInvoiceGenerator {
       </tr>`
             : `<tr>
         <td style="font-family: monospace; color: #4F6D7A;">SHIPPING-FREE</td>
-        <td><strong>Free White Glove Delivery (Order &gt; £500)</strong></td>
+        <td><strong>Free Room of Choice Delivery (Order &gt; £500)</strong></td>
         <td class="text-right">1</td>
         <td class="text-right">£0.00</td>
         <td class="text-right"><strong>FREE</strong></td>

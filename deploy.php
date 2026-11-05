@@ -49,7 +49,7 @@ if (!$projectRoot) {
 }
 
 // 2. Resolve Deployment Secret & Database Credentials
-$secret = getenv('DEPLOY_SECRET') ?: (getenv('SAN_AUTH_SECRET') ?: 'san_furniture_auto_deploy_master_secret_2026');
+$secret = getenv('DEPLOY_SECRET') ?: getenv('SAN_AUTH_SECRET');
 $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
 $dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'sansoft_san_furniture');
@@ -84,7 +84,7 @@ foreach ($envFiles as $ef) {
                 $k = trim($k);
                 $v = cleanEnvVal($v);
                 if ($k === 'DEPLOY_SECRET') $secret = $v;
-                if ($k === 'SAN_AUTH_SECRET' && $secret === 'san_furniture_auto_deploy_master_secret_2026') $secret = $v;
+                if ($k === 'SAN_AUTH_SECRET' && empty($secret)) $secret = $v;
                 if ($k === 'DB_HOST') $dbHost = $v;
                 if ($k === 'DB_PORT') $dbPort = $v;
                 if ($k === 'DB_DATABASE' || $k === 'DB_NAME') $dbName = $v;
@@ -101,7 +101,12 @@ $queryToken = $_GET['secret'] ?? ($_GET['token'] ?? '');
 $headerToken = $_SERVER['HTTP_X_DEPLOY_SECRET'] ?? '';
 
 if ($requestMethod === 'GET') {
-    $isAuthenticated = ($queryToken === $secret || $headerToken === $secret);
+    $isAuthenticated = (!empty($secret) && strlen($secret) >= 16 && ($queryToken === $secret || $headerToken === $secret));
+    if (!$isAuthenticated) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Forbidden: Authentication required'], JSON_PRETTY_PRINT);
+        exit;
+    }
     $action = $_GET['action'] ?? 'status';
 
     $htaccessFile = $projectRoot . '/.htaccess';
@@ -230,13 +235,16 @@ $deliveryId = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? '';
 
 // 5. Authenticate via HMAC SHA-256 OR Secret Token
 $isSigValid = false;
-if (!empty($signature) && strpos($signature, 'sha256=') === 0) {
+$isSecretConfigured = !empty($secret) && strlen($secret) >= 16;
+if ($isSecretConfigured && !empty($signature) && strpos($signature, 'sha256=') === 0) {
     $expectedSig = 'sha256=' . hash_hmac('sha256', $rawPayload, $secret);
     $isSigValid = hash_equals($expectedSig, $signature);
 }
 
-$isTokenValid = (!empty($queryToken) && hash_equals($secret, $queryToken)) || 
-                (!empty($headerToken) && hash_equals($secret, $headerToken));
+$isTokenValid = $isSecretConfigured && (
+    (!empty($queryToken) && hash_equals($secret, $queryToken)) || 
+    (!empty($headerToken) && hash_equals($secret, $headerToken))
+);
 
 if (!$isSigValid && !$isTokenValid) {
     http_response_code(401);

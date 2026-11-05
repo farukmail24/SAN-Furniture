@@ -16,16 +16,16 @@
     "files": [
       "static/chunks/9664-af80478aa73ba424.js",
       "static/chunks/3916-7f124b1f088a2675.js",
-      "static/chunks/6032-e8970f52d4462f5d.js",
-      "static/chunks/4868-3f3a1e80551161f0.js",
+      "static/chunks/6032-5aa8da13ede598de.js",
+      "static/chunks/4868-e1cfebe00862ab6a.js",
       "static/chunks/6890-20aaee6fa19ffb44.js",
-      "static/chunks/2668.f00a9ca9fe2bf2d0.js"
+      "static/chunks/2668.b6d515889b490f3a.js"
     ]
   },
   "lib\\catalog.ts -> ./products-seed-data.json": {
     "id": 893,
     "files": [
-      "static/chunks/893.9b7ee8024ae81add.js"
+      "static/chunks/893.0ee0e507fab85466.js"
     ]
   }
 }
