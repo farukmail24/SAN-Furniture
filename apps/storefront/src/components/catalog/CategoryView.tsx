@@ -70,14 +70,20 @@ export function CategoryView({
   const { addItem, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
-  // Search input query initialized from searchParams (supports q, search, filter=scandi)
+  // Search input query initialized from searchParams (supports q, search, filter=scandi, range, etc.)
   const initialSearchParam =
     typeof initialSearchParams?.q === "string"
       ? initialSearchParams.q
       : typeof initialSearchParams?.search === "string"
       ? initialSearchParams.search
+      : typeof initialSearchParams?.range === "string"
+      ? initialSearchParams.range
       : initialSearchParams?.filter === "scandi"
       ? "scandinavian"
+      : initialSearchParams?.filter === "gloss"
+      ? "gloss"
+      : initialSearchParams?.filter === "oak"
+      ? "oak"
       : "";
 
   const [searchQuery, setSearchQuery] = useState(initialSearchParam);
@@ -121,7 +127,11 @@ export function CategoryView({
   });
   const [selectedWidthRange, setSelectedWidthRange] = useState<"all" | "compact" | "medium" | "wide">("all");
   const [selectedDeliveryTiers, setSelectedDeliveryTiers] = useState<string[]>([]);
-  const [onlyOnSale, setOnlyOnSale] = useState(false);
+  const [onlyOnSale, setOnlyOnSale] = useState(
+    initialSearchParams?.filter === "clearance" ||
+      initialSearchParams?.filter === "sale" ||
+      initialSearchParams?.sale === "true"
+  );
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceRange, setPriceRange] = useState<string>("all");
 

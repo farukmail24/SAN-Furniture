@@ -69,6 +69,6 @@ test("ProgrammaticSeoEngine: Thin Content Guard protects against Scaled Content 
   // Thin Content Guard triggers: Do not index thin page, canonicalize to parent category
   assert.equal(thinResult.isIndexable, false);
   assert.equal(thinResult.robotsDirective, "noindex, follow");
-  assert.equal(thinResult.canonicalUrl, "https://sanfurniture.com/categories/sofas");
+  assert.equal(thinResult.canonicalUrl, "https://sanfurniture.com/sofas");
   assert.equal(thinResult.matchingProductCount, 1);
 });

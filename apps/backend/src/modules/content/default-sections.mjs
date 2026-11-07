@@ -283,7 +283,7 @@ export const DEFAULT_PAGE_SECTIONS = [
               title: "Clearance & Savings",
               links: [
                 { label: "Showroom Clearance Lines", href: "/catalog", badge: "UP TO 40% OFF" },
-                { label: "Bedside Table Value Multi-Packs", href: "/bedroom" },
+                { label: "Bedside Table Value Multi-Packs", href: "/bedroom?type=bedside-tables" },
                 { label: "Dining Suite Packages", href: "/dining" },
                 { label: "Interior Designer & Trade Orders", href: "/delivery" },
               ],
