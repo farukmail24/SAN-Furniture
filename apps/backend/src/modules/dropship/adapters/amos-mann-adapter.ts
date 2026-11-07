@@ -1,5 +1,5 @@
 import { BaseSupplierAdapter, type FeedParseResult } from "./base-adapter.js";
-import { type SupplierFeedItem } from "@san-furniture/types";
+import { type SupplierFeedItem, classifyFurnitureProduct } from "@san-furniture/types";
 
 /**
  * Amos Mann Furniture (Leicester, UK) - Dedicated Dropship Feed Adapter
@@ -50,16 +50,19 @@ export class AmosMannDropshipAdapter extends BaseSupplierAdapter {
           }
 
           const costPricePennies = Math.round(Number(row.trade_cost_gbp) * 100);
+          const productTitle = row.product_title || `Amos Mann ${row.range_name || "Furniture"} - ${row.sku}`;
+          const classified = classifyFurnitureProduct({ title: productTitle, range_name: row.range_name });
+
           items.push({
             supplier_id: this.supplierId,
             supplier_sku: String(row.sku),
-            product_title: row.product_title || `Amos Mann ${row.range_name || "Furniture"} - ${row.sku}`,
+            product_title: productTitle,
             cost_price_pennies: costPricePennies,
             carriage_cost_pennies: row.delivery_tier === "two_man_white_glove" ? 4500 : 2500,
             stock_level: parseInt(String(row.stock_quantity || "0"), 10),
             lead_time_days: parseInt(String(row.lead_time_days || "5"), 10),
             barcode_gtin: row.barcode || `50609128${String(idx).padStart(5, "0")}`,
-            category_hint: row.category || "bedroom",
+            category_hint: row.category || classified.categoryId,
             discontinued: Boolean(row.is_discontinued)
           });
         });

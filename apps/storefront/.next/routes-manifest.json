@@ -18,6 +18,12 @@
       "regex": "^(?!/_next)/categories(?:/)?$"
     },
     {
+      "source": "/categories/:handle",
+      "destination": "/:handle",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/categories(?:/([^/]+?))(?:/)?$"
+    },
+    {
       "source": "/products",
       "destination": "/catalog",
       "statusCode": 308,
@@ -353,6 +359,14 @@
         "nxtPhandle": "nxtPhandle"
       },
       "namedRegex": "^/products/(?<nxtPhandle>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/[categorySlug]",
+      "regex": "^/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPcategorySlug": "nxtPcategorySlug"
+      },
+      "namedRegex": "^/(?<nxtPcategorySlug>[^/]+?)(?:/)?$"
     }
   ],
   "staticRoutes": [

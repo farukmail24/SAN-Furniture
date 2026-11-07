@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const pool = getDbPool();
-    const categoryId = body.categoryId || "cat_beds";
+    const categoryId = body.categoryId || "auto";
     const deliveryTier = body.deliveryTier || "two_man_white_glove";
 
     if (urls.length === 1) {

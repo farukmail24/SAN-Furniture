@@ -217,7 +217,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             <>
               <ChevronRight className="w-3.5 h-3.5 text-sand-400" />
               <Link
-                href={`/categories/${category.handle}`}
+                href={`/${category.handle}`}
                 className="hover:text-navy-950 transition-colors"
               >
                 {category.name}

@@ -76,9 +76,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Category Pages
+  // Category Pages (Clean Canonical Root URLs)
   const categoryRoutes: MetadataRoute.Sitemap = CATALOG_CATEGORIES.map((cat) => ({
-    url: `${baseUrl}/categories/${cat.handle}`,
+    url: `${baseUrl}/${cat.handle}`,
     lastModified: now,
     changeFrequency: "weekly",
     priority: 0.8,

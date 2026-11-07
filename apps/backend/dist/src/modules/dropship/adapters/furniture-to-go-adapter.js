@@ -1,4 +1,5 @@
 import { BaseSupplierAdapter } from "./base-adapter.js";
+import { classifyFurnitureProduct } from "@san-furniture/types";
 export class FurnitureToGoDropshipAdapter extends BaseSupplierAdapter {
     constructor() {
         super("furniture_to_go", "Furniture To Go (FTG UK Dropship Hub, Wiltshire)");
@@ -24,18 +25,20 @@ export class FurnitureToGoDropshipAdapter extends BaseSupplierAdapter {
                     const costPricePennies = Math.round(Number(costGbp) * 100);
                     const weightKg = Number(row.weight_kg || 25);
                     const deliveryTier = row.delivery_tier || (weightKg > 40 ? "two_man_white_glove" : "standard_parcel");
+                    const cleanTitle = row.product_title
+                        ? String(row.product_title).replace(/^(?:FTG|Furniture\s+To\s+Go)[\s\-–—:]+/i, "").trim()
+                        : `${row.range_name || "Scandinavian"} - ${sku}`;
+                    const classified = classifyFurnitureProduct({ title: cleanTitle, range_name: row.range_name });
                     items.push({
                         supplier_id: this.supplierId,
                         supplier_sku: String(sku),
-                        product_title: row.product_title
-                            ? String(row.product_title).replace(/^(?:FTG|Furniture\s+To\s+Go)[\s\-–—:]+/i, "").trim()
-                            : `${row.range_name || "Scandinavian"} - ${sku}`,
+                        product_title: cleanTitle,
                         cost_price_pennies: costPricePennies,
                         carriage_cost_pennies: deliveryTier === "two_man_white_glove" ? 4000 : 1500,
                         stock_level: parseInt(String(row.stock_quantity ?? row.stock ?? "0"), 10),
                         lead_time_days: parseInt(String(row.lead_time_days || "3"), 10),
                         barcode_gtin: row.ean || `50609129${String(idx).padStart(5, "0")}`,
-                        category_hint: row.category || "bedroom",
+                        category_hint: row.category || classified.categoryId,
                         discontinued: Boolean(row.discontinued || row.is_discontinued || false),
                     });
                 });
@@ -83,16 +86,18 @@ export class FurnitureToGoDropshipAdapter extends BaseSupplierAdapter {
                 const leadStr = leadIdx >= 0 ? cols[leadIdx] : "3";
                 const weightKg = weightIdx >= 0 ? parseFloat(cols[weightIdx]) || 25 : 25;
                 const deliveryTier = weightKg > 40 ? "two_man_white_glove" : "standard_parcel";
+                const cleanTitle = (title || `Furniture To Go - ${sku}`).trim();
+                const classified = classifyFurnitureProduct({ title: cleanTitle });
                 items.push({
                     supplier_id: this.supplierId,
                     supplier_sku: sku.trim(),
-                    product_title: (title || `Furniture To Go - ${sku}`).trim(),
+                    product_title: cleanTitle,
                     cost_price_pennies: Math.round(costGbp * 100),
                     carriage_cost_pennies: deliveryTier === "two_man_white_glove" ? 4000 : 1500,
                     stock_level: parseInt(stockStr.replace(/[^0-9]/g, "") || "0", 10),
                     lead_time_days: parseInt(leadStr.replace(/[^0-9]/g, "") || "3", 10),
                     discontinued: false,
-                    category_hint: "bedroom",
+                    category_hint: classified.categoryId,
                     barcode_gtin: sku.trim(),
                 });
             }

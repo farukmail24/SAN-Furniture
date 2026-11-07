@@ -95,8 +95,8 @@ export function CategoryView({
       : undefined;
 
   const [selectedSubTypeId, setSelectedSubTypeId] = useState<string | null>(() => {
-    if (!category || !initialTypeParam) return null;
-    const resolved = resolveSubType(category.id, initialTypeParam);
+    if (!initialTypeParam) return null;
+    const resolved = resolveSubType(category?.id, initialTypeParam);
     return resolved ? resolved.id : null;
   });
 
@@ -189,8 +189,8 @@ export function CategoryView({
   }, [category, initialProducts]);
 
   const activeSubType = useMemo(() => {
-    if (!category || !selectedSubTypeId) return null;
-    return resolveSubType(category.id, selectedSubTypeId);
+    if (!selectedSubTypeId) return null;
+    return resolveSubType(category?.id, selectedSubTypeId);
   }, [category, selectedSubTypeId]);
 
   // Available filter options based on products
@@ -346,9 +346,14 @@ export function CategoryView({
           if (cat && p.categoryId !== cat.id) return false;
         }
 
-        // Sub-type facet filter
-        if (activeSubType && !productMatchesSubType(p, activeSubType)) {
-          return false;
+        // Sub-type facet filter with strict category isolation
+        if (activeSubType) {
+          if (p.categoryId && p.categoryId !== activeSubType.categoryId) {
+            return false;
+          }
+          if (!productMatchesSubType(p, activeSubType)) {
+            return false;
+          }
         }
 
         // Material filter
@@ -552,7 +557,7 @@ export function CategoryView({
             return (
               <Link
                 key={c.id}
-                href={`/categories/${c.handle}`}
+                href={`/${c.handle}`}
                 className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
                   isSelected
                     ? "bg-navy-950 text-sand-50 shadow-sm"

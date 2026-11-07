@@ -187,7 +187,7 @@ export default function AdminCategoriesPage() {
       cell: (row) => (
         <div>
           <div className="font-semibold text-[#00072D]">{row.name}</div>
-          <div className="text-[11px] font-mono text-[#4F6D7A]">/categories/{row.handle}</div>
+          <div className="text-[11px] font-mono text-[#4F6D7A]">/{row.handle}</div>
         </div>
       ),
     },

@@ -81,7 +81,7 @@ export class ProgrammaticSeoEngine {
         const isIndexable = matchingCount >= this.minProductsThreshold;
         const canonicalUrl = isIndexable
             ? `${this.baseUrl}/collections/${def.slug}`
-            : `${this.baseUrl}/categories/${def.categoryHandle}`; // Fallback canonical to avoid duplicate thin page penalty
+            : `${this.baseUrl}/${def.categoryHandle}`; // Fallback canonical to avoid duplicate thin page penalty
         return {
             slug: def.slug,
             isIndexable,

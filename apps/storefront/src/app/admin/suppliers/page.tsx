@@ -119,7 +119,7 @@ export default function AdminSuppliersPage() {
   const [importUrlModalOpen, setImportUrlModalOpen] = useState<boolean>(false);
   const [importMode, setImportMode] = useState<"sitemap" | "manual">("sitemap");
   const [newAmosUrl, setNewAmosUrl] = useState<string>("");
-  const [newAmosCategory, setNewAmosCategory] = useState<string>("cat_beds");
+  const [newAmosCategory, setNewAmosCategory] = useState<string>("auto");
   const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("del_opt_001");
   const [dynamicDeliveryOptions, setDynamicDeliveryOptions] = useState<DynamicDeliveryOption[]>([]);
   const [importingUrl, setImportingUrl] = useState<boolean>(false);
@@ -149,7 +149,7 @@ export default function AdminSuppliersPage() {
   const [ftgImportMode, setFtgImportMode] = useState<"sitemap" | "manual" | "sync">("sitemap");
   const [newFtgUrl, setNewFtgUrl] = useState<string>("");
   const [newFtgAssemblyUrl, setNewFtgAssemblyUrl] = useState<string>("");
-  const [newFtgCategory, setNewFtgCategory] = useState<string>("cat_beds");
+  const [newFtgCategory, setNewFtgCategory] = useState<string>("auto");
   const [newFtgDeliveryTier, setNewFtgDeliveryTier] = useState<string>("del_opt_001");
   const [importingFtg, setImportingFtg] = useState<boolean>(false);
   const [ftgSyncing, setFtgSyncing] = useState<boolean>(false);
@@ -1215,10 +1215,12 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewAmosCategory(e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
+                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
                       <option value="cat_beds">Bedroom</option>
                       <option value="cat_living">Living Room</option>
                       <option value="cat_dining">Dining Room</option>
                       <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
                       <option value="cat_office">Home Office</option>
                     </select>
                   </div>
@@ -1317,10 +1319,12 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewAmosCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
+                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
                       <option value="cat_beds">Bedroom</option>
                       <option value="cat_living">Living Room</option>
                       <option value="cat_dining">Dining Room</option>
                       <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
                       <option value="cat_office">Home Office</option>
                     </select>
                   </div>
@@ -1820,10 +1824,12 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewFtgCategory(e.target.value)}
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D]"
                     >
+                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
                       <option value="cat_beds">Bedroom</option>
                       <option value="cat_living">Living Room</option>
                       <option value="cat_dining">Dining Room</option>
                       <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
                       <option value="cat_office">Home Office</option>
                     </select>
                   </div>
@@ -1939,10 +1945,12 @@ export default function AdminSuppliersPage() {
                       onChange={(e) => setNewFtgCategory(e.target.value)}
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
+                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
                       <option value="cat_beds">Bedroom</option>
                       <option value="cat_living">Living Room</option>
                       <option value="cat_dining">Dining Room</option>
                       <option value="cat_sofas">Sofas &amp; Seating</option>
+                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
                       <option value="cat_office">Home Office</option>
                     </select>
                   </div>

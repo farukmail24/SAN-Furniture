@@ -263,12 +263,12 @@ export function Header({ initialProducts }: { initialProducts?: CatalogProduct[]
             <nav className="hidden lg:flex items-center justify-center gap-3 xl:gap-6 2xl:gap-8 text-xs lg:text-[13px] xl:text-sm font-medium text-navy-900 flex-nowrap flex-1 mx-2 xl:mx-6 min-w-0">
               {[
                 { name: "All Furniture", href: "/catalog" },
-                { name: "Sofas", href: "/categories/sofas" },
-                { name: "Armchairs", href: "/categories/armchairs" },
-                { name: "Dining", href: "/categories/dining" },
-                { name: "Bedroom", href: "/categories/bedroom" },
-                { name: "Living Room", href: "/categories/living-room" },
-                { name: "Home Office", href: "/categories/home-office" },
+                { name: "Sofas", href: "/sofas" },
+                { name: "Armchairs", href: "/armchairs" },
+                { name: "Dining", href: "/dining" },
+                { name: "Bedroom", href: "/bedroom" },
+                { name: "Living Room", href: "/living-room" },
+                { name: "Home Office", href: "/home-office" },
               ].map((link) => {
                 const isActive = pathname === link.href;
                 return (
@@ -647,7 +647,7 @@ export function Header({ initialProducts }: { initialProducts?: CatalogProduct[]
                       {CATALOG_CATEGORIES.map((cat) => (
                         <Link
                           key={cat.id}
-                          href={`/categories/${cat.handle}`}
+                          href={`/${cat.handle}`}
                           prefetch={false}
                           onClick={() => setIsMobileMenuOpen(false)}
                           className="flex items-center justify-between px-3 py-2.5 rounded-xl text-navy-800 hover:text-brass-700 hover:bg-sand-100/50 active:scale-[0.99] transition-all"

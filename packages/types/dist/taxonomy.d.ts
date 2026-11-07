@@ -22,17 +22,40 @@ export interface FurnitureSubType {
         description?: string;
     }) => boolean;
 }
+export interface ClassificationResult {
+    categoryId: string;
+    categoryName: string;
+    subTypeId: string | null;
+    confidence: "high" | "medium" | "low";
+    reason: string;
+}
+/**
+ * Deterministic, high-precision furniture taxonomy classifier.
+ * Slices product titles, metadata, and breadcrumbs into the 5 core store categories
+ * (plus Accent Armchairs) with strict disambiguation rules.
+ */
+export declare function classifyFurnitureProduct(input: {
+    title: string;
+    description?: string;
+    url?: string;
+    range_name?: string;
+    category_hint?: string;
+}): ClassificationResult;
 export declare const FURNITURE_SUBTYPES: FurnitureSubType[];
 export declare function getCategorySubTypes(categoryId: string): FurnitureSubType[];
-export declare function resolveSubType(categoryId: string, rawType?: string | null): FurnitureSubType | null;
+export declare function resolveSubType(categoryId?: string | null, rawType?: string | null): FurnitureSubType | null;
 export declare function productMatchesSubType(product: {
     title: string;
     handle: string;
+    categoryId?: string;
+    category_id?: string;
     description?: string;
 }, subType: FurnitureSubType): boolean;
 export declare function getSubTypesWithCounts<T extends {
     title: string;
     handle: string;
+    categoryId?: string;
+    category_id?: string;
     description?: string;
 }>(categoryId: string, products: T[]): {
     subType: FurnitureSubType;

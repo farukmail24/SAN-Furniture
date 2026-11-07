@@ -55,7 +55,7 @@ export async function generateMetadata({
     alternates: {
       canonical: isIndexable
         ? `https://sanfurniture.com/collections/${collection.slug}`
-        : `https://sanfurniture.com/categories/${collection.categoryHandle}`,
+        : `https://sanfurniture.com/${collection.categoryHandle}`,
     },
     robots: {
       index: isIndexable,
