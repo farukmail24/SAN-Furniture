@@ -94,7 +94,8 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
       INSERT INTO \`categories\` (id, name, handle, description, hero_image)
       VALUES 
         ('cat_kids', 'Kids', 'kids', 'Playful, safe, and durable children\\'s beds, cabin beds, compact wardrobes, and study desks.', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1600&q=85'),
-        ('cat_bathroom', 'Bathroom', 'bathroom', 'Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85')
+        ('cat_bathroom', 'Bathroom', 'bathroom', 'Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_sale', 'Sale', 'sale', 'Curated British luxury furniture pieces on seasonal sale and clearance with up to 40% off.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85')
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
         handle = VALUES(handle),
