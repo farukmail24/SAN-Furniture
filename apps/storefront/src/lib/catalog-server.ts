@@ -125,6 +125,16 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
 
   const s = specsOverride || p;
 
+  let rawCategoryId = p.categoryId || p.category_id;
+  // Guard against misclassified bathroom products in cat_living
+  if (rawCategoryId === "cat_living" && p.title && /(bathroom|vanity|basin|undersink)/i.test(p.title)) {
+    rawCategoryId = "cat_bathroom";
+  }
+  // Guard against misclassified kids products in cat_bedroom
+  if (rawCategoryId === "cat_bedroom" && p.title && /\b(kids|bunk bed|cabin bed|midsleeper|mid sleeper)\b/i.test(p.title)) {
+    rawCategoryId = "cat_kids";
+  }
+
   return {
     id: p.id,
     sku: p.sku ? formatProductSku(p.sku) : undefined,
@@ -133,7 +143,7 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     handle: p.handle,
     subtitle: p.subtitle || "",
     description: cleanHtmlDescription(p.description),
-    categoryId: p.categoryId || p.category_id,
+    categoryId: rawCategoryId,
     status: (p.status === "active" ? "published" : p.status) || "published",
     pricePennies: Number(p.pricePennies ?? p.price_pennies) || 0,
     compareAtPricePennies: (p.compareAtPricePennies ?? p.compare_at_price_pennies)
@@ -260,10 +270,18 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
     let [rows]: any = await pool.query(fetchQuery).catch(() => [[]]);
 
     if (!isCatalogSyncAttempted || !Array.isArray(rows) || rows.length === 0) {
+      isCatalogSyncAttempted = true;
       if (!Array.isArray(rows) || rows.length === 0) {
         await autoSeedDatabaseIfNeeded();
       }
       await autoSyncMissingProducts(pool);
+      // Run category isolation updates in database
+      await pool.query(
+        "UPDATE products SET category_id = 'cat_bathroom' WHERE (title LIKE '%bathroom%' OR title LIKE '%vanity sink%' OR title LIKE '%undersink%') AND category_id != 'cat_bathroom'"
+      ).catch(() => {});
+      await pool.query(
+        "UPDATE products SET category_id = 'cat_kids' WHERE (title LIKE '%kids%' OR title LIKE '%bunk bed%' OR title LIKE '%cabin bed%') AND category_id != 'cat_kids'"
+      ).catch(() => {});
       const [reFetched]: any = await pool.query(fetchQuery).catch(() => [[]]);
       if (Array.isArray(reFetched) && reFetched.length > 0) {
         rows = reFetched;
