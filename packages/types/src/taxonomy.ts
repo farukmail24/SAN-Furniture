@@ -55,6 +55,13 @@ export const CATALOG_CATEGORIES: ProductCategory[] = [
     handle: "bathroom",
     description: "Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.",
     heroImage: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85"
+  },
+  {
+    id: "cat_sale",
+    name: "Sale",
+    handle: "sale",
+    description: "Curated British luxury furniture pieces on seasonal sale and clearance with up to 40% off.",
+    heroImage: "https://images.unsplash.com/photo-1579656381226-5fc0f0100c3b?auto=format&fit=crop&w=1600&q=85"
   }
 ];
 

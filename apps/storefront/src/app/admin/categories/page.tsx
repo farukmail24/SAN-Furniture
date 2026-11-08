@@ -127,6 +127,19 @@ export default function AdminCategoriesPage() {
       });
       const data = await res.json();
       if (res.ok) {
+        setCategories((prev) =>
+          prev.map((c) =>
+            c.id === editingCategory.id
+              ? {
+                  ...c,
+                  name: editingCategory.name,
+                  handle: editingCategory.handle,
+                  description: editingCategory.description,
+                  hero_image: editingCategory.hero_image,
+                }
+              : c
+          )
+        );
         clearCategoryCaches();
         setToastMsg({ type: "success", text: "Category updated successfully!" });
         setEditingCategory(null);

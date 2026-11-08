@@ -17,7 +17,8 @@ export async function PATCH(
     const { id } = await params;
     const pool = getDbPool();
     const body = await request.json();
-    const { name, handle, description, heroImage } = body;
+    const { name, handle, description, heroImage, hero_image } = body;
+    const targetHeroImage = heroImage !== undefined ? heroImage : hero_image;
 
     const fields: string[] = [];
     const paramsList: any[] = [];
@@ -33,9 +34,9 @@ export async function PATCH(
       fields.push("description = ?");
       paramsList.push(description);
     }
-    if (heroImage) {
+    if (targetHeroImage !== undefined) {
       fields.push("hero_image = ?");
-      paramsList.push(heroImage);
+      paramsList.push(targetHeroImage);
     }
 
     if (fields.length > 0) {

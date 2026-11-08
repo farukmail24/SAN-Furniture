@@ -91,21 +91,16 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
 
     // 4. Ensure 8 supplier-aligned categories and isolate bathroom products
     await connection.query(`
-      INSERT INTO \`categories\` (id, name, handle, description, hero_image)
+      INSERT IGNORE INTO \`categories\` (id, name, handle, description, hero_image)
       VALUES 
         ('cat_kids', 'Kids', 'kids', 'Playful, safe, and durable children\\'s beds, cabin beds, compact wardrobes, and study desks.', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1600&q=85'),
         ('cat_bathroom', 'Bathroom', 'bathroom', 'Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85'),
-        ('cat_sale', 'Sale', 'sale', 'Curated British luxury furniture pieces on seasonal sale and clearance with up to 40% off.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85')
-      ON DUPLICATE KEY UPDATE
-        name = VALUES(name),
-        handle = VALUES(handle),
-        description = VALUES(description),
-        hero_image = VALUES(hero_image)
+        ('cat_sale', 'Sale', 'sale', 'Curated British luxury furniture pieces on seasonal sale and clearance with up to 40% off.', 'https://images.unsplash.com/photo-1579656381226-5fc0f0100c3b?auto=format&fit=crop&w=1600&q=85')
     `).catch(() => {});
 
-    await connection.query("UPDATE `categories` SET `name` = 'Office', `handle` = 'office' WHERE `id` = 'cat_office'").catch(() => {});
-    await connection.query("UPDATE `categories` SET `name` = 'Sofas' WHERE `id` = 'cat_sofas'").catch(() => {});
-    await connection.query("UPDATE `categories` SET `name` = 'Dining' WHERE `id` = 'cat_dining'").catch(() => {});
+    await connection.query("UPDATE `categories` SET `name` = 'Office', `handle` = 'office' WHERE `id` = 'cat_office' AND `name` = 'Home Office'").catch(() => {});
+    await connection.query("UPDATE `categories` SET `name` = 'Sofas' WHERE `id` = 'cat_sofas' AND `name` = 'Sofas & Seating'").catch(() => {});
+    await connection.query("UPDATE `categories` SET `name` = 'Dining' WHERE `id` = 'cat_dining' AND `name` = 'Dining Room'").catch(() => {});
 
     // Reassign any bathroom products out of cat_living into cat_bathroom
     await connection.query("UPDATE `products` SET `category_id` = 'cat_bathroom' WHERE (`title` LIKE '%bathroom%' OR `title` LIKE '%vanity sink%') AND `category_id` != 'cat_bathroom'").catch(() => {});
