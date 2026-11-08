@@ -31,6 +31,7 @@ export async function GET(request: Request) {
     await pool.query("UPDATE `categories` SET `name` = 'Dining', `handle` = 'dining' WHERE `id` = 'cat_dining' AND `name` = 'Dining Room'").catch(() => {});
     await pool.query("UPDATE `categories` SET `name` = 'Office', `handle` = 'office' WHERE `id` = 'cat_office' AND `name` = 'Home Office'").catch(() => {});
     await pool.query("UPDATE `categories` SET `name` = 'Sofas', `handle` = 'sofas' WHERE `id` = 'cat_sofas' AND `name` = 'Sofas & Seating'").catch(() => {});
+    await pool.query("UPDATE `categories` SET `hero_image` = 'https://images.unsplash.com/photo-1579656381226-5fc0f0100c3b?auto=format&fit=crop&w=1600&q=85' WHERE `id` = 'cat_sale' AND `hero_image` = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85'").catch(() => {});
 
     // 3. Merge legacy cat_armchairs into cat_living and remove standalone cat_armchairs category
     await pool.query("UPDATE `products` SET `category_id` = 'cat_living' WHERE `category_id` = 'cat_armchairs'").catch(() => {});
