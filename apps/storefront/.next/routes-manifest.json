@@ -34,6 +34,30 @@
       "destination": "/catalog",
       "statusCode": 308,
       "regex": "^(?!/_next)/collections(?:/)?$"
+    },
+    {
+      "source": "/armchairs",
+      "destination": "/living-room?type=armchairs",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/armchairs(?:/)?$"
+    },
+    {
+      "source": "/accent-chairs",
+      "destination": "/living-room?type=armchairs",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/accent-chairs(?:/)?$"
+    },
+    {
+      "source": "/accent-armchairs",
+      "destination": "/living-room?type=armchairs",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/accent-armchairs(?:/)?$"
+    },
+    {
+      "source": "/home-office",
+      "destination": "/office",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/home-office(?:/)?$"
     }
   ],
   "headers": [

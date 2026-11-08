@@ -70,6 +70,26 @@ const nextConfig = {
         destination: "/catalog",
         permanent: true,
       },
+      {
+        source: "/armchairs",
+        destination: "/living-room?type=armchairs",
+        permanent: true,
+      },
+      {
+        source: "/accent-chairs",
+        destination: "/living-room?type=armchairs",
+        permanent: true,
+      },
+      {
+        source: "/accent-armchairs",
+        destination: "/living-room?type=armchairs",
+        permanent: true,
+      },
+      {
+        source: "/home-office",
+        destination: "/office",
+        permanent: true,
+      },
     ];
   },
   // Hardened response security headers
