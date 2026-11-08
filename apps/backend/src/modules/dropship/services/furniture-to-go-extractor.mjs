@@ -1,4 +1,5 @@
 import https from "node:https";
+import { classifyFurnitureProduct } from "@san-furniture/types";
 
 /**
  * Furniture To Go (FTG) Automated Web Data Extraction & Dropship Reconciler Engine
@@ -625,54 +626,23 @@ export class FurnitureToGoExtractorEngine {
     const categorized = urls.map((url) => {
       const slug = url.replace("https://furniture-to-go.co.uk/", "").replace(".html", "").toLowerCase();
 
-      let cat = "cat_living";
-      let tier = "pallet";
-      let label = "Living & Storage";
-
-      if (
-        slug.includes("wardrobe") ||
-        slug.includes("bed") ||
-        slug.includes("chest") ||
-        slug.includes("nightstand") ||
-        slug.includes("bedside") ||
-        slug.includes("bedroom")
-      ) {
-        cat = "cat_beds";
-        tier =
-          slug.includes("wardrobe") || slug.includes("4-door") || slug.includes("3-door")
-            ? "two_man_white_glove"
-            : "standard_parcel";
-        label = "Beds & Wardrobes";
-      } else if (
-        slug.includes("dining") ||
-        (slug.includes("table") && !slug.includes("coffee") && !slug.includes("console") && !slug.includes("desk")) ||
-        (slug.includes("chair") && !slug.includes("desk") && !slug.includes("office")) ||
-        slug.includes("stool")
-      ) {
-        cat = "cat_dining";
-        tier = slug.includes("extending") || slug.includes("dining-table") ? "pallet" : "standard_parcel";
-        label = "Dining";
-      } else if (
-        slug.includes("sofa") ||
-        slug.includes("couch") ||
-        slug.includes("armchair") ||
-        slug.includes("lounge-chair")
-      ) {
-        cat = "cat_sofas";
-        tier = "two_man_white_glove";
-        label = "Sofas & Lounges";
-      } else if (slug.includes("desk") || slug.includes("office") || slug.includes("bookcase")) {
-        cat = "cat_living";
-        tier = "standard_parcel";
-        label = "Office & Storage";
-      }
-
       const cleanTitle = slug
         .replace(/-/g, " ")
         .replace(/\bin\b/gi, "in")
         .replace(/\bwith\b/gi, "with")
         .replace(/\band\b/gi, "and")
         .replace(/\b\w/g, (c) => c.toUpperCase());
+
+      const classification = classifyFurnitureProduct({ title: cleanTitle, url });
+      const cat = classification.categoryId;
+      const label = classification.categoryName;
+
+      let tier = "standard_parcel";
+      if (slug.includes("wardrobe") || slug.includes("4-door") || slug.includes("3-door") || slug.includes("sofa")) {
+        tier = "two_man_white_glove";
+      } else if (slug.includes("dining") || slug.includes("extending") || slug.includes("sideboard")) {
+        tier = "pallet";
+      }
 
       const isImported = existingUrlSet.has(url.toLowerCase().trim());
       const existingMatch = existingRows.find((r) => (r.source_url || "").toLowerCase().trim() === url.toLowerCase().trim());
@@ -712,7 +682,7 @@ export class FurnitureToGoExtractorEngine {
   /**
    * Extract & Import single URL into SAN Furniture Catalog
    */
-  async extractAndImportUrl(pool, url, categoryId = "cat_beds", deliveryTierOverride = null, assemblyUrlOverride = null) {
+  async extractAndImportUrl(pool, url, categoryId = "auto", deliveryTierOverride = null, assemblyUrlOverride = null) {
     const liveData = await this.extractProductData(url);
     const tradeCostPennies = Math.round(liveData.priceGbp * 100);
 
@@ -724,6 +694,18 @@ export class FurnitureToGoExtractorEngine {
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, 40);
 
     const cleanTitle = this.cleanProductTitle(liveData.title);
+
+    let finalCategoryId = categoryId;
+    if (!finalCategoryId || finalCategoryId === "auto") {
+      const classification = classifyFurnitureProduct({
+        title: cleanTitle,
+        description: liveData.description,
+        url,
+        range_name: liveData.rangeName,
+      });
+      finalCategoryId = classification.categoryId;
+    }
+
     const rawFtgSku = liveData.sku.replace(/^(FTG-|SAN-)/i, "");
     const productSku = `SAN-${rawFtgSku}`;
     const cleanDesc = this.cleanHtmlDescription(liveData.description);
@@ -759,7 +741,7 @@ export class FurnitureToGoExtractorEngine {
       productSku,
       `${liveData.rangeName} - Contemporary Scandinavian Design`,
       cleanDesc,
-      categoryId,
+      finalCategoryId,
       liveData.isOutOfStock ? "out_of_stock" : "published",
       retailPricePennies,
       compareAtPennies,
@@ -848,7 +830,7 @@ export class FurnitureToGoExtractorEngine {
   /**
    * Batch Import Multiple URLs
    */
-  async batchImportUrls(pool, urls, categoryId = "cat_beds", deliveryTierOverride = null) {
+  async batchImportUrls(pool, urls, categoryId = "auto", deliveryTierOverride = null) {
     const products = [];
     const errors = [];
 

@@ -3209,7 +3209,7 @@ const server = http.createServer(async (req, res) => {
           const imported = await amosMannExtractor.extractAndImportUrl(
             pool,
             urls[0],
-            body.categoryId || "cat_beds",
+            body.categoryId || "auto",
             body.deliveryTier || "two_man_white_glove"
           );
           return sendJson(res, 201, {
@@ -3222,7 +3222,7 @@ const server = http.createServer(async (req, res) => {
           const batchRes = await amosMannExtractor.batchImportUrls(
             pool,
             urls,
-            body.categoryId || "cat_beds",
+            body.categoryId || "auto",
             body.deliveryTier || "two_man_white_glove"
           );
           return sendJson(res, 201, {
@@ -3283,7 +3283,7 @@ const server = http.createServer(async (req, res) => {
           const imported = await furnitureToGoExtractor.extractAndImportUrl(
             pool,
             urls[0],
-            body.categoryId || "cat_beds",
+            body.categoryId || "auto",
             body.deliveryTier || "standard_parcel",
             body.assemblyInstructionsUrl || body.assembly_instructions_url || null
           );
@@ -3297,7 +3297,7 @@ const server = http.createServer(async (req, res) => {
           const batchRes = await furnitureToGoExtractor.batchImportUrls(
             pool,
             urls,
-            body.categoryId || "cat_beds",
+            body.categoryId || "auto",
             body.deliveryTier || "standard_parcel"
           );
           return sendJson(res, 201, {

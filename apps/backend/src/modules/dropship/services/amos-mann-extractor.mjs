@@ -1,4 +1,5 @@
 import https from "node:https";
+import { classifyFurnitureProduct } from "@san-furniture/types";
 
 /**
  * Amos Mann Automated Web Data Extraction & Dropship Reconciler Engine
@@ -413,7 +414,7 @@ export class AmosMannExtractorEngine {
   /**
    * Auto-extract a brand new product from an Amos Mann URL and insert into SAN Furniture catalog
    */
-  async extractAndImportUrl(pool, url, categoryId = "cat_beds", deliveryTier = "two_man_white_glove") {
+  async extractAndImportUrl(pool, url, categoryId = "auto", deliveryTier = "two_man_white_glove") {
     const liveData = await this.extractProductData(url);
     const tradeCostPennies = Math.round(liveData.priceGbp * 100);
 
@@ -447,6 +448,16 @@ export class AmosMannExtractorEngine {
 
     // Strip "- 2696" from product title
     const cleanTitle = liveData.title.replace(/\s*[-–—]+\s*\d+[a-zA-Z]*\s*$/, "").trim();
+
+    let finalCategoryId = categoryId;
+    if (!finalCategoryId || finalCategoryId === "auto") {
+      const classification = classifyFurnitureProduct({
+        title: cleanTitle,
+        description: liveData.description,
+        url,
+      });
+      finalCategoryId = classification.categoryId;
+    }
 
     // SAN Furniture SKU format: SAN-2696
     const productSku = itemNumber ? `SAN-${itemNumber}` : `SAN-AM-${liveData.sku}`;
@@ -609,27 +620,28 @@ export class AmosMannExtractorEngine {
 
     const categorized = urls.map(url => {
       const slug = url.split("/").pop().toLowerCase();
-      let cat = "cat_living";
-      let tier = "pallet";
-      let label = "Living & Storage";
+      const cleanTitle = slug
+        .replace(/-/g, " ")
+        .replace(/\bin\b/gi, "in")
+        .replace(/\bwith\b/gi, "with")
+        .replace(/\band\b/gi, "and")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
 
-      if (slug.includes("wardrobe") || slug.includes("sliding") || slug.includes("bed")) {
-        cat = "cat_beds";
-        tier = slug.includes("wardrobe") || slug.includes("sliding") ? "two_man_white_glove" : "standard_parcel";
-        label = "Beds & Wardrobes";
-      } else if (slug.includes("dining") || slug.includes("chair")) {
-        cat = "cat_dining";
-        tier = "pallet";
-        label = "Dining";
-      } else if (slug.includes("sofa") || slug.includes("couch")) {
-        cat = "cat_sofas";
+      const classification = classifyFurnitureProduct({ title: cleanTitle, url });
+      const cat = classification.categoryId;
+      const label = classification.categoryName;
+
+      let tier = "standard_parcel";
+      if (slug.includes("wardrobe") || slug.includes("sliding") || slug.includes("sofa")) {
         tier = "two_man_white_glove";
-        label = "Sofas";
+      } else if (slug.includes("dining") || slug.includes("sideboard")) {
+        tier = "pallet";
       }
 
       return {
         url,
         slug,
+        title: cleanTitle,
         category_id: cat,
         delivery_tier: tier,
         category_label: label,
@@ -652,7 +664,7 @@ export class AmosMannExtractorEngine {
   /**
    * Batch import multiple URLs
    */
-  async batchImportUrls(pool, urls, defaultCategory = "cat_beds", defaultDeliveryTier = "two_man_white_glove") {
+  async batchImportUrls(pool, urls, defaultCategory = "auto", defaultDeliveryTier = "two_man_white_glove") {
     const results = [];
     const errors = [];
 

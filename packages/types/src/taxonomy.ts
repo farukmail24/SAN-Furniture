@@ -8,20 +8,6 @@ export interface ProductCategory {
 
 export const CATALOG_CATEGORIES: ProductCategory[] = [
   {
-    id: "cat_sofas",
-    name: "Sofas & Seating",
-    handle: "sofas",
-    description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals upholstered in durable bouclé, linen, and velvet.",
-    heroImage: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
-    id: "cat_armchairs",
-    name: "Accent Armchairs & Stools",
-    handle: "armchairs",
-    description: "Sculptural statement armchairs, luxury bouclé fireside reading chairs, and ergonomic occasional seating handcrafted for modern British homes.",
-    heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
-  },
-  {
     id: "cat_living",
     name: "Living Room",
     handle: "living-room",
@@ -29,8 +15,15 @@ export const CATALOG_CATEGORIES: ProductCategory[] = [
     heroImage: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85"
   },
   {
+    id: "cat_sofas",
+    name: "Sofas",
+    handle: "sofas",
+    description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals upholstered in durable bouclé, linen, and velvet.",
+    heroImage: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85"
+  },
+  {
     id: "cat_dining",
-    name: "Dining Room",
+    name: "Dining",
     handle: "dining",
     description: "Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools.",
     heroImage: "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85"
@@ -43,11 +36,32 @@ export const CATALOG_CATEGORIES: ProductCategory[] = [
     heroImage: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85"
   },
   {
+    id: "cat_kids",
+    name: "Kids",
+    handle: "kids",
+    description: "Playful, safe, and durable children's beds, cabin beds, compact wardrobes, and study desks.",
+    heroImage: "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1600&q=85"
+  },
+  {
     id: "cat_office",
-    name: "Home Office",
-    handle: "home-office",
+    name: "Office",
+    handle: "office",
     description: "Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living.",
     heroImage: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1600&auto=format&fit=crop"
+  },
+  {
+    id: "cat_bathroom",
+    name: "Bathroom",
+    handle: "bathroom",
+    description: "Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.",
+    heroImage: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85"
+  },
+  {
+    id: "cat_armchairs",
+    name: "Accent Armchairs & Stools",
+    handle: "armchairs",
+    description: "Sculptural statement armchairs, luxury bouclé fireside reading chairs, and ergonomic occasional seating handcrafted for modern British homes.",
+    heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
   }
 ];
 
@@ -67,9 +81,16 @@ export const CATEGORY_HANDLE_ALIASES: Record<string, string> = {
   "accent-armchairs": "armchairs",
   "accent-chairs": "armchairs",
   "arm-chairs": "armchairs",
-  "home-office": "home-office",
-  office: "home-office",
-  desks: "home-office",
+  "home-office": "office",
+  office: "office",
+  desks: "office",
+  kids: "kids",
+  children: "kids",
+  "kids-bedroom": "kids",
+  nursery: "kids",
+  bathroom: "bathroom",
+  "bathroom-furniture": "bathroom",
+  bathrooms: "bathroom",
 };
 
 export function normalizeCategoryHandle(handle: string): string {
@@ -168,7 +189,63 @@ export function classifyFurnitureProduct(input: {
   const hint = (input.category_hint || "").toLowerCase();
   const text = `${title} ${range} ${url} ${hint} ${desc}`;
 
-  // 1. HOME OFFICE (cat_office)
+  // 1. BATHROOM (cat_bathroom)
+  // Vanity sink units, tall bathroom cupboards, wall cabinets, undersink storage
+  if (
+    title.includes("bathroom") ||
+    title.includes("vanity sink") ||
+    title.includes("undersink") ||
+    (title.includes("vanity") && (title.includes("unit") || title.includes("cupboard") || title.includes("sink") || title.includes("basin")))
+  ) {
+    let sub = "bathroom-storage";
+    if (title.includes("vanity") || title.includes("sink") || title.includes("basin") || title.includes("undersink")) {
+      sub = "vanity-units";
+    } else if (title.includes("wall")) {
+      sub = "wall-cabinets";
+    }
+
+    return {
+      categoryId: "cat_bathroom",
+      categoryName: "Bathroom",
+      subTypeId: sub,
+      confidence: "high",
+      reason: "Matched bathroom/vanity furniture keyword in title",
+    };
+  }
+
+  // 2. KIDS & NURSERY (cat_kids)
+  // Bunk beds, cabin beds, midsleepers, kids wardrobes, kids desks
+  if (
+    title.includes("kids") ||
+    title.includes("child") ||
+    title.includes("junior") ||
+    title.includes("nursery") ||
+    title.includes("bunk bed") ||
+    title.includes("cabin bed") ||
+    title.includes("midsleeper") ||
+    title.includes("mid sleeper") ||
+    title.includes("high sleeper") ||
+    title.includes("toddler")
+  ) {
+    let sub = "kids-beds";
+    if (title.includes("bed") || title.includes("bunk") || title.includes("cabin") || title.includes("sleeper") || title.includes("cot")) {
+      sub = "kids-beds";
+    } else if (title.includes("desk") || title.includes("study") || title.includes("table")) {
+      sub = "kids-desks";
+    } else if (title.includes("wardrobe") || title.includes("storage") || title.includes("chest") || title.includes("toy") || title.includes("bookcase")) {
+      sub = "kids-storage";
+    }
+
+    return {
+      categoryId: "cat_kids",
+      categoryName: "Kids",
+      subTypeId: sub,
+      confidence: "high",
+      reason: "Matched kids & nursery furniture keyword in title",
+    };
+  }
+
+  // 3. OFFICE (cat_office)
   // Desks, computer desks, writing tables, office workstations, office chairs
   if (
     title.includes("desk") ||
@@ -179,14 +256,14 @@ export function classifyFurnitureProduct(input: {
   ) {
     return {
       categoryId: "cat_office",
-      categoryName: "Home Office",
+      categoryName: "Office",
       subTypeId: "desks",
       confidence: "high",
       reason: "Matched office desk/workstation keyword in title",
     };
   }
 
-  // 2. SOFAS & SEATING (cat_sofas)
+  // 4. SOFAS & SEATING (cat_sofas)
   // 2-Seaters, 3-Seaters, Corner Lounges, Sectionals, Sofa Beds
   if (
     title.includes("sofa") ||
@@ -205,14 +282,14 @@ export function classifyFurnitureProduct(input: {
 
     return {
       categoryId: "cat_sofas",
-      categoryName: "Sofas & Seating",
+      categoryName: "Sofas",
       subTypeId: sub,
       confidence: "high",
       reason: "Matched sofa/couch/seating keyword in title",
     };
   }
 
-  // 3. ACCENT ARMCHAIRS & STOOLS (cat_armchairs)
+  // 5. ACCENT ARMCHAIRS & STOOLS (cat_armchairs)
   if (
     title.includes("armchair") ||
     title.includes("fireside chair") ||
@@ -240,7 +317,7 @@ export function classifyFurnitureProduct(input: {
     };
   }
 
-  // 4. DINING ROOM (cat_dining)
+  // 6. DINING ROOM (cat_dining)
   // Extending dining tables, dining chairs, dining sets, bar stools
   if (
     title.includes("dining") ||
@@ -253,14 +330,14 @@ export function classifyFurnitureProduct(input: {
 
     return {
       categoryId: "cat_dining",
-      categoryName: "Dining Room",
+      categoryName: "Dining",
       subTypeId: sub,
       confidence: "high",
       reason: "Matched dining room furniture keyword in title",
     };
   }
 
-  // 5. BEDROOM (cat_beds)
+  // 7. BEDROOM (cat_beds)
   // Wardrobes, beds, chests of drawers, bedsides, dressing tables
   if (
     title.includes("wardrobe") ||
@@ -291,7 +368,7 @@ export function classifyFurnitureProduct(input: {
     };
   }
 
-  // 6. LIVING ROOM (cat_living)
+  // 8. LIVING ROOM (cat_living)
   // Coffee tables, TV units, bookcases, sideboards, shoe cupboards
   if (
     title.includes("coffee table") ||
@@ -310,9 +387,7 @@ export function classifyFurnitureProduct(input: {
     title.includes("storage cupboard") ||
     title.includes("broom cupboard") ||
     title.includes("hallway unit") ||
-    title.includes("kitchen trolley") ||
-    title.includes("bathroom") ||
-    title.includes("vanity sink")
+    title.includes("kitchen trolley")
   ) {
     let sub = "storage-cabinets";
     if (title.includes("coffee") || title.includes("nesting") || title.includes("console table")) sub = "coffee-tables";
@@ -331,17 +406,23 @@ export function classifyFurnitureProduct(input: {
   }
 
   // Contextual text fallback heuristics
+  if (text.includes("bathroom") || text.includes("vanity") || text.includes("basin")) {
+    return { categoryId: "cat_bathroom", categoryName: "Bathroom", subTypeId: "bathroom-storage", confidence: "medium", reason: "Found bathroom hint in text" };
+  }
+  if (text.includes("kids") || text.includes("child") || text.includes("nursery")) {
+    return { categoryId: "cat_kids", categoryName: "Kids", subTypeId: "kids-beds", confidence: "medium", reason: "Found kids hint in text" };
+  }
   if (text.includes("wardrobe") || text.includes("bedroom") || text.includes("bedside")) {
     return { categoryId: "cat_beds", categoryName: "Bedroom", subTypeId: "wardrobes", confidence: "medium", reason: "Found bedroom hint in text" };
   }
   if (text.includes("dining") || text.includes("extending table")) {
-    return { categoryId: "cat_dining", categoryName: "Dining Room", subTypeId: "dining-tables", confidence: "medium", reason: "Found dining hint in text" };
+    return { categoryId: "cat_dining", categoryName: "Dining", subTypeId: "dining-tables", confidence: "medium", reason: "Found dining hint in text" };
   }
   if (text.includes("desk") || text.includes("workstation") || text.includes("office")) {
-    return { categoryId: "cat_office", categoryName: "Home Office", subTypeId: "desks", confidence: "medium", reason: "Found office hint in text" };
+    return { categoryId: "cat_office", categoryName: "Office", subTypeId: "desks", confidence: "medium", reason: "Found office hint in text" };
   }
   if (text.includes("sofa") || text.includes("seating") || text.includes("lounge")) {
-    return { categoryId: "cat_sofas", categoryName: "Sofas & Seating", subTypeId: "3-seater", confidence: "medium", reason: "Found sofa hint in text" };
+    return { categoryId: "cat_sofas", categoryName: "Sofas", subTypeId: "3-seater", confidence: "medium", reason: "Found sofa hint in text" };
   }
 
   // Default fallback: Living Room
@@ -769,6 +850,86 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
       return t.includes("cupboard") || h.includes("cupboard") || t.includes("storage");
+    },
+  },
+
+  // Bathroom Sub-Types (cat_bathroom)
+  {
+    id: "vanity-units",
+    label: "Vanity & Basin Units",
+    categoryId: "cat_bathroom",
+    aliases: ["vanity-units", "vanity", "basin", "sink", "undersink"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("vanity") || h.includes("vanity") || t.includes("sink") || t.includes("basin") || t.includes("undersink");
+    },
+  },
+  {
+    id: "bathroom-storage",
+    label: "Tall & Storage Cupboards",
+    categoryId: "cat_bathroom",
+    aliases: ["bathroom-storage", "cupboard", "tall-cupboard", "storage", "cabinets"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return (
+        t.includes("cupboard") ||
+        h.includes("cupboard") ||
+        t.includes("storage") ||
+        t.includes("cabinet") ||
+        t.includes("tall")
+      );
+    },
+  },
+  {
+    id: "wall-cabinets",
+    label: "Wall Hanging Cabinets",
+    categoryId: "cat_bathroom",
+    aliases: ["wall-cabinets", "wall-cupboard", "mirrored-cabinet", "hanging"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("wall") || h.includes("wall") || t.includes("hanging");
+    },
+  },
+
+  // Kids & Nursery Sub-Types (cat_kids)
+  {
+    id: "kids-beds",
+    label: "Kids Beds & Bunks",
+    categoryId: "cat_kids",
+    aliases: ["kids-beds", "bunk", "cabin-bed", "midsleeper", "high-sleeper", "single-beds"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (
+        t.includes("bed") ||
+        t.includes("bunk") ||
+        t.includes("cabin") ||
+        t.includes("midsleeper") ||
+        t.includes("mid sleeper") ||
+        t.includes("high sleeper")
+      );
+    },
+  },
+  {
+    id: "kids-storage",
+    label: "Kids Storage & Wardrobes",
+    categoryId: "cat_kids",
+    aliases: ["kids-storage", "wardrobes", "chests", "toy-storage"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("wardrobe") || t.includes("chest") || t.includes("storage") || t.includes("drawers") || t.includes("toy");
+    },
+  },
+  {
+    id: "kids-desks",
+    label: "Kids Study Desks",
+    categoryId: "cat_kids",
+    aliases: ["kids-desks", "study-desk", "study", "desks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("desk") || t.includes("study") || t.includes("table");
     },
   },
 ];

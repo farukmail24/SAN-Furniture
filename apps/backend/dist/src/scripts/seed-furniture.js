@@ -1,9 +1,12 @@
 export const SEED_CATEGORIES = [
-    { id: "cat_sofas", name: "Sofas & Corner Lounges", handle: "sofas", description: "Bespoke handcrafted sofas, deep-seated corner groups, and luxury chaises upholstered in durable bouclé and velvet." },
-    { id: "cat_armchairs", name: "Accent Armchairs & Stools", handle: "armchairs", description: "Sculptural statement armchairs, reading chairs, and ergonomic occasional seating." },
-    { id: "cat_dining", name: "Dining Tables & Chairs", handle: "dining", description: "Solid European oak, American walnut, and Italian marble dining collections engineered for family living." },
-    { id: "cat_beds", name: "Luxury Beds & Wardrobes", handle: "beds", description: "Ottoman storage beds, upholstered headboards, and solid hardwood wardrobes." },
-    { id: "cat_living", name: "Coffee & Occasional Tables", handle: "living-tables", description: "Fluted wood, brushed brass, and architectural stone coffee, side, and console tables." }
+    { id: "cat_living", name: "Living Room", handle: "living-room", description: "Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and shoe storage cabinets." },
+    { id: "cat_sofas", name: "Sofas", handle: "sofas", description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals upholstered in durable bouclé, linen, and velvet." },
+    { id: "cat_dining", name: "Dining", handle: "dining", description: "Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools." },
+    { id: "cat_beds", name: "Bedroom", handle: "bedroom", description: "Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers." },
+    { id: "cat_kids", name: "Kids", handle: "kids", description: "Playful, safe, and durable children's beds, cabin beds, compact wardrobes, and study desks." },
+    { id: "cat_office", name: "Office", handle: "office", description: "Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living." },
+    { id: "cat_bathroom", name: "Bathroom", handle: "bathroom", description: "Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets." },
+    { id: "cat_armchairs", name: "Accent Armchairs & Stools", handle: "armchairs", description: "Sculptural statement armchairs, reading chairs, and ergonomic occasional seating." }
 ];
 export const SEED_FURNITURE_PRODUCTS = [
     // ---------------------------------------------------------------------------

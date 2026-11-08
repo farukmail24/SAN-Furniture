@@ -37,6 +37,7 @@ const RESERVED_SYSTEM_ROUTES = new Set([
   "privacy",
   "products",
   "returns",
+  "sale",
   "swatches",
   "terms",
   "track-order",

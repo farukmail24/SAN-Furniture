@@ -605,6 +605,12 @@
       "namedRegex": "^/robots\\.txt(?:/)?$"
     },
     {
+      "page": "/sale",
+      "regex": "^/sale(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sale(?:/)?$"
+    },
+    {
       "page": "/sitemap.xml",
       "regex": "^/sitemap\\.xml(?:/)?$",
       "routeKeys": {},
