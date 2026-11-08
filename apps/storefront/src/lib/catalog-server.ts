@@ -288,9 +288,19 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
 export async function fetchLiveCategoriesFromDb(): Promise<ProductCategory[]> {
   try {
     const pool = getDbPool();
-    const [rows]: any = await pool.query(
+    let [rows]: any = await pool.query(
       "SELECT id, name, handle, description, hero_image as heroImage FROM categories ORDER BY id ASC"
     ).catch(() => [[]]);
+
+    if (!Array.isArray(rows) || rows.length < 8) {
+      await autoSeedDatabaseIfNeeded();
+      const [reFetched]: any = await pool.query(
+        "SELECT id, name, handle, description, hero_image as heroImage FROM categories ORDER BY id ASC"
+      ).catch(() => [[]]);
+      if (Array.isArray(reFetched) && reFetched.length > 0) {
+        rows = reFetched;
+      }
+    }
 
     if (Array.isArray(rows) && rows.length > 0) {
       return rows.map((r: any) => ({

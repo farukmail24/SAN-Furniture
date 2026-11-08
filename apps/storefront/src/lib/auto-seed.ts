@@ -88,6 +88,41 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
         ADD COLUMN \`cancelled_at\` datetime DEFAULT NULL AFTER \`cancelled_by\`
       `).catch(() => {});
     }
+
+    // 4. Ensure 8 supplier-aligned categories and isolate bathroom products
+    await connection.query(`
+      INSERT INTO \`categories\` (id, name, handle, description, hero_image)
+      VALUES 
+        ('cat_kids', 'Kids', 'kids', 'Playful, safe, and durable children\\'s beds, cabin beds, compact wardrobes, and study desks.', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_bathroom', 'Bathroom', 'bathroom', 'Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85')
+      ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        handle = VALUES(handle),
+        description = VALUES(description),
+        hero_image = VALUES(hero_image)
+    `).catch(() => {});
+
+    await connection.query("UPDATE `categories` SET `name` = 'Office', `handle` = 'office' WHERE `id` = 'cat_office'").catch(() => {});
+    await connection.query("UPDATE `categories` SET `name` = 'Sofas' WHERE `id` = 'cat_sofas'").catch(() => {});
+    await connection.query("UPDATE `categories` SET `name` = 'Dining' WHERE `id` = 'cat_dining'").catch(() => {});
+
+    // Reassign any bathroom products out of cat_living into cat_bathroom
+    await connection.query("UPDATE `products` SET `category_id` = 'cat_bathroom' WHERE (`title` LIKE '%bathroom%' OR `title` LIKE '%vanity sink%') AND `category_id` != 'cat_bathroom'").catch(() => {});
+
+    // 5. Ensure header_mega_menu in site_page_sections has all 8 tabs
+    const [secRows]: any = await connection.query("SELECT content_json FROM site_page_sections WHERE section_key = 'header_mega_menu'").catch(() => [[]]);
+    if (Array.isArray(secRows) && secRows.length > 0) {
+      try {
+        const secContent = JSON.parse(secRows[0].content_json);
+        if (!secContent.tabs || secContent.tabs.length < 8) {
+          const { DEFAULT_STOREFRONT_SECTIONS } = await import("./cms-defaults");
+          await connection.query(
+            "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",
+            [JSON.stringify(DEFAULT_STOREFRONT_SECTIONS.header_mega_menu.content)]
+          ).catch(() => {});
+        }
+      } catch {}
+    }
   } catch (err) {
     console.warn("[auto-seed] Non-destructive schema check error:", err);
   }

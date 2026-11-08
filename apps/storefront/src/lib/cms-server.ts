@@ -55,11 +55,20 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
       };
 
       for (const row of rows) {
-        let content = {};
+        let content: any = {};
         try {
           content = typeof row.content_json === "string" ? JSON.parse(row.content_json) : row.content_json;
         } catch {
           content = {};
+        }
+
+        // Auto-heal header_mega_menu if DB contains older 5/6 tabs
+        if (row.section_key === "header_mega_menu" && (!content.tabs || content.tabs.length < 8)) {
+          content = DEFAULT_STOREFRONT_SECTIONS.header_mega_menu.content;
+          pool.query(
+            "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",
+            [JSON.stringify(content)]
+          ).catch(() => {});
         }
 
         sectionsMap[row.section_key] = {
