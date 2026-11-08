@@ -162,7 +162,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       description:
         "A masterfully coordinated ensemble featuring our German-engineered sliding wardrobe, high-gloss tall chest of drawers, and soft-closing bedside tables.",
       image_url:
-        "https://files.ekmcdn.com/amosmann1/images/madrid-sliding-door-wardrobe-120cm-gloss-white-2461-2461-p.png",
+        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200&auto=format&fit=crop",
       badge_text: "Curated 3-Piece Storage Suite",
       list_title: "Pieces in this setting:",
     },
@@ -597,7 +597,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             badge: "SPECIAL SAVINGS",
             title: "Showroom Seasonal Clearance",
             subtitle: "Limited UK warehouse stock ready for direct tracked dispatch.",
-            image_url: "https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg",
+            image_url: "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=800&auto=format&fit=crop",
             cta_label: "Shop All Special Offers",
             cta_href: "/catalog",
           },
@@ -606,7 +606,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             title: "Venice Alpine White Bedside",
             price_str: "£110.46",
             original_price_str: "£145.00",
-            image_url: "https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg",
+            image_url: "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=800&auto=format&fit=crop",
             href: "/products/venice-alpine-white-bedside",
           },
         },

@@ -77,8 +77,8 @@ interface SupportTicket {
 
 const CANNED_RESPONSES = [
   {
-    title: "White Glove Logistics Slot",
-    text: "Dear Client, our 2-man White Glove logistics team is scheduled for your area. They will deliver directly to your room of choice, unpack, assemble, and remove all protective packaging. You will receive an SMS 30 minutes before arrival.",
+    title: "Specialist Delivery Logistics Slot",
+    text: "Dear Client, our specialist delivery logistics team is scheduled for your area. They will deliver directly to your room of choice, unpack, and remove all protective packaging. You will receive an SMS before arrival.",
   },
   {
     title: "Fabric Swatch Dispatch",
@@ -373,7 +373,7 @@ export default function AdminSupportHelpdeskPage() {
             <span>Customer Concierge &amp; Helpdesk Suite</span>
           </h1>
           <p className="text-xs text-navy-600 mt-1">
-            Manage White Glove customer inquiries, transit claims, fabric sample requests, and bespoke communications.
+            Manage customer inquiries, transit claims, fabric sample requests, and bespoke communications.
           </p>
         </div>
 
@@ -416,7 +416,7 @@ export default function AdminSupportHelpdeskPage() {
             Awaiting Customer
           </span>
           <p className="font-display font-bold text-2xl text-amber-700 mt-1">{counts.waiting_customer}</p>
-          <span className="text-[10px] text-amber-700 mt-0.5 block">White Glove reply dispatched</span>
+          <span className="text-[10px] text-amber-700 mt-0.5 block">Concierge reply dispatched</span>
         </div>
 
         <div className="bg-white rounded-xl p-4 border border-[#E8E2D5] shadow-xs">
@@ -664,7 +664,7 @@ export default function AdminSupportHelpdeskPage() {
                       <option value="Unassigned">Unassigned</option>
                       <option value="Charlotte Davies (Logistics Lead)">Charlotte Davies</option>
                       <option value="Oliver Vance (Senior Concierge)">Oliver Vance</option>
-                      <option value="SAN White Glove Team">White Glove Team</option>
+                      <option value="SAN Logistics Team">SAN Logistics Team</option>
                     </select>
                   </div>
                 </div>

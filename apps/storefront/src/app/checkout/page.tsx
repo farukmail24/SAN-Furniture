@@ -1154,7 +1154,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Animated Celebration & Confetti Blast */}
+            {/* Dignified Checkmark Seal Animation */}
             <div className="print:hidden">
               <OrderCelebration orderNumber={confirmedOrder.orderNumber} customerName={confirmedOrder.customerName} />
             </div>

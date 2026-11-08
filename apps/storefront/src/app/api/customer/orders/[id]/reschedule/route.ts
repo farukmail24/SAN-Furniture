@@ -23,7 +23,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const newSlot = body.slot || body.deliverySlot || "Standard Business Day (08:00 - 18:00)";
-    const newDate = body.date || "Next available White Glove window";
+    const newDate = body.date || "Next available delivery window";
 
     const pool = getDbPool();
     const [orders]: any = await pool.query(
@@ -67,7 +67,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Delivery appointment successfully rescheduled with dedicated white glove logistics.",
+      message: "Delivery appointment successfully rescheduled with specialist logistics.",
       slot: slotStr,
     });
   } catch (err: any) {

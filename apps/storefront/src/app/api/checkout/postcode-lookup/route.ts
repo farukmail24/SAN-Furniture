@@ -369,9 +369,9 @@ export async function GET(request: Request) {
             isActive: true,
           },
           {
-            id: "white_glove_assembly",
-            name: "White Glove Room-of-Choice & Packaging Removal",
-            description: "2-man delivery team places furniture in your room of choice, unpacks, and removes packaging.",
+            id: "room_of_choice_assembly",
+            name: "Room-of-Choice Delivery & Packaging Removal",
+            description: "Specialist delivery team places furniture in your room of choice, unpacks, and removes packaging.",
             baseFeePennies: 2900 + surchargePennies,
             totalFeePennies: 2900 + surchargePennies,
             formattedTotal: formatGBP(2900 + surchargePennies),

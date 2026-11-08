@@ -191,7 +191,7 @@ export async function GET(request: Request) {
             quantity: it.quantity || 1,
             pricePennies: it.pricePennies || it.price_pennies || 0,
             thumbnailUrl: thumb,
-            finish: it.finish || "Standard White Glove Finish",
+            finish: it.finish || "Standard Finish",
           };
         }),
         deliveryTimeline,
