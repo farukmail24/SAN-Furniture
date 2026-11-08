@@ -62,8 +62,9 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
           content = {};
         }
 
-        // Auto-heal header_mega_menu if DB contains older 5/6 tabs
-        if (row.section_key === "header_mega_menu" && (!content.tabs || content.tabs.length < 8)) {
+        // Auto-heal header_mega_menu if DB contains older tabs or obsolete /armchairs links
+        const rawContentStr = typeof row.content_json === "string" ? row.content_json : JSON.stringify(row.content_json || "");
+        if (row.section_key === "header_mega_menu" && (!content.tabs || content.tabs.length < 8 || rawContentStr.includes('"/armchairs"'))) {
           content = DEFAULT_STOREFRONT_SECTIONS.header_mega_menu.content;
           pool.query(
             "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",

@@ -12,12 +12,62 @@ export async function GET(request: Request) {
     }
 
     const pool = getDbPool();
+
+    // 1. Ensure all 8 canonical categories exist with correct names and handles
+    await pool.query(`
+      INSERT INTO \`categories\` (id, name, handle, description, hero_image)
+      VALUES 
+        ('cat_living', 'Living Room', 'living-room', 'Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and occasional seating.', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_sofas', 'Sofas', 'sofas', 'Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_dining', 'Dining', 'dining', 'Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools.', 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_beds', 'Bedroom', 'bedroom', 'Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers.', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_kids', 'Kids', 'kids', 'Playful, safe, and durable children\\'s beds, cabin beds, compact wardrobes, and study desks.', 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_office', 'Office', 'office', 'Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living.', 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1600&auto=format&fit=crop'),
+        ('cat_bathroom', 'Bathroom', 'bathroom', 'Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.', 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_sale', 'Sale', 'sale', 'Curated British luxury furniture pieces on seasonal sale and clearance with up to 40% off.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85')
+      ON DUPLICATE KEY UPDATE
+        name = VALUES(name),
+        handle = VALUES(handle),
+        description = VALUES(description),
+        hero_image = VALUES(hero_image)
+    `).catch(() => {});
+
+    // 2. Synchronize existing category names to match storefront header
+    await pool.query("UPDATE `categories` SET `name` = 'Dining', `handle` = 'dining' WHERE `id` = 'cat_dining'").catch(() => {});
+    await pool.query("UPDATE `categories` SET `name` = 'Office', `handle` = 'office' WHERE `id` = 'cat_office'").catch(() => {});
+    await pool.query("UPDATE `categories` SET `name` = 'Sofas', `handle` = 'sofas' WHERE `id` = 'cat_sofas'").catch(() => {});
+    await pool.query("UPDATE `categories` SET `name` = 'Bedroom', `handle` = 'bedroom' WHERE `id` = 'cat_beds'").catch(() => {});
+    await pool.query("UPDATE `categories` SET `name` = 'Living Room', `handle` = 'living-room' WHERE `id` = 'cat_living'").catch(() => {});
+
+    // 3. Merge legacy cat_armchairs into cat_living and remove standalone cat_armchairs category
+    await pool.query("UPDATE `products` SET `category_id` = 'cat_living' WHERE `category_id` = 'cat_armchairs'").catch(() => {});
+    await pool.query("DELETE FROM `categories` WHERE `id` = 'cat_armchairs'").catch(() => {});
+
+    // 4. Ensure isolation: reassign bathroom and kids products
+    await pool.query("UPDATE `products` SET `category_id` = 'cat_bathroom' WHERE (`title` LIKE '%bathroom%' OR `title` LIKE '%vanity sink%' OR `title` LIKE '%undersink%') AND `category_id` != 'cat_bathroom'").catch(() => {});
+    await pool.query("UPDATE `products` SET `category_id` = 'cat_kids' WHERE (`title` LIKE '%kids%' OR `title` LIKE '%bunk bed%' OR `title` LIKE '%cabin bed%') AND `category_id` != 'cat_kids'").catch(() => {});
+
+    // 5. Query all 8 categories ordered exactly like the storefront header
     const [cats]: any = await pool.query(`
-      SELECT c.*, COUNT(p.id) AS products_count
+      SELECT 
+        c.id,
+        c.name,
+        c.handle,
+        c.description,
+        c.hero_image,
+        c.created_at,
+        CASE 
+          WHEN c.id = 'cat_sale' THEN (
+            SELECT COUNT(*) FROM products 
+            WHERE compare_at_price_pennies > price_pennies 
+            AND status IN ('published', 'active')
+          )
+          ELSE COUNT(p.id)
+        END AS products_count
       FROM categories c
-      LEFT JOIN products p ON c.id = p.category_id
+      LEFT JOIN products p ON c.id = p.category_id AND p.status IN ('published', 'active')
       GROUP BY c.id
-      ORDER BY c.created_at ASC
+      ORDER BY FIELD(c.id, 'cat_living', 'cat_sofas', 'cat_dining', 'cat_beds', 'cat_kids', 'cat_office', 'cat_bathroom', 'cat_sale'), c.id ASC
     `);
 
     return NextResponse.json({

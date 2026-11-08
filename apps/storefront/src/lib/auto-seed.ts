@@ -109,12 +109,17 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
     // Reassign any bathroom products out of cat_living into cat_bathroom
     await connection.query("UPDATE `products` SET `category_id` = 'cat_bathroom' WHERE (`title` LIKE '%bathroom%' OR `title` LIKE '%vanity sink%') AND `category_id` != 'cat_bathroom'").catch(() => {});
 
-    // 5. Ensure header_mega_menu in site_page_sections has all 8 tabs
+    // Reassign any armchair products into cat_living and remove standalone cat_armchairs category
+    await connection.query("UPDATE `products` SET `category_id` = 'cat_living' WHERE `category_id` = 'cat_armchairs'").catch(() => {});
+    await connection.query("DELETE FROM `categories` WHERE `id` = 'cat_armchairs'").catch(() => {});
+
+    // 5. Ensure header_mega_menu in site_page_sections has all 8 tabs and updated /living-room?type=armchairs links
     const [secRows]: any = await connection.query("SELECT content_json FROM site_page_sections WHERE section_key = 'header_mega_menu'").catch(() => [[]]);
     if (Array.isArray(secRows) && secRows.length > 0) {
       try {
-        const secContent = JSON.parse(secRows[0].content_json);
-        if (!secContent.tabs || secContent.tabs.length < 8) {
+        const rawSec = typeof secRows[0].content_json === "string" ? secRows[0].content_json : JSON.stringify(secRows[0].content_json);
+        const secContent = JSON.parse(rawSec);
+        if (!secContent.tabs || secContent.tabs.length < 8 || rawSec.includes('"/armchairs"')) {
           const { DEFAULT_STOREFRONT_SECTIONS } = await import("./cms-defaults");
           await connection.query(
             "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",

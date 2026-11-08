@@ -325,9 +325,9 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             {
               title: "Living Seating & Accents",
               links: [
-                { label: "Accent Armchairs & Stools", href: "/armchairs", badge: "POPULAR" },
-                { label: "Swivel Lounge Chairs", href: "/armchairs?type=swivel-chairs" },
-                { label: "Storage Footstools & Poufs", href: "/armchairs?type=stools-poufs" },
+                { label: "Accent Armchairs & Stools", href: "/living-room?type=armchairs", badge: "POPULAR" },
+                { label: "Swivel Lounge Chairs", href: "/living-room?type=swivel-chairs" },
+                { label: "Storage Footstools & Poufs", href: "/living-room?type=stools-poufs" },
                 { label: "Scandinavian Oak Curations", href: "/catalog?filter=scandi" },
               ],
             },
@@ -368,11 +368,11 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             {
               title: "Chairs & Accents",
               links: [
-                { label: "All Accent Armchairs", href: "/armchairs", badge: "POPULAR" },
-                { label: "Swivel Lounge Chairs", href: "/armchairs?type=swivel-chairs" },
-                { label: "Mid-Century Lounge Chairs", href: "/armchairs?type=lounge-chairs" },
-                { label: "Storage Footstools & Poufs", href: "/armchairs?type=stools-poufs" },
-                { label: "Sculptural Fireside Chairs", href: "/armchairs?type=fireside-chairs" },
+                { label: "All Accent Armchairs", href: "/living-room?type=armchairs", badge: "POPULAR" },
+                { label: "Swivel Lounge Chairs", href: "/living-room?type=swivel-chairs" },
+                { label: "Mid-Century Lounge Chairs", href: "/living-room?type=lounge-chairs" },
+                { label: "Storage Footstools & Poufs", href: "/living-room?type=stools-poufs" },
+                { label: "Sculptural Fireside Chairs", href: "/living-room?type=fireside-chairs" },
               ],
             },
             {

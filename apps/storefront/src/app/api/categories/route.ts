@@ -9,13 +9,13 @@ export async function GET() {
     const pool = getDbPool();
 
     let [rows]: any = await pool
-      .query("SELECT id, name, handle, description, hero_image as heroImage, created_at FROM categories ORDER BY created_at ASC")
+      .query("SELECT id, name, handle, description, hero_image as heroImage, created_at FROM categories ORDER BY FIELD(id, 'cat_living', 'cat_sofas', 'cat_dining', 'cat_beds', 'cat_kids', 'cat_office', 'cat_bathroom', 'cat_sale'), id ASC")
       .catch(() => [[]]);
 
-    if (!Array.isArray(rows) || rows.length === 0) {
+    if (!Array.isArray(rows) || rows.length < 8) {
       await autoSeedDatabaseIfNeeded();
       const [reFetched]: any = await pool
-        .query("SELECT id, name, handle, description, hero_image as heroImage, created_at FROM categories ORDER BY created_at ASC")
+        .query("SELECT id, name, handle, description, hero_image as heroImage, created_at FROM categories ORDER BY FIELD(id, 'cat_living', 'cat_sofas', 'cat_dining', 'cat_beds', 'cat_kids', 'cat_office', 'cat_bathroom', 'cat_sale'), id ASC")
         .catch(() => [[]]);
       rows = reFetched;
     }

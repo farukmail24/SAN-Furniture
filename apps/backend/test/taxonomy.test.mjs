@@ -21,8 +21,8 @@ test("Taxonomy Handle Aliases and Canonical Resolution", () => {
   assert.equal(normalizeCategoryHandle("living-room"), "living-room");
   assert.equal(normalizeCategoryHandle("dining"), "dining");
   assert.equal(normalizeCategoryHandle("sofas"), "sofas");
-  assert.equal(normalizeCategoryHandle("armchairs"), "armchairs");
-  assert.equal(normalizeCategoryHandle("accent-armchairs"), "armchairs");
+  assert.equal(normalizeCategoryHandle("armchairs"), "living-room");
+  assert.equal(normalizeCategoryHandle("accent-armchairs"), "living-room");
   assert.equal(normalizeCategoryHandle("home-office"), "office");
   assert.equal(normalizeCategoryHandle("office"), "office");
   assert.equal(normalizeCategoryHandle("desks"), "office");
@@ -34,7 +34,7 @@ test("Taxonomy Handle Aliases and Canonical Resolution", () => {
   // getCategoryByHandle should resolve both new and legacy handles
   const armchairCat = getCategoryByHandle("armchairs");
   assert.ok(armchairCat);
-  assert.equal(armchairCat.id, "cat_armchairs");
+  assert.equal(armchairCat.id, "cat_living");
   const bedroomCat = getCategoryByHandle("bedroom");
   const bedsCat = getCategoryByHandle("beds");
   assert.ok(bedroomCat);
@@ -85,12 +85,12 @@ test("Sub-Type Resolution & Aliases", () => {
   assert.equal(resolveSubType("cat_beds", "mirrors")?.id, "mirrors");
   assert.equal(resolveSubType("cat_beds", "mirror")?.id, "mirrors");
 
-  // Accent Armchairs Sub-Types
-  assert.equal(resolveSubType("cat_armchairs", "armchairs")?.id, "armchairs");
-  assert.equal(resolveSubType("cat_armchairs", "swivel-chairs")?.id, "swivel-chairs");
-  assert.equal(resolveSubType("cat_armchairs", "lounge-chairs")?.id, "lounge-chairs");
-  assert.equal(resolveSubType("cat_armchairs", "fireside-chairs")?.id, "fireside-chairs");
-  assert.equal(resolveSubType("cat_armchairs", "stools-poufs")?.id, "stools-poufs");
+  // Living Room Seating & Accent Armchairs Sub-Types
+  assert.equal(resolveSubType("cat_living", "armchairs")?.id, "armchairs");
+  assert.equal(resolveSubType("cat_living", "swivel-chairs")?.id, "swivel-chairs");
+  assert.equal(resolveSubType("cat_living", "lounge-chairs")?.id, "lounge-chairs");
+  assert.equal(resolveSubType("cat_living", "fireside-chairs")?.id, "fireside-chairs");
+  assert.equal(resolveSubType("cat_living", "stools-poufs")?.id, "stools-poufs");
 
   // Living Room Sub-Types
 

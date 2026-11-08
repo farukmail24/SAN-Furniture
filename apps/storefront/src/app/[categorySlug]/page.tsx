@@ -94,12 +94,19 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     notFound();
   }
 
-  // Canonical handle redirect (e.g. /beds -> /bedroom, /office -> /home-office)
+  // Canonical handle redirect (e.g. /beds -> /bedroom, /armchairs -> /living-room?type=armchairs)
   if (category.handle !== categorySlug) {
     const searchEntries = Object.entries(resolvedSearchParams).flatMap(([k, v]) =>
       Array.isArray(v) ? v.map((item) => [k, item]) : typeof v === "string" ? [[k, v]] : []
     );
-    const qs = new URLSearchParams(searchEntries).toString();
+    const paramsObj = new URLSearchParams(searchEntries);
+    if (
+      (categorySlug === "armchairs" || categorySlug === "accent-chairs" || categorySlug === "accent-armchairs" || categorySlug === "arm-chairs") &&
+      !paramsObj.has("type")
+    ) {
+      paramsObj.set("type", "armchairs");
+    }
+    const qs = paramsObj.toString();
     redirect(`/${category.handle}${qs ? `?${qs}` : ""}`);
   }
 

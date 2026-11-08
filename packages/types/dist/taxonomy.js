@@ -47,13 +47,6 @@ export const CATALOG_CATEGORIES = [
         handle: "bathroom",
         description: "Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets.",
         heroImage: "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=1600&q=85"
-    },
-    {
-        id: "cat_armchairs",
-        name: "Accent Armchairs & Stools",
-        handle: "armchairs",
-        description: "Sculptural statement armchairs, luxury bouclé fireside reading chairs, and ergonomic occasional seating handcrafted for modern British homes.",
-        heroImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1600&q=85"
     }
 ];
 export const CATEGORY_HANDLE_ALIASES = {
@@ -68,10 +61,10 @@ export const CATEGORY_HANDLE_ALIASES = {
     "dining-room-furniture": "dining",
     "sofas-seating": "sofas",
     sofas: "sofas",
-    armchairs: "armchairs",
-    "accent-armchairs": "armchairs",
-    "accent-chairs": "armchairs",
-    "arm-chairs": "armchairs",
+    armchairs: "living-room",
+    "accent-armchairs": "living-room",
+    "accent-chairs": "living-room",
+    "arm-chairs": "living-room",
     "home-office": "office",
     office: "office",
     desks: "office",
@@ -236,7 +229,7 @@ export function classifyFurnitureProduct(input) {
             reason: "Matched sofa/couch/seating keyword in title",
         };
     }
-    // 5. ACCENT ARMCHAIRS & STOOLS (cat_armchairs)
+    // 5. ACCENT ARMCHAIRS & LIVING SEATING (cat_living)
     if (title.includes("armchair") ||
         title.includes("fireside chair") ||
         title.includes("wingback") ||
@@ -257,8 +250,8 @@ export function classifyFurnitureProduct(input) {
         else if (title.includes("stool") || title.includes("footstool") || title.includes("pouf") || title.includes("bench"))
             sub = "stools-poufs";
         return {
-            categoryId: "cat_armchairs",
-            categoryName: "Accent Armchairs & Stools",
+            categoryId: "cat_living",
+            categoryName: "Living Room",
             subTypeId: sub,
             confidence: "high",
             reason: "Matched accent armchair/occasional chair keyword in title",
@@ -690,11 +683,11 @@ export const FURNITURE_SUBTYPES = [
             return t.includes("footstool") || t.includes("pouf") || t.includes("pouffe") || (t.includes("stool") && !t.includes("bar"));
         },
     },
-    // Accent Armchairs Sub-Types (cat_armchairs)
+    // Living Room Seating & Accent Armchairs Sub-Types (cat_living)
     {
         id: "armchairs",
         label: "Accent Armchairs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         aliases: ["armchairs", "armchair", "accent-chairs", "chairs", "accent-armchairs"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -710,7 +703,7 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "swivel-chairs",
         label: "Swivel Chairs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         aliases: ["swivel-chairs", "swivel", "swivel-armchair"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -720,7 +713,7 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "lounge-chairs",
         label: "Lounge Chairs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         aliases: ["lounge-chairs", "lounge", "leather-chair", "mid-century"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -732,7 +725,7 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "fireside-chairs",
         label: "Fireside & Wingback",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         aliases: ["fireside-chairs", "fireside", "wingback"],
         matches: (p) => {
             const t = p.title.toLowerCase();
@@ -742,7 +735,7 @@ export const FURNITURE_SUBTYPES = [
     {
         id: "stools-poufs",
         label: "Footstools & Poufs",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         aliases: ["stools-poufs", "footstools", "pouf", "pouffe", "bench", "ottoman"],
         matches: (p) => {
             const t = p.title.toLowerCase();

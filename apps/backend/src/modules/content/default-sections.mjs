@@ -113,16 +113,16 @@ export const DEFAULT_PAGE_SECTIONS = [
                               "links": [
                                     {
                                           "label": "Accent Armchairs & Stools",
-                                          "href": "/armchairs",
+                                          "href": "/living-room?type=armchairs",
                                           "badge": "POPULAR"
                                     },
                                     {
                                           "label": "Swivel Lounge Chairs",
-                                          "href": "/armchairs?type=swivel-chairs"
+                                          "href": "/living-room?type=swivel-chairs"
                                     },
                                     {
                                           "label": "Storage Footstools & Poufs",
-                                          "href": "/armchairs?type=stools-poufs"
+                                          "href": "/living-room?type=stools-poufs"
                                     },
                                     {
                                           "label": "Scandinavian Oak Curations",
@@ -189,24 +189,24 @@ export const DEFAULT_PAGE_SECTIONS = [
                               "links": [
                                     {
                                           "label": "All Accent Armchairs",
-                                          "href": "/armchairs",
+                                          "href": "/living-room?type=armchairs",
                                           "badge": "POPULAR"
                                     },
                                     {
                                           "label": "Swivel Lounge Chairs",
-                                          "href": "/armchairs?type=swivel-chairs"
+                                          "href": "/living-room?type=swivel-chairs"
                                     },
                                     {
                                           "label": "Mid-Century Lounge Chairs",
-                                          "href": "/armchairs?type=lounge-chairs"
+                                          "href": "/living-room?type=lounge-chairs"
                                     },
                                     {
                                           "label": "Storage Footstools & Poufs",
-                                          "href": "/armchairs?type=stools-poufs"
+                                          "href": "/living-room?type=stools-poufs"
                                     },
                                     {
                                           "label": "Sculptural Fireside Chairs",
-                                          "href": "/armchairs?type=fireside-chairs"
+                                          "href": "/living-room?type=fireside-chairs"
                                     }
                               ]
                         },

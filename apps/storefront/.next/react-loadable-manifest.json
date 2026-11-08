@@ -16,8 +16,8 @@
     "files": [
       "static/chunks/9664-af80478aa73ba424.js",
       "static/chunks/3916-7f124b1f088a2675.js",
-      "static/chunks/6032-aafec63f74cc0837.js",
-      "static/chunks/4868-f80014962d9cdd41.js",
+      "static/chunks/6032-a238c197aa278958.js",
+      "static/chunks/4868-a8190583440ecd75.js",
       "static/chunks/6890-20aaee6fa19ffb44.js",
       "static/chunks/2668.971688fdf91c73ef.js"
     ]
@@ -25,7 +25,7 @@
   "lib\\catalog.ts -> ./products-seed-data.json": {
     "id": 893,
     "files": [
-      "static/chunks/893.df392eb5dca009af.js"
+      "static/chunks/893.292d8f854fb5205a.js"
     ]
   }
 }

@@ -1,12 +1,12 @@
 export const SEED_CATEGORIES = [
     { id: "cat_living", name: "Living Room", handle: "living-room", description: "Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and shoe storage cabinets." },
-    { id: "cat_sofas", name: "Sofas", handle: "sofas", description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals upholstered in durable bouclé, linen, and velvet." },
+    { id: "cat_sofas", name: "Sofas", handle: "sofas", description: "Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals." },
     { id: "cat_dining", name: "Dining", handle: "dining", description: "Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools." },
     { id: "cat_beds", name: "Bedroom", handle: "bedroom", description: "Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers." },
     { id: "cat_kids", name: "Kids", handle: "kids", description: "Playful, safe, and durable children's beds, cabin beds, compact wardrobes, and study desks." },
     { id: "cat_office", name: "Office", handle: "office", description: "Ergonomic Scandinavian writing desks, executive workstations, and home office bookcases engineered for modern British living." },
     { id: "cat_bathroom", name: "Bathroom", handle: "bathroom", description: "Moisture-resistant bathroom vanity units, tall storage cupboards, and minimalist wall cabinets." },
-    { id: "cat_armchairs", name: "Accent Armchairs & Stools", handle: "armchairs", description: "Sculptural statement armchairs, reading chairs, and ergonomic occasional seating." }
+    { id: "cat_sale", name: "Sale", handle: "sale", description: "Curated British furniture pieces on seasonal sale and clearance with up to 40% off." }
 ];
 export const SEED_FURNITURE_PRODUCTS = [
     // ---------------------------------------------------------------------------
@@ -320,7 +320,7 @@ export const SEED_FURNITURE_PRODUCTS = [
         handle: "regent-360-swivel-armchair-cream-boucle",
         subtitle: "Cocooning circular silhouette on concealed ball-bearing swivel base",
         description: "Sculptural curved armchair offering 360-degree silent rotation. Upholstered in dense wool-blend bouclé.",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         status: "published",
         pricePennies: 54900,
         compareAtPricePennies: 62000,
@@ -349,7 +349,7 @@ export const SEED_FURNITURE_PRODUCTS = [
         handle: "fitzrovia-mid-century-lounge-chair-saddle-leather",
         subtitle: "Sculpted American walnut timber frame with aniline leather sling",
         description: "Honouring Danish modernist architecture, the Fitzrovia features exposed mortise-and-tenon walnut joinery and hand-stitched leather.",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         status: "published",
         pricePennies: 74900,
         vatRatePercent: 20.0,
@@ -377,7 +377,7 @@ export const SEED_FURNITURE_PRODUCTS = [
         handle: "marylebone-wingback-fireside-chair-herringbone-wool",
         subtitle: "High-backed traditional wing chair with solid turned oak legs",
         description: "Classic British wingback tailored in Yorkshire-milled herringbone wool. Provides lumbar contouring and deep shoulder support.",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         status: "published",
         pricePennies: 69900,
         compareAtPricePennies: 79900,
@@ -406,7 +406,7 @@ export const SEED_FURNITURE_PRODUCTS = [
         handle: "primrose-fluted-cocktail-chair-burnt-orange-velvet",
         subtitle: "Channel-tufted barrel back with tapered brushed brass stiletto legs",
         description: "Art deco glamour engineered for dressing rooms and living alcoves. Velvet tested to 60,000 Martindale rubs.",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         status: "published",
         pricePennies: 39900,
         vatRatePercent: 20.0,
@@ -435,7 +435,7 @@ export const SEED_FURNITURE_PRODUCTS = [
         handle: "shoreditch-boucle-ottoman-stool-storage-bench",
         subtitle: "Deep padded dressing stool with hidden storage compartment",
         description: "Cylindrical storage pouffe with soft-close hydraulic hinge and removable interior liner.",
-        categoryId: "cat_armchairs",
+        categoryId: "cat_living",
         status: "published",
         pricePennies: 18900,
         vatRatePercent: 20.0,
