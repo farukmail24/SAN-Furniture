@@ -88,6 +88,20 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   }
 
   const resolvedSearchParams = searchParams ? await searchParams : {};
+
+  // Instant Canonical Redirect: Armchairs are sub-types under Living Room Seating
+  if (categorySlug === "armchairs" || categorySlug === "accent-chairs" || categorySlug === "accent-armchairs" || categorySlug === "arm-chairs") {
+    const searchEntries = Object.entries(resolvedSearchParams).flatMap(([k, v]) =>
+      Array.isArray(v) ? v.map((item) => [k, item]) : typeof v === "string" ? [[k, v]] : []
+    );
+    const paramsObj = new URLSearchParams(searchEntries);
+    if (!paramsObj.has("type")) {
+      paramsObj.set("type", "armchairs");
+    }
+    const qs = paramsObj.toString();
+    redirect(`/living-room${qs ? `?${qs}` : ""}`);
+  }
+
   const category = getCategoryByHandle(categorySlug);
 
   if (!category) {
