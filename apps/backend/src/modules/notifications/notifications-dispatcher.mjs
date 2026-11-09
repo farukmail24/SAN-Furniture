@@ -96,27 +96,43 @@ export function isSmsActive(settings) {
 // ============================================================================
 // Low-Level Senders
 // ============================================================================
-export async function sendRawEmail(pool, options) {
+export async function sendRawEmail(pool, options, settingsOverride = null) {
   try {
-    const settings = await getNotificationSettings(pool);
-    if (!isEmailActive(settings)) {
+    const baseSettings = await getNotificationSettings(pool);
+    const rawSettings = settingsOverride ? { ...baseSettings, ...settingsOverride } : baseSettings;
+
+    if (!isEmailActive(rawSettings)) {
       const reason =
-        settings.email_notifications_enabled !== "true"
+        rawSettings.email_notifications_enabled !== "true"
           ? "Email notifications are turned OFF in Admin Settings"
           : "SMTP Host, User, or Password is missing or contains placeholder mask bullets";
       return { success: false, error: reason };
     }
 
-    const port = Number.parseInt(settings.smtp_port || "465", 10);
-    const isSsl = settings.smtp_encryption?.toUpperCase() === "SSL" || port === 465;
+    // Auto-correct common typo port 456 -> 465 (Gmail / SSL)
+    const rawPortStr = String(rawSettings.smtp_port || "465").trim();
+    let port = Number.parseInt(rawPortStr, 10);
+    if (port === 456 || rawPortStr === "456") {
+      port = 465;
+    }
+    const isSsl = rawSettings.smtp_encryption?.toUpperCase() === "SSL" || port === 465;
+
+    // Normalize password (handle Google 16-char App Passwords with spaces)
+    let cleanPass = rawSettings.smtp_pass?.trim() || "";
+    if (
+      (rawSettings.smtp_host?.includes("gmail.com") || cleanPass.replace(/\s+/g, "").length === 16) &&
+      cleanPass.includes(" ")
+    ) {
+      cleanPass = cleanPass.replace(/\s+/g, "");
+    }
 
     const transporter = nodemailer.createTransport({
-      host: settings.smtp_host,
+      host: rawSettings.smtp_host?.trim(),
       port,
       secure: isSsl,
       auth: {
-        user: settings.smtp_user,
-        pass: settings.smtp_pass,
+        user: rawSettings.smtp_user?.trim(),
+        pass: cleanPass,
       },
       tls: {
         rejectUnauthorized: false,
@@ -126,8 +142,8 @@ export async function sendRawEmail(pool, options) {
       socketTimeout: 15000,
     });
 
-    const fromAddress = `"${settings.smtp_from_name || "SAN Furniture"}" <${
-      settings.smtp_from_email || settings.smtp_user
+    const fromAddress = `"${rawSettings.smtp_from_name || "SAN Furniture"}" <${
+      rawSettings.smtp_from_email || rawSettings.smtp_user
     }>`;
 
     const info = await transporter.sendMail({

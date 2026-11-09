@@ -362,7 +362,16 @@ export default function AdminSettingsPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ to: target }),
+        body: JSON.stringify({
+          to: target,
+          smtp_host: settings.smtp_host,
+          smtp_port: settings.smtp_port === "456" ? "465" : settings.smtp_port,
+          smtp_encryption: settings.smtp_encryption,
+          smtp_user: settings.smtp_user,
+          smtp_pass: settings.smtp_pass,
+          smtp_from_email: settings.smtp_from_email,
+          smtp_from_name: settings.smtp_from_name,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
@@ -932,10 +941,19 @@ export default function AdminSettingsPage() {
                 <label className="block text-xs font-semibold text-navy-900 mb-1">Email Provider</label>
                 <select
                   value={settings.smtp_provider}
-                  onChange={(e) => handleChange("smtp_provider", e.target.value)}
+                  onChange={(e) => {
+                    const p = e.target.value;
+                    handleChange("smtp_provider", p);
+                    if (p === "gmail") {
+                      handleChange("smtp_host", "smtp.gmail.com");
+                      handleChange("smtp_port", "465");
+                      handleChange("smtp_encryption", "SSL");
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
                 >
                   <option value="smtp">Custom SMTP Server</option>
+                  <option value="gmail">Gmail / Google Workspace (smtp.gmail.com)</option>
                   <option value="resend">Resend API</option>
                   <option value="sendgrid">SendGrid API</option>
                   <option value="ses">Amazon SES</option>
@@ -960,19 +978,41 @@ export default function AdminSettingsPage() {
                     type="text"
                     value={settings.smtp_port}
                     onChange={(e) => handleChange("smtp_port", e.target.value)}
-                    placeholder="587"
-                    className="w-full px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950"
+                    placeholder="465"
+                    className={`w-full px-3 py-2 bg-sand-100 border rounded-lg text-xs font-mono text-navy-950 ${
+                      settings.smtp_port === "456" ? "border-amber-500 bg-amber-50" : "border-sand-300"
+                    }`}
                   />
                   <select
                     value={settings.smtp_encryption}
-                    onChange={(e) => handleChange("smtp_encryption", e.target.value)}
+                    onChange={(e) => {
+                      const enc = e.target.value;
+                      handleChange("smtp_encryption", enc);
+                      if (enc === "SSL" && (settings.smtp_port === "587" || settings.smtp_port === "456")) {
+                        handleChange("smtp_port", "465");
+                      } else if (enc === "TLS" && (settings.smtp_port === "465" || settings.smtp_port === "456")) {
+                        handleChange("smtp_port", "587");
+                      }
+                    }}
                     className="w-full px-2 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs text-navy-950"
                   >
-                    <option value="TLS">STARTTLS</option>
-                    <option value="SSL">SSL</option>
-                    <option value="None">None</option>
+                    <option value="SSL">SSL (465)</option>
+                    <option value="TLS">STARTTLS (587)</option>
+                    <option value="None">None (25)</option>
                   </select>
                 </div>
+                {settings.smtp_port === "456" && (
+                  <p className="text-[11px] text-amber-600 mt-1 flex items-center gap-1 font-medium">
+                    <span>⚠️ Port 456 is a typo for 465 (SSL).</span>
+                    <button
+                      type="button"
+                      onClick={() => handleChange("smtp_port", "465")}
+                      className="underline font-bold text-navy-900 hover:text-brass-600"
+                    >
+                      Click to fix (465)
+                    </button>
+                  </p>
+                )}
               </div>
             </div>
 
