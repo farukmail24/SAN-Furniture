@@ -315,6 +315,32 @@ if ($githubEvent === 'push') {
     $commitMsg = $payload['head_commit']['message'] ?? 'No commit message';
     $pusher = $payload['pusher']['name'] ?? ($payload['sender']['login'] ?? 'Unknown');
 
+    // Send immediate 200 OK ACK to GitHub (< 100ms) to eliminate context deadline timeout
+    $isSync = (isset($_GET['sync']) && $_GET['sync'] === '1');
+    if (!$isSync) {
+        $ackPayload = json_encode([
+            'success' => true,
+            'message' => "GitHub Push Webhook received for branch '{$branch}'. Auto-deployment executing reliably in background.",
+            'branch' => $branch,
+            'commitSha' => $commitSha,
+            'pusher' => $pusher,
+            'timestamp' => date('c')
+        ]);
+        if (function_exists('fastcgi_finish_request')) {
+            echo $ackPayload;
+            fastcgi_finish_request();
+        } else {
+            ob_start();
+            echo $ackPayload;
+            header('Connection: close');
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Length: ' . ob_get_length());
+            ob_end_flush();
+            @ob_flush();
+            flush();
+        }
+    }
+
     // Execute Git Pull & Passenger Restart
     $output = [];
     $exitCode = 0;
