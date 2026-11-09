@@ -46,6 +46,22 @@ interface DynamicDeliveryOption {
   isActive: boolean;
 }
 
+interface StoreCategoryOption {
+  id: string;
+  name: string;
+}
+
+const DEFAULT_STORE_CATEGORIES: StoreCategoryOption[] = [
+  { id: "cat_living", name: "Living Room" },
+  { id: "cat_sofas", name: "Sofas" },
+  { id: "cat_dining", name: "Dining" },
+  { id: "cat_beds", name: "Bedroom" },
+  { id: "cat_kids", name: "Kids" },
+  { id: "cat_office", name: "Office" },
+  { id: "cat_bathroom", name: "Bathroom" },
+  { id: "cat_sale", name: "Sale" },
+];
+
 interface Supplier {
   id: string;
   name: string;
@@ -122,6 +138,7 @@ export default function AdminSuppliersPage() {
   const [newAmosCategory, setNewAmosCategory] = useState<string>("auto");
   const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("del_opt_001");
   const [dynamicDeliveryOptions, setDynamicDeliveryOptions] = useState<DynamicDeliveryOption[]>([]);
+  const [storeCategories, setStoreCategories] = useState<StoreCategoryOption[]>(DEFAULT_STORE_CATEGORIES);
   const [importingUrl, setImportingUrl] = useState<boolean>(false);
   const [activeModalTab, setActiveModalTab] = useState<"items" | "logs">("items");
 
@@ -217,6 +234,18 @@ export default function AdminSuppliersPage() {
           setNewAmosDeliveryTier(activeOpt.id);
           setNewFtgDeliveryTier(activeOpt.id);
         }
+      }
+    });
+
+    // Fetch dynamic store categories configured in Furniture Categories & Taxonomy
+    fetchWithSwr(apiUrl("/api/admin/categories"), (data: any) => {
+      if (Array.isArray(data?.categories) && data.categories.length > 0) {
+        setStoreCategories(
+          data.categories.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+          }))
+        );
       }
     });
   }, []);
@@ -1216,12 +1245,11 @@ export default function AdminSuppliersPage() {
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
                       <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      <option value="cat_beds">Bedroom</option>
-                      <option value="cat_living">Living Room</option>
-                      <option value="cat_dining">Dining Room</option>
-                      <option value="cat_sofas">Sofas &amp; Seating</option>
-                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
-                      <option value="cat_office">Home Office</option>
+                      {storeCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1320,12 +1348,11 @@ export default function AdminSuppliersPage() {
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
                       <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      <option value="cat_beds">Bedroom</option>
-                      <option value="cat_living">Living Room</option>
-                      <option value="cat_dining">Dining Room</option>
-                      <option value="cat_sofas">Sofas &amp; Seating</option>
-                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
-                      <option value="cat_office">Home Office</option>
+                      {storeCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1825,12 +1852,11 @@ export default function AdminSuppliersPage() {
                       className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D]"
                     >
                       <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      <option value="cat_beds">Bedroom</option>
-                      <option value="cat_living">Living Room</option>
-                      <option value="cat_dining">Dining Room</option>
-                      <option value="cat_sofas">Sofas &amp; Seating</option>
-                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
-                      <option value="cat_office">Home Office</option>
+                      {storeCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1946,12 +1972,11 @@ export default function AdminSuppliersPage() {
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                     >
                       <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      <option value="cat_beds">Bedroom</option>
-                      <option value="cat_living">Living Room</option>
-                      <option value="cat_dining">Dining Room</option>
-                      <option value="cat_sofas">Sofas &amp; Seating</option>
-                      <option value="cat_armchairs">Accent Armchairs &amp; Stools</option>
-                      <option value="cat_office">Home Office</option>
+                      {storeCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
