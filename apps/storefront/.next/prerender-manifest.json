@@ -1,31 +1,6 @@
 {
   "version": 4,
   "routes": {
-    "/_not-found": {
-      "initialStatus": 404,
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/_not-found",
-      "dataRoute": "/_not-found.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/robots.txt": {
       "initialHeaders": {
         "cache-control": "public, max-age=0, must-revalidate",
@@ -108,6 +83,54 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/about": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/about",
+      "dataRoute": "/about.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/account/login": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/account/login",
+      "dataRoute": "/account/login.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/account/register": {
       "experimentalBypassFor": [
         {
@@ -156,30 +179,6 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/about": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/about",
-      "dataRoute": "/about.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/account": {
       "experimentalBypassFor": [
         {
@@ -195,30 +194,6 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/account",
       "dataRoute": "/account.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/categories": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/categories",
-      "dataRoute": "/categories.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -252,30 +227,6 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/contact": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/contact",
-      "dataRoute": "/contact.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/collections": {
       "experimentalBypassFor": [
         {
@@ -300,6 +251,30 @@
         "x-next-revalidate-tag-token"
       ]
     },
+    "/contact": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/contact",
+      "dataRoute": "/contact.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
     "/delivery": {
       "experimentalBypassFor": [
         {
@@ -315,6 +290,30 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/delivery",
       "dataRoute": "/delivery.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/fire-safety": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/fire-safety",
+      "dataRoute": "/fire-safety.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -372,7 +371,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/fire-safety": {
+    "/returns": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -385,32 +384,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/fire-safety",
-      "dataRoute": "/fire-safety.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/swatches": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/swatches",
-      "dataRoute": "/swatches.rsc",
+      "srcRoute": "/returns",
+      "dataRoute": "/returns.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -444,30 +419,6 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/track-order": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/track-order",
-      "dataRoute": "/track-order.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/vat": {
       "experimentalBypassFor": [
         {
@@ -492,7 +443,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/audit": {
+    "/swatches": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -505,8 +456,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/audit",
-      "dataRoute": "/admin/audit.rsc",
+      "srcRoute": "/swatches",
+      "dataRoute": "/swatches.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -516,7 +467,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/customers": {
+    "/track-order": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -529,8 +480,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/customers",
-      "dataRoute": "/admin/customers.rsc",
+      "srcRoute": "/track-order",
+      "dataRoute": "/track-order.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -564,7 +515,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/returns": {
+    "/admin/audit": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -577,8 +528,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/returns",
-      "dataRoute": "/returns.rsc",
+      "srcRoute": "/admin/audit",
+      "dataRoute": "/admin/audit.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -588,7 +539,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/media": {
+    "/categories": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -601,8 +552,32 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/media",
-      "dataRoute": "/admin/media.rsc",
+      "srcRoute": "/categories",
+      "dataRoute": "/categories.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/admin/customers": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/customers",
+      "dataRoute": "/admin/customers.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -660,7 +635,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/account/login": {
+    "/admin/media": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -673,56 +648,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/account/login",
-      "dataRoute": "/account/login.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/admin/orders": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/orders",
-      "dataRoute": "/admin/orders.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/admin": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/admin",
-      "dataRoute": "/admin.rsc",
+      "srcRoute": "/admin/media",
+      "dataRoute": "/admin/media.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -756,7 +683,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/products/new": {
+    "/admin": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -769,8 +696,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/products/new",
-      "dataRoute": "/admin/products/new.rsc",
+      "srcRoute": "/admin",
+      "dataRoute": "/admin.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -804,7 +731,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/security": {
+    "/admin/orders": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -817,32 +744,8 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/security",
-      "dataRoute": "/admin/security.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
-    "/admin/settings": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/settings",
-      "dataRoute": "/admin/settings.rsc",
+      "srcRoute": "/admin/orders",
+      "dataRoute": "/admin/orders.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -876,30 +779,6 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/suppliers": {
-      "experimentalBypassFor": [
-        {
-          "type": "header",
-          "key": "next-action"
-        },
-        {
-          "type": "header",
-          "key": "content-type",
-          "value": "multipart/form-data;.*"
-        }
-      ],
-      "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/suppliers",
-      "dataRoute": "/admin/suppliers.rsc",
-      "allowHeader": [
-        "host",
-        "x-matched-path",
-        "x-prerender-revalidate",
-        "x-prerender-revalidate-if-generated",
-        "x-next-revalidated-tags",
-        "x-next-revalidate-tag-token"
-      ]
-    },
     "/admin/reviews": {
       "experimentalBypassFor": [
         {
@@ -915,6 +794,54 @@
       "initialRevalidateSeconds": false,
       "srcRoute": "/admin/reviews",
       "dataRoute": "/admin/reviews.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/admin/promotions": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/promotions",
+      "dataRoute": "/admin/promotions.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/admin/suppliers": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/suppliers",
+      "dataRoute": "/admin/suppliers.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",
@@ -972,7 +899,7 @@
         "x-next-revalidate-tag-token"
       ]
     },
-    "/admin/promotions": {
+    "/admin/security": {
       "experimentalBypassFor": [
         {
           "type": "header",
@@ -985,8 +912,81 @@
         }
       ],
       "initialRevalidateSeconds": false,
-      "srcRoute": "/admin/promotions",
-      "dataRoute": "/admin/promotions.rsc",
+      "srcRoute": "/admin/security",
+      "dataRoute": "/admin/security.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/admin/settings": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/settings",
+      "dataRoute": "/admin/settings.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/admin/products/new": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/admin/products/new",
+      "dataRoute": "/admin/products/new.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/_not-found": {
+      "initialStatus": 404,
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/_not-found",
+      "dataRoute": "/_not-found.rsc",
       "allowHeader": [
         "host",
         "x-matched-path",

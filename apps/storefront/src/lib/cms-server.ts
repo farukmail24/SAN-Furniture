@@ -62,13 +62,14 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
           content = {};
         }
 
-        // Auto-heal header_mega_menu if DB contains older tabs, obsolete /armchairs links, or duplicate type params
+        // Auto-heal header_mega_menu if DB contains older tabs, obsolete /armchairs links, duplicate type params, or broken unsplash photos
         const rawContentStr = typeof row.content_json === "string" ? row.content_json : JSON.stringify(row.content_json || "");
         if (
           row.section_key === "header_mega_menu" &&
           (!content.tabs ||
             content.tabs.length < 8 ||
             rawContentStr.includes('"/armchairs"') ||
+            rawContentStr.includes("photo-1533090161767") ||
             (rawContentStr.includes("Fluted Center Tables") && rawContentStr.includes("/living-room?type=coffee-tables")) ||
             (rawContentStr.includes("Nesting & Side Tables") && rawContentStr.includes("/living-room?type=coffee-tables")))
         ) {
