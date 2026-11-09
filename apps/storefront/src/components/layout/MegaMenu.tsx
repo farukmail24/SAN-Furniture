@@ -86,6 +86,13 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
     setActiveTabId(null);
   }, [pathname]);
 
+  // Close on browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => setActiveTabId(null);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // Close on click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -294,6 +301,10 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                             <img
                               src={activeTab.featured_promo.image_url}
                               alt={activeTab.featured_promo.title}
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80";
+                              }}
                               className="w-full h-full object-cover opacity-60 group-hover:opacity-70 group-hover:scale-105 transition-all duration-500"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-transparent" />
@@ -334,6 +345,10 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                               <img
                                 src={activeTab.featured_product.image_url}
                                 alt={activeTab.featured_product.title}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).src =
+                                    "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80";
+                                }}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
                             ) : (

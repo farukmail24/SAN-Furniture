@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Filter,
   X,
@@ -70,6 +71,7 @@ export function CategoryView({
 }: CategoryViewProps) {
   const { addItem, openCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const searchParams = useSearchParams();
 
   // Search input query initialized from searchParams (supports q, search, filter=scandi, range, etc.)
   const initialSearchParam =
@@ -135,6 +137,34 @@ export function CategoryView({
   );
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceRange, setPriceRange] = useState<string>("all");
+
+  // Dynamically sync sub-type and filter states when URL query parameters change (e.g. from MegaMenu navigation /?type=mirrors)
+  useEffect(() => {
+    if (!searchParams) return;
+    const typeParam = searchParams.get("type") || searchParams.get("style") || searchParams.get("seats");
+    if (typeParam) {
+      const resolved = resolveSubType(category?.id, typeParam);
+      setSelectedSubTypeId(resolved ? resolved.id : null);
+    } else {
+      setSelectedSubTypeId(null);
+    }
+
+    const qParam = searchParams.get("q") || searchParams.get("search") || searchParams.get("range");
+    if (qParam !== null) {
+      setSearchQuery(qParam);
+    }
+
+    const filterParam = searchParams.get("filter");
+    if (filterParam === "clearance" || filterParam === "sale" || searchParams.get("sale") === "true") {
+      setOnlyOnSale(true);
+    } else if (filterParam === "scandi") {
+      setSearchQuery("scandinavian");
+    } else if (filterParam === "gloss") {
+      setSearchQuery("gloss");
+    } else if (filterParam === "oak") {
+      setSelectedColorTones(["oak"]);
+    }
+  }, [searchParams, category?.id]);
 
   // Sort & Display states
   const [sortBy, setSortBy] = useState<

@@ -393,7 +393,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
             "tag": "Living Collection",
             "title": "Chelsea High-Gloss Sideboard",
             "price_str": "£289.00",
-            "image_url": "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=800&q=80",
+            "image_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80",
             "href": "/living-room?type=sideboards"
           }
         },

@@ -157,7 +157,7 @@ export const FTG_CATALOG_DATABASE = [
     material: "Scratch-Resistant Melamine Finish",
     description: "Understated Scandinavian living table with open-access magazine and remote control undershelf. Rounded edges for family safety in high-traffic lounge areas.",
     images: [
-      "https://images.unsplash.com/photo-1533090161767-e6ffed986b88?auto=format&fit=crop&w=1200&q=80"
+      "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1200&q=80"
     ]
   },
   {
