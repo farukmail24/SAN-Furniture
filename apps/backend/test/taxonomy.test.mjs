@@ -69,7 +69,9 @@ test("Sub-Type Resolution & Aliases", () => {
   // Bedroom Sub-Types
   assert.equal(resolveSubType("cat_beds", "wardrobes")?.id, "wardrobes");
   assert.equal(resolveSubType("cat_beds", "wardrobe")?.id, "wardrobes");
-  assert.equal(resolveSubType("cat_beds", "sliding-wardrobe")?.id, "wardrobes");
+  assert.equal(resolveSubType("cat_beds", "sliding-wardrobes")?.id, "sliding-wardrobes");
+  assert.equal(resolveSubType("cat_beds", "sliding-wardrobe")?.id, "sliding-wardrobes");
+  assert.equal(resolveSubType("cat_beds", "ottoman-beds")?.id, "ottoman-beds");
 
   assert.equal(resolveSubType("cat_beds", "chest-of-drawers")?.id, "chest-of-drawers");
   assert.equal(resolveSubType("cat_beds", "chest")?.id, "chest-of-drawers");
@@ -115,7 +117,9 @@ test("Sub-Type Resolution & Aliases", () => {
 
   // Home Office Sub-Types
   assert.equal(resolveSubType("cat_office", "desks")?.id, "desks");
-  assert.equal(resolveSubType("cat_office", "writing-desk")?.id, "desks");
+  assert.equal(resolveSubType("cat_office", "desk")?.id, "desks");
+  assert.equal(resolveSubType("cat_office", "writing-desk")?.id, "writing-desks");
+  assert.equal(resolveSubType("cat_office", "writing-desks")?.id, "writing-desks");
   assert.equal(resolveSubType("cat_office", "office-bookcases")?.id, "office-bookcases");
 
   // Bathroom Sub-Types
@@ -126,7 +130,8 @@ test("Sub-Type Resolution & Aliases", () => {
 
   // Kids Sub-Types
   assert.equal(resolveSubType("cat_kids", "kids-beds")?.id, "kids-beds");
-  assert.equal(resolveSubType("cat_kids", "bunk")?.id, "kids-beds");
+  assert.equal(resolveSubType("cat_kids", "bunk-beds")?.id, "bunk-beds");
+  assert.equal(resolveSubType("cat_kids", "bunk")?.id, "bunk-beds");
   assert.equal(resolveSubType("cat_kids", "kids-storage")?.id, "kids-storage");
   assert.equal(resolveSubType("cat_kids", "kids-desks")?.id, "kids-desks");
 });

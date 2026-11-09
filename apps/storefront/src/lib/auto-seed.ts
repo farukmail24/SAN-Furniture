@@ -115,7 +115,13 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
       try {
         const rawSec = typeof secRows[0].content_json === "string" ? secRows[0].content_json : JSON.stringify(secRows[0].content_json);
         const secContent = JSON.parse(rawSec);
-        if (!secContent.tabs || secContent.tabs.length < 8 || rawSec.includes('"/armchairs"')) {
+        if (
+          !secContent.tabs ||
+          secContent.tabs.length < 8 ||
+          rawSec.includes('"/armchairs"') ||
+          (rawSec.includes("Fluted Center Tables") && rawSec.includes("/living-room?type=coffee-tables")) ||
+          (rawSec.includes("Nesting & Side Tables") && rawSec.includes("/living-room?type=coffee-tables"))
+        ) {
           const { DEFAULT_STOREFRONT_SECTIONS } = await import("./cms-defaults");
           await connection.query(
             "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",

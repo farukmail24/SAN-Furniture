@@ -438,10 +438,90 @@ export function classifyFurnitureProduct(input: {
 export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
   // Bedroom Sub-Types (cat_beds)
   {
+    id: "ottoman-beds",
+    label: "Ottoman Storage Beds",
+    categoryId: "cat_beds",
+    aliases: ["ottoman-beds", "ottoman-bed", "gas-lift-beds", "storage-beds", "ottoman"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("ottoman") || t.includes("gas-lift") || t.includes("storage bed")) && !t.includes("bedside");
+    },
+  },
+  {
+    id: "king-beds",
+    label: "King Size Beds (5ft)",
+    categoryId: "cat_beds",
+    aliases: ["king-beds", "king-size", "king-bed", "5ft-beds"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("king") || t.includes("5ft")) && t.includes("bed") && !t.includes("bedside");
+    },
+  },
+  {
+    id: "double-beds",
+    label: "Double Beds (4ft 6in)",
+    categoryId: "cat_beds",
+    aliases: ["double-beds", "double-bed", "4ft6-beds"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("double") || t.includes("4ft 6")) && t.includes("bed") && !t.includes("bedside");
+    },
+  },
+  {
+    id: "single-beds",
+    label: "Single Bedsteads (3ft)",
+    categoryId: "cat_beds",
+    aliases: ["single-beds", "single-bed", "3ft-beds"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("single") || t.includes("3ft")) && t.includes("bed") && !t.includes("bedside");
+    },
+  },
+  {
+    id: "beds",
+    label: "Beds & Bedsteads",
+    categoryId: "cat_beds",
+    aliases: ["beds", "bed", "bedstead", "headboard", "mattress", "bed-frames"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (
+        (t.includes("bed ") ||
+          t.includes("bedstead") ||
+          t.includes("ottoman bed") ||
+          t.includes("mattress") ||
+          t.includes("headboard")) &&
+        !t.includes("bedside") &&
+        !t.includes("sofa")
+      );
+    },
+  },
+  {
+    id: "sliding-wardrobes",
+    label: "Sliding Door Wardrobes",
+    categoryId: "cat_beds",
+    aliases: ["sliding-wardrobes", "sliding-wardrobe", "sliding-doors", "sliding"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return (t.includes("sliding") || h.includes("sliding")) && (t.includes("wardrobe") || h.includes("wardrobe"));
+    },
+  },
+  {
+    id: "mirrored-wardrobes",
+    label: "Mirrored Wardrobes",
+    categoryId: "cat_beds",
+    aliases: ["mirrored-wardrobes", "mirrored-wardrobe", "mirrored"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return (t.includes("mirror") || h.includes("mirror")) && (t.includes("wardrobe") || h.includes("wardrobe"));
+    },
+  },
+  {
     id: "wardrobes",
     label: "Wardrobes",
     categoryId: "cat_beds",
-    aliases: ["wardrobes", "wardrobe", "mirrored-wardrobe", "sliding-wardrobe"],
+    aliases: ["wardrobes", "wardrobe", "4-door-wardrobes", "2-door", "3-door", "fitted-wardrobes"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
@@ -456,7 +536,6 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      // Must not match "chesterfield" sofa or "desk with drawers"
       if (t.includes("chesterfield") || t.includes("desk") || t.includes("sofa")) return false;
       return (
         (/\bchest\b/.test(t) ||
@@ -481,10 +560,21 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     },
   },
   {
+    id: "dressing-tables",
+    label: "Dressing Tables",
+    categoryId: "cat_beds",
+    aliases: ["dressing-tables", "dressing-table", "dressing", "vanity-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("dressing") || h.includes("dressing");
+    },
+  },
+  {
     id: "storage-cupboards",
     label: "Storage Cupboards",
     categoryId: "cat_beds",
-    aliases: ["storage-cupboards", "cupboards", "cupboard", "storage", "cabinets"],
+    aliases: ["storage-cupboards", "cupboards", "cupboard", "storage", "cabinets", "tallboys"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
@@ -496,38 +586,66 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     id: "mirrors",
     label: "Dressing & Mirrors",
     categoryId: "cat_beds",
-    aliases: ["mirrors", "mirror", "dressing", "dressing-tables"],
+    aliases: ["mirrors", "mirror", "bedroom-mirrors"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
       return (t.includes("mirror") || h.includes("mirror") || t.includes("dressing")) && !t.includes("sliding wardrobe");
     },
   },
-  {
-    id: "beds",
-    label: "Beds & Bedsteads",
-    categoryId: "cat_beds",
-    aliases: ["beds", "bed", "ottoman", "headboard", "mattress"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return (
-        (t.includes("bed ") ||
-          t.includes("bedstead") ||
-          t.includes("ottoman bed") ||
-          t.includes("mattress") ||
-          t.includes("headboard")) &&
-        !t.includes("bedside") &&
-        !t.includes("sofa")
-      );
-    },
-  },
 
   // Living Room Sub-Types (cat_living)
+  {
+    id: "coffee-tables",
+    label: "Coffee Tables",
+    categoryId: "cat_living",
+    aliases: ["coffee-tables", "coffee-table", "tables", "coffee", "center-tables", "centre-tables", "fluted-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      if (t.includes("dining") || t.includes("desk") || t.includes("bedside")) return false;
+      return t.includes("coffee") || h.includes("coffee-table") || t.includes("center table") || t.includes("centre table");
+    },
+  },
+  {
+    id: "side-tables",
+    label: "Side & End Tables",
+    categoryId: "cat_living",
+    aliases: ["side-tables", "side-table", "end-tables", "end-table", "lamp-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      if (t.includes("dining") || t.includes("bedside")) return false;
+      return t.includes("side table") || h.includes("side-table") || t.includes("end table") || t.includes("lamp table");
+    },
+  },
+  {
+    id: "nesting-tables",
+    label: "Nest of Tables",
+    categoryId: "cat_living",
+    aliases: ["nesting-tables", "nesting", "nest-of-tables", "nest-tables", "nesting-side-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("nest") || h.includes("nest");
+    },
+  },
+  {
+    id: "console-tables",
+    label: "Console Tables",
+    categoryId: "cat_living",
+    aliases: ["console-tables", "console-table", "console", "hallway-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("console") || h.includes("console");
+    },
+  },
   {
     id: "bookcases",
     label: "Bookcases & Shelves",
     categoryId: "cat_living",
-    aliases: ["bookcases", "bookcase", "shelving", "shelves", "display-units"],
+    aliases: ["bookcases", "bookcase", "shelving", "shelves", "open-shelving"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
@@ -536,10 +654,19 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
         t.includes("bookcase") ||
         h.includes("bookcase") ||
         t.includes("shelf") ||
-        t.includes("shelving") ||
-        t.includes("display") ||
-        h.includes("display")
+        t.includes("shelving")
       );
+    },
+  },
+  {
+    id: "display-cabinets",
+    label: "Display Cabinets",
+    categoryId: "cat_living",
+    aliases: ["display-cabinets", "display-cabinet", "vitrines", "display", "display-units"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("display") || h.includes("display") || t.includes("vitrine");
     },
   },
   {
@@ -564,11 +691,11 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     id: "sideboards",
     label: "Sideboards",
     categoryId: "cat_living",
-    aliases: ["sideboards", "sideboard", "credenza"],
+    aliases: ["sideboards", "sideboard", "credenza", "buffet"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      return t.includes("sideboard") || h.includes("sideboard");
+      return t.includes("sideboard") || h.includes("sideboard") || t.includes("credenza");
     },
   },
   {
@@ -592,171 +719,22 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     },
   },
   {
-    id: "coffee-tables",
-    label: "Coffee Tables",
+    id: "wall-shelves",
+    label: "Wall Shelves",
     categoryId: "cat_living",
-    aliases: ["coffee-tables", "coffee-table", "tables", "coffee", "nesting", "console"],
+    aliases: ["wall-shelves", "wall-shelf", "hanging-shelves", "floating-shelves"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      if (t.includes("dining") || t.includes("desk") || t.includes("bedside")) return false;
-      return t.includes("coffee") || t.includes("console table") || t.includes("nesting") || h.includes("coffee-table");
-    },
-  },
-
-  // Dining Room Sub-Types (cat_dining)
-  {
-    id: "dining-tables",
-    label: "Dining Tables",
-    categoryId: "cat_dining",
-    aliases: ["dining-tables", "dining-table", "tables", "table", "extending-tables"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      const h = p.handle.toLowerCase();
-      if (
-        t.includes("coffee") ||
-        t.includes("bedside") ||
-        t.includes("desk") ||
-        t.includes("dressing") ||
-        t.includes("console") ||
-        t.includes("tv")
-      ) {
-        return false;
-      }
-      return (t.includes("dining") && (t.includes("table") || h.includes("table"))) || t.includes("extending dining table") || t.includes("extending table");
-    },
-  },
-  {
-    id: "dining-chairs",
-    label: "Dining Chairs & Benches",
-    categoryId: "cat_dining",
-    aliases: ["dining-chairs", "dining-chair", "chairs", "chair", "benches", "stools"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      if (
-        t.includes("armchair") ||
-        t.includes("lounge chair") ||
-        t.includes("cocktail chair") ||
-        t.includes("fireside") ||
-        t.includes("wingback") ||
-        t.includes("swivel") ||
-        t.includes("office") ||
-        t.includes("desk chair") ||
-        t.includes("footstool") ||
-        t.includes("pouf") ||
-        t.includes("pouffe")
-      ) {
-        return false;
-      }
-      return t.includes("dining chair") || t.includes("dining bench") || t.includes("bar stool") || t.includes("chair");
-    },
-  },
-  {
-    id: "dining-sets",
-    label: "Dining Sets",
-    categoryId: "cat_dining",
-    aliases: ["dining-sets", "dining-set", "sets"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("dining set") || t.includes("table and chairs");
-    },
-  },
-
-  // Sofas & Seating Sub-Types (cat_sofas)
-  {
-    id: "corner-sofas",
-    label: "Corner & L-Shape",
-    categoryId: "cat_sofas",
-    aliases: ["corner-sofas", "corner", "l-shape", "chaise-sofa"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      if (t.includes("wardrobe") || t.includes("desk") || t.includes("cupboard")) return false;
-      return t.includes("corner") || t.includes("l-shape") || t.includes("chaise");
-    },
-  },
-  {
-    id: "3-seater",
-    label: "3 & 4-Seater Sofas",
-    categoryId: "cat_sofas",
-    aliases: ["3-seater", "3-seater-sofas", "large-sofa", "4-seater", "family-sofas"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      if (!t.includes("sofa") && !t.includes("couch") && !t.includes("settee") && !t.includes("chesterfield")) return false;
       return (
-        t.includes("3-seater") ||
-        t.includes("3 seater") ||
-        t.includes("three seater") ||
-        t.includes("4-seater") ||
-        t.includes("4 seater") ||
-        t.includes("four seater") ||
-        t.includes("large")
+        (t.includes("wall") && t.includes("shelf")) ||
+        t.includes("hanging shelf") ||
+        t.includes("floating shelf") ||
+        h.includes("wall-shelf") ||
+        h.includes("wall-unit")
       );
     },
   },
-  {
-    id: "2-seater",
-    label: "2-Seater Sofas",
-    categoryId: "cat_sofas",
-    aliases: ["2-seater", "2-seater-sofas", "compact-sofa", "loveseat", "snuggler"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("2-seater") || t.includes("2 seater") || t.includes("two seater") || t.includes("loveseat");
-    },
-  },
-  {
-    id: "modular",
-    label: "Modular Sectionals",
-    categoryId: "cat_sofas",
-    aliases: ["modular", "modular-sofas", "sectional"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("modular") || t.includes("sectional");
-    },
-  },
-  {
-    id: "sofa-beds",
-    label: "Luxury Sofa Beds",
-    categoryId: "cat_sofas",
-    aliases: ["sofa-beds", "sofa-bed", "sleeper"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("sofa bed") || t.includes("sofa-bed") || t.includes("sleeper");
-    },
-  },
-  {
-    id: "armchairs",
-    label: "Accent Armchairs",
-    categoryId: "cat_sofas",
-    aliases: ["armchairs", "armchair", "accent-chairs"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("armchair") || t.includes("accent chair") || t.includes("fireside");
-    },
-  },
-  {
-    id: "loungers",
-    label: "Deep Lounge Sofas",
-    categoryId: "cat_sofas",
-    aliases: ["loungers", "lounger", "chaise-lounger", "lounge-sofa"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      if (!t.includes("sofa") && !t.includes("couch") && !t.includes("chaise")) return false;
-      return t.includes("lounger") || t.includes("lounge") || t.includes("snuggler");
-    },
-  },
-  {
-    id: "footstools",
-    label: "Footstools & Poufs",
-    categoryId: "cat_sofas",
-    aliases: ["footstools", "footstool", "pouf", "poufs", "pouffe", "ottoman"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      if (t.includes("ottoman bed")) return false;
-      return t.includes("footstool") || t.includes("pouf") || t.includes("pouffe") || (t.includes("stool") && !t.includes("bar"));
-    },
-  },
-
-  // Living Room Seating & Accent Armchairs Sub-Types (cat_living)
   {
     id: "armchairs",
     label: "Accent Armchairs",
@@ -817,8 +795,442 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
       return t.includes("stool") || t.includes("bench") || t.includes("pouf") || t.includes("pouffe") || t.includes("ottoman");
     },
   },
+  {
+    id: "mirrors",
+    label: "Wall Mirrors & Accents",
+    categoryId: "cat_living",
+    aliases: ["mirrors", "mirror", "wall-mirrors"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("mirror") || h.includes("mirror");
+    },
+  },
+
+  // Dining Room Sub-Types (cat_dining)
+  {
+    id: "extending-tables",
+    label: "Extending Dining Tables",
+    categoryId: "cat_dining",
+    aliases: ["extending-tables", "extending-table", "extending", "extendable-tables", "extendable"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("extending") || t.includes("extendable") || h.includes("extending") || h.includes("extendable");
+    },
+  },
+  {
+    id: "round-tables",
+    label: "Round Dining Tables",
+    categoryId: "cat_dining",
+    aliases: ["round-tables", "round-table", "round"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("round") && (t.includes("dining") || t.includes("table"));
+    },
+  },
+  {
+    id: "dining-tables",
+    label: "Dining Tables",
+    categoryId: "cat_dining",
+    aliases: ["dining-tables", "dining-table", "tables", "table", "gloss-tables", "oak-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      if (
+        t.includes("coffee") ||
+        t.includes("bedside") ||
+        t.includes("desk") ||
+        t.includes("dressing") ||
+        t.includes("console") ||
+        t.includes("tv")
+      ) {
+        return false;
+      }
+      return (t.includes("dining") && (t.includes("table") || h.includes("table"))) || t.includes("extending dining table") || t.includes("extending table");
+    },
+  },
+  {
+    id: "dining-chairs",
+    label: "Dining Chairs & Benches",
+    categoryId: "cat_dining",
+    aliases: ["dining-chairs", "dining-chair", "chairs", "chair", "velvet-chairs", "wooden-chairs"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (
+        t.includes("armchair") ||
+        t.includes("lounge chair") ||
+        t.includes("cocktail chair") ||
+        t.includes("fireside") ||
+        t.includes("wingback") ||
+        t.includes("swivel") ||
+        t.includes("office") ||
+        t.includes("desk chair") ||
+        t.includes("footstool") ||
+        t.includes("pouf") ||
+        t.includes("pouffe")
+      ) {
+        return false;
+      }
+      return t.includes("dining chair") || t.includes("dining bench") || t.includes("bar stool") || t.includes("chair");
+    },
+  },
+  {
+    id: "dining-benches",
+    label: "Dining Benches",
+    categoryId: "cat_dining",
+    aliases: ["dining-benches", "dining-bench", "benches", "bench"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("bench");
+    },
+  },
+  {
+    id: "bar-stools",
+    label: "Bar & Counter Stools",
+    categoryId: "cat_dining",
+    aliases: ["bar-stools", "bar-stool", "counter-stools", "stools", "stool"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("bar stool") || t.includes("counter stool") || t.includes("bar");
+    },
+  },
+  {
+    id: "dining-sets",
+    label: "Dining Sets",
+    categoryId: "cat_dining",
+    aliases: ["dining-sets", "dining-set", "sets"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("dining set") || t.includes("table and chairs");
+    },
+  },
+  {
+    id: "bar-tables",
+    label: "Bar & Bistro Tables",
+    categoryId: "cat_dining",
+    aliases: ["bar-tables", "bar-table", "bistro-tables", "bistro"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("bar") || t.includes("bistro")) && t.includes("table");
+    },
+  },
+
+  // Sofas & Seating Sub-Types (cat_sofas)
+  {
+    id: "corner-sofas",
+    label: "Corner & L-Shape",
+    categoryId: "cat_sofas",
+    aliases: ["corner-sofas", "corner", "l-shape", "chaise-sofa"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (t.includes("wardrobe") || t.includes("desk") || t.includes("cupboard")) return false;
+      return t.includes("corner") || t.includes("l-shape") || t.includes("chaise");
+    },
+  },
+  {
+    id: "3-seater",
+    label: "3-Seater Sofas",
+    categoryId: "cat_sofas",
+    aliases: ["3-seater", "3-seater-sofas", "three-seater", "family-sofas"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (!t.includes("sofa") && !t.includes("couch") && !t.includes("settee") && !t.includes("chesterfield")) return false;
+      return t.includes("3-seater") || t.includes("3 seater") || t.includes("three seater");
+    },
+  },
+  {
+    id: "2-seater",
+    label: "2-Seater Sofas",
+    categoryId: "cat_sofas",
+    aliases: ["2-seater", "2-seater-sofas", "two-seater", "compact-sofa", "loveseat", "snuggler"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("2-seater") || t.includes("2 seater") || t.includes("two seater") || t.includes("loveseat");
+    },
+  },
+  {
+    id: "4-seater",
+    label: "4-Seater Sofas",
+    categoryId: "cat_sofas",
+    aliases: ["4-seater", "4-seater-sofas", "four-seater", "large-sofa"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (!t.includes("sofa") && !t.includes("couch") && !t.includes("settee") && !t.includes("chesterfield")) return false;
+      return t.includes("4-seater") || t.includes("4 seater") || t.includes("four seater") || t.includes("large");
+    },
+  },
+  {
+    id: "modular",
+    label: "Modular Sectionals",
+    categoryId: "cat_sofas",
+    aliases: ["modular", "modular-sofas", "sectional"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("modular") || t.includes("sectional");
+    },
+  },
+  {
+    id: "sofa-beds",
+    label: "Luxury Sofa Beds",
+    categoryId: "cat_sofas",
+    aliases: ["sofa-beds", "sofa-bed", "sleeper"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("sofa bed") || t.includes("sofa-bed") || t.includes("sleeper");
+    },
+  },
+  {
+    id: "loungers",
+    label: "Deep Lounge Sofas",
+    categoryId: "cat_sofas",
+    aliases: ["loungers", "lounger", "chaise-lounger", "lounge-sofa"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (!t.includes("sofa") && !t.includes("couch") && !t.includes("chaise")) return false;
+      return t.includes("lounger") || t.includes("lounge") || t.includes("snuggler");
+    },
+  },
+  {
+    id: "recliners",
+    label: "Recliner Sofas",
+    categoryId: "cat_sofas",
+    aliases: ["recliners", "recliner", "motion-sofas"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("recliner") || t.includes("motion") || t.includes("electric");
+    },
+  },
+  {
+    id: "armchairs",
+    label: "Accent Armchairs",
+    categoryId: "cat_sofas",
+    aliases: ["armchairs", "armchair", "accent-chairs"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("armchair") || t.includes("accent chair") || t.includes("fireside");
+    },
+  },
+  {
+    id: "footstools",
+    label: "Footstools & Poufs",
+    categoryId: "cat_sofas",
+    aliases: ["footstools", "footstool", "pouf", "poufs", "pouffe", "ottoman"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      if (t.includes("ottoman bed")) return false;
+      return t.includes("footstool") || t.includes("pouf") || t.includes("pouffe") || (t.includes("stool") && !t.includes("bar"));
+    },
+  },
+
+  // Kids & Nursery Sub-Types (cat_kids)
+  {
+    id: "bunk-beds",
+    label: "Bunk Beds",
+    categoryId: "cat_kids",
+    aliases: ["bunk-beds", "bunk-bed", "bunk", "bunks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("bunk");
+    },
+  },
+  {
+    id: "mid-sleepers",
+    label: "Mid Sleeper Beds",
+    categoryId: "cat_kids",
+    aliases: ["mid-sleepers", "mid-sleeper", "midsleeper"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("midsleeper") || t.includes("mid sleeper");
+    },
+  },
+  {
+    id: "high-sleepers",
+    label: "High Sleeper Beds",
+    categoryId: "cat_kids",
+    aliases: ["high-sleepers", "high-sleeper", "highsleeper"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("highsleeper") || t.includes("high sleeper");
+    },
+  },
+  {
+    id: "cabin-beds",
+    label: "Cabin Beds",
+    categoryId: "cat_kids",
+    aliases: ["cabin-beds", "cabin-bed"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("cabin");
+    },
+  },
+  {
+    id: "kids-beds",
+    label: "Children's Single Beds",
+    categoryId: "cat_kids",
+    aliases: ["kids-beds", "childrens-beds", "single-beds", "toddler-beds", "cot"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (
+        t.includes("bed") ||
+        t.includes("bunk") ||
+        t.includes("cabin") ||
+        t.includes("sleeper")
+      );
+    },
+  },
+  {
+    id: "kids-wardrobes",
+    label: "Kids Wardrobes",
+    categoryId: "cat_kids",
+    aliases: ["kids-wardrobes", "kids-wardrobe", "childrens-wardrobes"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("wardrobe");
+    },
+  },
+  {
+    id: "kids-chests",
+    label: "Kids Chests of Drawers",
+    categoryId: "cat_kids",
+    aliases: ["kids-chests", "kids-drawers"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("chest") || t.includes("drawer");
+    },
+  },
+  {
+    id: "toy-storage",
+    label: "Toy Storage Boxes & Units",
+    categoryId: "cat_kids",
+    aliases: ["toy-storage", "toy-boxes", "toy-organizers"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("toy") || t.includes("storage box") || t.includes("organizer");
+    },
+  },
+  {
+    id: "kids-bookcases",
+    label: "Kids Bookcases & Shelves",
+    categoryId: "cat_kids",
+    aliases: ["kids-bookcases", "kids-shelves"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("bookcase") || t.includes("shelf");
+    },
+  },
+  {
+    id: "kids-bedside",
+    label: "Kids Bedside Cabinets",
+    categoryId: "cat_kids",
+    aliases: ["kids-bedside", "kids-nightstands"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("bedside") || t.includes("nightstand");
+    },
+  },
+  {
+    id: "kids-storage",
+    label: "Kids Storage & Wardrobes",
+    categoryId: "cat_kids",
+    aliases: ["kids-storage", "wardrobes", "chests"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("wardrobe") || t.includes("chest") || t.includes("storage") || t.includes("drawers") || t.includes("toy");
+    },
+  },
+  {
+    id: "gaming-desks",
+    label: "Kids Gaming Desks",
+    categoryId: "cat_kids",
+    aliases: ["gaming-desks", "gaming-desk"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("gaming") && t.includes("desk");
+    },
+  },
+  {
+    id: "kids-chairs",
+    label: "Student & Kids Chairs",
+    categoryId: "cat_kids",
+    aliases: ["kids-chairs", "student-chairs", "desk-chairs"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("chair");
+    },
+  },
+  {
+    id: "kids-desks",
+    label: "Kids Study Desks",
+    categoryId: "cat_kids",
+    aliases: ["kids-desks", "study-desk", "study", "desks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("desk") || t.includes("study") || t.includes("table");
+    },
+  },
+  {
+    id: "kids-sets",
+    label: "Kids Bedroom Furniture Sets",
+    categoryId: "cat_kids",
+    aliases: ["kids-sets", "kids-bedroom-sets"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("set") || t.includes("suite");
+    },
+  },
 
   // Home Office Sub-Types (cat_office)
+  {
+    id: "writing-desks",
+    label: "Scandinavian Writing Desks",
+    categoryId: "cat_office",
+    aliases: ["writing-desks", "writing-desk", "scandi-desks", "writing-tables"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("writing") || t.includes("scandi") || t.includes("oslo");
+    },
+  },
+  {
+    id: "computer-desks",
+    label: "Computer & Laptop Desks",
+    categoryId: "cat_office",
+    aliases: ["computer-desks", "computer-desk", "laptop-desks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("computer") || t.includes("laptop");
+    },
+  },
+  {
+    id: "corner-desks",
+    label: "Corner & L-Shaped Desks",
+    categoryId: "cat_office",
+    aliases: ["corner-desks", "corner-desk", "l-shaped-desks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("corner") || t.includes("l-shape");
+    },
+  },
+  {
+    id: "executive-desks",
+    label: "Executive Desks with Drawers",
+    categoryId: "cat_office",
+    aliases: ["executive-desks", "executive-desk"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("executive") || (t.includes("desk") && t.includes("drawers"));
+    },
+  },
+  {
+    id: "compact-desks",
+    label: "Compact Apartment Desks",
+    categoryId: "cat_office",
+    aliases: ["compact-desks", "compact-desk", "small-desks"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("compact") || t.includes("small") || t.includes("apartment");
+    },
+  },
   {
     id: "desks",
     label: "Writing Desks & Workstations",
@@ -834,7 +1246,7 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     id: "office-bookcases",
     label: "Office Bookcases & Shelving",
     categoryId: "cat_office",
-    aliases: ["office-bookcases", "bookcases", "shelves", "shelving"],
+    aliases: ["office-bookcases", "bookcases", "shelves", "shelving", "tall-bookcases", "open-shelving"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
@@ -842,34 +1254,125 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
     },
   },
   {
+    id: "filing-cabinets",
+    label: "Filing Cabinets & Cupboards",
+    categoryId: "cat_office",
+    aliases: ["filing-cabinets", "filing-cabinet", "filing"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("file") || t.includes("filing");
+    },
+  },
+  {
+    id: "pedestals",
+    label: "Under-Desk Pedestals",
+    categoryId: "cat_office",
+    aliases: ["pedestals", "pedestal", "drawer-pedestals"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("pedestal");
+    },
+  },
+  {
     id: "office-storage",
     label: "Office Storage Cabinets",
     categoryId: "cat_office",
-    aliases: ["office-storage", "cupboard", "cabinets"],
+    aliases: ["office-storage", "cupboard", "cabinets", "office-cupboards"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
       return t.includes("cupboard") || h.includes("cupboard") || t.includes("storage");
     },
   },
+  {
+    id: "office-chairs",
+    label: "Ergonomic Desk Chairs",
+    categoryId: "cat_office",
+    aliases: ["office-chairs", "desk-chairs", "swivel-chairs", "executive-chairs"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return (t.includes("office") || t.includes("desk")) && t.includes("chair");
+    },
+  },
 
   // Bathroom Sub-Types (cat_bathroom)
+  {
+    id: "undersink-cabinets",
+    label: "Under Sink Storage",
+    categoryId: "cat_bathroom",
+    aliases: ["undersink-cabinets", "undersink-cupboards", "undersink", "under-sink"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("undersink") || t.includes("under sink");
+    },
+  },
+  {
+    id: "countertop-basins",
+    label: "Countertop Basin Units",
+    categoryId: "cat_bathroom",
+    aliases: ["countertop-basins", "countertop-units", "countertop"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("countertop");
+    },
+  },
+  {
+    id: "freestanding-vanity",
+    label: "Floor Standing Vanity Units",
+    categoryId: "cat_bathroom",
+    aliases: ["freestanding-vanity", "floorstanding-vanity"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("freestanding") || t.includes("floor standing");
+    },
+  },
   {
     id: "vanity-units",
     label: "Vanity & Basin Units",
     categoryId: "cat_bathroom",
-    aliases: ["vanity-units", "vanity", "basin", "sink", "undersink"],
+    aliases: ["vanity-units", "vanity", "basin", "sink"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
-      return t.includes("vanity") || h.includes("vanity") || t.includes("sink") || t.includes("basin") || t.includes("undersink");
+      return t.includes("vanity") || h.includes("vanity") || t.includes("sink") || t.includes("basin");
+    },
+  },
+  {
+    id: "tall-cabinets",
+    label: "Tall Narrow Cupboards",
+    categoryId: "cat_bathroom",
+    aliases: ["tall-cabinets", "tall-narrow-cupboards", "tall-cupboards", "tallboy"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("tall") || t.includes("narrow");
+    },
+  },
+  {
+    id: "mirror-cabinets",
+    label: "Mirrored Bathroom Cabinets",
+    categoryId: "cat_bathroom",
+    aliases: ["mirror-cabinets", "mirrored-cabinets"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      return t.includes("mirror") && (t.includes("cabinet") || t.includes("cupboard"));
+    },
+  },
+  {
+    id: "wall-cabinets",
+    label: "Wall Hanging Cabinets",
+    categoryId: "cat_bathroom",
+    aliases: ["wall-cabinets", "wall-cupboard", "hanging"],
+    matches: (p) => {
+      const t = p.title.toLowerCase();
+      const h = p.handle.toLowerCase();
+      return t.includes("wall") || h.includes("wall") || t.includes("hanging");
     },
   },
   {
     id: "bathroom-storage",
     label: "Tall & Storage Cupboards",
     categoryId: "cat_bathroom",
-    aliases: ["bathroom-storage", "cupboard", "tall-cupboard", "storage", "cabinets"],
+    aliases: ["bathroom-storage", "cupboard", "storage", "cabinets", "linen-cupboards"],
     matches: (p) => {
       const t = p.title.toLowerCase();
       const h = p.handle.toLowerCase();
@@ -877,59 +1380,18 @@ export const FURNITURE_SUBTYPES: FurnitureSubType[] = [
         t.includes("cupboard") ||
         h.includes("cupboard") ||
         t.includes("storage") ||
-        t.includes("cabinet") ||
-        t.includes("tall")
+        t.includes("cabinet")
       );
     },
   },
   {
-    id: "wall-cabinets",
-    label: "Wall Hanging Cabinets",
+    id: "bathroom-shelves",
+    label: "Bathroom Shelves",
     categoryId: "cat_bathroom",
-    aliases: ["wall-cabinets", "wall-cupboard", "mirrored-cabinet", "hanging"],
+    aliases: ["bathroom-shelves", "bathroom-shelf"],
     matches: (p) => {
       const t = p.title.toLowerCase();
-      const h = p.handle.toLowerCase();
-      return t.includes("wall") || h.includes("wall") || t.includes("hanging");
-    },
-  },
-
-  // Kids & Nursery Sub-Types (cat_kids)
-  {
-    id: "kids-beds",
-    label: "Kids Beds & Bunks",
-    categoryId: "cat_kids",
-    aliases: ["kids-beds", "bunk", "cabin-bed", "midsleeper", "high-sleeper", "single-beds"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return (
-        t.includes("bed") ||
-        t.includes("bunk") ||
-        t.includes("cabin") ||
-        t.includes("midsleeper") ||
-        t.includes("mid sleeper") ||
-        t.includes("high sleeper")
-      );
-    },
-  },
-  {
-    id: "kids-storage",
-    label: "Kids Storage & Wardrobes",
-    categoryId: "cat_kids",
-    aliases: ["kids-storage", "wardrobes", "chests", "toy-storage"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("wardrobe") || t.includes("chest") || t.includes("storage") || t.includes("drawers") || t.includes("toy");
-    },
-  },
-  {
-    id: "kids-desks",
-    label: "Kids Study Desks",
-    categoryId: "cat_kids",
-    aliases: ["kids-desks", "study-desk", "study", "desks"],
-    matches: (p) => {
-      const t = p.title.toLowerCase();
-      return t.includes("desk") || t.includes("study") || t.includes("table");
+      return t.includes("shelf") || t.includes("shelving");
     },
   },
 ];
