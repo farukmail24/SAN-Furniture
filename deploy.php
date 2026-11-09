@@ -189,6 +189,8 @@ if ($requestMethod === 'GET') {
                 $hostUsed = $h;
                 $cStmt = $pdo->query("SELECT COUNT(*) FROM admin_audit_logs");
                 $auditLogsCount = (int)$cStmt->fetchColumn();
+                $pdo->exec("UPDATE cms_sections SET content = REPLACE(content, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE content LIKE '%photo-1533090161767-e6ffed986b88%'");
+                $pdo->exec("UPDATE categories SET hero_image = REPLACE(hero_image, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE hero_image LIKE '%photo-1533090161767-e6ffed986b88%'");
                 break;
             } catch (Exception $e) {
                 $dbError = $e->getMessage();
@@ -466,6 +468,9 @@ if ($githubEvent === 'push') {
             $auditId = 'audit_deploy_' . time() . '_' . bin2hex(random_bytes(3));
             $stmt = $pdo->prepare("INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address, created_at) VALUES (?, ?, 'GITHUB_AUTO_DEPLOY', 'git_repository', ?, ?, NOW())");
             $stmt->execute([$auditId, "GitHub ({$pusher})", $detailsJson, $clientIp]);
+
+            $pdo->exec("UPDATE cms_sections SET content = REPLACE(content, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE content LIKE '%photo-1533090161767-e6ffed986b88%'");
+            $pdo->exec("UPDATE categories SET hero_image = REPLACE(hero_image, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE hero_image LIKE '%photo-1533090161767-e6ffed986b88%'");
 
             $notifId = 'notif_deploy_' . time() . '_' . bin2hex(random_bytes(3));
             $notifTitle = "Auto-Deployed branch '{$branch}' (" . substr($commitSha, 0, 7) . ")";
