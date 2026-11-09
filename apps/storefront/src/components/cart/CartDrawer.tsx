@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { X, Trash2, Plus, Minus, Truck, ShieldCheck, ArrowRight, ShoppingBag } from "lucide-react";
+import { X, Trash2, Plus, Minus, Truck, ShieldCheck, ArrowRight, ShoppingBag, AlertCircle, Lock } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
 import { formatGBP } from "@san-furniture/types";
 import { usePageSections } from "@/lib/cms";
@@ -22,6 +22,8 @@ export function CartDrawer() {
     freeDeliveryProgressPercent,
     hasFreeDelivery,
   } = useCart();
+
+  const hasOutOfStockItem = items.some((item) => (item.product as any)?.status === "out_of_stock");
 
   const { getSection } = usePageSections("cart");
   const guaranteesSection = getSection("cart_trust_guarantees", {
@@ -182,6 +184,14 @@ export function CartDrawer() {
                           </>
                         )}
                       </div>
+
+                      {(item.product as any)?.status === "out_of_stock" && (
+                        <div className="mt-1.5">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 px-2 py-0.5 rounded border border-rose-300">
+                            <AlertCircle className="w-3 h-3 text-rose-600 shrink-0" /> Out of Stock — Please remove
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Stepper & Price */}
@@ -200,9 +210,10 @@ export function CartDrawer() {
                         </span>
                         <button
                           type="button"
+                          disabled={(item.product as any)?.status === "out_of_stock"}
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           aria-label="Increase quantity"
-                          className="p-1 text-navy-700 hover:bg-sand-200 transition-colors rounded-r"
+                          className="p-1 text-navy-700 hover:bg-sand-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-r"
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
@@ -253,14 +264,26 @@ export function CartDrawer() {
               </div>
 
               {/* Action Buttons */}
-              <Link
-                href="/checkout"
-                onClick={closeCart}
-                className="w-full py-3.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-brass-400 active:scale-[0.99] transition-all shadow-md"
-              >
-                <span>Proceed to Checkout</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {hasOutOfStockItem ? (
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="w-full py-3.5 px-4 rounded-lg bg-sand-200 border border-sand-300 text-navy-400 font-bold text-sm tracking-wide flex items-center justify-center gap-2 cursor-not-allowed opacity-80 shadow-none"
+                >
+                  <AlertCircle className="w-4 h-4 text-rose-500/80" />
+                  <span>Out of Stock — Remove Items to Checkout</span>
+                </button>
+              ) : (
+                <Link
+                  href="/checkout"
+                  onClick={closeCart}
+                  className="w-full py-3.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-sm tracking-wide flex items-center justify-center gap-2 hover:bg-brass-400 active:scale-[0.99] transition-all shadow-md"
+                >
+                  <span>Proceed to Checkout</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
 
               {/* Trust Badges */}
               {guaranteesSection.isEnabled && (

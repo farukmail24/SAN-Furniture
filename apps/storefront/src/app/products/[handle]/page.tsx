@@ -9,6 +9,7 @@ import {
   Sparkles,
   Award,
   CheckCircle2,
+  AlertCircle,
   FileCheck2,
   FileText,
   Download,
@@ -272,10 +273,17 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   </>
                 )}
                 <span className="text-sand-400">•</span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
-                  <CheckCircle2 className="w-3 h-3" />
-                  In Stock (UK Warehouse)
-                </span>
+                {product.status === "out_of_stock" ? (
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-800 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                    Temporarily Out of Stock
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-forest-700 bg-forest-50 px-2 py-0.5 rounded border border-forest-200">
+                    <CheckCircle2 className="w-3 h-3" />
+                    In Stock (UK Warehouse)
+                  </span>
+                )}
               </div>
 
               {/* Product Title & Subtitle */}

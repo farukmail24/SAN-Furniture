@@ -109,6 +109,11 @@ async function ensureNonDestructiveSchema(connection: mysql.Connection): Promise
     await connection.query("UPDATE `products` SET `category_id` = 'cat_living' WHERE `category_id` = 'cat_armchairs'").catch(() => {});
     await connection.query("DELETE FROM `categories` WHERE `id` = 'cat_armchairs'").catch(() => {});
 
+    // Auto-heal broken product images (e.g. prod_armchair_003 404 unsplash image)
+    await connection.query(
+      "UPDATE `products` SET `thumbnail_url` = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', `images_json` = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE `id` = 'prod_armchair_003' AND (`thumbnail_url` LIKE '%photo-1580481077195%' OR `thumbnail_url` = '' OR `thumbnail_url` IS NULL)"
+    ).catch(() => {});
+
     // 5. Ensure header_mega_menu in site_page_sections has all 8 tabs and updated /living-room?type=armchairs links
     const [secRows]: any = await connection.query("SELECT content_json FROM site_page_sections WHERE section_key = 'header_mega_menu'").catch(() => [[]]);
     if (Array.isArray(secRows) && secRows.length > 0) {

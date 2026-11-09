@@ -20,6 +20,7 @@ import {
   Truck,
   CreditCard,
   ShieldCheck,
+  AlertCircle,
   Tag
 } from "lucide-react";
 import { formatGBP } from "@san-furniture/types";
@@ -494,13 +495,20 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
                     />
                   </Link>
 
-                  {/* Delivery Tier Badge */}
-                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 text-sand-50 shadow-sm">
-                    {product.specs.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "Parcel"}
-                  </span>
+                  {/* Delivery Tier or Out of Stock Badge */}
+                  {product.status === "out_of_stock" ? (
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded bg-rose-950/95 border border-rose-600/60 backdrop-blur-md text-rose-100 flex items-center gap-1 shadow-ambient">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                      Out of Stock
+                    </span>
+                  ) : (
+                    <span className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 px-1.5 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 text-sand-50 shadow-sm">
+                      {product.specs?.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "Parcel"}
+                    </span>
+                  )}
 
                   {/* Compare at price discount pill */}
-                  {product.compareAtPricePennies && (
+                  {product.compareAtPricePennies && product.status !== "out_of_stock" && (
                     <span className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded bg-terracotta-500 text-sand-50 shadow-sm">
                       SAVE {formatGBP(product.compareAtPricePennies - product.pricePennies)}
                     </span>
@@ -508,25 +516,36 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
 
                   {/* Desktop Quick Action Floating Overlay */}
                   <div className="hidden sm:flex absolute inset-x-3 bottom-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickAdd(product, e)}
-                      className={`flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-md ${
-                        isAdded
-                          ? "bg-sage-700 text-sand-50"
-                          : "bg-navy-950 text-sand-50 hover:bg-brass-600 active:scale-95"
-                      }`}
-                    >
-                      {isAdded ? (
-                        <>
-                          <Check className="w-3.5 h-3.5" /> Added!
-                        </>
-                      ) : (
-                        <>
-                          <ShoppingBag className="w-3.5 h-3.5" /> Quick Add
-                        </>
-                      )}
-                    </button>
+                    {product.status === "out_of_stock" ? (
+                      <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        className="flex-1 py-2.5 rounded-lg text-xs font-semibold bg-sand-200 border border-sand-300 text-navy-400 flex items-center justify-center gap-1.5 shadow-none cursor-not-allowed opacity-80"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500/80" /> Out of Stock
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickAdd(product, e)}
+                        className={`flex-1 py-2.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-md ${
+                          isAdded
+                            ? "bg-sage-700 text-sand-50"
+                            : "bg-navy-950 text-sand-50 hover:bg-brass-600 active:scale-95"
+                        }`}
+                      >
+                        {isAdded ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" /> Added!
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingBag className="w-3.5 h-3.5" /> Quick Add
+                          </>
+                        )}
+                      </button>
+                    )}
                     <Link
                       href={`/products/${product.handle}`}
                       className="p-2.5 rounded-lg bg-sand-50/90 text-navy-950 hover:bg-sand-50 shadow-md backdrop-blur-sm transition-all"
@@ -577,22 +596,40 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
                     </div>
 
                     {/* Mobile Touch Quick Add Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickAdd(product, e)}
-                      aria-label={`Add ${product.title} to basket`}
-                      className={`sm:hidden p-2 rounded-lg transition-all active:scale-90 shadow-sm ${
-                        isAdded
-                          ? "bg-sage-700 text-sand-50"
-                          : "bg-navy-950 text-sand-50 hover:bg-brass-600"
-                      }`}
-                    >
-                      {isAdded ? <Check className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5" />}
-                    </button>
+                    {product.status === "out_of_stock" ? (
+                      <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        aria-label={`${product.title} is out of stock`}
+                        className="sm:hidden p-2 rounded-lg bg-sand-200 text-navy-400 cursor-not-allowed opacity-70"
+                      >
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-500/80" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickAdd(product, e)}
+                        aria-label={`Add ${product.title} to basket`}
+                        className={`sm:hidden p-2 rounded-lg transition-all active:scale-90 shadow-sm ${
+                          isAdded
+                            ? "bg-sage-700 text-sand-50"
+                            : "bg-navy-950 text-sand-50 hover:bg-brass-600"
+                        }`}
+                      >
+                        {isAdded ? <Check className="w-3.5 h-3.5" /> : <ShoppingBag className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
 
-                    <span className="hidden sm:flex text-[11px] text-sage-700 font-semibold items-center gap-1">
-                      <Check className="w-3 h-3" /> In Stock
-                    </span>
+                    {product.status === "out_of_stock" ? (
+                      <span className="hidden sm:flex text-[11px] text-rose-700 font-semibold items-center gap-1">
+                        <AlertCircle className="w-3 h-3 text-rose-600" /> Out of Stock
+                      </span>
+                    ) : (
+                      <span className="hidden sm:flex text-[11px] text-sage-700 font-semibold items-center gap-1">
+                        <Check className="w-3 h-3" /> In Stock
+                      </span>
+                    )}
                   </div>
                 </div>
               </StaggerItem>

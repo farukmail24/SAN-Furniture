@@ -160,9 +160,9 @@ async function main() {
       compareAtPricePennies: 79900,
       vatRatePercent: 20.0,
       gtinBarcode: "5060123456013",
-      thumbnailUrl: "https://images.unsplash.com/photo-1580481077195-c22ae007f3c4?auto=format&fit=crop&w=1200&q=85",
+      thumbnailUrl: "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85",
       images: [
-        "https://images.unsplash.com/photo-1580481077195-c22ae007f3c4?auto=format&fit=crop&w=1200&q=85"
+        "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85"
       ],
       specs: {
         width_cm: 82.0,

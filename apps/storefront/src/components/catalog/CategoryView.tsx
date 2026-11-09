@@ -19,6 +19,7 @@ import {
   Heart,
   ShoppingBag,
   Check,
+  AlertCircle,
   Share2,
   ArrowUpDown,
   RotateCcw,
@@ -1465,15 +1466,22 @@ export function CategoryView({
                               />
                             </Link>
 
-                            {/* Delivery Badge */}
-                            <span className="absolute top-2 left-2 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1 shadow-ambient">
-                              <Truck className="w-2.5 h-2.5 text-brass-400" />
-                              <span className="truncate max-w-[85px] sm:max-w-none">
-                                {product.specs?.delivery_tier === "two_man_white_glove"
-                                  ? "Room of Choice"
-                                  : "Free UK Delivery"}
+                            {/* Delivery or Out of Stock Badge */}
+                            {product.status === "out_of_stock" ? (
+                              <span className="absolute top-2 left-2 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded bg-rose-950/95 border border-rose-600/60 backdrop-blur-md text-rose-100 flex items-center gap-1 shadow-ambient">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                                <span>Out of Stock</span>
                               </span>
-                            </span>
+                            ) : (
+                              <span className="absolute top-2 left-2 z-10 px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1 shadow-ambient">
+                                <Truck className="w-2.5 h-2.5 text-brass-400" />
+                                <span className="truncate max-w-[85px] sm:max-w-none">
+                                  {product.specs?.delivery_tier === "two_man_white_glove"
+                                    ? "Room of Choice"
+                                    : "Free UK Delivery"}
+                                </span>
+                              </span>
+                            )}
 
                             {/* Wishlist Button */}
                             <button
@@ -1544,19 +1552,31 @@ export function CategoryView({
 
                               {/* Quick Actions (Quick Add & Compare) */}
                               <div className="grid grid-cols-2 gap-1.5 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleQuickAddToCart(product)}
-                                  disabled={addingCartId === product.id}
-                                  className="py-1.5 sm:py-2 px-2 rounded-lg bg-navy-950 hover:bg-navy-900 active:scale-95 text-sand-50 text-[10px] sm:text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1"
-                                >
-                                  {addingCartId === product.id ? (
-                                    <Check className="w-3 h-3 text-emerald-400" />
-                                  ) : (
-                                    <ShoppingBag className="w-3 h-3 text-brass-400" />
-                                  )}
-                                  <span className="truncate">{addingCartId === product.id ? "Added!" : "Quick Add"}</span>
-                                </button>
+                                {product.status === "out_of_stock" ? (
+                                  <button
+                                    type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    className="py-1.5 sm:py-2 px-2 rounded-lg bg-sand-200 border border-sand-300 text-navy-400 text-[10px] sm:text-xs font-semibold cursor-not-allowed opacity-80 flex items-center justify-center gap-1 shadow-none"
+                                  >
+                                    <AlertCircle className="w-3 h-3 text-rose-500/80" />
+                                    <span className="truncate">Out of Stock</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickAddToCart(product)}
+                                    disabled={addingCartId === product.id}
+                                    className="py-1.5 sm:py-2 px-2 rounded-lg bg-navy-950 hover:bg-navy-900 active:scale-95 text-sand-50 text-[10px] sm:text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1"
+                                  >
+                                    {addingCartId === product.id ? (
+                                      <Check className="w-3 h-3 text-emerald-400" />
+                                    ) : (
+                                      <ShoppingBag className="w-3 h-3 text-brass-400" />
+                                    )}
+                                    <span className="truncate">{addingCartId === product.id ? "Added!" : "Quick Add"}</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleToggleCompare(product)}
@@ -1605,12 +1625,19 @@ export function CategoryView({
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           </Link>
-                          <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
-                            <Truck className="w-3 h-3 text-brass-400" />
-                            {product.specs?.delivery_tier === "two_man_white_glove"
-                              ? "Room of Choice Delivery"
-                              : "Free Mainland UK Delivery"}
-                          </span>
+                          {product.status === "out_of_stock" ? (
+                            <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-bold rounded bg-rose-950/95 border border-rose-600/60 backdrop-blur-md text-rose-100 flex items-center gap-1.5 shadow-ambient">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                              <span>Out of Stock</span>
+                            </span>
+                          ) : (
+                            <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
+                              <Truck className="w-3 h-3 text-brass-400" />
+                              {product.specs?.delivery_tier === "two_man_white_glove"
+                                ? "Room of Choice Delivery"
+                                : "Free Mainland UK Delivery"}
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => toggleWishlist(product)}
@@ -1657,14 +1684,26 @@ export function CategoryView({
                               <span className="text-navy-500 text-[10px] font-bold">0% APR</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleQuickAddToCart(product)}
-                                className="flex-1 py-2.5 px-4 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-1.5"
-                              >
-                                <ShoppingBag className="w-3.5 h-3.5 text-brass-400" />
-                                <span>Add to Bag</span>
-                              </button>
+                              {product.status === "out_of_stock" ? (
+                                <button
+                                  type="button"
+                                  disabled
+                                  aria-disabled="true"
+                                  className="flex-1 py-2.5 px-4 rounded-xl bg-sand-200 border border-sand-300 text-navy-400 text-xs font-semibold cursor-not-allowed opacity-80 flex items-center justify-center gap-1.5 shadow-none"
+                                >
+                                  <AlertCircle className="w-3.5 h-3.5 text-rose-500/80" />
+                                  <span>Out of Stock</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickAddToCart(product)}
+                                  className="flex-1 py-2.5 px-4 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-1.5"
+                                >
+                                  <ShoppingBag className="w-3.5 h-3.5 text-brass-400" />
+                                  <span>Add to Bag</span>
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => setQuickViewProduct(product)}
@@ -1715,6 +1754,12 @@ export function CategoryView({
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           </Link>
+                          {product.status === "out_of_stock" && (
+                            <span className="absolute top-2 left-2 z-10 px-2 py-0.5 text-[9px] font-bold rounded bg-rose-950/95 border border-rose-600/60 backdrop-blur-md text-rose-100 flex items-center gap-1 shadow-ambient">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                              <span>Out of Stock</span>
+                            </span>
+                          )}
                           <button
                             type="button"
                             onClick={() => toggleWishlist(product)}
@@ -1782,14 +1827,26 @@ export function CategoryView({
                           </div>
 
                           <div className="space-y-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleQuickAddToCart(product)}
-                              className="w-full py-2 px-3 rounded-lg bg-navy-950 hover:bg-navy-900 text-sand-50 text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5"
-                            >
-                              <ShoppingBag className="w-3.5 h-3.5 text-brass-400" />
-                              <span>Add to Bag</span>
-                            </button>
+                            {product.status === "out_of_stock" ? (
+                              <button
+                                type="button"
+                                disabled
+                                aria-disabled="true"
+                                className="w-full py-2 px-3 rounded-lg bg-sand-200 border border-sand-300 text-navy-400 text-xs font-semibold cursor-not-allowed opacity-80 flex items-center justify-center gap-1.5 shadow-none"
+                              >
+                                <AlertCircle className="w-3.5 h-3.5 text-rose-500/80" />
+                                <span>Out of Stock</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleQuickAddToCart(product)}
+                                className="w-full py-2 px-3 rounded-lg bg-navy-950 hover:bg-navy-900 text-sand-50 text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5 text-brass-400" />
+                                <span>Add to Bag</span>
+                              </button>
+                            )}
                             <div className="grid grid-cols-2 gap-1">
                               <button
                                 type="button"

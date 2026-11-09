@@ -263,7 +263,7 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
         s.fire_safety_cert, s.lead_time_days
       FROM products p
       LEFT JOIN furniture_specs s ON p.id = s.product_id
-      WHERE p.status IN ('published', 'active')
+      WHERE p.status IN ('published', 'active', 'out_of_stock')
       ORDER BY p.created_at DESC
     `;
 

@@ -9,6 +9,7 @@ import {
   Check,
   Heart,
   ShoppingBag,
+  AlertCircle,
   ExternalLink,
   Layers,
   Ruler,
@@ -135,13 +136,20 @@ export function ProductQuickViewModal({
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
 
-              {/* Delivery Tier Badge */}
-              <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
-                <Truck className="w-3 h-3 text-brass-400" />
-                {product.specs.delivery_tier === "two_man_white_glove"
-                  ? "Room of Choice Delivery"
-                  : "Free UK Mainland Delivery"}
-              </span>
+              {/* Delivery Tier or Out of Stock Badge */}
+              {product.status === "out_of_stock" ? (
+                <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-bold rounded bg-rose-950/95 border border-rose-600/60 backdrop-blur-md text-rose-100 flex items-center gap-1.5 shadow-ambient">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse"></span>
+                  <span>Out of Stock</span>
+                </span>
+              ) : (
+                <span className="absolute top-3 left-3 z-10 px-2.5 py-1 text-[10px] font-semibold rounded bg-navy-950/90 backdrop-blur-sm text-sand-50 flex items-center gap-1.5 shadow-sm">
+                  <Truck className="w-3 h-3 text-brass-400" />
+                  {product.specs?.delivery_tier === "two_man_white_glove"
+                    ? "Room of Choice Delivery"
+                    : "Free UK Mainland Delivery"}
+                </span>
+              )}
 
               {/* Prev / Next Arrows */}
               {images.length > 1 && (
@@ -324,11 +332,11 @@ export function ProductQuickViewModal({
             <div className="space-y-3 pt-3 border-t border-sand-200">
               <div className="flex items-center gap-3">
                 {/* Quantity Selector */}
-                <div className="flex items-center border border-sand-300 rounded-lg bg-sand-50 overflow-hidden">
+                <div className={`flex items-center border border-sand-300 rounded-lg overflow-hidden ${product.status === "out_of_stock" ? "bg-sand-100 opacity-50" : "bg-sand-50"}`}>
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
+                    disabled={product.status === "out_of_stock" || quantity <= 1}
                     className="px-3 py-2 text-navy-700 hover:bg-sand-200 disabled:opacity-40 transition-colors"
                     aria-label="Decrease quantity"
                   >
@@ -340,7 +348,8 @@ export function ProductQuickViewModal({
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="px-3 py-2 text-navy-700 hover:bg-sand-200 transition-colors"
+                    disabled={product.status === "out_of_stock"}
+                    className="px-3 py-2 text-navy-700 hover:bg-sand-200 disabled:opacity-40 transition-colors"
                     aria-label="Increase quantity"
                   >
                     +
@@ -348,24 +357,36 @@ export function ProductQuickViewModal({
                 </div>
 
                 {/* Primary Add to Bag Button */}
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={isAdding}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-navy-950 hover:bg-navy-900 active:scale-[0.98] text-sand-50 font-semibold text-xs sm:text-sm transition-all shadow-md"
-                >
-                  {addedSuccess ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Added to Bag!</span>
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingBag className="w-4 h-4 text-brass-400" />
-                      <span>Add to Bag · {formatGBP(product.pricePennies * quantity)}</span>
-                    </>
-                  )}
-                </button>
+                {product.status === "out_of_stock" ? (
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-sand-200 border border-sand-300 text-navy-400 font-semibold text-xs sm:text-sm cursor-not-allowed opacity-80 shadow-none"
+                  >
+                    <AlertCircle className="w-4 h-4 text-rose-500/80" />
+                    <span>Temporarily Out of Stock</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    disabled={isAdding}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-navy-950 hover:bg-navy-900 active:scale-[0.98] text-sand-50 font-semibold text-xs sm:text-sm transition-all shadow-md"
+                  >
+                    {addedSuccess ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span>Added to Bag!</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBag className="w-4 h-4 text-brass-400" />
+                        <span>Add to Bag · {formatGBP(product.pricePennies * quantity)}</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 {/* Wishlist Button */}
                 <button

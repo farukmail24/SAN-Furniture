@@ -121,6 +121,10 @@ export default function CheckoutPage() {
     clearCart,
   } = useCart();
 
+  const hasOutOfStockItem = useMemo(() => {
+    return items.some((item) => (item.product as any)?.status === "out_of_stock");
+  }, [items]);
+
   const { getSection } = usePageSections("checkout");
   const headerBadge = getSection("checkout_header_badge", {
     badge_text: "Safe & Secure UK Checkout",
@@ -811,6 +815,11 @@ export default function CheckoutPage() {
   const handlePlaceOrderAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
+
+    if (hasOutOfStockItem) {
+      setSubmitError("Your basket contains one or more out of stock items. Please remove them before completing your order.");
+      return;
+    }
 
     // Validate Account fields
     const effAccountFirstName = accountFirstName.trim() || billingFirstName.trim();
@@ -2648,9 +2657,9 @@ export default function CheckoutPage() {
               {/* Submit CTA Button: Seamless 1-Click Pay & Confirm */}
               <button
                 type="submit"
-                disabled={isProcessingPayment || isSubmittingOrder || isOutsideDeliveryArea}
+                disabled={isProcessingPayment || isSubmittingOrder || isOutsideDeliveryArea || hasOutOfStockItem}
                 className={`w-full py-4 px-6 rounded-lg font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all shadow-md ${
-                  isOutsideDeliveryArea
+                  isOutsideDeliveryArea || hasOutOfStockItem
                     ? "bg-sand-300 text-navy-400 cursor-not-allowed border border-sand-400"
                     : "bg-brass-500 text-navy-950 hover:bg-brass-400 active:scale-[0.99] cursor-pointer"
                 } disabled:opacity-60`}
@@ -2674,6 +2683,11 @@ export default function CheckoutPage() {
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-navy-950" />
                     <span>Processing Payment & Confirming Order...</span>
+                  </>
+                ) : hasOutOfStockItem ? (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-rose-600" />
+                    <span>Basket Contains Out of Stock Item(s) — Cannot Proceed</span>
                   </>
                 ) : isOutsideDeliveryArea ? (
                   <>
@@ -2740,6 +2754,13 @@ export default function CheckoutPage() {
                         <h4 className="text-xs font-bold text-navy-950 truncate">
                           {title}
                         </h4>
+                        {(prod as any)?.status === "out_of_stock" && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-800 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300">
+                              <AlertCircle className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Out of Stock — Please remove
+                            </span>
+                          </div>
+                        )}
                         <p className="text-[11px] text-navy-600">
                           Qty: {qty} • {finish}
                         </p>

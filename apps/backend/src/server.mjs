@@ -863,7 +863,7 @@ const server = http.createServer(async (req, res) => {
                s.delivery_tier, s.fire_safety_compliant, s.fire_safety_standard, s.lead_time_days
         FROM products p
         LEFT JOIN furniture_specs s ON p.id = s.product_id
-        WHERE ${includeAll ? "1=1" : "p.status = 'published'"}
+        WHERE ${includeAll ? "1=1" : "p.status IN ('published', 'active', 'out_of_stock')"}
       `;
       const params = [];
       if (categoryFilter) {
@@ -2956,7 +2956,7 @@ const server = http.createServer(async (req, res) => {
     // 8. Google Merchant XML Feed
     if (pathname === "/api/feeds/google-merchant.xml" && method === "GET") {
       const [products] = await pool.query(
-        "SELECT p.*, s.delivery_tier FROM products p LEFT JOIN furniture_specs s ON p.id = s.product_id WHERE p.status = 'published'"
+        "SELECT p.*, s.delivery_tier FROM products p LEFT JOIN furniture_specs s ON p.id = s.product_id WHERE p.status IN ('published', 'out_of_stock')"
       );
       const catMap = {
         cat_beds: "Furniture &gt; Beds &amp; Accessories &gt; Beds &amp; Bed Frames",
@@ -2975,6 +2975,7 @@ const server = http.createServer(async (req, res) => {
               : p.delivery_tier === "pallet"
               ? "Pallet Freight Delivery"
               : "Room of Choice Delivery";
+          const availability = p.status === "out_of_stock" ? "out_of_stock" : "in_stock";
           return `
     <item>
       <g:id>${p.id}</g:id>
@@ -2982,7 +2983,7 @@ const server = http.createServer(async (req, res) => {
       <g:description><![CDATA[${p.description}]]></g:description>
       <g:link>http://localhost:3000/products/${p.handle}</g:link>
       <g:image_link>${p.thumbnail_url}</g:image_link>
-      <g:availability>in_stock</g:availability>
+      <g:availability>${availability}</g:availability>
       <g:price>${(p.price_pennies / 100).toFixed(2)} GBP</g:price>
       <g:brand>SAN Furniture</g:brand>
       <g:gtin>${p.gtin_barcode || ""}</g:gtin>
@@ -3542,7 +3543,7 @@ const server = http.createServer(async (req, res) => {
         const productIds = items.map(it => it.productId || it.id).filter(Boolean);
         if (productIds.length > 0) {
           const [dbProducts] = await pool.query(
-            "SELECT id, price_pennies, status FROM products WHERE id IN (?)",
+            "SELECT id, title, price_pennies, status FROM products WHERE id IN (?)",
             [productIds]
           );
           const pMap = new Map(dbProducts.map(p => [p.id, p]));
@@ -3552,6 +3553,11 @@ const server = http.createServer(async (req, res) => {
             const dbP = pMap.get(pid);
             if (!dbP) {
               return sendJson(res, 400, { error: `Invalid item in basket: Product "${pid}" not found in catalog.` });
+            }
+            if (dbP.status === "out_of_stock") {
+              return sendJson(res, 400, {
+                error: `Item "${dbP.title || pid}" is currently out of stock and cannot be purchased. Please remove it from your basket to proceed.`
+              });
             }
             const unitPrice = Number(dbP.price_pennies);
             const qty = Math.max(1, parseInt(it.quantity, 10) || 1);

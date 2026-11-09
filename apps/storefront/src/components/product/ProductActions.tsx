@@ -9,6 +9,7 @@ import {
   Check,
   ShieldCheck,
   Truck,
+  AlertCircle,
   Plus,
   Minus,
 } from "lucide-react";
@@ -55,6 +56,7 @@ export function ProductActions({ product, valueBadges }: ProductActionsProps) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
+  const isOutOfStock = product.status === "out_of_stock";
 
   const [selectedVariant, setSelectedVariant] = useState(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
@@ -174,6 +176,7 @@ export function ProductActions({ product, valueBadges }: ProductActionsProps) {
     : product.pricePennies;
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     addItem(product, quantity, {
       fabric: product.specs?.material,
       finish: selectedVariant
@@ -323,48 +326,62 @@ export function ProductActions({ product, valueBadges }: ProductActionsProps) {
       {/* Quantity Selector & Primary CTA Button */}
       <div ref={mainCtaRef} className="flex flex-col sm:flex-row items-stretch gap-3 pt-2">
         {/* Quantity Stepper */}
-        <div className="flex items-center justify-between sm:justify-center border border-sand-300 rounded-lg bg-sand-100/50 px-3 py-3 sm:py-0 w-full sm:w-32 flex-shrink-0">
+        <div className={`flex items-center justify-between sm:justify-center border border-sand-300 rounded-lg px-3 py-3 sm:py-0 w-full sm:w-32 flex-shrink-0 ${isOutOfStock ? "bg-sand-200/50 opacity-50" : "bg-sand-100/50"}`}>
           <button
             type="button"
+            disabled={isOutOfStock || quantity <= 1}
             onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
             aria-label="Decrease quantity"
-            className="p-1 text-navy-700 hover:text-navy-950 hover:bg-sand-200 rounded transition-colors"
+            className="p-1 text-navy-700 hover:text-navy-950 hover:bg-sand-200 rounded transition-colors disabled:opacity-40"
           >
             <Minus className="w-4 h-4" />
           </button>
           <span className="px-4 font-display font-bold text-navy-950 text-sm">{quantity}</span>
           <button
             type="button"
+            disabled={isOutOfStock}
             onClick={() => setQuantity((prev) => prev + 1)}
             aria-label="Increase quantity"
-            className="p-1 text-navy-700 hover:text-navy-950 hover:bg-sand-200 rounded transition-colors"
+            className="p-1 text-navy-700 hover:text-navy-950 hover:bg-sand-200 rounded transition-colors disabled:opacity-40"
           >
             <Plus className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Add To Basket Button */}
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          className={`flex-1 py-4 px-6 rounded-lg font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] ${
-            isAdded
-              ? "bg-forest-600 text-white"
-              : "bg-brass-500 text-navy-950 hover:bg-brass-400"
-          }`}
-        >
-          {isAdded ? (
-            <>
-              <Check className="w-5 h-5" />
-              <span>Added to Basket</span>
-            </>
-          ) : (
-            <>
-              <ShoppingBag className="w-5 h-5" />
-              <span>Add to Basket • {formatGBP(effectivePricePennies * quantity)}</span>
-            </>
-          )}
-        </button>
+        {/* Add To Basket Button or Out of Stock Button */}
+        {isOutOfStock ? (
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            className="flex-1 py-4 px-6 rounded-lg font-bold text-sm tracking-wide flex items-center justify-center gap-2 bg-sand-200 border border-sand-300 text-navy-400 cursor-not-allowed shadow-none opacity-90"
+          >
+            <AlertCircle className="w-5 h-5 text-rose-500/80" />
+            <span>Temporarily Out of Stock</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className={`flex-1 py-4 px-6 rounded-lg font-bold text-sm tracking-wide flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] ${
+              isAdded
+                ? "bg-forest-600 text-white"
+                : "bg-brass-500 text-navy-950 hover:bg-brass-400"
+            }`}
+          >
+            {isAdded ? (
+              <>
+                <Check className="w-5 h-5" />
+                <span>Added to Basket</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="w-5 h-5" />
+                <span>Add to Basket • {formatGBP(effectivePricePennies * quantity)}</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Save to Wishlist Button */}
         <button
@@ -390,6 +407,27 @@ export function ProductActions({ product, valueBadges }: ProductActionsProps) {
           <Link href="/account?tab=wishlist" className="underline text-brass-400 font-bold hover:text-brass-300">
             View Wishlist
           </Link>
+        </div>
+      )}
+
+      {/* Out of Stock Concierge Restock Notification */}
+      {isOutOfStock && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-navy-900 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold text-navy-950">Awaiting Supplier Restock</p>
+            <p className="text-navy-700 leading-relaxed">
+              This handcrafted piece is currently between production batches. Would you like priority notification when inventory arrives?
+            </p>
+            <div className="pt-1">
+              <Link
+                href={`/contact?subject=Restock+Inquiry&product=${encodeURIComponent(product.title)}`}
+                className="inline-flex items-center text-xs font-bold text-brass-700 hover:text-brass-800 underline underline-offset-2"
+              >
+                Inquire with SAN Concierge →
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
@@ -486,14 +524,26 @@ export function ProductActions({ product, valueBadges }: ProductActionsProps) {
             >
               <Heart className={`w-4 h-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`} />
             </button>
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              className="py-2.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-xs tracking-wide flex items-center gap-1.5 hover:bg-brass-400 active:scale-95 shadow"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Add to Basket</span>
-            </button>
+            {isOutOfStock ? (
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                className="py-2.5 px-4 rounded-lg bg-sand-200 border border-sand-300 text-navy-400 font-bold text-xs tracking-wide flex items-center gap-1.5 cursor-not-allowed opacity-80"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-500/80" />
+                <span>Out of Stock</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAddToCart}
+                className="py-2.5 px-4 rounded-lg bg-brass-500 text-navy-950 font-bold text-xs tracking-wide flex items-center gap-1.5 hover:bg-brass-400 active:scale-95 shadow"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>Add to Basket</span>
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -382,7 +382,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
     compareAtPricePennies: 62000,
     vatRatePercent: 20.0,
     gtinBarcode: "5060123456011",
-    thumbnailUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=85",
+    thumbnailUrl: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85",
     specs: {
       width_cm: 86.0,
       height_cm: 78.0,
@@ -439,7 +439,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
     compareAtPricePennies: 79900,
     vatRatePercent: 20.0,
     gtinBarcode: "5060123456013",
-    thumbnailUrl: "https://images.unsplash.com/photo-1580481077195-c22ae007f3c4?auto=format&fit=crop&w=1200&q=85",
+    thumbnailUrl: "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85",
     specs: {
       width_cm: 82.0,
       height_cm: 104.0,
@@ -467,7 +467,7 @@ export const SEED_FURNITURE_PRODUCTS: SeedProduct[] = [
     pricePennies: 39900,
     vatRatePercent: 20.0,
     gtinBarcode: "5060123456014",
-    thumbnailUrl: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=85",
+    thumbnailUrl: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85",
     specs: {
       width_cm: 72.0,
       height_cm: 79.0,
