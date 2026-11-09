@@ -94,7 +94,7 @@ foreach ($envFiles as $ef) {
                 $k = trim($k);
                 $v = cleanEnvVal($v);
                 if ($k === 'DEPLOY_SECRET') $secret = $v;
-                if ($k === 'SAN_AUTH_SECRET' && $secret === 'san_furniture_auto_deploy_master_secret_2026') $secret = $v;
+                if ($k === 'SAN_AUTH_SECRET' && empty($secret)) $secret = $v;
                 if ($k === 'DB_HOST') $dbHost = $v;
                 if ($k === 'DB_PORT') $dbPort = $v;
                 if ($k === 'DB_DATABASE' || $k === 'DB_NAME') $dbName = $v;
@@ -111,7 +111,12 @@ $queryToken = $_GET['secret'] ?? ($_GET['token'] ?? '');
 $headerToken = $_SERVER['HTTP_X_DEPLOY_SECRET'] ?? '';
 
 if ($requestMethod === 'GET') {
-    $isAuthenticated = ($queryToken === $secret || $headerToken === $secret);
+    $isAuthenticated = (!empty($secret) && strlen($secret) >= 16 && ($queryToken === $secret || $headerToken === $secret));
+    if (!$isAuthenticated) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Forbidden: Authentication required'], JSON_PRETTY_PRINT);
+        exit;
+    }
     $action = $_GET['action'] ?? 'status';
 
     $htaccessFile = $projectRoot . '/.htaccess';
@@ -240,13 +245,16 @@ $deliveryId = $_SERVER['HTTP_X_GITHUB_DELIVERY'] ?? '';
 
 // 5. Authenticate via HMAC SHA-256 OR Secret Token
 $isSigValid = false;
-if (!empty($signature) && strpos($signature, 'sha256=') === 0) {
+$isSecretConfigured = !empty($secret) && strlen($secret) >= 16;
+if ($isSecretConfigured && !empty($signature) && strpos($signature, 'sha256=') === 0) {
     $expectedSig = 'sha256=' . hash_hmac('sha256', $rawPayload, $secret);
     $isSigValid = hash_equals($expectedSig, $signature);
 }
 
-$isTokenValid = (!empty($queryToken) && hash_equals($secret, $queryToken)) || 
-                (!empty($headerToken) && hash_equals($secret, $headerToken));
+$isTokenValid = $isSecretConfigured && (
+    (!empty($queryToken) && hash_equals($secret, $queryToken)) || 
+    (!empty($headerToken) && hash_equals($secret, $headerToken))
+);
 
 if (!$isSigValid && !$isTokenValid) {
     http_response_code(401);
@@ -449,13 +457,14 @@ if ($githubEvent === 'push') {
             'http://127.0.0.1:3000/api/admin/audit',
             'https://sanfurniture.com/api/admin/audit'
         ];
+        $effectiveSecret = !empty($secret) ? $secret : 'san_furniture_auto_deploy_master_secret_2026';
         foreach ($apiUrls as $apiUrl) {
             $ch = curl_init($apiUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'X-Deploy-Secret: ' . $secret
+                'X-Deploy-Secret: ' . $effectiveSecret
             ]);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
                 'actor' => "GitHub ({$pusher})",
@@ -464,7 +473,7 @@ if ($githubEvent === 'push') {
                 'details' => $detailsData,
                 'ipAddress' => $clientIp
             ]));
-            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             $resp = @curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -475,6 +484,8 @@ if ($githubEvent === 'push') {
                 $auditMethod = 'http_api_fallback';
                 $auditErrorMsg = null;
                 break;
+            } else {
+                $auditErrorMsg = "HTTP {$httpCode}: " . substr(strip_tags((string)$resp), 0, 150);
             }
         }
     }

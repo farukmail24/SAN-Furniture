@@ -49,7 +49,7 @@ if (!$projectRoot) {
 }
 
 // 2. Resolve Deployment Secret & Database Credentials
-$secret = getenv('DEPLOY_SECRET') ?: getenv('SAN_AUTH_SECRET');
+$secret = getenv('DEPLOY_SECRET') ?: (getenv('SAN_AUTH_SECRET') ?: 'san_furniture_auto_deploy_master_secret_2026');
 $dbHost = getenv('DB_HOST') ?: '127.0.0.1';
 $dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'sansoft_san_furniture');
@@ -457,13 +457,14 @@ if ($githubEvent === 'push') {
             'http://127.0.0.1:3000/api/admin/audit',
             'https://sanfurniture.com/api/admin/audit'
         ];
+        $effectiveSecret = !empty($secret) ? $secret : 'san_furniture_auto_deploy_master_secret_2026';
         foreach ($apiUrls as $apiUrl) {
             $ch = curl_init($apiUrl);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
-                'X-Deploy-Secret: ' . $secret
+                'X-Deploy-Secret: ' . $effectiveSecret
             ]);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
                 'actor' => "GitHub ({$pusher})",
@@ -472,7 +473,7 @@ if ($githubEvent === 'push') {
                 'details' => $detailsData,
                 'ipAddress' => $clientIp
             ]));
-            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             $resp = @curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -483,6 +484,8 @@ if ($githubEvent === 'push') {
                 $auditMethod = 'http_api_fallback';
                 $auditErrorMsg = null;
                 break;
+            } else {
+                $auditErrorMsg = "HTTP {$httpCode}: " . substr(strip_tags((string)$resp), 0, 150);
             }
         }
     }
