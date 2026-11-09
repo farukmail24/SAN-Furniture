@@ -14,6 +14,8 @@
  */
 
 header('Content-Type: application/json; charset=utf-8');
+ignore_user_abort(true);
+set_time_limit(180);
 
 if (!function_exists('cleanEnvVal')) {
     function cleanEnvVal($val) {
@@ -462,40 +464,35 @@ if ($githubEvent === 'push') {
 
     // Failsafe HTTP fallback to Next.js API if PDO direct insert failed or was unavailable
     if (!$auditSuccess) {
-        $apiUrls = [
-            'http://127.0.0.1:3000/api/admin/audit',
-            'https://sanfurniture.com/api/admin/audit'
-        ];
+        $apiUrl = 'https://sanfurniture.com/api/admin/audit';
         $effectiveSecret = !empty($secret) ? $secret : 'san_furniture_auto_deploy_master_secret_2026';
-        foreach ($apiUrls as $apiUrl) {
-            $ch = curl_init($apiUrl);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'X-Deploy-Secret: ' . $effectiveSecret
-            ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                'actor' => "GitHub ({$pusher})",
-                'action' => 'GITHUB_AUTO_DEPLOY',
-                'resource' => 'git_repository',
-                'details' => $detailsData,
-                'ipAddress' => $clientIp
-            ]));
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            $resp = @curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            @curl_close($ch);
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-Deploy-Secret: ' . $effectiveSecret
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'actor' => "GitHub ({$pusher})",
+            'action' => 'GITHUB_AUTO_DEPLOY',
+            'resource' => 'git_repository',
+            'details' => $detailsData,
+            'ipAddress' => $clientIp
+        ]));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $resp = @curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        @curl_close($ch);
 
-            if ($httpCode >= 200 && $httpCode < 300) {
-                $auditSuccess = true;
-                $auditMethod = 'http_api_fallback';
-                $auditErrorMsg = null;
-                break;
-            } else {
-                $auditErrorMsg = "HTTP {$httpCode}: " . substr(strip_tags((string)$resp), 0, 150);
-            }
+        if ($httpCode >= 200 && $httpCode < 300) {
+            $auditSuccess = true;
+            $auditMethod = 'http_api_fallback';
+            $auditErrorMsg = null;
+        } else {
+            $auditErrorMsg = "HTTP {$httpCode}: " . substr(strip_tags((string)$resp), 0, 150);
         }
     }
 
