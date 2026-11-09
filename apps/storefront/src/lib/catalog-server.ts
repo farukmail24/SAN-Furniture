@@ -352,12 +352,21 @@ export async function fetchLiveCategoriesFromDb(): Promise<ProductCategory[]> {
     }
 
     if (Array.isArray(rows) && rows.length > 0) {
+      // Auto-heal broken unsplash hero image in categories table
+      if (rows.some((r: any) => r.heroImage && r.heroImage.includes("photo-1533090161767"))) {
+        pool.query(
+          "UPDATE categories SET hero_image = 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1600&q=85' WHERE hero_image LIKE '%photo-1533090161767%'"
+        ).catch(() => {});
+      }
+
       return rows.map((r: any) => ({
         id: r.id,
         name: r.name,
         handle: r.handle,
         description: r.description || "",
-        heroImage: r.heroImage || "",
+        heroImage: (r.heroImage && !r.heroImage.includes("photo-1533090161767"))
+          ? r.heroImage
+          : "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1600&q=85",
       }));
     }
   } catch (err) {

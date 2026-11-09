@@ -5,6 +5,7 @@ import { ChevronRight, ShieldCheck, Truck } from "lucide-react";
 import {
   CATALOG_CATEGORIES,
   getCategoryByHandle,
+  getLiveCategoryByHandle,
   getLiveProductsByCategory,
 } from "@/lib/catalog";
 import { CategoryView } from "@/components/catalog/CategoryView";
@@ -52,7 +53,7 @@ export async function generateMetadata({
     return { title: "Page Not Found | SAN Furniture" };
   }
 
-  const category = getCategoryByHandle(categorySlug);
+  const category = (await getLiveCategoryByHandle(categorySlug)) || getCategoryByHandle(categorySlug);
   if (!category) {
     return {
       title: "Category Not Found | SAN Furniture",
@@ -102,7 +103,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     redirect(`/living-room${qs ? `?${qs}` : ""}`);
   }
 
-  const category = getCategoryByHandle(categorySlug);
+  const category = (await getLiveCategoryByHandle(categorySlug)) || getCategoryByHandle(categorySlug);
 
   if (!category) {
     notFound();
