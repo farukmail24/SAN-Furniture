@@ -56,7 +56,7 @@ $dbName = getenv('DB_DATABASE') ?: (getenv('DB_NAME') ?: 'sansoft_san_furniture'
 $dbUser = getenv('DB_USERNAME') ?: (getenv('DB_USER') ?: 'root');
 $dbPass = getenv('DB_PASSWORD') !== false ? getenv('DB_PASSWORD') : '';
 
-$envFiles = [
+$envFiles = array_unique(array_filter([
     $projectRoot . '/.env',
     $projectRoot . '/.env.production',
     $projectRoot . '/.env.local',
@@ -65,10 +65,20 @@ $envFiles = [
     $projectRoot . '/apps/storefront/.env.production',
     $projectRoot . '/apps/storefront/.env.local',
     $projectRoot . '/apps/storefront/.env.production.local',
+    $projectRoot . '/apps/backend/.env',
+    $projectRoot . '/apps/backend/.env.production',
+    $projectRoot . '/apps/backend/.env.local',
     dirname($projectRoot) . '/.env',
+    dirname($projectRoot) . '/sanfurniture.com/.env',
+    dirname($projectRoot) . '/sanfurniture.com/apps/backend/.env',
+    '/home/sansoft/sanfurniture.com/apps/backend/.env',
+    '/home/sansoft/sanfurniture.com/.env',
+    '/home/sansoft/.env',
     __DIR__ . '/.env',
-    __DIR__ . '/../.env'
-];
+    __DIR__ . '/../.env',
+    __DIR__ . '/../../.env',
+    __DIR__ . '/../../apps/backend/.env'
+]));
 
 $existingEnvFiles = [];
 foreach ($envFiles as $ef) {
@@ -422,6 +432,12 @@ if ($githubEvent === 'push') {
 
             $auditSuccess = true;
             $auditMethod = 'direct_pdo';
+
+            // Auto-heal known broken images in MySQL
+            try {
+                $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'");
+                $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'");
+            } catch (Exception $imgErr) {}
         } catch (Exception $dbErr) {
             $auditErrorMsg = $dbErr->getMessage();
         }

@@ -888,8 +888,13 @@ const server = http.createServer(async (req, res) => {
         compareAtPricePennies: row.compare_at_price_pennies,
         vatRatePercent: Number(row.vat_rate_percent || 20),
         gtinBarcode: row.gtin_barcode || "5060912830018",
-        thumbnailUrl: row.thumbnail_url,
-        images: row.images_json ? JSON.parse(row.images_json) : [row.thumbnail_url],
+        thumbnailUrl: (row.thumbnail_url && (row.thumbnail_url.includes("photo-1580481077195") || row.id === "prod_armchair_003"))
+          ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85"
+          : row.thumbnail_url,
+        images: (() => {
+          let imgs = row.images_json ? (typeof row.images_json === "string" ? JSON.parse(row.images_json) : row.images_json) : [row.thumbnail_url];
+          return imgs.map((img) => (img.includes("photo-1580481077195") || row.id === "prod_armchair_003") ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85" : img);
+        })(),
         variants: row.variants_json ? JSON.parse(row.variants_json) : [],
         specs: {
           width_cm: Number(row.width_cm),
@@ -963,8 +968,13 @@ const server = http.createServer(async (req, res) => {
           priceFormatted: formatGBP(row.price_pennies),
           vatRatePercent: Number(row.vat_rate_percent || 20),
           gtinBarcode: row.gtin_barcode || "5060912830018",
-          thumbnailUrl: row.thumbnail_url,
-          images: row.images_json ? JSON.parse(row.images_json) : [row.thumbnail_url],
+          thumbnailUrl: (row.thumbnail_url && (row.thumbnail_url.includes("photo-1580481077195") || row.id === "prod_armchair_003"))
+            ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85"
+            : row.thumbnail_url,
+          images: (() => {
+            let imgs = row.images_json ? (typeof row.images_json === "string" ? JSON.parse(row.images_json) : row.images_json) : [row.thumbnail_url];
+            return imgs.map((img) => (img.includes("photo-1580481077195") || row.id === "prod_armchair_003") ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85" : img);
+          })(),
           variants: row.variants_json ? JSON.parse(row.variants_json) : [],
           specs: {
             width_cm: Number(row.width_cm),

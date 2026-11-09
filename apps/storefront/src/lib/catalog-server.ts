@@ -22,6 +22,14 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
       Array.isArray(existingIds) ? existingIds.map((r: any) => r.id) : []
     );
 
+    // Auto-heal known broken images in MySQL
+    await pool.query(
+      "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'"
+    ).catch(() => {});
+    await pool.query(
+      "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'"
+    ).catch(() => {});
+
     const missingProducts = products.filter((p: any) => !existingSet.has(p.id));
     if (missingProducts.length > 0) {
       console.log(`[catalog-server] Auto-syncing ${missingProducts.length} missing products to MySQL...`);
@@ -105,9 +113,26 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
   } catch {
     images = [];
   }
-  const thumb = p.thumbnailUrl || p.thumbnail_url || (images.length > 0 ? images[0] : "");
+  let thumb = p.thumbnailUrl || p.thumbnail_url || (images.length > 0 ? images[0] : "");
+  if (thumb && (thumb.includes("photo-1580481077195") || p.id === "prod_armchair_003")) {
+    thumb = "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85";
+  }
+  if (p.id === "prod_armchair_001" && (thumb.includes("photo-1555041469") || images.some((img) => img.includes("photo-1555041469")))) {
+    thumb = "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85";
+  }
+
   if (images.length === 0 && thumb) {
     images = [thumb];
+  } else {
+    images = images.map((img) => {
+      if (img.includes("photo-1580481077195") || p.id === "prod_armchair_003") {
+        return "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85";
+      }
+      if (p.id === "prod_armchair_001" && img.includes("photo-1555041469")) {
+        return "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85";
+      }
+      return img;
+    });
   }
 
   let variants: any[] = [];
@@ -281,6 +306,12 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
       ).catch(() => {});
       await pool.query(
         "UPDATE products SET category_id = 'cat_kids' WHERE (title LIKE '%kids%' OR title LIKE '%bunk bed%' OR title LIKE '%cabin bed%') AND category_id != 'cat_kids'"
+      ).catch(() => {});
+      await pool.query(
+        "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'"
+      ).catch(() => {});
+      await pool.query(
+        "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'"
       ).catch(() => {});
       const [reFetched]: any = await pool.query(fetchQuery).catch(() => [[]]);
       if (Array.isArray(reFetched) && reFetched.length > 0) {
