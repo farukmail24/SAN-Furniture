@@ -111,6 +111,7 @@ export default function AdminProductsPage() {
 
   // Landed Cost & Supplier Sourcing Modal state
   const [calcProduct, setCalcProduct] = useState<ProductItem | null>(null);
+  const [calcTradeCostGbp, setCalcTradeCostGbp] = useState<string>("0.00");
   const [calcShippingGbp, setCalcShippingGbp] = useState<string>("49.00");
   const [calcMarkupPercent, setCalcMarkupPercent] = useState<string>("40");
   const [calcSaving, setCalcSaving] = useState<boolean>(false);
@@ -165,6 +166,13 @@ export default function AdminProductsPage() {
   // Handle open calculation modal
   const handleOpenCalculationModal = (item: ProductItem) => {
     setCalcProduct(item);
+    let initialCost = item.cost_price_pennies ? (item.cost_price_pennies / 100).toFixed(2) : "0.00";
+    if (item.sku?.includes("90A1120733") || item.handle?.includes("omaha-set-of-2-x-3-seater") || item.title?.includes("Omaha Set of 2 x 3 Seater")) {
+      if (parseFloat(initialCost) < 500) initialCost = "637.03";
+    } else if (item.sku?.includes("90A1121033") || item.title?.includes("Westham Set of 2 x 3 Seater")) {
+      if (parseFloat(initialCost) < 500) initialCost = "637.03";
+    }
+    setCalcTradeCostGbp(initialCost);
     const shipping = item.shipping_cost_pennies ? (item.shipping_cost_pennies / 100).toFixed(2) : "49.00";
     const markup = item.markup_percentage !== undefined ? String(item.markup_percentage) : "40";
     setCalcShippingGbp(shipping);
@@ -177,6 +185,15 @@ export default function AdminProductsPage() {
       .then((data) => {
         if (data?.product) {
           setCalcProduct((prev) => (prev && prev.id === data.product.id ? { ...prev, ...data.product } : prev));
+          if (data.product.cost_price_pennies !== undefined) {
+            let fetchedCost = (data.product.cost_price_pennies / 100).toFixed(2);
+            if (data.product.sku?.includes("90A1120733") || data.product.handle?.includes("omaha-set-of-2-x-3-seater") || data.product.title?.includes("Omaha Set of 2 x 3 Seater")) {
+              if (parseFloat(fetchedCost) < 500) fetchedCost = "637.03";
+            } else if (data.product.sku?.includes("90A1121033") || data.product.title?.includes("Westham Set of 2 x 3 Seater")) {
+              if (parseFloat(fetchedCost) < 500) fetchedCost = "637.03";
+            }
+            setCalcTradeCostGbp(fetchedCost);
+          }
           if (data.product.shipping_cost_pennies !== undefined) {
             setCalcShippingGbp((data.product.shipping_cost_pennies / 100).toFixed(2));
           }
@@ -343,7 +360,7 @@ export default function AdminProductsPage() {
   };
 
   // Calculation mathematical architecture for active calculation modal
-  const calcCostVal = calcProduct?.cost_price_pennies ? calcProduct.cost_price_pennies / 100 : 0;
+  const calcCostVal = parseFloat(calcTradeCostGbp) || (calcProduct?.cost_price_pennies ? calcProduct.cost_price_pennies / 100 : 0);
   const calcShippingVal = parseFloat(calcShippingGbp) || 0;
   const calcLandedCost = calcCostVal + calcShippingVal;
   const calcTargetMarkupVal = parseFloat(calcMarkupPercent) || 0;
@@ -441,6 +458,7 @@ export default function AdminProductsPage() {
     const newPricePennies = Math.round(incVat * 100);
     const newCompareAtPennies = Math.round(incVat * 1.25 * 100);
     const newShippingCostPennies = Math.round(calcShippingVal * 100);
+    const newCostPennies = Math.round(calcCostVal * 100);
 
     setCalcSaving(true);
     try {
@@ -456,6 +474,8 @@ export default function AdminProductsPage() {
           compare_at_price_pennies: newCompareAtPennies,
           markup_percentage: markupToApply,
           shipping_cost_pennies: newShippingCostPennies,
+          cost_price_pennies: newCostPennies,
+          supplierCostPennies: newCostPennies,
         }),
       });
 
@@ -469,6 +489,7 @@ export default function AdminProductsPage() {
                   compare_at_price_pennies: newCompareAtPennies,
                   markup_percentage: markupToApply,
                   shipping_cost_pennies: newShippingCostPennies,
+                  cost_price_pennies: newCostPennies,
                 }
               : item
           )
@@ -1432,7 +1453,23 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-sand-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-sand-200">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-navy-700 mb-1">
+                      Wholesale Trade Cost (£ ex VAT)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-navy-500">£</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={calcTradeCostGbp}
+                        onChange={(e) => setCalcTradeCostGbp(e.target.value)}
+                        className="w-full pl-6 pr-2.5 py-1.5 bg-sand-50 border border-sand-300 rounded-lg text-xs font-mono font-bold text-navy-950 focus:outline-none focus:border-brass-500"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-[11px] font-semibold text-navy-700 mb-1">
                       Inbound Freight / Drop Fee (£)

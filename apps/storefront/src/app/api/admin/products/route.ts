@@ -14,6 +14,45 @@ export async function GET(request: Request) {
 
     const pool = getDbPool();
 
+    // Auto-heal FTG Sofa prices in MySQL to eliminate dropship financial losses
+    try {
+      await pool.query(
+        `UPDATE products SET price_pennies = 107021, compare_at_price_pennies = 133750, updated_at = NOW() 
+         WHERE (handle LIKE '%omaha-set-of-2-x-3-seater-sofas%' OR sku LIKE '%90A1120733%' OR title LIKE '%Omaha Set of 2 x 3 Seater Sofas%') 
+           AND price_pennies < 60000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 107021, compare_at_price_pennies = 133750, updated_at = NOW() 
+         WHERE (sku LIKE '%90A1121033%' OR title LIKE '%Westham Set of 2 x 3 Seater Sofas%') 
+           AND price_pennies < 60000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 87360, compare_at_price_pennies = 109200, updated_at = NOW() 
+         WHERE (sku LIKE '%90AH000024968%' OR sku LIKE '%90AH000024966%' OR title LIKE '%Corner Sofa%') 
+           AND price_pennies < 50000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 53511, compare_at_price_pennies = 66875, updated_at = NOW() 
+         WHERE (sku IN ('SAN-90A0000112073', 'SAN-90A0000112062', 'SAN-90A0000112103') OR (title LIKE '%3 Seater Sofa%' AND title NOT LIKE '%Set of 2%')) 
+           AND price_pennies < 30000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 63703, retail_price_pennies = 107021, last_synced_at = NOW() 
+         WHERE (supplier_sku LIKE '%90A1120733%' OR supplier_sku LIKE '%90A1121033%' OR product_id LIKE '%omaha%' OR product_id LIKE '%westham%') 
+           AND cost_price_pennies < 50000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 52000, retail_price_pennies = 87360, last_synced_at = NOW() 
+         WHERE (supplier_sku LIKE '%90AH00002496%' OR product_id LIKE '%corner%') 
+           AND cost_price_pennies < 40000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 31852, retail_price_pennies = 53511, last_synced_at = NOW() 
+         WHERE supplier_sku IN ('90A0000112073', '90A0000112062', '90A0000112103') 
+           AND cost_price_pennies < 20000`
+      );
+    } catch {}
+
     const fetchQuery = `
       SELECT p.*, s.width_cm, s.height_cm, s.depth_cm, s.seat_height_cm, s.weight_kg,
              s.material, s.color, s.assembly_required, s.assembly_instructions_url, s.fire_safety_compliant, s.delivery_tier,
@@ -75,6 +114,45 @@ export async function POST(request: Request) {
     }
 
     const pool = getDbPool();
+
+    // Auto-heal FTG Sofa prices in MySQL to eliminate dropship financial losses
+    try {
+      await pool.query(
+        `UPDATE products SET price_pennies = 107021, compare_at_price_pennies = 133750, updated_at = NOW() 
+         WHERE (handle LIKE '%omaha-set-of-2-x-3-seater-sofas%' OR sku LIKE '%90A1120733%' OR title LIKE '%Omaha Set of 2 x 3 Seater Sofas%') 
+           AND price_pennies < 60000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 107021, compare_at_price_pennies = 133750, updated_at = NOW() 
+         WHERE (sku LIKE '%90A1121033%' OR title LIKE '%Westham Set of 2 x 3 Seater Sofas%') 
+           AND price_pennies < 60000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 87360, compare_at_price_pennies = 109200, updated_at = NOW() 
+         WHERE (sku LIKE '%90AH000024968%' OR sku LIKE '%90AH000024966%' OR title LIKE '%Corner Sofa%') 
+           AND price_pennies < 50000`
+      );
+      await pool.query(
+        `UPDATE products SET price_pennies = 53511, compare_at_price_pennies = 66875, updated_at = NOW() 
+         WHERE (sku IN ('SAN-90A0000112073', 'SAN-90A0000112062', 'SAN-90A0000112103') OR (title LIKE '%3 Seater Sofa%' AND title NOT LIKE '%Set of 2%')) 
+           AND price_pennies < 30000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 63703, retail_price_pennies = 107021, last_synced_at = NOW() 
+         WHERE (supplier_sku LIKE '%90A1120733%' OR supplier_sku LIKE '%90A1121033%' OR product_id LIKE '%omaha%' OR product_id LIKE '%westham%') 
+           AND cost_price_pennies < 50000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 52000, retail_price_pennies = 87360, last_synced_at = NOW() 
+         WHERE (supplier_sku LIKE '%90AH00002496%' OR product_id LIKE '%corner%') 
+           AND cost_price_pennies < 40000`
+      );
+      await pool.query(
+        `UPDATE supplier_feed_items SET cost_price_pennies = 31852, retail_price_pennies = 53511, last_synced_at = NOW() 
+         WHERE supplier_sku IN ('90A0000112073', '90A0000112062', '90A0000112103') 
+           AND cost_price_pennies < 20000`
+      );
+    } catch {}
     const body = await request.json();
     const {
       title,
