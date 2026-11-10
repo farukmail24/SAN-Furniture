@@ -294,6 +294,8 @@ export default function AdminSuppliersPage() {
     authLastVerifiedAt: string | null;
     authUsername: string | null;
     hasCookies: boolean;
+    hasPassword: boolean;
+    authPassword?: string | null;
     authError: string | null;
   }
 
@@ -302,6 +304,7 @@ export default function AdminSuppliersPage() {
     authLastVerifiedAt: null,
     authUsername: null,
     hasCookies: false,
+    hasPassword: false,
     authError: null,
   });
   const [amosAuth, setAmosAuth] = useState<SupplierAuthInfo>({
@@ -309,8 +312,10 @@ export default function AdminSuppliersPage() {
     authLastVerifiedAt: null,
     authUsername: null,
     hasCookies: false,
+    hasPassword: false,
     authError: null,
   });
+  const [showAuthPassword, setShowAuthPassword] = useState<boolean>(false);
   const [showFtgAuthDialog, setShowFtgAuthDialog] = useState<boolean>(false);
   const [showAmosAuthDialog, setShowAmosAuthDialog] = useState<boolean>(false);
   const [ftgAuthCookieInput, setFtgAuthCookieInput] = useState<string>("");
@@ -345,6 +350,8 @@ export default function AdminSuppliersPage() {
               authLastVerifiedAt: data.auth.authLastVerifiedAt,
               authUsername: data.auth.authUsername,
               hasCookies: data.auth.hasCookies,
+              hasPassword: Boolean(data.auth.hasPassword),
+              authPassword: data.auth.authPassword,
               authError: data.auth.authError,
             });
             if (data.auth.cookies) {
@@ -353,12 +360,17 @@ export default function AdminSuppliersPage() {
             if (data.auth.authUsername) {
               setFtgAuthEmailInput(data.auth.authUsername);
             }
+            if (data.auth.authPassword) {
+              setFtgAuthPasswordInput(data.auth.authPassword);
+            }
           } else if (supplierCode.includes("amos_mann")) {
             setAmosAuth({
               authStatus: data.auth.authStatus,
               authLastVerifiedAt: data.auth.authLastVerifiedAt,
               authUsername: data.auth.authUsername,
               hasCookies: data.auth.hasCookies,
+              hasPassword: Boolean(data.auth.hasPassword),
+              authPassword: data.auth.authPassword,
               authError: data.auth.authError,
             });
             if (data.auth.cookies) {
@@ -366,6 +378,9 @@ export default function AdminSuppliersPage() {
             }
             if (data.auth.authUsername) {
               setAmosAuthEmailInput(data.auth.authUsername);
+            }
+            if (data.auth.authPassword) {
+              setAmosAuthPasswordInput(data.auth.authPassword);
             }
           }
         }
@@ -3791,6 +3806,20 @@ export default function AdminSuppliersPage() {
                       }}
                       className="w-full px-3 py-2 border border-[#E8E2D5] rounded-xl font-mono text-[11px] focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D]"
                     />
+                    {showFtgAuthDialog && ftgAuthCookieInput && !ftgAuthCookieInput.includes("PHPSESSID") && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs mt-2 space-y-1">
+                        <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Notice: Missing 'PHPSESSID' (Wholesale Pricing Token)</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed">
+                          Chrome hides <code>PHPSESSID</code> from <code>copy(document.cookie)</code> because of HttpOnly protection. Without <code>PHPSESSID</code>, FTG serves public pages without trade prices.
+                        </p>
+                        <p className="text-[11px] font-semibold text-amber-950">
+                          👉 To unlock trade pricing: Open DevTools &rarr; <strong>Network</strong> tab &rarr; refresh FTG &rarr; click top request &rarr; copy full <strong>Cookie</strong> header, or copy <code>PHPSESSID</code> from <strong>Application &rarr; Cookies</strong>.
+                        </p>
+                      </div>
+                    )}
                     <p className="text-[11px] text-[#7A8B99] mt-1">
                       Your cookies are stored encrypted in your local database and transmitted only to the official supplier domain.
                     </p>
@@ -3819,19 +3848,36 @@ export default function AdminSuppliersPage() {
                   </div>
 
                   <div>
-                    <label className="block font-semibold text-[#00072D] mb-1">
-                      Trade Account Password
-                    </label>
-                    <input
-                      type="password"
-                      placeholder="••••••••••••"
-                      value={showFtgAuthDialog ? ftgAuthPasswordInput : amosAuthPasswordInput}
-                      onChange={(e) => {
-                        if (showFtgAuthDialog) setFtgAuthPasswordInput(e.target.value);
-                        else setAmosAuthPasswordInput(e.target.value);
-                      }}
-                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
-                    />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-semibold text-[#00072D]">
+                        Trade Account Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAuthPassword(!showAuthPassword)}
+                        className="text-[11px] text-[#C89B3C] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        {showAuthPassword ? "Hide password" : "Show password"}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showAuthPassword ? "text" : "password"}
+                        placeholder="••••••••••••"
+                        value={showFtgAuthDialog ? ftgAuthPasswordInput : amosAuthPasswordInput}
+                        onChange={(e) => {
+                          if (showFtgAuthDialog) setFtgAuthPasswordInput(e.target.value);
+                          else setAmosAuthPasswordInput(e.target.value);
+                        }}
+                        className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs font-mono focus:outline-none focus:border-[#C89B3C]"
+                      />
+                    </div>
+                    {(showFtgAuthDialog ? ftgAuth.hasPassword : amosAuth.hasPassword) && (
+                      <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1.5 rounded-md border border-emerald-200 mt-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Trade password is securely saved and active in encrypted database.</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

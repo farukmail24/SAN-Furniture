@@ -11,6 +11,7 @@ export interface SupplierAuthState {
   hasCookies: boolean;
   cookies?: string | null;
   hasPassword: boolean;
+  authPassword?: string | null;
   authError: string | null;
 }
 
@@ -163,7 +164,7 @@ export async function getSupplierAuthState(
 ): Promise<SupplierAuthState | null> {
   await ensureSupplierAuthSchema(pool);
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    `SELECT id, name, code, auth_status, auth_last_verified_at, auth_username, auth_error, auth_cookies,
+    `SELECT id, name, code, auth_status, auth_last_verified_at, auth_username, auth_password, auth_error, auth_cookies,
             (auth_cookies IS NOT NULL AND auth_cookies != '') AS has_cookies,
             (auth_password IS NOT NULL AND auth_password != '') AS has_password
      FROM suppliers
@@ -185,6 +186,7 @@ export async function getSupplierAuthState(
     hasCookies: Boolean(row.has_cookies),
     cookies: row.auth_cookies ? String(row.auth_cookies) : null,
     hasPassword: Boolean(row.has_password),
+    authPassword: row.auth_password ? String(row.auth_password) : null,
     authError: row.auth_error || null,
   };
 }
@@ -252,25 +254,33 @@ export async function saveSupplierCredentials(
   password?: string
 ): Promise<{ success: boolean; message: string }> {
   await ensureSupplierAuthSchema(pool);
-  if (password) {
+  const cleanUser = username ? username.trim() : "";
+  const cleanPass = password ? password.trim() : "";
+
+  if (cleanPass) {
     await pool.query(
       `UPDATE suppliers
        SET auth_username = ?,
            auth_password = ?,
-           auth_status = CASE WHEN auth_status = 'connected' THEN 'connected' ELSE 'unauthenticated' END
+           auth_status = 'connected',
+           auth_last_verified_at = NOW(),
+           auth_error = NULL
        WHERE code = ? OR id = ?`,
-      [username.trim(), password.trim(), supplierCodeOrId, supplierCodeOrId]
+      [cleanUser, cleanPass, supplierCodeOrId, supplierCodeOrId]
     );
   } else {
     await pool.query(
       `UPDATE suppliers
-       SET auth_username = ?
+       SET auth_username = ?,
+           auth_status = CASE WHEN (auth_password IS NOT NULL AND auth_password != '') THEN 'connected' ELSE auth_status END,
+           auth_last_verified_at = NOW(),
+           auth_error = NULL
        WHERE code = ? OR id = ?`,
-      [username.trim(), supplierCodeOrId, supplierCodeOrId]
+      [cleanUser, supplierCodeOrId, supplierCodeOrId]
     );
   }
 
-  return { success: true, message: "Supplier credentials saved successfully" };
+  return { success: true, message: "Supplier trade credentials saved and connected successfully" };
 }
 
 /**

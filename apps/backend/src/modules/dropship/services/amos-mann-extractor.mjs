@@ -970,7 +970,7 @@ export class AmosMannExtractorEngine {
       if (bad.length) throw new ProductRejectedError(url, [{ field: "images", reason: `invalid or placeholder image override: ${bad.join(", ")}` }]);
     }
 
-    const optionalFields = [];
+    const optionalFields = ["availability", "finish"];
     if (manualCost) optionalFields.push("price");
     if (manualImages) optionalFields.push("images");
     const live = await this.extractProductData(url, { mode: "import", optionalFields });

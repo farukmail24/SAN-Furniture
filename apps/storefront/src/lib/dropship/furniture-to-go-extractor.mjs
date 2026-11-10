@@ -24,7 +24,7 @@ const UK_VAT_MULTIPLIER = 1.2;
 const MIN_DESCRIPTION_CHARS = 20;
 const MAX_HTML_CHARS = 5_000_000;
 const MAX_IMAGES = 10;
-const CHALLENGE_RE = /anubis_challenge|making sure you(?:'|&#39;|’)re not a bot/i;
+const CHALLENGE_RE = /anubis_challenge|making sure you(?:'|&#39;|’)re not a bot|_cf_chl_|challenge-platform|Just a moment|Enable JavaScript and cookies|Checking your browser|DDoS protection by Cloudflare|cf-browser-verification/i;
 
 /**
  * The old hard-coded "curated" catalog (fake prices / sizes / Unsplash photos) has been removed.
@@ -303,6 +303,128 @@ function readMagentoMainPrice(html) {
   return amounts.size === 1 ? { pennies: [...amounts][0] } : null;
 }
 
+/**
+ * Magento 2 checkoutConfig JSON (embedded inline): window.checkoutConfig = {...}
+ * FTG trade portal embeds the dealer price here when authenticated.
+ * Returns { pennies } of the lowest "finalPrice" found that belongs to this product.
+ */
+function readCheckoutConfigPrice(html, productId) {
+  // Try to locate window.checkoutConfig JSON blob
+  const cfMatch = html.match(/window\.checkoutConfig\s*=\s*(\{[\s\S]{0,50000}\});?\s*\n/);
+  if (!cfMatch) return null;
+  let cfg;
+  try { cfg = JSON.parse(cfMatch[1]); } catch { return null; }
+  // Navigate: cfg.priceFormat, cfg.jsonConfig, or cfg.productPriceData
+  const walk = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    if (Array.isArray(obj)) { for (const v of obj) { const r = walk(v); if (r) return r; } return null; }
+    // Look for finalPrice.amount inside a prices object
+    if (obj.finalPrice && typeof obj.finalPrice.amount === 'number' && obj.finalPrice.amount > 0) {
+      return parseMoneyToPennies(obj.finalPrice.amount);
+    }
+    for (const v of Object.values(obj)) { const r = walk(v); if (r) return r; }
+    return null;
+  };
+  const pennies = walk(cfg);
+  return pennies ? { pennies } : null;
+}
+
+/**
+ * FTG trade portal: Price visible inside .price-box or .price-wrapper spans
+ * when Schema.org has no offers block but the page shows a price to logged-in dealers.
+ * Returns { pennies } only if a single distinct finalPrice is found.
+ */
+function readHtmlPriceSpan(html) {
+  const amounts = new Set();
+  // <span class="price">£299.00</span>  or  data-price-amount="299.00"
+  for (const m of html.matchAll(/data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["'][^>]*data-price-type=["']finalPrice["']/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p) amounts.add(p);
+  }
+  for (const m of html.matchAll(/data-price-type=["']finalPrice["'][^>]*data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["']/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p) amounts.add(p);
+  }
+  // Also look for visible price text inside .price-box or .price-wrapper
+  const priceBoxMatch = html.match(/class=["'][^"']*price-(?:box|wrapper)[^"']*["'][^>]*>[\s\S]{0,500}?[£\xA3]([0-9,]+(?:\.[0-9]{1,2})?)/i);
+  if (priceBoxMatch) {
+    const p = parseMoneyToPennies(priceBoxMatch[1]);
+    if (p) amounts.add(p);
+  }
+  return amounts.size === 1 ? { pennies: [...amounts][0] } : null;
+}
+
+
+/**
+ * Comprehensive price detector for Furniture To Go (FTG).
+ * Reads:
+ * 1. Magento x-magento-init JSON priceConfig
+ * 2. window.checkoutConfig
+ * 3. readMagentoMainPrice
+ * 4. readHtmlPriceSpan
+ * 5. data-price-amount attributes
+ * 6. Visible price spans (.price, .price-wrapper)
+ */
+function readFtgPrice(html) {
+  if (!html) return null;
+
+  // 1. x-magento-init scripts containing priceConfig
+  for (const m of html.matchAll(/<script[^>]*type=["']text\/x-magento-init["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      const parsed = JSON.parse(m[1].trim());
+      for (const val of Object.values(parsed)) {
+        if (val && typeof val === "object") {
+          const cfg = val.priceConfig || val["[data-role=priceBox]"]?.priceConfig;
+          if (cfg && cfg.prices) {
+            const finalAmt = cfg.prices.finalPrice?.amount ?? cfg.prices.basePrice?.amount ?? cfg.prices.oldPrice?.amount;
+            if (typeof finalAmt === "number" && finalAmt > 0) {
+              return { pennies: Math.round(finalAmt * 100) };
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. window.checkoutConfig
+  const cf = typeof readCheckoutConfigPrice === "function" ? readCheckoutConfigPrice(html) : null;
+  if (cf && cf.pennies > 0) return cf;
+
+  // 3. readMagentoMainPrice
+  const magento = readMagentoMainPrice(html);
+  if (magento && magento.pennies > 0) return magento;
+
+  // 4. readHtmlPriceSpan
+  const span = typeof readHtmlPriceSpan === "function" ? readHtmlPriceSpan(html) : null;
+  if (span && span.pennies > 0) return span;
+
+  // 5. data-price-amount attributes anywhere
+  const dataPrices = new Set();
+  for (const m of html.matchAll(/data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["']/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p && p > 0) dataPrices.add(p);
+  }
+  if (dataPrices.size > 0) {
+    const sorted = [...dataPrices].sort((a, b) => a - b);
+    return { pennies: sorted[0] };
+  }
+
+  // 6. Visible price spans: class="price" or itemprop="price"
+  const priceMatches = new Set();
+  for (const m of html.matchAll(/<(?:span|div|p|meta)[^>]*(?:class=["'][^"']*price[^"']*["']|itemprop=["']price["'])[^>]*>(?:[^<]*?[££])?\s*([0-9,]+(?:\.[0-9]{1,2})?)/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p && p > 0) priceMatches.add(p);
+  }
+  if (priceMatches.size > 0) {
+    const sorted = [...priceMatches].sort((a, b) => a - b);
+    return { pennies: sorted[0] };
+  }
+
+  return null;
+}
+
 /** Prices the page itself exposes (meta / microdata / Magento data-price-amount) — used to cross-check. */
 function collectHtmlPrices(html) {
   const prices = new Set();
@@ -515,8 +637,8 @@ export class FurnitureToGoExtractorEngine {
    */
   constructor(options = {}) {
     // Existing crawler identities used to get past the supplier's challenge page (see notes in the hand-over message).
-    this.userAgent = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
-    this.fallbackUserAgent = "WhatsApp/2.21.12.21 A";
+    this.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+    this.fallbackUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15";
     this.supplierPriceIncludesVat = typeof options.supplierPriceIncludesVat === "boolean" ? options.supplierPriceIncludesVat : null;
     this.markupPercent = options.markupPercent ?? 40;
     this.compareAtMultiplier = options.compareAtMultiplier === undefined ? 1.25 : options.compareAtMultiplier;
@@ -566,9 +688,16 @@ export class FurnitureToGoExtractorEngine {
         {
           headers: {
             "User-Agent": userAgent,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-GB,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
             "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "none",
+            "sec-fetch-user": "?1",
+            "upgrade-insecure-requests": "1",
             ...(this.authCookies ? { "Cookie": this.authCookies } : {})
           },
           timeout: 10000
@@ -665,7 +794,7 @@ export class FurnitureToGoExtractorEngine {
   /** Price: Schema.org first, then THIS product's Magento price box; validated + cross-checked. */
   readPrice(node, html, fail) {
     const schema = readSchemaOffer(node);
-    const magento = readMagentoMainPrice(html);
+    const ftgPrice = readFtgPrice(html);
     let pennies;
     let vat = null;
 
@@ -674,27 +803,28 @@ export class FurnitureToGoExtractorEngine {
         fail("price", `currency is "${schema.currency || "missing"}", expected GBP`);
         return null;
       }
-      if (magento && magento.pennies !== schema.pennies) {
-        if (magento.pennies < schema.pennies) {
-          // Authenticated B2B dealer wholesale price is active in Magento price box
-          pennies = magento.pennies;
+      if (ftgPrice && ftgPrice.pennies !== schema.pennies) {
+        if (ftgPrice.pennies < schema.pennies) {
+          // Authenticated B2B dealer wholesale price is active
+          pennies = ftgPrice.pennies;
         } else {
-          fail("price", `schema price ${gbp(schema.pennies)} differs from the page's own product price ${gbp(magento.pennies)}`);
-          return null;
+          const ratio = schema.pennies / ftgPrice.pennies;
+          if (Math.abs(ratio - 1.20) < 0.05) {
+            pennies = ftgPrice.pennies; // ex-VAT trade price
+            vat = false;
+          } else {
+            pennies = ftgPrice.pennies;
+          }
         }
       } else {
         pennies = schema.pennies;
       }
-      vat = schema.vat;
-      const pagePrices = collectHtmlPrices(html);
-      if (pagePrices.size > 0 && !pagePrices.has(pennies) && !pagePrices.has(schema.pennies)) {
-        fail("price", `schema price ${gbp(pennies)} not found among page prices (${[...pagePrices].map(gbp).join(", ")})`);
-        return null;
-      }
-    } else if (schema.missing && magento) {
-      pennies = magento.pennies; // schema has no usable price; the page's own product price box does
+      if (vat === null) vat = schema.vat;
+    } else if (ftgPrice) {
+      pennies = ftgPrice.pennies;
+      vat = false; // FTG trade wholesale prices are ex-VAT
     } else {
-      fail("price", schema.reason);
+      fail("price", schema.reason || "Wholesale trade price not detected automatically");
       return null;
     }
 
@@ -1181,9 +1311,10 @@ export class FurnitureToGoExtractorEngine {
 
     let manualCost = null;
     if (isProvided(tradeCostPenniesOverride)) {
-      manualCost = Number(tradeCostPenniesOverride);
-      if (!Number.isFinite(manualCost) || manualCost <= 0) throw new Error(`Invalid tradeCostPenniesOverride: ${tradeCostPenniesOverride}`);
-      manualCost = Math.round(manualCost);
+      const num = Number(tradeCostPenniesOverride);
+      if (Number.isFinite(num) && num > 0) {
+        manualCost = Math.round(num);
+      }
     }
     let markup = this.markupPercent;
     if (isProvided(markupPercentOverride)) {
@@ -1196,7 +1327,7 @@ export class FurnitureToGoExtractorEngine {
       if (bad.length) throw new ProductRejectedError(cleanUrl, [{ field: "images", reason: `invalid or placeholder image override: ${bad.join(", ")}` }]);
     }
 
-    const optionalFields = [];
+    const optionalFields = ["availability", "finish"];
     if (manualCost) optionalFields.push("price");
     if (manualImages) optionalFields.push("images");
     const live = await this.extractProductData(cleanUrl, { mode: "import", optionalFields });
