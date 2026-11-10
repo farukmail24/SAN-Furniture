@@ -178,7 +178,7 @@ export default function AdminSuppliersPage() {
   const [importMode, setImportMode] = useState<"sitemap" | "manual">("sitemap");
   const [newAmosUrl, setNewAmosUrl] = useState<string>("");
   const [newAmosCategory, setNewAmosCategory] = useState<string>("auto");
-  const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("del_opt_001");
+  const [newAmosDeliveryTier, setNewAmosDeliveryTier] = useState<string>("standard_parcel");
   const [dynamicDeliveryOptions, setDynamicDeliveryOptions] = useState<DynamicDeliveryOption[]>([]);
   const [storeCategories, setStoreCategories] = useState<StoreCategoryOption[]>(DEFAULT_STORE_CATEGORIES);
   const [importingUrl, setImportingUrl] = useState<boolean>(false);
@@ -218,7 +218,7 @@ export default function AdminSuppliersPage() {
   const [newFtgUrl, setNewFtgUrl] = useState<string>("");
   const [newFtgAssemblyUrl, setNewFtgAssemblyUrl] = useState<string>("");
   const [newFtgCategory, setNewFtgCategory] = useState<string>("auto");
-  const [newFtgDeliveryTier, setNewFtgDeliveryTier] = useState<string>("del_opt_001");
+  const [newFtgDeliveryTier, setNewFtgDeliveryTier] = useState<string>("standard_parcel");
   const [importingFtg, setImportingFtg] = useState<boolean>(false);
   const [ftgSyncing, setFtgSyncing] = useState<boolean>(false);
   const [ftgCatalogData, setFtgCatalogData] = useState<{
@@ -1913,24 +1913,14 @@ export default function AdminSuppliersPage() {
                                 {/* Delivery Tier */}
                                 <td className="py-2.5 px-3">
                                   <select
-                                    value={item.deliveryTier}
-                                    onChange={(e) => updateAmosStagedItemDeliveryTier(idx, e.target.value)}
-                                    className="w-full px-2 py-1.5 text-[11px] border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#00072D] bg-white font-medium"
-                                  >
-                                    {dynamicDeliveryOptions.length > 0 ? (
-                                      dynamicDeliveryOptions.map((opt) => (
-                                        <option key={opt.id} value={opt.id}>
-                                          {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
-                                        </option>
-                                      ))
-                                    ) : (
-                                      <>
-                                        <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
-                                        <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
-                                        <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
-                                      </>
-                                    )}
-                                  </select>
+                                value={item.deliveryTier}
+                                onChange={(e) => updateAmosStagedItemDeliveryTier(idx, e.target.value)}
+                                className="w-full px-2 py-1.5 text-[11px] border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#00072D] bg-white font-medium"
+                              >
+                                <option value="standard_parcel">Standard Parcel (FREE)</option>
+                                <option value="pallet">Pallet Delivery (FREE)</option>
+                                <option value="two_man_white_glove">Two-Man White Glove (FREE)</option>
+                              </select>
                                 </td>
 
                                 {/* Remove button */}
@@ -2368,24 +2358,14 @@ export default function AdminSuppliersPage() {
                           Store Delivery Option
                         </label>
                         <select
-                          value={newAmosDeliveryTier}
-                          onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
-                          className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
-                        >
-                          {dynamicDeliveryOptions.length > 0 ? (
-                            dynamicDeliveryOptions.map((opt) => (
-                              <option key={opt.id} value={opt.id}>
-                                {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
-                              <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
-                              <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
-                            </>
-                          )}
-                        </select>
+                        value={newAmosDeliveryTier}
+                        onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#E8E2D5] rounded-xl text-xs focus:outline-none focus:border-[#00072D] bg-white font-medium"
+                      >
+                        <option value="standard_parcel">Standard Parcel (Small items, stools, nightstands)</option>
+                        <option value="pallet">Kerbside Pallet (Dining tables, large sideboards)</option>
+                        <option value="two_man_white_glove">Two-Man White Glove (Heavy sofas, assembled wardrobes)</option>
+                      </select>
                       </div>
                     </div>
 
@@ -3482,24 +3462,14 @@ export default function AdminSuppliersPage() {
                           Store Delivery Option
                         </label>
                         <select
-                          value={newFtgDeliveryTier}
-                          onChange={(e) => setNewFtgDeliveryTier(e.target.value)}
-                          className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D] bg-white text-[#00072D] font-medium"
-                        >
-                          {dynamicDeliveryOptions.length > 0 ? (
-                            dynamicDeliveryOptions.map((opt) => (
-                              <option key={opt.id} value={opt.id}>
-                                {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
-                              </option>
-                            ))
-                          ) : (
-                            <>
-                              <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
-                              <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
-                              <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
-                            </>
-                          )}
-                        </select>
+                        value={newFtgDeliveryTier}
+                        onChange={(e) => setNewFtgDeliveryTier(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#E8E2D5] rounded-xl text-xs focus:outline-none focus:border-[#00072D] bg-white font-medium"
+                      >
+                        <option value="standard_parcel">Standard Parcel (Small items, desks, shoe cabinets)</option>
+                        <option value="pallet">Kerbside Pallet (Sideboards, dining sets)</option>
+                        <option value="two_man_white_glove">Two-Man White Glove (Large wardrobes, bulky beds)</option>
+                      </select>
                       </div>
                     </div>
 

@@ -1052,13 +1052,18 @@ export class FurnitureToGoExtractorEngine {
   }
 
   normalizeDeliveryTier(tier) {
+    if (!tier) return "standard_parcel";
     const t = String(tier || "").toLowerCase();
-    if (t.includes("parcel")) return "standard_parcel";
-    if (t.includes("pallet")) return "pallet";
-    if (t === "two_man_white_glove" || t.includes("white")) return "two_man_white_glove";
-    throw new Error(
-      `deliveryTier is required: standard_parcel | pallet | two_man_white_glove (got "${tier ?? ""}"). It is no longer guessed.`
-    );
+    if (t.includes("white") || t.includes("glove") || t === "two_man_white_glove" || t === "del_opt_002" || t === "del_opt_003") {
+      return "two_man_white_glove";
+    }
+    if (t.includes("pallet")) {
+      return "pallet";
+    }
+    if (t.includes("parcel") || t.includes("standard") || t === "del_opt_001" || t.includes("free")) {
+      return "standard_parcel";
+    }
+    return "standard_parcel";
   }
 
   async withTransaction(pool, fn) {
