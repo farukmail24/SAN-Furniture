@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
   RefreshCw,
@@ -241,6 +241,40 @@ export default function AdminSuppliersPage() {
   const [ftgCategoryFilter, setFtgCategoryFilter] = useState<string>("all");
   const [selectedFtgUrls, setSelectedFtgUrls] = useState<string[]>([]);
   const [ftgSearch, setFtgSearch] = useState<string>("");
+
+  // Dynamic categories extracted from live sitemap items for filtering
+  const amosAvailableCategories = useMemo(() => {
+    if (!sitemapData?.products) return [];
+    const map = new Map<string, { id: string; label: string; count: number }>();
+    for (const p of sitemapData.products) {
+      const id = p.category_id || "uncategorized";
+      const label = p.category_label || "Other";
+      const existing = map.get(id);
+      if (existing) {
+        existing.count++;
+      } else {
+        map.set(id, { id, label, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [sitemapData]);
+
+  const ftgAvailableCategories = useMemo(() => {
+    if (!ftgCatalogData?.products) return [];
+    const map = new Map<string, { id: string; label: string; count: number }>();
+    for (const p of ftgCatalogData.products) {
+      const id = p.category_id || "uncategorized";
+      const label = p.category_label || "Other";
+      const existing = map.get(id);
+      if (existing) {
+        existing.count++;
+      } else {
+        map.set(id, { id, label, count: 1 });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [ftgCatalogData]);
+
 
   // Staging / Preview state for FTG Importer
   const [ftgStagedItems, setFtgStagedItems] = useState<StagedFtgItem[]>([]);
@@ -1548,7 +1582,7 @@ export default function AdminSuppliersPage() {
       {/* AMOS MANN AUTO-IMPORT & SITEMAP BATCH CATALOG MODAL */}
       {importUrlModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className={`bg-white border border-[#E8E2D5] rounded-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col transition-all duration-200 ${amosInStagingStep ? "max-w-5xl" : "max-w-2xl"}`}>
+          <div className={`bg-white border border-[#E8E2D5] rounded-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col transition-all duration-200 ${amosInStagingStep ? "max-w-7xl" : "max-w-5xl"}`}>
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2.5">
@@ -2097,7 +2131,7 @@ export default function AdminSuppliersPage() {
                       </div>
                     </div>
 
-                    {/* Filter and Search Bar */}
+                    {/* Filter and Search Bar with Category Dropdown */}
                     <div className="flex flex-col sm:flex-row items-center gap-2">
                       <div className="relative flex-1 w-full">
                         <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
@@ -2110,26 +2144,47 @@ export default function AdminSuppliersPage() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                      {/* Category Filter Dropdown */}
+                      <div className="w-full sm:w-52 shrink-0">
+                        <select
+                          value={sitemapCategoryFilter}
+                          onChange={(e) => setSitemapCategoryFilter(e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium cursor-pointer"
+                        >
+                          <option value="all">
+                            📁 All Categories ({sitemapData?.products?.length || 0})
+                          </option>
+                          {amosAvailableCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label} ({c.count})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
                         <button
                           type="button"
                           onClick={() => {
                             const available = (sitemapData?.products || [])
                               .filter((p) => !p.is_imported)
                               .filter((p) =>
+                                sitemapCategoryFilter === "all" ? true : p.category_id === sitemapCategoryFilter
+                              )
+                              .filter((p) =>
                                 sitemapSearch ? p.slug.toLowerCase().includes(sitemapSearch.toLowerCase()) : true
                               )
                               .map((p) => p.url);
                             setSelectedSitemapUrls(available);
                           }}
-                          className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
+                          className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D] cursor-pointer whitespace-nowrap"
                         >
-                          Select All New
+                          Select All ({sitemapCategoryFilter === "all" ? "New" : "Filtered"})
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedSitemapUrls([])}
-                          className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
+                          className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D] cursor-pointer"
                         >
                           Clear
                         </button>
@@ -2137,7 +2192,7 @@ export default function AdminSuppliersPage() {
                     </div>
 
                     {/* Product List Scroll Area */}
-                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-56 bg-white">
+                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-80 sm:max-h-96 bg-white">
                       {loadingSitemap ? (
                         <div className="p-8 text-center text-xs text-[#7A8B99] flex items-center justify-center gap-2">
                           <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
@@ -2636,7 +2691,7 @@ export default function AdminSuppliersPage() {
       {/* FURNITURE TO GO AUTO-IMPORT & SITEMAP BATCH CATALOG MODAL */}
       {ftgImportModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className={`bg-white border border-[#E8E2D5] rounded-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col transition-all duration-200 ${ftgInStagingStep ? "max-w-5xl" : "max-w-2xl"}`}>
+          <div className={`bg-white border border-[#E8E2D5] rounded-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col transition-all duration-200 ${ftgInStagingStep ? "max-w-7xl" : "max-w-5xl"}`}>
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
               <div className="flex items-center gap-2.5">
@@ -3190,7 +3245,7 @@ export default function AdminSuppliersPage() {
                       </div>
                     </div>
 
-                    {/* Filter and Search Bar */}
+                    {/* Filter and Search Bar with Category Dropdown */}
                     <div className="flex flex-col sm:flex-row items-center gap-2">
                       <div className="relative flex-1 w-full">
                         <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
@@ -3203,12 +3258,33 @@ export default function AdminSuppliersPage() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                      {/* Category Filter Dropdown */}
+                      <div className="w-full sm:w-52 shrink-0">
+                        <select
+                          value={ftgCategoryFilter}
+                          onChange={(e) => setFtgCategoryFilter(e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium cursor-pointer"
+                        >
+                          <option value="all">
+                            📁 All Categories ({ftgCatalogData?.products?.length || 0})
+                          </option>
+                          {ftgAvailableCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label} ({c.count})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0">
                         <button
                           type="button"
                           onClick={() => {
                             const available = (ftgCatalogData?.products || [])
                               .filter((p) => !p.is_imported)
+                              .filter((p) =>
+                                ftgCategoryFilter === "all" ? true : p.category_id === ftgCategoryFilter
+                              )
                               .filter((p) =>
                                 ftgSearch
                                   ? (p.title + " " + p.slug).toLowerCase().includes(ftgSearch.toLowerCase())
@@ -3217,14 +3293,14 @@ export default function AdminSuppliersPage() {
                               .map((p) => p.url);
                             setSelectedFtgUrls(available);
                           }}
-                          className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
+                          className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D] cursor-pointer whitespace-nowrap"
                         >
-                          Select All New
+                          Select All ({ftgCategoryFilter === "all" ? "New" : "Filtered"})
                         </button>
                         <button
                           type="button"
                           onClick={() => setSelectedFtgUrls([])}
-                          className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
+                          className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D] cursor-pointer"
                         >
                           Clear
                         </button>
@@ -3232,7 +3308,7 @@ export default function AdminSuppliersPage() {
                     </div>
 
                     {/* Product List Scroll Area */}
-                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-56 bg-white">
+                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-80 sm:max-h-96 bg-white">
                       {loadingFtgCatalog ? (
                         <div className="p-8 text-center text-xs text-[#7A8B99] flex items-center justify-center gap-2">
                           <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
@@ -3244,6 +3320,9 @@ export default function AdminSuppliersPage() {
                         </div>
                       ) : (
                         ftgCatalogData.products
+                          .filter((p) =>
+                            ftgCategoryFilter === "all" ? true : p.category_id === ftgCategoryFilter
+                          )
                           .filter((p) =>
                             ftgSearch
                               ? (p.title + " " + p.slug).toLowerCase().includes(ftgSearch.toLowerCase())
