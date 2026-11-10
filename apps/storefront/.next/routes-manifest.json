@@ -225,6 +225,14 @@
       "namedRegex": "^/api/admin/reviews/(?<nxtPid>[^/]+?)/status(?:/)?$"
     },
     {
+      "page": "/api/admin/suppliers/[id]/auth-session",
+      "regex": "^/api/admin/suppliers/([^/]+?)/auth\\-session(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/suppliers/(?<nxtPid>[^/]+?)/auth\\-session(?:/)?$"
+    },
+    {
       "page": "/api/admin/suppliers/[id]/toggle",
       "regex": "^/api/admin/suppliers/([^/]+?)/toggle(?:/)?$",
       "routeKeys": {

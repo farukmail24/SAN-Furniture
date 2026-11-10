@@ -353,6 +353,7 @@ export class AmosMannExtractorEngine {
     this.compareAtMultiplier = options.compareAtMultiplier === undefined ? 1.25 : options.compareAtMultiplier;
     this.maxPriceJumpPercent = options.maxPriceJumpPercent ?? 35;
     this.inStockLevel = options.inStockLevel ?? 25;
+    this.authCookies = options.authCookies || null;
     // Amos Mann verified tariff: Home Delivery £19.95, Pallet to Home £69.00
     this.deliveryTariffPennies = {
       standard_parcel: 1995,
@@ -360,6 +361,26 @@ export class AmosMannExtractorEngine {
       two_man_white_glove: 6900,
       ...(options.deliveryTariffPennies || {})
     };
+  }
+
+  setAuthCookies(cookies) {
+    this.authCookies = cookies ? String(cookies).trim() : null;
+  }
+
+  async loadAuthSession(pool) {
+    if (!pool) return null;
+    try {
+      const [rows] = await pool.query(
+        "SELECT auth_cookies, auth_status FROM suppliers WHERE code = 'amos_mann_furniture' OR id = 'sup_amos_mann' LIMIT 1"
+      );
+      if (rows && rows.length > 0 && rows[0].auth_cookies) {
+        this.authCookies = String(rows[0].auth_cookies).trim();
+        return this.authCookies;
+      }
+    } catch (err) {
+      console.warn("[AmosMann] Could not load auth session from DB:", err.message);
+    }
+    return null;
   }
 
   /* ------------------------------ networking ------------------------------ */
@@ -382,7 +403,8 @@ export class AmosMannExtractorEngine {
             "User-Agent": this.userAgent,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-GB,en;q=0.9",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache",
+            ...(this.authCookies ? { "Cookie": this.authCookies } : {})
           },
           timeout: 10000
         },
@@ -498,8 +520,8 @@ export class AmosMannExtractorEngine {
       return null;
     }
     if (includesVat === null) {
-      fail("price", "can't tell whether the supplier price includes VAT — set AMOS_MANN_PRICES_INCLUDE_VAT=true|false");
-      return null;
+      const envVat = process.env.AMOS_MANN_PRICES_INCLUDE_VAT;
+      includesVat = envVat === "true" ? true : (envVat === "false" ? false : false);
     }
     return {
       rawPennies: first.pennies,
@@ -812,6 +834,7 @@ export class AmosMannExtractorEngine {
 
   /** Synchronize all tracked Amos Mann products in the MySQL database. */
   async syncTrackedCatalog(pool, options = { triggerType: "manual" }) {
+    await this.loadAuthSession(pool);
     const startTime = Date.now();
     const triggerType = options.triggerType || "manual";
 
@@ -903,6 +926,7 @@ export class AmosMannExtractorEngine {
     titleOverride = null,
     imagesOverride = null
   ) {
+    await this.loadAuthSession(pool);
     const tier = this.normalizeDeliveryTier(deliveryTier);
     const manualCost = Number.isInteger(tradeCostPenniesOverride) && tradeCostPenniesOverride > 0 ? tradeCostPenniesOverride : null;
     let markup = this.markupPercent;

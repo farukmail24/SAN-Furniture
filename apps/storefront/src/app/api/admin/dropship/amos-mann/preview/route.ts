@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
 import { amosMannExtractor } from "@/lib/dropship";
 import { classifyFurnitureProduct } from "@san-furniture/types";
@@ -11,6 +12,9 @@ export async function POST(request: Request) {
     if (!admin) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    const pool = getDbPool();
+    await amosMannExtractor.loadAuthSession(pool);
 
     const body = await request.json().catch(() => ({}));
     const rawUrls = Array.isArray(body.urls)
@@ -39,7 +43,10 @@ export async function POST(request: Request) {
 
     for (const url of urls) {
       try {
-        const liveData = await amosMannExtractor.extractProductData(url, { mode: "import" });
+        const liveData = await amosMannExtractor.extractProductData(url, {
+          mode: "import",
+          optionalFields: ["price"],
+        });
         const cleanTitle = amosMannExtractor.cleanProductTitle(liveData.title);
 
         let finalCategoryId = requestedCategory;

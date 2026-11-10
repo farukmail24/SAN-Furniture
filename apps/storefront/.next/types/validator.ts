@@ -560,6 +560,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/admin/dropship/amos-mann/preview/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/preview">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/dropship/amos-mann/preview/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/admin/dropship/amos-mann/sitemap-catalog/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/dropship/amos-mann/sitemap-catalog">> = Specific
@@ -852,6 +861,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/settings/test-stripe">> = Specific
   const handler = {} as typeof import("../../src/app/api/admin/settings/test-stripe/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/suppliers/[id]/auth-session/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/suppliers/[id]/auth-session">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/suppliers/[id]/auth-session/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

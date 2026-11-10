@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
 import { furnitureToGoExtractor } from "@/lib/dropship";
 import { classifyFurnitureProduct } from "@san-furniture/types";
@@ -11,6 +12,9 @@ export async function POST(request: Request) {
     if (!admin) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
+
+    const pool = getDbPool();
+    await furnitureToGoExtractor.loadAuthSession(pool);
 
     const body = await request.json().catch(() => ({}));
     const rawUrls = Array.isArray(body.urls)
@@ -39,7 +43,10 @@ export async function POST(request: Request) {
 
     for (const url of urls) {
       try {
-        const liveData = await furnitureToGoExtractor.extractProductData(url);
+        const liveData = await furnitureToGoExtractor.extractProductData(url, {
+          mode: "import",
+          optionalFields: ["price"],
+        });
         const cleanTitle = furnitureToGoExtractor.cleanProductTitle(liveData.title);
 
         let finalCategoryId = requestedCategory;

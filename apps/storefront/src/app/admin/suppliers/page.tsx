@@ -35,7 +35,10 @@ import {
   Trash2,
   ArrowLeft,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  KeyRound,
+  Lock,
+  Copy
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
@@ -251,6 +254,147 @@ export default function AdminSuppliersPage() {
   // Feed SKU Inspector Modal Open Flag
   const [feedInspectorOpen, setFeedInspectorOpen] = useState<boolean>(false);
 
+  // B2B Wholesale Trade Authentication State
+  interface SupplierAuthInfo {
+    authStatus: "unauthenticated" | "connected" | "expired" | "error";
+    authLastVerifiedAt: string | null;
+    authUsername: string | null;
+    hasCookies: boolean;
+    authError: string | null;
+  }
+
+  const [ftgAuth, setFtgAuth] = useState<SupplierAuthInfo>({
+    authStatus: "unauthenticated",
+    authLastVerifiedAt: null,
+    authUsername: null,
+    hasCookies: false,
+    authError: null,
+  });
+  const [amosAuth, setAmosAuth] = useState<SupplierAuthInfo>({
+    authStatus: "unauthenticated",
+    authLastVerifiedAt: null,
+    authUsername: null,
+    hasCookies: false,
+    authError: null,
+  });
+  const [showFtgAuthDialog, setShowFtgAuthDialog] = useState<boolean>(false);
+  const [showAmosAuthDialog, setShowAmosAuthDialog] = useState<boolean>(false);
+  const [ftgAuthCookieInput, setFtgAuthCookieInput] = useState<string>("");
+  const [ftgAuthEmailInput, setFtgAuthEmailInput] = useState<string>("");
+  const [ftgAuthPasswordInput, setFtgAuthPasswordInput] = useState<string>("");
+  const [amosAuthCookieInput, setAmosAuthCookieInput] = useState<string>("");
+  const [amosAuthEmailInput, setAmosAuthEmailInput] = useState<string>("");
+  const [amosAuthPasswordInput, setAmosAuthPasswordInput] = useState<string>("");
+  const [authLoadingSupplier, setAuthLoadingSupplier] = useState<string | null>(null);
+  const [authDialogTab, setAuthDialogTab] = useState<"cookie" | "credentials">("cookie");
+  const [copiedScript, setCopiedScript] = useState<boolean>(false);
+
+  const getAdminAuthHeaders = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
+  const fetchSupplierAuthStatus = async (supplierCode: string) => {
+    try {
+      const res = await fetch(`/api/admin/suppliers/${supplierCode}/auth-session`, {
+        headers: getAdminAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.auth) {
+          if (supplierCode.includes("furniture_to_go")) {
+            setFtgAuth({
+              authStatus: data.auth.authStatus,
+              authLastVerifiedAt: data.auth.authLastVerifiedAt,
+              authUsername: data.auth.authUsername,
+              hasCookies: data.auth.hasCookies,
+              authError: data.auth.authError,
+            });
+          } else if (supplierCode.includes("amos_mann")) {
+            setAmosAuth({
+              authStatus: data.auth.authStatus,
+              authLastVerifiedAt: data.auth.authLastVerifiedAt,
+              authUsername: data.auth.authUsername,
+              hasCookies: data.auth.hasCookies,
+              authError: data.auth.authError,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn(`Failed to fetch auth status for ${supplierCode}:`, err);
+    }
+  };
+
+  const handleSaveSupplierCookies = async (supplierCode: string, cookies: string) => {
+    setAuthLoadingSupplier(supplierCode);
+    try {
+      const res = await fetch(`/api/admin/suppliers/${supplierCode}/auth-session`, {
+        method: "POST",
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({ action: "save_cookies", cookies }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastMsg({ type: "success", text: "Wholesale Trade Session successfully connected and verified!" });
+        await fetchSupplierAuthStatus(supplierCode);
+        if (supplierCode.includes("furniture_to_go")) setShowFtgAuthDialog(false);
+        if (supplierCode.includes("amos_mann")) setShowAmosAuthDialog(false);
+      } else {
+        setToastMsg({ type: "error", text: data.error || data.message || "Failed to verify trade session." });
+      }
+    } catch (err: any) {
+      setToastMsg({ type: "error", text: err.message || "Error saving trade session." });
+    } finally {
+      setAuthLoadingSupplier(null);
+    }
+  };
+
+  const handleSaveSupplierCredentials = async (supplierCode: string, username: string, password?: string) => {
+    setAuthLoadingSupplier(supplierCode);
+    try {
+      const res = await fetch(`/api/admin/suppliers/${supplierCode}/auth-session`, {
+        method: "POST",
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({ action: "save_credentials", username, password }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastMsg({ type: "success", text: "Supplier trade credentials saved securely!" });
+        await fetchSupplierAuthStatus(supplierCode);
+        if (supplierCode.includes("furniture_to_go")) setShowFtgAuthDialog(false);
+        if (supplierCode.includes("amos_mann")) setShowAmosAuthDialog(false);
+      } else {
+        setToastMsg({ type: "error", text: data.error || "Failed to save credentials." });
+      }
+    } catch (err: any) {
+      setToastMsg({ type: "error", text: err.message || "Error saving credentials." });
+    } finally {
+      setAuthLoadingSupplier(null);
+    }
+  };
+
+  const handleDisconnectSupplierAuth = async (supplierCode: string) => {
+    try {
+      const res = await fetch(`/api/admin/suppliers/${supplierCode}/auth-session`, {
+        method: "POST",
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({ action: "disconnect" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setToastMsg({ type: "success", text: "Trade session disconnected. Scraper reverted to public mode." });
+        await fetchSupplierAuthStatus(supplierCode);
+      }
+    } catch (err: any) {
+      setToastMsg({ type: "error", text: err.message || "Error disconnecting session." });
+    }
+  };
+
+
   const fetchSuppliers = async () => {
     try {
       fetchWithSwr(
@@ -281,6 +425,8 @@ export default function AdminSuppliersPage() {
       }
     }
     fetchSuppliers();
+    fetchSupplierAuthStatus("furniture_to_go");
+    fetchSupplierAuthStatus("amos_mann_furniture");
 
     // Fetch dynamic store delivery options configured in admin logistics
     fetchWithSwr(apiUrl("/api/admin/logistics"), (data: any) => {
@@ -1834,6 +1980,69 @@ export default function AdminSuppliersPage() {
             ) : (
               /* STEP 1: SITEMAP AUTO-DISCOVERY OR MANUAL URLS */
               <>
+                {/* B2B Wholesale Trade Session Status Bar */}
+                <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                  amosAuth.authStatus === 'connected'
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                    : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      amosAuth.authStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+                    }`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-2">
+                        <span>{amosAuth.authStatus === 'connected' ? 'Amos Mann Wholesale Partner Session Connected' : 'Amos Mann Public Mode (Wholesale Costs Hidden)'}</span>
+                        {amosAuth.authStatus === 'connected' && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-semibold">
+                            B2B Trade Pricing Unlocked
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] opacity-80 mt-0.5">
+                        {amosAuth.authStatus === 'connected'
+                          ? 'Authenticated with Amos Mann trade stockist account. Scraper extracts genuine dealer trade costs & warehouse stock.'
+                          : 'Amos Mann masks wholesale trade costs from public visitors. Connect session to unlock dealer trade prices.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {amosAuth.authStatus === 'connected' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAmosAuthCookieInput("");
+                            setShowAmosAuthDialog(true);
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+                        >
+                          Update Session
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDisconnectSupplierAuth('amos_mann_furniture')}
+                          className="px-2.5 py-1 text-[11px] font-medium bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAmosAuthCookieInput("");
+                          setShowAmosAuthDialog(true);
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>Connect Wholesale Session</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Mode Switch Tabs */}
                 <div className="flex border-b border-[#E8E2D5] gap-2">
                   <button
@@ -2851,6 +3060,69 @@ export default function AdminSuppliersPage() {
             ) : (
               /* STEP 1: SITEMAP DISCOVERY / MANUAL URLS */
               <>
+                {/* B2B Wholesale Trade Session Status Bar */}
+                <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                  ftgAuth.authStatus === 'connected'
+                    ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950'
+                    : 'bg-amber-50/70 border-amber-200 text-amber-950'
+                }`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-2.5 h-2.5 rounded-full ${
+                      ftgAuth.authStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+                    }`} />
+                    <div>
+                      <div className="text-xs font-bold flex items-center gap-2">
+                        <span>{ftgAuth.authStatus === 'connected' ? 'Furniture To Go (FTG) Wholesale Partner Session Connected' : 'FTG Public Visitor Mode (Trade Prices Hidden)'}</span>
+                        {ftgAuth.authStatus === 'connected' && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-semibold">
+                            B2B Trade Pricing Unlocked
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] opacity-80 mt-0.5">
+                        {ftgAuth.authStatus === 'connected'
+                          ? 'Authenticated with FTG Wiltshire UK trade account. Scraper extracts genuine wholesale dealer costs & live warehouse stock.'
+                          : 'FTG hides wholesale trade costs from public visitors. Connect session to unlock dealer trade prices.'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {ftgAuth.authStatus === 'connected' ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFtgAuthCookieInput("");
+                            setShowFtgAuthDialog(true);
+                          }}
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+                        >
+                          Update Session
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDisconnectSupplierAuth('furniture_to_go')}
+                          className="px-2.5 py-1 text-[11px] font-medium bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFtgAuthCookieInput("");
+                          setShowFtgAuthDialog(true);
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>Connect Wholesale Session</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Mode Switch Tabs */}
                 <div className="flex border-b border-[#E8E2D5] gap-2">
                   <button
@@ -3269,6 +3541,229 @@ export default function AdminSuppliersPage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* WHOLESALE TRADE SESSION CONNECTOR MODAL (METHOD 1 PRIMARY + METHOD 3 OPT) */}
+      {/* ========================================================================= */}
+      {(showFtgAuthDialog || showAmosAuthDialog) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-2xl w-full border border-[#E8E2D5] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-[#E8E2D5] bg-[#FAF8F5]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#C89B3C]/10 flex items-center justify-center text-[#C89B3C]">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-[#00072D]">
+                    {showFtgAuthDialog
+                      ? "Connect Furniture To Go (FTG) Trade Session"
+                      : "Connect Amos Mann Furniture Trade Session"}
+                  </h3>
+                  <p className="text-xs text-[#4F6D7A]">
+                    {showFtgAuthDialog
+                      ? "Unlock dealer trade wholesale costs & live inventory from https://furniture-to-go.co.uk"
+                      : "Unlock dealer trade wholesale costs & live inventory from https://www.amosmannfurniture.co.uk"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFtgAuthDialog(false);
+                  setShowAmosAuthDialog(false);
+                }}
+                className="text-[#7A8B99] hover:text-[#00072D] p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Method Tabs */}
+            <div className="flex border-b border-[#E8E2D5] px-5 pt-3 gap-3 bg-[#FAF8F5]">
+              <button
+                type="button"
+                onClick={() => setAuthDialogTab("cookie")}
+                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                  authDialogTab === "cookie"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                }`}
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Method 1: Paste B2B Session Cookie (Recommended & 100% Reliable)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAuthDialogTab("credentials")}
+                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                  authDialogTab === "credentials"
+                    ? "border-[#C89B3C] text-[#00072D]"
+                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                }`}
+              >
+                <Lock className="w-4 h-4 text-slate-500" />
+                <span>Method 2: Trade Login Credentials (Optional)</span>
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto space-y-4">
+              {authDialogTab === "cookie" ? (
+                <div className="space-y-4 text-xs">
+                  {/* How-to Card */}
+                  <div className="p-4 bg-[#FAF8F5] border border-[#E8E2D5] rounded-xl space-y-2">
+                    <div className="font-semibold text-[#00072D] flex items-center gap-2">
+                      <span>How to copy your session cookie in 10 seconds:</span>
+                    </div>
+                    <ol className="list-decimal list-inside space-y-1.5 text-[#4F6D7A] leading-relaxed">
+                      <li>
+                        Open{" "}
+                        <a
+                          href={showFtgAuthDialog ? "https://furniture-to-go.co.uk" : "https://www.amosmannfurniture.co.uk"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#C89B3C] underline font-semibold"
+                        >
+                          {showFtgAuthDialog ? "furniture-to-go.co.uk" : "amosmannfurniture.co.uk"}
+                        </a>{" "}
+                        in another tab and <strong>log into your Trade Stockist Account</strong>.
+                      </li>
+                      <li>
+                        Press <kbd className="px-1.5 py-0.5 bg-white border border-[#E8E2D5] rounded font-mono text-[11px]">F12</kbd> (or Right Click &rarr; Inspect) and switch to the <strong>Console</strong> tab.
+                      </li>
+                      <li className="flex items-center gap-2 flex-wrap">
+                        <span>Type or copy this command into console:</span>
+                        <code className="px-2 py-0.5 bg-slate-900 text-amber-300 font-mono text-[11px] rounded">
+                          copy(document.cookie)
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText("copy(document.cookie)");
+                            setCopiedScript(true);
+                            setTimeout(() => setCopiedScript(false), 2000);
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-white border border-[#E8E2D5] hover:border-[#C89B3C] text-[#00072D] rounded text-[11px] font-medium transition-colors cursor-pointer"
+                        >
+                          {copiedScript ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-[#C89B3C]" />}
+                          <span>{copiedScript ? "Copied Command!" : "Copy Helper Command"}</span>
+                        </button>
+                      </li>
+                      <li>
+                        Press <kbd className="px-1.5 py-0.5 bg-white border border-[#E8E2D5] rounded font-mono text-[11px]">Enter</kbd> in console, then paste the copied cookie string below.
+                      </li>
+                    </ol>
+                  </div>
+
+                  {/* Cookie Input */}
+                  <div>
+                    <label className="block font-semibold text-[#00072D] mb-1.5">
+                      Paste Authenticated Session Cookie String
+                    </label>
+                    <textarea
+                      rows={5}
+                      placeholder="PHPSESSID=38676d91bb354a864ba246a47a1df583; private_content_version=8d3744040a6b7d27e997a3a3160a2829; form_key=..."
+                      value={showFtgAuthDialog ? ftgAuthCookieInput : amosAuthCookieInput}
+                      onChange={(e) => {
+                        if (showFtgAuthDialog) setFtgAuthCookieInput(e.target.value);
+                        else setAmosAuthCookieInput(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-xl font-mono text-[11px] focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D]"
+                    />
+                    <p className="text-[11px] text-[#7A8B99] mt-1">
+                      Your cookies are stored encrypted in your local database and transmitted only to the official supplier domain.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4 text-xs">
+                  <p className="text-[#4F6D7A] leading-relaxed">
+                    Optionally store your trade portal credentials. The engine can store this to refresh trade sessions in the background.
+                  </p>
+
+                  <div>
+                    <label className="block font-semibold text-[#00072D] mb-1">
+                      Trade Account Username or Email
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="trade@sanfurniture.com"
+                      value={showFtgAuthDialog ? ftgAuthEmailInput : amosAuthEmailInput}
+                      onChange={(e) => {
+                        if (showFtgAuthDialog) setFtgAuthEmailInput(e.target.value);
+                        else setAmosAuthEmailInput(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#00072D] mb-1">
+                      Trade Account Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="••••••••••••"
+                      value={showFtgAuthDialog ? ftgAuthPasswordInput : amosAuthPasswordInput}
+                      onChange={(e) => {
+                        if (showFtgAuthDialog) setFtgAuthPasswordInput(e.target.value);
+                        else setAmosAuthPasswordInput(e.target.value);
+                      }}
+                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-between p-4 border-t border-[#E8E2D5] bg-[#FAF8F5]">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFtgAuthDialog(false);
+                  setShowAmosAuthDialog(false);
+                }}
+                className="px-4 py-2 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={Boolean(authLoadingSupplier)}
+                onClick={() => {
+                  const supplierCode = showFtgAuthDialog ? "furniture_to_go" : "amos_mann_furniture";
+                  if (authDialogTab === "cookie") {
+                    const cookies = showFtgAuthDialog ? ftgAuthCookieInput : amosAuthCookieInput;
+                    handleSaveSupplierCookies(supplierCode, cookies);
+                  } else {
+                    const email = showFtgAuthDialog ? ftgAuthEmailInput : amosAuthEmailInput;
+                    const pass = showFtgAuthDialog ? ftgAuthPasswordInput : amosAuthPasswordInput;
+                    handleSaveSupplierCredentials(supplierCode, email, pass);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-md cursor-pointer disabled:opacity-50"
+              >
+                {authLoadingSupplier ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Check className="w-3.5 h-3.5" />
+                )}
+                <span>
+                  {authLoadingSupplier
+                    ? "Verifying Session with Supplier..."
+                    : authDialogTab === "cookie"
+                    ? "Verify & Connect Wholesale Session"
+                    : "Save Trade Credentials"}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       )}

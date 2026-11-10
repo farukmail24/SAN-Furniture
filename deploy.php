@@ -487,6 +487,30 @@ if ($githubEvent === 'push') {
             $auditSuccess = true;
             $auditMethod = 'direct_pdo';
 
+            // Ensure suppliers auth columns exist on live MySQL
+            try {
+                $colsStmt = $pdo->query("SHOW COLUMNS FROM suppliers");
+                $existingCols = $colsStmt ? $colsStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+                if (!in_array('auth_cookies', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_cookies TEXT NULL AFTER sync_status");
+                }
+                if (!in_array('auth_username', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_username VARCHAR(191) NULL AFTER auth_cookies");
+                }
+                if (!in_array('auth_password', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_password VARCHAR(255) NULL AFTER auth_username");
+                }
+                if (!in_array('auth_status', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_status VARCHAR(50) DEFAULT 'unauthenticated' AFTER auth_password");
+                }
+                if (!in_array('auth_last_verified_at', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_last_verified_at DATETIME NULL AFTER auth_status");
+                }
+                if (!in_array('auth_error', $existingCols)) {
+                    $pdo->exec("ALTER TABLE suppliers ADD COLUMN auth_error TEXT NULL AFTER auth_last_verified_at");
+                }
+            } catch (Exception $authColErr) {}
+
             // Auto-heal known broken images in MySQL
             try {
                 $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'");

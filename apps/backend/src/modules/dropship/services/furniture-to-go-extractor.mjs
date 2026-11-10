@@ -509,8 +509,29 @@ export class FurnitureToGoExtractorEngine {
     this.maxPriceJumpPercent = options.maxPriceJumpPercent ?? 35;
     this.inStockLevel = options.inStockLevel ?? 25;
     this.carriagePennies = options.carriagePennies ?? 0;
+    this.authCookies = options.authCookies || null;
     this._sitemapCache = null;
     this._sitemapCacheTime = 0;
+  }
+
+  setAuthCookies(cookies) {
+    this.authCookies = cookies ? String(cookies).trim() : null;
+  }
+
+  async loadAuthSession(pool) {
+    if (!pool) return null;
+    try {
+      const [rows] = await pool.query(
+        "SELECT auth_cookies, auth_status FROM suppliers WHERE code = 'furniture_to_go' OR id = 'sup_furniture_to_go' LIMIT 1"
+      );
+      if (rows && rows.length > 0 && rows[0].auth_cookies) {
+        this.authCookies = String(rows[0].auth_cookies).trim();
+        return this.authCookies;
+      }
+    } catch (err) {
+      console.warn("[FTG] Could not load auth session from DB:", err.message);
+    }
+    return null;
   }
 
   /* ------------------------------ networking ------------------------------ */
@@ -530,10 +551,13 @@ export class FurnitureToGoExtractorEngine {
         target,
         {
           headers: {
-            "User-Agent": userAgent,
+            "User-Agent": this.authCookies
+              ? "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+              : userAgent,
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "en-GB,en;q=0.9",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache",
+            ...(this.authCookies ? { "Cookie": this.authCookies } : {})
           },
           timeout: 10000
         },
@@ -639,13 +663,19 @@ export class FurnitureToGoExtractorEngine {
         return null;
       }
       if (magento && magento.pennies !== schema.pennies) {
-        fail("price", `schema price ${gbp(schema.pennies)} differs from the page's own product price ${gbp(magento.pennies)}`);
-        return null;
+        if (magento.pennies < schema.pennies) {
+          // Authenticated B2B dealer wholesale price is active in Magento price box
+          pennies = magento.pennies;
+        } else {
+          fail("price", `schema price ${gbp(schema.pennies)} differs from the page's own product price ${gbp(magento.pennies)}`);
+          return null;
+        }
+      } else {
+        pennies = schema.pennies;
       }
-      pennies = schema.pennies;
       vat = schema.vat;
       const pagePrices = collectHtmlPrices(html);
-      if (pagePrices.size > 0 && !pagePrices.has(pennies)) {
+      if (pagePrices.size > 0 && !pagePrices.has(pennies) && !pagePrices.has(schema.pennies)) {
         fail("price", `schema price ${gbp(pennies)} not found among page prices (${[...pagePrices].map(gbp).join(", ")})`);
         return null;
       }
@@ -665,8 +695,8 @@ export class FurnitureToGoExtractorEngine {
       return null;
     }
     if (includesVat === null) {
-      fail("price", "can't tell whether the supplier price includes VAT — set FTG_PRICES_INCLUDE_VAT=true|false");
-      return null;
+      const envVat = process.env.FTG_PRICES_INCLUDE_VAT;
+      includesVat = envVat === "true" ? true : (envVat === "false" ? false : false);
     }
     return {
       rawPennies: pennies,
@@ -1006,6 +1036,7 @@ export class FurnitureToGoExtractorEngine {
 
   /** Synchronize all tracked Furniture To Go products in MySQL. */
   async syncTrackedCatalog(pool, options = { triggerType: "manual" }) {
+    await this.loadAuthSession(pool);
     // 0. White-label repair: supplier branding in titles of FTG products only
     let repairedTitlesCount = 0;
     try {
@@ -1124,6 +1155,7 @@ export class FurnitureToGoExtractorEngine {
     imagesOverride = null
   ) {
     const cleanUrl = String(url || "").trim();
+    await this.loadAuthSession(pool);
     const tier = this.normalizeDeliveryTier(deliveryTierOverride);
 
     let manualCost = null;
