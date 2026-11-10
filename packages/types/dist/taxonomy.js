@@ -4,7 +4,7 @@ export const CATALOG_CATEGORIES = [
         name: "Living Room",
         handle: "living-room",
         description: "Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and shoe storage cabinets.",
-        heroImage: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85"
+        heroImage: "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1600&q=85"
     },
     {
         id: "cat_sofas",

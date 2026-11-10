@@ -109,6 +109,7 @@ export default async function SalePage({ searchParams }: SalePageProps) {
       {/* Main Filtered Product Catalog */}
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
+          key={`sale-${(mergedSearchParams as Record<string, any>).type || ""}-${(mergedSearchParams as Record<string, any>).q || ""}-${mergedSearchParams.filter || ""}`}
           initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}
           initialSearchParams={mergedSearchParams}

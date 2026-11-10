@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     await pool.query(`
       INSERT IGNORE INTO \`categories\` (id, name, handle, description, hero_image)
       VALUES 
-        ('cat_living', 'Living Room', 'living-room', 'Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and occasional seating.', 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=1600&q=85'),
+        ('cat_living', 'Living Room', 'living-room', 'Architectural coffee tables, high-gloss media consoles, statement bookcases, sideboards, and occasional seating.', 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1600&q=85'),
         ('cat_sofas', 'Sofas', 'sofas', 'Bespoke handcrafted sofas, deep-seated corner groups, luxury chaises, and modular sectionals.', 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1600&q=85'),
         ('cat_dining', 'Dining', 'dining', 'Solid European oak extending dining tables, upholstered velvet chairs, and contemporary breakfast bar stools.', 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1600&q=85'),
         ('cat_beds', 'Bedroom', 'bedroom', 'Luxury ottoman storage beds, bespoke mirrored wardrobes, handcrafted bedside tables, and deep chests of drawers.', 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1600&q=85'),

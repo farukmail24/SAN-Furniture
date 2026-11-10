@@ -186,6 +186,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       {/* Main Filtered Product Grid */}
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
+          key={`${category.id}-${resolvedSearchParams.type || ""}-${resolvedSearchParams.q || ""}-${resolvedSearchParams.filter || ""}-${resolvedSearchParams.style || ""}`}
           category={category}
           initialProducts={products}
           allCategories={CATALOG_CATEGORIES}

@@ -79,6 +79,7 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       {/* Main Filtered Product Catalog */}
       <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 sm:py-12">
         <CategoryView
+          key={`catalog-${resolvedSearchParams.type || ""}-${resolvedSearchParams.q || ""}-${resolvedSearchParams.filter || ""}-${resolvedSearchParams.style || ""}`}
           initialProducts={liveProducts}
           allCategories={CATALOG_CATEGORIES}
           initialSearchParams={resolvedSearchParams}

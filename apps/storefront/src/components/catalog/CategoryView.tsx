@@ -138,34 +138,6 @@ export function CategoryView({
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceRange, setPriceRange] = useState<string>("all");
 
-  // Dynamically sync sub-type and filter states when URL query parameters change (e.g. from MegaMenu navigation /?type=mirrors)
-  useEffect(() => {
-    if (!searchParams) return;
-    const typeParam = searchParams.get("type") || searchParams.get("style") || searchParams.get("seats");
-    if (typeParam) {
-      const resolved = resolveSubType(category?.id, typeParam);
-      setSelectedSubTypeId(resolved ? resolved.id : null);
-    } else {
-      setSelectedSubTypeId(null);
-    }
-
-    const qParam = searchParams.get("q") || searchParams.get("search") || searchParams.get("range");
-    if (qParam !== null) {
-      setSearchQuery(qParam);
-    }
-
-    const filterParam = searchParams.get("filter");
-    if (filterParam === "clearance" || filterParam === "sale" || searchParams.get("sale") === "true") {
-      setOnlyOnSale(true);
-    } else if (filterParam === "scandi") {
-      setSearchQuery("scandinavian");
-    } else if (filterParam === "gloss") {
-      setSearchQuery("gloss");
-    } else if (filterParam === "oak") {
-      setSelectedColorTones(["oak"]);
-    }
-  }, [searchParams, category?.id]);
-
   // Sort & Display states
   const [sortBy, setSortBy] = useState<
     "featured" | "price_asc" | "price_desc" | "savings" | "width_asc" | "title_asc"
@@ -173,6 +145,80 @@ export function CategoryView({
   const [viewMode, setViewMode] = useState<"grid_standard" | "grid_editorial" | "list">("grid_standard");
   const [pageSize, setPageSize] = useState<number | "all">(24);
   const [visibleCount, setVisibleCount] = useState<number>(24);
+
+  // Dynamically sync sub-type and filter states when URL query parameters change (e.g. from MegaMenu navigation /?type=mirrors)
+  const syncFilterFromUrl = useCallback(
+    (urlOrSearch?: string) => {
+      if (typeof window === "undefined") return;
+      let params: URLSearchParams;
+      if (urlOrSearch) {
+        if (urlOrSearch.includes("?")) {
+          params = new URLSearchParams(urlOrSearch.split("?")[1]);
+        } else if (urlOrSearch.startsWith("?")) {
+          params = new URLSearchParams(urlOrSearch);
+        } else {
+          params = new URLSearchParams(window.location.search);
+        }
+      } else {
+        params = new URLSearchParams(window.location.search);
+      }
+
+      const typeParam = params.get("type") || params.get("style") || params.get("seats");
+      if (typeParam) {
+        const resolved = resolveSubType(category?.id, typeParam);
+        setSelectedSubTypeId(resolved ? resolved.id : null);
+      } else {
+        setSelectedSubTypeId(null);
+      }
+
+      const qParam = params.get("q") || params.get("search") || params.get("range");
+      if (qParam !== null) {
+        setSearchQuery(qParam);
+      } else {
+        setSearchQuery("");
+      }
+
+      const filterParam = params.get("filter");
+      if (filterParam === "clearance" || filterParam === "sale" || params.get("sale") === "true") {
+        setOnlyOnSale(true);
+      } else if (filterParam === "scandi") {
+        setSearchQuery("scandinavian");
+      } else if (filterParam === "gloss") {
+        setSearchQuery("gloss");
+      } else if (filterParam === "oak") {
+        setSelectedColorTones(["oak"]);
+      } else if (!filterParam) {
+        setOnlyOnSale(false);
+        setSelectedColorTones([]);
+      }
+
+      // Reset visible items count when sub-type/filter changes
+      setVisibleCount(typeof pageSize === "number" ? pageSize : 24);
+    },
+    [category?.id, pageSize]
+  );
+
+  // 1. Sync on Next.js searchParams hook update
+  useEffect(() => {
+    syncFilterFromUrl();
+  }, [searchParams, syncFilterFromUrl]);
+
+  // 2. Sync on browser popstate (back/forward history navigation)
+  useEffect(() => {
+    const handlePopState = () => syncFilterFromUrl();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [syncFilterFromUrl]);
+
+  // 3. Sync on custom instant navigation event from MegaMenu
+  useEffect(() => {
+    const handleCustomNav = (e: Event) => {
+      const customEvent = e as CustomEvent<{ href?: string }>;
+      syncFilterFromUrl(customEvent.detail?.href);
+    };
+    window.addEventListener("san:navigate", handleCustomNav);
+    return () => window.removeEventListener("san:navigate", handleCustomNav);
+  }, [syncFilterFromUrl]);
 
   // UI Modals & Drawers
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);

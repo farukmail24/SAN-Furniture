@@ -81,6 +81,13 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
     }
   };
 
+  const handleNavClick = (href: string) => {
+    setActiveTabId(null);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("san:navigate", { detail: { href } }));
+    }
+  };
+
   // Close on route change
   useEffect(() => {
     setActiveTabId(null);
@@ -214,6 +221,12 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
             >
               <div
                 style={{ backgroundColor: "#FAF8F5" }}
+                onClickCapture={(e) => {
+                  const target = e.target as HTMLElement | null;
+                  if (target?.closest("a")) {
+                    setActiveTabId(null);
+                  }
+                }}
                 className="w-full max-w-[1520px] bg-sand-50 rounded-b-2xl border-x border-b border-sand-300 shadow-[0_25px_60px_-15px_rgba(0,7,45,0.25)] overflow-hidden relative z-50"
               >
                 <div
@@ -237,7 +250,7 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                       </span>
                       <Link
                         href={activeTab.href}
-                        onClick={() => setActiveTabId(null)}
+                        onClick={() => handleNavClick(activeTab.href)}
                         className="inline-flex items-center gap-1.5 text-xs font-bold text-brass-700 hover:text-brass-800 transition-colors"
                       >
                         <span>Browse All {activeTab.label} Furniture</span>
@@ -258,7 +271,7 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                               <Link
                                 href={link.href}
                                 prefetch={false}
-                                onClick={() => setActiveTabId(null)}
+                                onClick={() => handleNavClick(link.href)}
                                 className="group flex items-center justify-between py-1.5 px-2.5 -mx-2.5 rounded-lg text-navy-800 hover:text-navy-950 hover:bg-sand-200/60 transition-colors"
                               >
                                 <span className="group-hover:translate-x-0.5 transition-transform duration-150 font-medium">
@@ -292,7 +305,7 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                       <Link
                         href={activeTab.featured_promo.cta_href || activeTab.href}
                         prefetch={false}
-                        onClick={() => setActiveTabId(null)}
+                        onClick={() => handleNavClick(activeTab.featured_promo?.cta_href || activeTab.href)}
                         style={{ backgroundColor: "#00072D" }}
                         className="group relative flex flex-col justify-end p-5 rounded-2xl overflow-hidden bg-navy-950 text-sand-50 transition-all hover:shadow-lg hover:scale-[1.01] min-h-[220px]"
                       >
@@ -335,7 +348,7 @@ export function MegaMenu({ data, className = "" }: MegaMenuProps) {
                       <Link
                         href={activeTab.featured_product.href}
                         prefetch={false}
-                        onClick={() => setActiveTabId(null)}
+                        onClick={() => handleNavClick(activeTab.featured_product?.href || activeTab.href)}
                         style={{ backgroundColor: "#FFFFFF" }}
                         className="group flex flex-col justify-between p-4 rounded-2xl bg-white border border-sand-200 shadow-sm hover:border-brass-400/80 hover:shadow-md transition-all hover:scale-[1.01]"
                       >
