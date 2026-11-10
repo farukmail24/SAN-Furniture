@@ -600,7 +600,12 @@ export class AmosMannExtractorEngine {
     const required = new Set(REQUIRED_FIELDS[mode].filter((f) => !optionalFields.includes(f)));
 
     const { html, finalUrl } = await this.fetchPage(url);
-    if (pathOf(finalUrl) !== pathOf(url)) {
+        if (pathOf(finalUrl) !== pathOf(url)) {
+      if (finalUrl.includes("ERROR404") || finalUrl.includes("function=ERROR404") || finalUrl.includes("type=PRODUCT")) {
+        throw new ProductRejectedError(url, [
+          { field: "discontinued", reason: "Product discontinued or removed by supplier (404 Not Found on amosmannfurniture.co.uk)" }
+        ]);
+      }
       throw new ProductRejectedError(url, [{ field: "url", reason: `supplier redirected to a different page (${finalUrl})` }]);
     }
     const picked = pickProductNode(collectJsonLdNodes(html), finalUrl);

@@ -378,26 +378,49 @@ function readFtgPrice(html) {
   const span = typeof readHtmlPriceSpan === "function" ? readHtmlPriceSpan(html) : null;
   if (span && span.pennies > 0) return span;
 
-  // 5. data-price-amount attributes anywhere
+  // 5. data-price-amount attributes with finalPrice or basePrice
   const dataPrices = new Set();
+  for (const m of html.matchAll(/data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["'][^>]*data-price-type=["'](?:finalPrice|basePrice)["']/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p && p > 0) dataPrices.add(p);
+  }
+  for (const m of html.matchAll(/data-price-type=["'](?:finalPrice|basePrice)["'][^>]*data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["']/gi)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p && p > 0) dataPrices.add(p);
+  }
+  if (dataPrices.size > 0) {
+    return { pennies: Math.min(...dataPrices) };
+  }
+
+  // 6. Generic data-price-amount attributes anywhere
   for (const m of html.matchAll(/data-price-amount=["']([0-9]+(?:\.[0-9]{1,2})?)["']/gi)) {
     const p = parseMoneyToPennies(m[1]);
     if (p && p > 0) dataPrices.add(p);
   }
   if (dataPrices.size > 0) {
-    const sorted = [...dataPrices].sort((a, b) => a - b);
-    return { pennies: sorted[0] };
+    return { pennies: Math.min(...dataPrices) };
   }
 
-  // 6. Visible price spans: class="price" or itemprop="price"
+  // 7. Visible price spans with class="price" or class containing price-
   const priceMatches = new Set();
-  for (const m of html.matchAll(/<(?:span|div|p|meta)[^>]*(?:class=["'][^"']*price[^"']*["']|itemprop=["']price["'])[^>]*>(?:[^<]*?[££])?\s*([0-9,]+(?:\.[0-9]{1,2})?)/gi)) {
+  const priceRegex = /<(?:span|div|p|b|strong|meta)[^>]*(?:class=["'][^"']*\bprice(?:\b|-)[^"']*["']|itemprop=["']price["'])[^>]*>[\s\S]{0,100}?[£\xA3]\s*([0-9,]+(?:\.[0-9]{1,2})?)/gi;
+  for (const m of html.matchAll(priceRegex)) {
     const p = parseMoneyToPennies(m[1]);
     if (p && p > 0) priceMatches.add(p);
   }
   if (priceMatches.size > 0) {
-    const sorted = [...priceMatches].sort((a, b) => a - b);
-    return { pennies: sorted[0] };
+    return { pennies: Math.min(...priceMatches) };
+  }
+
+  // 8. Raw text patterns like "Trade: £129.99", "Price: £129.99", "ex VAT: £129.99"
+  const rawTextMatches = new Set();
+  const textRegex = /(?:Trade\s*(?:Price|Cost)?|Wholesale|Our Price|Dealer Price|Price|ex\.?\s*VAT)\s*:\s*[£\xA3]\s*([0-9,]+(?:\.[0-9]{1,2})?)/gi;
+  for (const m of html.matchAll(textRegex)) {
+    const p = parseMoneyToPennies(m[1]);
+    if (p && p > 0) rawTextMatches.add(p);
+  }
+  if (rawTextMatches.size > 0) {
+    return { pennies: Math.min(...rawTextMatches) };
   }
 
   return null;
@@ -676,7 +699,8 @@ export class FurnitureToGoExtractorEngine {
             "sec-fetch-site": "none",
             "sec-fetch-user": "?1",
             "upgrade-insecure-requests": "1",
-            ...(this.authCookies ? { "Cookie": this.authCookies } : {})
+            ...(this.authCookies ? { "Cookie": this.authCookies } : {}),
+            ...(this.authCookies && this.authCookies.includes("customer_token=") ? { "Authorization": `Bearer ${this.authCookies.match(/customer_token=([^;]+)/)?.[1]}` } : {})
           },
           timeout: 10000
         },
@@ -844,7 +868,12 @@ export class FurnitureToGoExtractorEngine {
     const cleanUrl = String(url || "").trim();
 
     const { html, finalUrl } = await this.fetchPage(cleanUrl);
-    if (pathOf(finalUrl) !== pathOf(cleanUrl)) {
+        if (pathOf(finalUrl) !== pathOf(cleanUrl)) {
+      if (finalUrl.includes("404") || finalUrl.includes("noroute")) {
+        throw new ProductRejectedError(cleanUrl, [
+          { field: "discontinued", reason: "Product discontinued or removed by supplier (404 Not Found on furniture-to-go.co.uk)" }
+        ]);
+      }
       throw new ProductRejectedError(cleanUrl, [{ field: "url", reason: `supplier redirected to a different page (${finalUrl})` }]);
     }
     const picked = pickProductNode(collectJsonLdNodes(html), finalUrl);

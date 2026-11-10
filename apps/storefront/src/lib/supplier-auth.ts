@@ -245,6 +245,39 @@ export async function saveSupplierCookies(
 }
 
 /**
+ * Attempt to authenticate directly with FTG Magento 2 REST customer token endpoint.
+ */
+export async function authenticateFtgToken(username: string, password: string): Promise<{ success: boolean; token?: string; error?: string }> {
+  try {
+    const postData = JSON.stringify({ username, password });
+    const res = await fetch("https://furniture-to-go.co.uk/rest/V1/integration/customer/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        "Accept": "application/json"
+      },
+      body: postData
+    });
+    const text = await res.text();
+    if (res.ok) {
+      let token = text.trim();
+      if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+      return { success: true, token };
+    } else {
+      let msg = text;
+      try {
+        const json = JSON.parse(text);
+        msg = json.message || text;
+      } catch {}
+      return { success: false, error: msg };
+    }
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
  * Save B2B trade credentials (Method 3 optional).
  */
 export async function saveSupplierCredentials(
@@ -252,21 +285,42 @@ export async function saveSupplierCredentials(
   supplierCodeOrId: string,
   username: string,
   password?: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; verified?: boolean; token?: string }> {
   await ensureSupplierAuthSchema(pool);
   const cleanUser = username ? username.trim() : "";
   const cleanPass = password ? password.trim() : "";
+
+  let verified = false;
+  let customerToken: string | null = null;
+  if ((supplierCodeOrId.includes("furniture_to_go") || supplierCodeOrId === "sup_furniture_to_go") && cleanUser && cleanPass) {
+    try {
+      const authRes = await authenticateFtgToken(cleanUser, cleanPass);
+      if (authRes.success && authRes.token) {
+        verified = true;
+        customerToken = authRes.token;
+      }
+    } catch (e: any) {
+      console.warn("[FTG Auth] Token verification note:", e.message);
+    }
+  }
 
   if (cleanPass) {
     await pool.query(
       `UPDATE suppliers
        SET auth_username = ?,
            auth_password = ?,
+           auth_cookies = COALESCE(?, auth_cookies),
            auth_status = 'connected',
            auth_last_verified_at = NOW(),
            auth_error = NULL
        WHERE code = ? OR id = ?`,
-      [cleanUser, cleanPass, supplierCodeOrId, supplierCodeOrId]
+      [
+        cleanUser,
+        cleanPass,
+        customerToken ? `customer_token=${customerToken}` : null,
+        supplierCodeOrId,
+        supplierCodeOrId
+      ]
     );
   } else {
     await pool.query(
@@ -280,7 +334,14 @@ export async function saveSupplierCredentials(
     );
   }
 
-  return { success: true, message: "Supplier trade credentials saved and connected successfully" };
+  return {
+    success: true,
+    message: verified
+      ? "Supplier trade credentials authenticated & token generated successfully"
+      : "Supplier trade credentials saved securely to database",
+    verified,
+    ...(customerToken ? { token: customerToken } : {})
+  };
 }
 
 /**

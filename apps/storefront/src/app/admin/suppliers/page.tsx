@@ -427,10 +427,8 @@ export default function AdminSuppliersPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setToastMsg({ type: "success", text: "Supplier trade credentials saved securely!" });
+        setToastMsg({ type: "success", text: "Supplier trade credentials saved securely in database!" });
         await fetchSupplierAuthStatus(supplierCode);
-        if (supplierCode.includes("furniture_to_go")) setShowFtgAuthDialog(false);
-        if (supplierCode.includes("amos_mann")) setShowAmosAuthDialog(false);
       } else {
         setToastMsg({ type: "error", text: data.error || "Failed to save credentials." });
       }
@@ -779,7 +777,10 @@ export default function AdminSuppliersPage() {
         if (Array.isArray(data.errors) && data.errors.length > 0) {
           setAmosScrapeErrors(data.errors.map((e: any) => ({
             url: e.url,
-            issues: e.reasons || [{ field: "import", reason: e.error || "Rejected" }]
+            title: e.title || (e.url ? e.url.split("/").pop() : "Amos Mann Product"),
+            error: e.error || (e.reasons?.map((r: any) => r.reason).join("; ")) || "Rejected by supplier validation",
+            reasons: e.reasons || e.issues || [{ field: "import", reason: e.error || "Rejected" }],
+            issues: e.reasons || e.issues || [{ field: "import", reason: e.error || "Rejected" }]
           })));
           setAmosStagingTab("errors");
         }
@@ -1087,7 +1088,10 @@ export default function AdminSuppliersPage() {
         if (Array.isArray(data.errors) && data.errors.length > 0) {
           setFtgScrapeErrors(data.errors.map((e: any) => ({
             url: e.url,
-            issues: e.reasons || [{ field: "import", reason: e.error || "Rejected" }]
+            title: e.title || (e.url ? e.url.split("/").pop()?.replace(/\.html?$/i, "") : "FTG Product"),
+            error: e.error || (e.reasons?.map((r: any) => r.reason).join("; ")) || "Rejected by supplier validation",
+            reasons: e.reasons || e.issues || [{ field: "import", reason: e.error || "Rejected" }],
+            issues: e.reasons || e.issues || [{ field: "import", reason: e.error || "Rejected" }]
           })));
           setFtgStagingTab("errors");
         }
@@ -2006,20 +2010,27 @@ export default function AdminSuppliersPage() {
                               <div className="text-[10px] font-bold uppercase tracking-wider text-[#4F6D7A]">
                                 Failed Validation Checks:
                               </div>
-                              {Array.isArray(err.reasons) && err.reasons.length > 0 ? (
-                                <ul className="space-y-1">
-                                  {err.reasons.map((r, rIdx) => (
-                                    <li key={rIdx} className="flex items-start gap-1.5 text-[11px] text-[#00072D]">
-                                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 shrink-0">
-                                        {r.field}
-                                      </span>
-                                      <span className="text-slate-700">{r.reason}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <div className="text-[11px] text-rose-700 font-medium">{err.error}</div>
-                              )}
+                              {(() => {
+                                const checks = Array.isArray(err.reasons) && err.reasons.length > 0
+                                  ? err.reasons
+                                  : Array.isArray((err as any).issues) && (err as any).issues.length > 0
+                                  ? (err as any).issues
+                                  : err.error
+                                  ? [{ field: "import", reason: err.error }]
+                                  : [{ field: "status", reason: "Product discontinued or rejected by supplier policy" }];
+                                return (
+                                  <ul className="space-y-1.5">
+                                    {checks.map((r: any, rIdx: number) => (
+                                      <li key={rIdx} className="flex items-start gap-2 text-[11px] text-[#00072D]">
+                                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-200/60 uppercase shrink-0">
+                                          {r.field || "issue"}
+                                        </span>
+                                        <span className="text-slate-700 leading-snug">{r.reason || "Supplier validation check failed"}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                );
+                              })()}
                             </div>
                           </div>
                         ))}
@@ -3102,20 +3113,27 @@ export default function AdminSuppliersPage() {
                               <div className="text-[10px] font-bold uppercase tracking-wider text-[#4F6D7A]">
                                 Failed Validation Checks:
                               </div>
-                              {Array.isArray(err.reasons) && err.reasons.length > 0 ? (
-                                <ul className="space-y-1">
-                                  {err.reasons.map((r, rIdx) => (
-                                    <li key={rIdx} className="flex items-start gap-1.5 text-[11px] text-[#00072D]">
-                                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 shrink-0">
-                                        {r.field}
-                                      </span>
-                                      <span className="text-slate-700">{r.reason}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <div className="text-[11px] text-rose-700 font-medium">{err.error}</div>
-                              )}
+                              {(() => {
+                                const checks = Array.isArray(err.reasons) && err.reasons.length > 0
+                                  ? err.reasons
+                                  : Array.isArray((err as any).issues) && (err as any).issues.length > 0
+                                  ? (err as any).issues
+                                  : err.error
+                                  ? [{ field: "import", reason: err.error }]
+                                  : [{ field: "status", reason: "Product discontinued or rejected by supplier policy" }];
+                                return (
+                                  <ul className="space-y-1.5">
+                                    {checks.map((r: any, rIdx: number) => (
+                                      <li key={rIdx} className="flex items-start gap-2 text-[11px] text-[#00072D]">
+                                        <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-200/60 uppercase shrink-0">
+                                          {r.field || "issue"}
+                                        </span>
+                                        <span className="text-slate-700 leading-snug">{r.reason || "Supplier validation check failed"}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                );
+                              })()}
                             </div>
                           </div>
                         ))}
@@ -3692,7 +3710,7 @@ export default function AdminSuppliersPage() {
       {/* WHOLESALE TRADE SESSION CONNECTOR MODAL (METHOD 1 PRIMARY + METHOD 3 OPT) */}
       {/* ========================================================================= */}
       {(showFtgAuthDialog || showAmosAuthDialog) && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-4xl w-full border border-[#E8E2D5] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-[#E8E2D5] bg-[#FAF8F5]">
@@ -3887,8 +3905,25 @@ export default function AdminSuppliersPage() {
                 </div>
               ) : (
                 <div className="space-y-4 text-xs">
+                  {(showFtgAuthDialog ? (ftgAuth.hasPassword || ftgAuthPasswordInput) : (amosAuth.hasPassword || amosAuthPasswordInput)) && (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
+                          <span>Trade Account Credentials Saved & Active</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">MySQL Stored</span>
+                        </div>
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          Account: <strong>{showFtgAuthDialog ? (ftgAuth.authUsername || ftgAuthEmailInput) : (amosAuth.authUsername || amosAuthEmailInput)}</strong> • Password is saved and active in the database.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <p className="text-[#4F6D7A] leading-relaxed">
-                    Optionally store your trade portal credentials. The engine can store this to refresh trade sessions in the background.
+                    Store your official supplier trade portal credentials. The engine stores this securely in your database to authenticate trade sessions and unlock wholesale pricing.
                   </p>
 
                   <div>
@@ -3923,7 +3958,11 @@ export default function AdminSuppliersPage() {
                     <div className="relative">
                       <input
                         type={showAuthPassword ? "text" : "password"}
-                        placeholder="••••••••••••"
+                        placeholder={
+                          (showFtgAuthDialog ? ftgAuth.hasPassword : amosAuth.hasPassword)
+                            ? "•••••••••••• (Saved in DB - Enter new to change)"
+                            : "Enter your trade account password"
+                        }
                         value={showFtgAuthDialog ? ftgAuthPasswordInput : amosAuthPasswordInput}
                         onChange={(e) => {
                           if (showFtgAuthDialog) setFtgAuthPasswordInput(e.target.value);
