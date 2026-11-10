@@ -43,6 +43,14 @@ export async function ensureSupplierAuthSchema(pool: mysql.Pool): Promise<void> 
     if (!existing.has("auth_error")) {
       await pool.query("ALTER TABLE suppliers ADD COLUMN auth_error TEXT NULL AFTER auth_last_verified_at");
     }
+
+    try {
+      await pool.query("ALTER TABLE furniture_specs MODIFY COLUMN weight_kg DECIMAL(6,2) NULL DEFAULT 25.00");
+      await pool.query("ALTER TABLE furniture_specs MODIFY COLUMN material VARCHAR(100) NULL DEFAULT 'Engineered Wood / Melamine'");
+      await pool.query("ALTER TABLE furniture_specs MODIFY COLUMN frame_material VARCHAR(100) NULL DEFAULT 'Solid Timber / Composite'");
+      await pool.query("ALTER TABLE furniture_specs MODIFY COLUMN color VARCHAR(100) NULL DEFAULT 'Natural / Neutral'");
+    } catch {}
+
     schemaEnsured = true;
   } catch (err: any) {
     console.error("[SupplierAuth] Failed to ensure schema:", err.message);
@@ -63,6 +71,11 @@ export function sanitizeCookieHeader(rawCookies: string): string {
   cleaned = cleaned.replace(/^document\.cookie\s*=\s*/i, "").trim();
   if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
     cleaned = cleaned.slice(1, -1).trim();
+  }
+
+  // If user pasted just a raw session hash or token without name, treat as PHPSESSID
+  if (!cleaned.includes("=") && /^[a-zA-Z0-9,-]{16,}$/.test(cleaned)) {
+    return `PHPSESSID=${cleaned}`;
   }
 
   return cleaned

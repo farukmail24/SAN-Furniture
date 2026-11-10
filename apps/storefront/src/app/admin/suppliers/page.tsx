@@ -3745,6 +3745,13 @@ export default function AdminSuppliersPage() {
                         Press <kbd className="px-1.5 py-0.5 bg-white border border-[#E8E2D5] rounded font-mono text-[11px]">Enter</kbd> in console, then paste the copied cookie string below.
                       </li>
                     </ol>
+
+                    {showFtgAuthDialog && (
+                      <div className="mt-2.5 p-2.5 bg-amber-50/90 border border-amber-200 rounded-lg text-amber-950 text-[11px] leading-relaxed">
+                        <span className="font-bold">💡 How to unlock FTG wholesale dealer trade prices:</span> FTG identifies logged-in dealers via <code className="bg-white px-1 py-0.5 rounded font-mono font-bold text-amber-900 border border-amber-200">PHPSESSID</code>. 
+                        In DevTools, switch to <strong>Application</strong> &rarr; <strong>Cookies</strong> &rarr; <strong>furniture-to-go.co.uk</strong>, double-click the <strong>Value</strong> of <strong>PHPSESSID</strong> and paste it below (or paste full <code className="bg-white px-1 py-0.5 rounded font-mono">cookie:</code> header from <strong>Network</strong> tab).
+                      </div>
+                    )}
                   </div>
 
                   {/* Status Banner inside Modal if already saved */}

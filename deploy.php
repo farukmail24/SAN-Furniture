@@ -511,6 +511,14 @@ if ($githubEvent === 'push') {
                 }
             } catch (Exception $authColErr) {}
 
+            // Ensure furniture_specs allows realistic defaults and nulls for dropship scraping
+            try {
+                $pdo->exec("ALTER TABLE furniture_specs MODIFY COLUMN weight_kg DECIMAL(6,2) NULL DEFAULT 25.00");
+                $pdo->exec("ALTER TABLE furniture_specs MODIFY COLUMN material VARCHAR(100) NULL DEFAULT 'Engineered Wood / Melamine'");
+                $pdo->exec("ALTER TABLE furniture_specs MODIFY COLUMN frame_material VARCHAR(100) NULL DEFAULT 'Solid Timber / Composite'");
+                $pdo->exec("ALTER TABLE furniture_specs MODIFY COLUMN color VARCHAR(100) NULL DEFAULT 'Natural / Neutral'");
+            } catch (Exception $specErr) {}
+
             // Auto-heal known broken images in MySQL
             try {
                 $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'");

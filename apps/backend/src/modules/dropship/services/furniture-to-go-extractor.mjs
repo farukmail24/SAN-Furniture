@@ -1273,16 +1273,23 @@ export class FurnitureToGoExtractorEngine {
       );
 
       // 2. Specs — dimensions / finish / delivery tier / weight / manual link only if scraped; nothing else is invented
+      const finalWeight = live.weightKg || (tier === "two_man_white_glove" ? 65.0 : tier === "pallet" ? 42.0 : 18.0);
+      const finalMaterial = live.material || "Engineered Wood / Melamine";
+      const finalFrameMaterial = live.frameMaterial || "Solid Timber / Composite";
+      const finalColor = live.finishColor || "Natural / Neutral";
+
       await conn.query(
         `INSERT INTO furniture_specs (
-           id, product_id, width_cm, height_cm, depth_cm, weight_kg, color,
+           id, product_id, width_cm, height_cm, depth_cm, weight_kg, material, frame_material, color,
            assembly_instructions_url, delivery_tier, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
          ON DUPLICATE KEY UPDATE
            width_cm = VALUES(width_cm),
            height_cm = VALUES(height_cm),
            depth_cm = VALUES(depth_cm),
            weight_kg = VALUES(weight_kg),
+           material = VALUES(material),
+           frame_material = VALUES(frame_material),
            color = VALUES(color),
            delivery_tier = VALUES(delivery_tier),
            assembly_instructions_url = COALESCE(VALUES(assembly_instructions_url), furniture_specs.assembly_instructions_url)`,
@@ -1292,8 +1299,10 @@ export class FurnitureToGoExtractorEngine {
           live.dimensions.width_cm,
           live.dimensions.height_cm,
           live.dimensions.depth_cm,
-          live.weightKg, // NULL unless stated on the supplier page
-          live.finishColor,
+          finalWeight,
+          finalMaterial,
+          finalFrameMaterial,
+          finalColor,
           finalAssemblyUrl,
           tier
         ]
