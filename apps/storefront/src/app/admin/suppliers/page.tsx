@@ -347,6 +347,12 @@ export default function AdminSuppliersPage() {
               hasCookies: data.auth.hasCookies,
               authError: data.auth.authError,
             });
+            if (data.auth.cookies) {
+              setFtgAuthCookieInput(data.auth.cookies);
+            }
+            if (data.auth.authUsername) {
+              setFtgAuthEmailInput(data.auth.authUsername);
+            }
           } else if (supplierCode.includes("amos_mann")) {
             setAmosAuth({
               authStatus: data.auth.authStatus,
@@ -355,6 +361,12 @@ export default function AdminSuppliersPage() {
               hasCookies: data.auth.hasCookies,
               authError: data.auth.authError,
             });
+            if (data.auth.cookies) {
+              setAmosAuthCookieInput(data.auth.cookies);
+            }
+            if (data.auth.authUsername) {
+              setAmosAuthEmailInput(data.auth.authUsername);
+            }
           }
         }
       }
@@ -2046,7 +2058,6 @@ export default function AdminSuppliersPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setAmosAuthCookieInput("");
                             setShowAmosAuthDialog(true);
                           }}
                           className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
@@ -2065,7 +2076,6 @@ export default function AdminSuppliersPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setAmosAuthCookieInput("");
                           setShowAmosAuthDialog(true);
                         }}
                         className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
@@ -3147,7 +3157,6 @@ export default function AdminSuppliersPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setFtgAuthCookieInput("");
                             setShowFtgAuthDialog(true);
                           }}
                           className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
@@ -3166,7 +3175,6 @@ export default function AdminSuppliersPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setFtgAuthCookieInput("");
                           setShowFtgAuthDialog(true);
                         }}
                         className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
@@ -3739,14 +3747,36 @@ export default function AdminSuppliersPage() {
                     </ol>
                   </div>
 
+                  {/* Status Banner inside Modal if already saved */}
+                  {((showFtgAuthDialog && ftgAuth.hasCookies) || (showAmosAuthDialog && amosAuth.hasCookies)) && (
+                    <div className="flex items-center gap-2.5 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                      <div className="flex-1">
+                        <span className="font-semibold">Active Session Connected & Stored in Database</span>
+                        <p className="text-[11px] text-emerald-700 mt-0.5">
+                          Scraper is already authenticated. You can keep existing cookies or paste new cookies below to update.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Cookie Input */}
                   <div>
-                    <label className="block font-semibold text-[#00072D] mb-1.5">
-                      Paste Authenticated Session Cookie String
+                    <label className="block font-semibold text-[#00072D] mb-1.5 flex items-center justify-between">
+                      <span>Paste Authenticated Session Cookie String</span>
+                      {((showFtgAuthDialog && ftgAuth.hasCookies) || (showAmosAuthDialog && amosAuth.hasCookies)) && (
+                        <span className="text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          Currently Active
+                        </span>
+                      )}
                     </label>
                     <textarea
                       rows={5}
-                      placeholder="PHPSESSID=38676d91bb354a864ba246a47a1df583; private_content_version=8d3744040a6b7d27e997a3a3160a2829; form_key=..."
+                      placeholder={
+                        showFtgAuthDialog
+                          ? "PHPSESSID=...; private_content_version=...; form_key=..."
+                          : "ACTINIC_CART=...; PHPSESSID=...; user_session=..."
+                      }
                       value={showFtgAuthDialog ? ftgAuthCookieInput : amosAuthCookieInput}
                       onChange={(e) => {
                         if (showFtgAuthDialog) setFtgAuthCookieInput(e.target.value);

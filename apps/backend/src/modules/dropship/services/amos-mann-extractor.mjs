@@ -52,9 +52,9 @@ const FINISH_WORDS = new Set([
   "stone", "truffle", "ebony", "espresso", "hickory", "maple", "birch", "concrete"
 ]);
 const FINISH_MODIFIERS = new Set(["light", "dark", "pale", "deep", "soft", "high", "natural", "artisan", "rustic", "sonoma", "alpine"]);
-const FINISH_CONNECTORS = new Set(["and", "&", "in", "effect", "finish", "look"]);
-const FINISH_LEADING_TRIM = new Set(["and", "&", "in", "effect", "finish", "look"]);
-const FINISH_TRAILING_TRIM = new Set(["and", "&", "in", "high"]);
+const FINISH_CONNECTORS = new Set(["and", "&", "in", "effect", "finish", "look", "with", "a", "an", "on", "/"]);
+const FINISH_LEADING_TRIM = new Set(["and", "&", "in", "effect", "finish", "look", "with", "a", "an", "on", "/"]);
+const FINISH_TRAILING_TRIM = new Set(["and", "&", "in", "high", "with", "a", "an", "on", "/"]);
 
 /* -------------------------------------------------------------------------- */
 /*  Errors                                                                     */
@@ -325,9 +325,10 @@ function extractFinishFromTitle(title) {
   flush();
   const unique = [...new Set(runs)];
   if (unique.length === 1) return { value: unique[0] };
+  if (unique.length > 1) return { value: unique.join(" / ") };
   return {
     value: null,
-    reason: unique.length === 0 ? "no finish/colour found in schema or title" : `ambiguous finish in title (${unique.join(" | ")})`
+    reason: "no finish/colour found in schema or title"
   };
 }
 
@@ -506,15 +507,43 @@ export class AmosMannExtractorEngine {
 
     // Cross-check with the price(s) the page itself exposes (meta/microdata), if any.
     const pagePrices = collectHtmlPrices(html);
-    if (pagePrices.size > 0 && !pagePrices.has(first.pennies)) {
+    const exVatPennies = Math.round(first.pennies / UK_VAT_MULTIPLIER);
+    const incVatPennies = Math.round(first.pennies * UK_VAT_MULTIPLIER);
+
+    let priceMatchesPage = pagePrices.size === 0 || pagePrices.has(first.pennies);
+    let matchedAsExVat = false;
+    let matchedAsIncVat = false;
+
+    if (!priceMatchesPage) {
+      for (const p of pagePrices) {
+        if (Math.abs(p - exVatPennies) <= 2) {
+          priceMatchesPage = true;
+          matchedAsExVat = true; // schema was inc VAT, page is ex VAT
+          break;
+        }
+        if (Math.abs(p - incVatPennies) <= 2) {
+          priceMatchesPage = true;
+          matchedAsIncVat = true; // schema was ex VAT, page is inc VAT
+          break;
+        }
+        if (Math.abs(p - first.pennies) <= 2) {
+          priceMatchesPage = true;
+          break;
+        }
+      }
+    }
+
+    if (!priceMatchesPage) {
       fail("price", `schema price ${gbp(first.pennies)} not found among page prices (${[...pagePrices].map(gbp).join(", ")})`);
       return null;
     }
 
-    // VAT basis must be explicit: from the page, or from your config. Never assumed.
+    // VAT basis must be explicit: from the page, or from matched comparison, or from config. Never assumed.
     let includesVat = first.vat;
     if (includesVat === null) {
-      includesVat = this.supplierPriceIncludesVat;
+      if (matchedAsExVat) includesVat = true;
+      else if (matchedAsIncVat) includesVat = false;
+      else includesVat = this.supplierPriceIncludesVat;
     } else if (this.supplierPriceIncludesVat !== null && this.supplierPriceIncludesVat !== includesVat) {
       fail("price", "VAT flag on the page conflicts with supplierPriceIncludesVat config");
       return null;
@@ -644,10 +673,11 @@ export class AmosMannExtractorEngine {
       sku,
       deliveryTier: tier,
       rangeName,
-      costPennies: price.costPennies, // supplier cost excl. VAT, in pennies
-      priceGbp: price.costPennies / 100, // supplier cost excl. VAT
-      rawPriceGbp: price.rawPennies / 100, // price exactly as shown by the supplier
-      isVatIncluded: price.isVatIncluded,
+      costPennies: price ? price.costPennies : 0, // supplier cost excl. VAT, in pennies
+      priceGbp: price ? price.costPennies / 100 : 0, // supplier cost excl. VAT
+      rawPriceGbp: price ? price.rawPennies / 100 : 0, // price exactly as shown by the supplier
+      priceVerified: Boolean(price),
+      isVatIncluded: price ? price.isVatIncluded : false,
       finishColor,
       isOutOfStock,
       extractedDeliveryPennies,

@@ -59,9 +59,9 @@ const FINISH_WORDS = new Set([
   "stone", "truffle", "ebony", "espresso", "hickory", "maple", "birch", "concrete", "slate"
 ]);
 const FINISH_MODIFIERS = new Set(["light", "dark", "pale", "deep", "soft", "high", "natural", "artisan", "rustic", "sonoma", "alpine"]);
-const FINISH_CONNECTORS = new Set(["and", "&", "in", "effect", "finish", "look"]);
-const FINISH_LEADING_TRIM = new Set(["and", "&", "in", "effect", "finish", "look"]);
-const FINISH_TRAILING_TRIM = new Set(["and", "&", "in", "high"]);
+const FINISH_CONNECTORS = new Set(["and", "&", "in", "effect", "finish", "look", "with", "a", "an", "on", "/"]);
+const FINISH_LEADING_TRIM = new Set(["and", "&", "in", "effect", "finish", "look", "with", "a", "an", "on", "/"]);
+const FINISH_TRAILING_TRIM = new Set(["and", "&", "in", "high", "with", "a", "an", "on", "/"]);
 
 /* -------------------------------------------------------------------------- */
 /*  Errors                                                                     */
@@ -479,10 +479,24 @@ function extractFinishFromTitle(title) {
   flush();
   const unique = [...new Set(runs)];
   if (unique.length === 1) return { value: unique[0] };
+  if (unique.length > 1) return { value: unique.join(" / ") };
   return {
     value: null,
-    reason: unique.length === 0 ? "no colour/finish found in page attributes, schema or title" : `ambiguous finish in title (${unique.join(" | ")})`
+    reason: "no colour/finish found in page attributes, schema or title"
   };
+}
+
+function readHtmlStock(html) {
+  if (!html) return null;
+  if (/class="[^"]*\bavailable\b[^"]*\bstock\b[^"]*"/i.test(html) || /class="[^"]*\bstock\b[^"]*\bavailable\b[^"]*"/i.test(html)) {
+    return false; // in stock
+  }
+  if (/class="[^"]*\bunavailable\b[^"]*\bstock\b[^"]*"/i.test(html) || /class="[^"]*\bstock\b[^"]*\bunavailable\b[^"]*"/i.test(html)) {
+    return true; // out of stock
+  }
+  if (/\b(?:In Stock|Available now)\b/i.test(html)) return false;
+  if (/\b(?:Out of Stock|Sold Out)\b/i.test(html)) return true;
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -757,13 +771,22 @@ export class FurnitureToGoExtractorEngine {
     // 3. Price
     const price = this.readPrice(node, html, fail);
 
-    // 4. Stock — only from the schema's explicit availability
+    // 4. Stock — schema's explicit availability, with Magento HTML fallback
     const offers = flattenOffers(node);
-    const availKeys = [...new Set(offers.map((o) => String((o && o.availability) || "").split("/").pop().toLowerCase()))];
+    const availKeys = [...new Set(offers.map((o) => String((o && o.availability) || "").split("/").pop().toLowerCase()))].filter(Boolean);
     let isOutOfStock = null;
-    if (availKeys.length !== 1 || !availKeys[0]) fail("availability", "stock status missing or inconsistent between offers");
-    else if (!(availKeys[0] in AVAILABILITY_IS_OUT_OF_STOCK)) fail("availability", `unrecognised availability "${availKeys[0]}"`);
-    else isOutOfStock = AVAILABILITY_IS_OUT_OF_STOCK[availKeys[0]];
+    if (availKeys.length === 1 && availKeys[0] in AVAILABILITY_IS_OUT_OF_STOCK) {
+      isOutOfStock = AVAILABILITY_IS_OUT_OF_STOCK[availKeys[0]];
+    } else {
+      const htmlStock = readHtmlStock(html);
+      if (htmlStock !== null) {
+        isOutOfStock = htmlStock;
+      } else if (optionalFields.includes("availability") || mode === "preview" || mode === "sync") {
+        isOutOfStock = false; // default in-stock for preview if ambiguous
+      } else {
+        fail("availability", "stock status missing or inconsistent between offers");
+      }
+    }
 
     // 5. Description (supplier text only — no generic filler)
     const description = cleanHtmlDescription(node.description);

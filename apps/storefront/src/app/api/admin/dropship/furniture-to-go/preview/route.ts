@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       try {
         const liveData = await furnitureToGoExtractor.extractProductData(url, {
           mode: "import",
-          optionalFields: ["price"],
+          optionalFields: ["price", "availability", "finish"],
         });
         const cleanTitle = furnitureToGoExtractor.cleanProductTitle(liveData.title);
 

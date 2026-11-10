@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       try {
         const liveData = await amosMannExtractor.extractProductData(url, {
           mode: "import",
-          optionalFields: ["price"],
+          optionalFields: ["price", "availability", "finish"],
         });
         const cleanTitle = amosMannExtractor.cleanProductTitle(liveData.title);
 
