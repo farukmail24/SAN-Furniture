@@ -325,7 +325,7 @@ export default function AdminSuppliersPage() {
   const [amosAuthEmailInput, setAmosAuthEmailInput] = useState<string>("");
   const [amosAuthPasswordInput, setAmosAuthPasswordInput] = useState<string>("");
   const [authLoadingSupplier, setAuthLoadingSupplier] = useState<string | null>(null);
-  const [authDialogTab, setAuthDialogTab] = useState<"cookie" | "credentials">("cookie");
+  const [authDialogTab, setAuthDialogTab] = useState<"cookie" | "credentials">("credentials");
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
 
   const getAdminAuthHeaders = () => {
@@ -414,6 +414,9 @@ export default function AdminSuppliersPage() {
     }
   };
 
+
+
+
   const handleSaveSupplierCredentials = async (supplierCode: string, username: string, password?: string) => {
     setAuthLoadingSupplier(supplierCode);
     try {
@@ -437,6 +440,21 @@ export default function AdminSuppliersPage() {
       setAuthLoadingSupplier(null);
     }
   };
+
+  const openFtgAuthModal = async () => {
+    const preferred = typeof window !== "undefined" ? localStorage.getItem("san_preferred_auth_method") : null;
+    setAuthDialogTab(preferred === "cookie" ? "cookie" : "credentials");
+    setShowFtgAuthDialog(true);
+    await fetchSupplierAuthStatus("furniture_to_go");
+  };
+
+  const openAmosAuthModal = async () => {
+    const preferred = typeof window !== "undefined" ? localStorage.getItem("san_preferred_auth_method") : null;
+    setAuthDialogTab(preferred === "cookie" ? "cookie" : "credentials");
+    setShowAmosAuthDialog(true);
+    await fetchSupplierAuthStatus("amos_mann_furniture");
+  };
+
 
   const handleDisconnectSupplierAuth = async (supplierCode: string) => {
     try {
@@ -2072,9 +2090,7 @@ export default function AdminSuppliersPage() {
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            setShowAmosAuthDialog(true);
-                          }}
+                          onClick={openAmosAuthModal}
                           className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
                         >
                           Update Session
@@ -2090,9 +2106,7 @@ export default function AdminSuppliersPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowAmosAuthDialog(true);
-                        }}
+                        onClick={openAmosAuthModal}
                         className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
                       >
                         <KeyRound className="w-3.5 h-3.5" />
@@ -3171,9 +3185,7 @@ export default function AdminSuppliersPage() {
                       <>
                         <button
                           type="button"
-                          onClick={() => {
-                            setShowFtgAuthDialog(true);
-                          }}
+                          onClick={openFtgAuthModal}
                           className="px-2.5 py-1 text-[11px] font-semibold bg-white border border-emerald-300 text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
                         >
                           Update Session
@@ -3189,9 +3201,7 @@ export default function AdminSuppliersPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowFtgAuthDialog(true);
-                        }}
+                        onClick={openFtgAuthModal}
                         className="px-3 py-1.5 text-xs font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors shadow-sm cursor-pointer flex items-center gap-1.5"
                       >
                         <KeyRound className="w-3.5 h-3.5" />
@@ -3651,8 +3661,8 @@ export default function AdminSuppliersPage() {
       {/* WHOLESALE TRADE SESSION CONNECTOR MODAL (METHOD 1 PRIMARY + METHOD 3 OPT) */}
       {/* ========================================================================= */}
       {(showFtgAuthDialog || showAmosAuthDialog) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-2xl w-full border border-[#E8E2D5] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-4xl w-full border border-[#E8E2D5] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-[#E8E2D5] bg-[#FAF8F5]">
               <div className="flex items-center gap-3">
@@ -3685,32 +3695,51 @@ export default function AdminSuppliersPage() {
             </div>
 
             {/* Method Tabs */}
-            <div className="flex border-b border-[#E8E2D5] px-5 pt-3 gap-3 bg-[#FAF8F5]">
-              <button
-                type="button"
-                onClick={() => setAuthDialogTab("cookie")}
-                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
-                  authDialogTab === "cookie"
-                    ? "border-[#C89B3C] text-[#00072D]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Method 1: Paste B2B Session Cookie (Recommended & 100% Reliable)</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between border-b border-[#E8E2D5] px-6 pt-3 bg-[#FAF8F5] gap-3">
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthDialogTab("credentials");
+                    if (typeof window !== "undefined") localStorage.setItem("san_preferred_auth_method", "credentials");
+                  }}
+                  className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                    authDialogTab === "credentials"
+                      ? "border-[#C89B3C] text-[#00072D]"
+                      : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                  }`}
+                >
+                  <Lock className="w-4 h-4 text-[#C89B3C]" />
+                  <span>Method 2: Trade Login Credentials (Email & Password)</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                    Recommended
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setAuthDialogTab("credentials")}
-                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
-                  authDialogTab === "credentials"
-                    ? "border-[#C89B3C] text-[#00072D]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
-                }`}
-              >
-                <Lock className="w-4 h-4 text-slate-500" />
-                <span>Method 2: Trade Login Credentials (Optional)</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthDialogTab("cookie");
+                    if (typeof window !== "undefined") localStorage.setItem("san_preferred_auth_method", "cookie");
+                  }}
+                  className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                    authDialogTab === "cookie"
+                      ? "border-[#C89B3C] text-[#00072D]"
+                      : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Method 1: Paste B2B Session Cookie</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 pb-2.5 text-[11px] text-[#4F6D7A]">
+                <span className="font-semibold text-[#00072D]">Default Mode:</span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white border border-[#E8E2D5] text-[11px] font-bold text-emerald-700 shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>{authDialogTab === "credentials" ? "Method 2 (Trade Credentials) Selected" : "Method 1 (Session Cookie) Selected"}</span>
+                </span>
+              </div>
             </div>
 
             {/* Content Body */}
@@ -3810,7 +3839,7 @@ export default function AdminSuppliersPage() {
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs mt-2 space-y-1">
                         <div className="font-bold flex items-center gap-1.5 text-amber-800">
                           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                          <span>Notice: Missing 'PHPSESSID' (Wholesale Pricing Token)</span>
+                          <span>Notice: Missing &apos;PHPSESSID&apos; (Wholesale Pricing Token)</span>
                         </div>
                         <p className="text-[11px] leading-relaxed">
                           Chrome hides <code>PHPSESSID</code> from <code>copy(document.cookie)</code> because of HttpOnly protection. Without <code>PHPSESSID</code>, FTG serves public pages without trade prices.
