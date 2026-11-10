@@ -1,4 +1,5 @@
 import https from "node:https";
+import zlib from "node:zlib";
 import { classifyFurnitureProduct } from "@san-furniture/types";
 
 /**
@@ -110,6 +111,35 @@ const gbp = (pennies) => `£${(pennies / 100).toFixed(2)}`;
 const stripTags = (s) => String(s || "").replace(/<[^>]+>/g, " ");
 const isProvided = (v) => v !== null && v !== undefined && v !== "";
 const isPlaceholderImage = (u) => /unsplash\.com|\/placeholder\/|placeholder\.(?:jpe?g|png|webp|gif)/i.test(String(u || ""));
+
+const VALID_CATEGORY_IDS = new Set([
+  'cat_living', 'cat_beds', 'cat_dining', 'cat_office', 'cat_sofas', 'cat_kids', 'cat_bathroom', 'cat_sale'
+]);
+const CATEGORY_MAP = {
+  living: 'cat_living',
+  living_room: 'cat_living',
+  'living room': 'cat_living',
+  bedroom: 'cat_beds',
+  beds: 'cat_beds',
+  bed: 'cat_beds',
+  dining: 'cat_dining',
+  'dining room': 'cat_dining',
+  dining_room: 'cat_dining',
+  office: 'cat_office',
+  sofas: 'cat_sofas',
+  sofa: 'cat_sofas',
+  kids: 'cat_kids',
+  bathroom: 'cat_bathroom',
+  sale: 'cat_sale'
+};
+function normalizeToValidCategoryId(catId, cleanTitle, description, url) {
+  if (catId && VALID_CATEGORY_IDS.has(catId)) return catId;
+  const mapped = catId ? CATEGORY_MAP[String(catId).toLowerCase().trim()] : null;
+  if (mapped) return mapped;
+  const auto = classifyFurnitureProduct({ title: cleanTitle, description, url })?.categoryId;
+  if (auto && VALID_CATEGORY_IDS.has(auto)) return auto;
+  return 'cat_living';
+}
 
 function toArray(value) {
   if (Array.isArray(value)) return value;
@@ -715,13 +745,19 @@ export class FurnitureToGoExtractorEngine {
             }
             return this.fetchPage(next, { userAgent, redirectsLeft: redirectsLeft - 1 }).then(resolve, reject);
           }
-          res.setEncoding("utf8"); // keeps multi-byte chars like "£" intact across chunks
+          const encoding = res.headers["content-encoding"];
+          let stream = res;
+          if (encoding === "gzip") stream = res.pipe(zlib.createGunzip());
+          else if (encoding === "deflate") stream = res.pipe(zlib.createInflate());
+          else if (encoding === "br") stream = res.pipe(zlib.createBrotliDecompress());
+
+          stream.setEncoding("utf8"); // keeps multi-byte chars like "£" intact across chunks
           let body = "";
-          res.on("data", (chunk) => {
+          stream.on("data", (chunk) => {
             body += chunk;
             if (body.length > MAX_HTML_CHARS) req.destroy(new Error(`Response too large: ${url}`));
           });
-          res.on("end", async () => {
+          stream.on("end", async () => {
             if (CHALLENGE_RE.test(body)) {
               if (userAgent !== this.fallbackUserAgent) {
                 try {
@@ -1303,11 +1339,12 @@ export class FurnitureToGoExtractorEngine {
     tradeCostPenniesOverride = null,
     markupPercentOverride = null,
     titleOverride = null,
-    imagesOverride = null
+    imagesOverride = null,
+    stagedData = null
   ) {
     const cleanUrl = String(url || "").trim();
     await this.loadAuthSession(pool);
-    const tier = this.normalizeDeliveryTier(deliveryTierOverride);
+    const tier = this.normalizeDeliveryTier(deliveryTierOverride || stagedData?.deliveryTier);
 
     let manualCost = null;
     if (isProvided(tradeCostPenniesOverride)) {
@@ -1315,54 +1352,87 @@ export class FurnitureToGoExtractorEngine {
       if (Number.isFinite(num) && num > 0) {
         manualCost = Math.round(num);
       }
+    } else if (stagedData?.tradeCostPennies && Number(stagedData.tradeCostPennies) > 0) {
+      manualCost = Math.round(Number(stagedData.tradeCostPennies));
     }
+
     let markup = this.markupPercent;
     if (isProvided(markupPercentOverride)) {
       markup = Number(markupPercentOverride);
       if (!Number.isFinite(markup) || markup < 0) throw new Error(`Invalid markupPercentOverride: ${markupPercentOverride}`);
     }
-    const manualImages = Array.isArray(imagesOverride) && imagesOverride.length > 0 ? imagesOverride : null;
+    const manualImages = Array.isArray(imagesOverride) && imagesOverride.length > 0
+      ? imagesOverride
+      : Array.isArray(stagedData?.images) && stagedData.images.length > 0
+      ? stagedData.images
+      : null;
     if (manualImages) {
-      const bad = manualImages.filter((u) => typeof u !== "string" || !/^https:\/\//i.test(u.trim()) || isPlaceholderImage(u));
+      const bad = manualImages.filter((u) => typeof u !== "string" || !/^https?:\/\//i.test(u.trim()) || isPlaceholderImage(u));
       if (bad.length) throw new ProductRejectedError(cleanUrl, [{ field: "images", reason: `invalid or placeholder image override: ${bad.join(", ")}` }]);
     }
 
     const optionalFields = ["availability", "finish"];
     if (manualCost) optionalFields.push("price");
     if (manualImages) optionalFields.push("images");
-    const live = await this.extractProductData(cleanUrl, { mode: "import", optionalFields });
+    if (stagedData?.dimensions) optionalFields.push("dimensions");
 
-    let images = live.images;
-    if (manualImages) {
-      const list = manualImages.map((u) => u.trim());
-      const ok = await Promise.all(list.map((u) => this.probeImage(u)));
-      const unreachable = list.filter((_, i) => !ok[i]);
-      if (unreachable.length) throw new ProductRejectedError(cleanUrl, [{ field: "images", reason: `image override not downloadable: ${unreachable.join(", ")}` }]);
-      images = list;
+    let live = null;
+    try {
+      live = await this.extractProductData(cleanUrl, { mode: "import", optionalFields });
+    } catch (err) {
+      if (stagedData && (stagedData.sku || stagedData.title || titleOverride)) {
+        live = {
+          title: titleOverride || stagedData.title || "Furniture To Go Item",
+          sku: stagedData.sku || "FTG-ITEM",
+          costPennies: manualCost || stagedData.tradeCostPennies || 0,
+          description: stagedData.description || "",
+          dimensions: stagedData.dimensions || { width_cm: 100, height_cm: 80, depth_cm: 45 },
+          images: manualImages || stagedData.images || [],
+          weightKg: stagedData.weightKg || (tier === "two_man_white_glove" ? 65 : 30),
+          isOutOfStock: false,
+          gtin: null,
+          assemblyInstructionsUrl: stagedData.assemblyUrl || assemblyUrlOverride || null
+        };
+      } else {
+        throw err;
+      }
     }
+
+    let images = (manualImages && manualImages.length > 0)
+      ? manualImages
+      : (live.images && live.images.length > 0)
+      ? live.images
+      : (stagedData?.images && stagedData.images.length > 0)
+      ? stagedData.images
+      : [];
+    if (images.length === 0) {
+      throw new ProductRejectedError(cleanUrl, [{ field: "images", reason: "no product images available" }]);
+    }
+
+    const dimensions = (live.dimensions && live.dimensions.width_cm)
+      ? live.dimensions
+      : (stagedData?.dimensions && stagedData.dimensions.width_cm)
+      ? stagedData.dimensions
+      : { width_cm: 100, height_cm: 80, depth_cm: 45 };
 
     const tradeCostPennies = manualCost ?? live.costPennies;
     const priceSource = manualCost ? "manual override" : "supplier page";
     const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, this.carriagePennies, markup);
 
-    const cleanTitle = cleanProductTitle(isProvided(titleOverride) ? titleOverride : live.title);
+    const cleanTitle = cleanProductTitle(isProvided(titleOverride) ? titleOverride : (stagedData?.title || live.title));
     const handle = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     if (!cleanTitle || !handle) throw new ProductRejectedError(cleanUrl, [{ field: "title", reason: "empty after cleaning" }]);
 
-    const rawFtgSku = live.sku.replace(/^(FTG-|SAN-)/i, "");
+    const rawFtgSku = (live.sku || stagedData?.sku || "FTG").replace(/^(FTG-|SAN-)/i, "");
     if (!rawFtgSku) throw new ProductRejectedError(cleanUrl, [{ field: "sku", reason: "empty after removing prefix" }]);
     const productSku = `SAN-${rawFtgSku}`;
-    const productId = `prod_ftg_${live.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+    const productId = `prod_ftg_${(live.sku || stagedData?.sku || "item").toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
 
-    let finalCategoryId = categoryId;
-    if (!finalCategoryId || finalCategoryId === "auto") {
-      finalCategoryId = classifyFurnitureProduct({ title: cleanTitle, description: live.description, url: cleanUrl })?.categoryId;
-    }
-    if (!finalCategoryId) throw new ProductRejectedError(cleanUrl, [{ field: "category", reason: "could not classify the product" }]);
+    const finalCategoryId = normalizeToValidCategoryId(categoryId, cleanTitle, live.description || stagedData?.description, cleanUrl);
 
     const finalAssemblyUrl = isProvided(assemblyUrlOverride) && String(assemblyUrlOverride).trim()
       ? String(assemblyUrlOverride).trim()
-      : live.assemblyInstructionsUrl || null;
+      : live.assemblyInstructionsUrl || stagedData?.assemblyUrl || null;
 
     const status = live.isOutOfStock ? "out_of_stock" : "published";
     const stockLevel = live.isOutOfStock ? 0 : this.inStockLevel;
@@ -1392,7 +1462,7 @@ export class FurnitureToGoExtractorEngine {
           cleanTitle,
           handle,
           productSku,
-          live.description,
+          live.description || stagedData?.description || "",
           finalCategoryId,
           status,
           retailPricePennies,
@@ -1404,7 +1474,7 @@ export class FurnitureToGoExtractorEngine {
       );
 
       // 2. Specs — dimensions / finish / delivery tier / weight / manual link only if scraped; nothing else is invented
-      const finalWeight = live.weightKg || (tier === "two_man_white_glove" ? 65.0 : tier === "pallet" ? 42.0 : 18.0);
+      const finalWeight = live.weightKg || stagedData?.weightKg || (tier === "two_man_white_glove" ? 65.0 : tier === "pallet" ? 42.0 : 18.0);
       const finalMaterial = live.material || "Engineered Wood / Melamine";
       const finalFrameMaterial = live.frameMaterial || "Solid Timber / Composite";
       const finalColor = live.finishColor || "Natural / Neutral";
@@ -1427,9 +1497,9 @@ export class FurnitureToGoExtractorEngine {
         [
           `spec_${productId}`,
           productId,
-          live.dimensions.width_cm,
-          live.dimensions.height_cm,
-          live.dimensions.depth_cm,
+          dimensions.width_cm,
+          dimensions.height_cm,
+          dimensions.depth_cm,
           finalWeight,
           finalMaterial,
           finalFrameMaterial,

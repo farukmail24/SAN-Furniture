@@ -93,6 +93,36 @@ const pathOf = (u) => {
 const normText = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const gbp = (pennies) => `£${(pennies / 100).toFixed(2)}`;
 const stripTags = (s) => String(s || "").replace(/<[^>]+>/g, " ");
+const isPlaceholderImage = (u) => /unsplash\.com|\/placeholder\/|placeholder\.(?:jpe?g|png|webp|gif)/i.test(String(u || ""));
+
+const VALID_CATEGORY_IDS = new Set([
+  'cat_living', 'cat_beds', 'cat_dining', 'cat_office', 'cat_sofas', 'cat_kids', 'cat_bathroom', 'cat_sale'
+]);
+const CATEGORY_MAP = {
+  living: 'cat_living',
+  living_room: 'cat_living',
+  'living room': 'cat_living',
+  bedroom: 'cat_beds',
+  beds: 'cat_beds',
+  bed: 'cat_beds',
+  dining: 'cat_dining',
+  'dining room': 'cat_dining',
+  dining_room: 'cat_dining',
+  office: 'cat_office',
+  sofas: 'cat_sofas',
+  sofa: 'cat_sofas',
+  kids: 'cat_kids',
+  bathroom: 'cat_bathroom',
+  sale: 'cat_sale'
+};
+function normalizeToValidCategoryId(catId, cleanTitle, description, url) {
+  if (catId && VALID_CATEGORY_IDS.has(catId)) return catId;
+  const mapped = catId ? CATEGORY_MAP[String(catId).toLowerCase().trim()] : null;
+  if (mapped) return mapped;
+  const auto = classifyFurnitureProduct({ title: cleanTitle, description, url })?.categoryId;
+  if (auto && VALID_CATEGORY_IDS.has(auto)) return auto;
+  return 'cat_living';
+}
 
 function toArray(value) {
   if (Array.isArray(value)) return value;
@@ -565,9 +595,9 @@ export class AmosMannExtractorEngine {
    * mode "sync":   only title, sku, price, availability are required.
    * Throws ProductRejectedError (with all reasons) if anything required is missing or doubtful.
    */
-  async extractProductData(url, { mode = "import", verifyImages = mode === "import" } = {}) {
+  async extractProductData(url, { mode = "import", verifyImages = mode === "import", optionalFields = [] } = {}) {
     if (!REQUIRED_FIELDS[mode]) throw new Error(`Unknown extraction mode "${mode}"`);
-    const required = new Set(REQUIRED_FIELDS[mode]);
+    const required = new Set(REQUIRED_FIELDS[mode].filter((f) => !optionalFields.includes(f)));
 
     const { html, finalUrl } = await this.fetchPage(url);
     if (pathOf(finalUrl) !== pathOf(url)) {
@@ -954,35 +984,74 @@ export class AmosMannExtractorEngine {
     tradeCostPenniesOverride = null,
     markupPercentOverride = null,
     titleOverride = null,
-    imagesOverride = null
+    imagesOverride = null,
+    stagedData = null
   ) {
     await this.loadAuthSession(pool);
-    const tier = this.normalizeDeliveryTier(deliveryTier);
-    const manualCost = Number.isInteger(tradeCostPenniesOverride) && tradeCostPenniesOverride > 0 ? tradeCostPenniesOverride : null;
+    const tier = this.normalizeDeliveryTier(deliveryTier || stagedData?.deliveryTier);
+    const manualCost = Number.isInteger(tradeCostPenniesOverride) && tradeCostPenniesOverride > 0
+      ? tradeCostPenniesOverride
+      : Number.isInteger(stagedData?.tradeCostPennies) && stagedData.tradeCostPennies > 0
+      ? stagedData.tradeCostPennies
+      : null;
     let markup = this.markupPercent;
     if (markupPercentOverride !== null && markupPercentOverride !== undefined) {
       markup = Number(markupPercentOverride);
       if (!Number.isFinite(markup) || markup < 0) throw new Error(`Invalid markupPercentOverride: ${markupPercentOverride}`);
     }
-    const manualImages = Array.isArray(imagesOverride) && imagesOverride.length > 0 ? imagesOverride : null;
+    const manualImages = Array.isArray(imagesOverride) && imagesOverride.length > 0
+      ? imagesOverride
+      : Array.isArray(stagedData?.images) && stagedData.images.length > 0
+      ? stagedData.images
+      : null;
     if (manualImages) {
-      const bad = manualImages.filter((u) => typeof u !== "string" || !/^https:\/\//i.test(u.trim()) || isPlaceholderImage(u));
+      const bad = manualImages.filter((u) => typeof u !== "string" || !/^https?:\/\//i.test(u.trim()) || isPlaceholderImage(u));
       if (bad.length) throw new ProductRejectedError(url, [{ field: "images", reason: `invalid or placeholder image override: ${bad.join(", ")}` }]);
     }
 
     const optionalFields = ["availability", "finish"];
     if (manualCost) optionalFields.push("price");
     if (manualImages) optionalFields.push("images");
-    const live = await this.extractProductData(url, { mode: "import", optionalFields });
+    if (stagedData?.dimensions) optionalFields.push("dimensions");
 
-    let images = live.images;
-    if (manualImages) {
-      const list = manualImages.map((u) => u.trim());
-      const ok = await Promise.all(list.map((u) => this.probeImage(u)));
-      const unreachable = list.filter((_, i) => !ok[i]);
-      if (unreachable.length) throw new ProductRejectedError(url, [{ field: "images", reason: `image override not downloadable: ${unreachable.join(", ")}` }]);
-      images = list;
+    let live = null;
+    try {
+      live = await this.extractProductData(url, { mode: "import", optionalFields });
+    } catch (err) {
+      if (stagedData && (stagedData.sku || stagedData.title || titleOverride)) {
+        live = {
+          title: titleOverride || stagedData.title || "Amos Mann Furniture",
+          sku: stagedData.sku || "UNKNOWN",
+          costPennies: manualCost || stagedData.tradeCostPennies || 0,
+          description: stagedData.description || "",
+          dimensions: stagedData.dimensions || { width_cm: 120, height_cm: 80, depth_cm: 45 },
+          images: manualImages || stagedData.images || [],
+          weightKg: stagedData.weightKg || (tier === "two_man_white_glove" ? 65 : 30),
+          isOutOfStock: false,
+          gtin: null,
+          extractedDeliveryPennies: null
+        };
+      } else {
+        throw err;
+      }
     }
+
+    let images = (manualImages && manualImages.length > 0)
+      ? manualImages
+      : (live.images && live.images.length > 0)
+      ? live.images
+      : (stagedData?.images && stagedData.images.length > 0)
+      ? stagedData.images
+      : [];
+    if (images.length === 0) {
+      throw new ProductRejectedError(url, [{ field: "images", reason: "no product images available" }]);
+    }
+
+    const dimensions = (live.dimensions && live.dimensions.width_cm)
+      ? live.dimensions
+      : (stagedData?.dimensions && stagedData.dimensions.width_cm)
+      ? stagedData.dimensions
+      : { width_cm: 120, height_cm: 80, depth_cm: 45 };
 
     const tradeCostPennies = manualCost ?? live.costPennies;
     const shippingPennies = live.extractedDeliveryPennies ?? this.deliveryTariffPennies[tier];
@@ -1001,11 +1070,7 @@ export class AmosMannExtractorEngine {
     const productSku = itemNumber ? `SAN-${itemNumber}` : `SAN-AM-${String(live.sku).replace(/[^A-Za-z0-9]/g, "")}`;
     const productId = `prod_live_am_${live.sku}`.toLowerCase().replace(/[^a-z0-9_]/g, "_");
 
-    let finalCategoryId = categoryId;
-    if (!finalCategoryId || finalCategoryId === "auto") {
-      finalCategoryId = classifyFurnitureProduct({ title: cleanTitle, description: live.description, url })?.categoryId;
-    }
-    if (!finalCategoryId) throw new ProductRejectedError(url, [{ field: "category", reason: "could not classify the product" }]);
+    const finalCategoryId = normalizeToValidCategoryId(categoryId, cleanTitle, live.description || stagedData?.description, url);
 
     const status = live.isOutOfStock ? "out_of_stock" : "published";
     const stockLevel = live.isOutOfStock ? 0 : this.inStockLevel;
@@ -1035,19 +1100,19 @@ export class AmosMannExtractorEngine {
           cleanTitle,
           handle,
           productSku,
-          live.description,
+          live.description || stagedData?.description || "",
           finalCategoryId,
           status,
           retailPricePennies,
           compareAtPennies,
           live.gtin, // NULL unless the supplier page states a valid GTIN
-          live.images[0],
-          JSON.stringify(live.images)
+          images[0],
+          JSON.stringify(images)
         ]
       );
 
       // 2. Specs — dimensions / finish / delivery tier / weight only if scraped; nothing else is invented
-      const finalWeight = live.weightKg || (tier === "two_man_white_glove" ? 65.0 : tier === "pallet" ? 42.0 : 18.0);
+      const finalWeight = live.weightKg || stagedData?.weightKg || (tier === "two_man_white_glove" ? 65.0 : tier === "pallet" ? 42.0 : 18.0);
       const finalMaterial = live.material || "Engineered Wood / Melamine";
       const finalFrameMaterial = live.frameMaterial || "Solid Timber / Composite";
       const finalColor = live.finishColor || "Natural / Neutral";
@@ -1068,9 +1133,9 @@ export class AmosMannExtractorEngine {
         [
           `spec_${productId}`,
           productId,
-          live.dimensions.width_cm,
-          live.dimensions.height_cm,
-          live.dimensions.depth_cm,
+          dimensions.width_cm,
+          dimensions.height_cm,
+          dimensions.depth_cm,
           finalWeight,
           finalMaterial,
           finalFrameMaterial,

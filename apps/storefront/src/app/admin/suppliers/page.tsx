@@ -753,10 +753,11 @@ export default function AdminSuppliersPage() {
         body: JSON.stringify({ items: amosStagedItems }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && (data.importedCount > 0 || (Array.isArray(data.products) && data.products.length > 0))) {
+        const count = data.importedCount || data.products?.length || amosStagedItems.length;
         setToastMsg({
           type: "success",
-          text: data.message || `Successfully imported ${data.importedCount || amosStagedItems.length} Amos Mann products!`,
+          text: data.message || `Successfully imported ${count} Amos Mann products!`,
         });
         setAmosInStagingStep(false);
         setAmosStagedItems([]);
@@ -768,8 +769,22 @@ export default function AdminSuppliersPage() {
         if (inspectSupplier) {
           handleOpenFeedInspector(inspectSupplier);
         }
+      } else if (data.failedCount > 0 || (Array.isArray(data.errors) && data.errors.length > 0)) {
+        const firstErr = data.errors?.[0];
+        const reasonText = firstErr?.reasons?.map((r: any) => `${r.field}: ${r.reason}`).join("; ") || firstErr?.error || data.message || data.error || "Validation rejected by supplier policy";
+        setToastMsg({
+          type: "error",
+          text: `Import failed: ${reasonText}`,
+        });
+        if (Array.isArray(data.errors) && data.errors.length > 0) {
+          setAmosScrapeErrors(data.errors.map((e: any) => ({
+            url: e.url,
+            issues: e.reasons || [{ field: "import", reason: e.error || "Rejected" }]
+          })));
+          setAmosStagingTab("errors");
+        }
       } else {
-        setToastMsg({ type: "error", text: data.error || "Failed to import verified products." });
+        setToastMsg({ type: "error", text: data.error || data.message || "Failed to import verified products." });
       }
     } catch {
       setToastMsg({ type: "error", text: "Network error confirming import." });
@@ -1045,13 +1060,15 @@ export default function AdminSuppliersPage() {
         body: JSON.stringify({ items: ftgStagedItems }),
       });
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && (data.importedCount > 0 || (Array.isArray(data.products) && data.products.length > 0))) {
+        const count = data.importedCount || data.products?.length || ftgStagedItems.length;
         setToastMsg({
           type: "success",
-          text: data.message || `Successfully imported ${data.importedCount || ftgStagedItems.length} products with verified pricing!`,
+          text: data.message || `Successfully imported ${count} FTG products with verified pricing!`,
         });
         setFtgInStagingStep(false);
         setFtgStagedItems([]);
+        setFtgScrapeErrors([]);
         setSelectedFtgUrls([]);
         setNewFtgUrl("");
         setNewFtgAssemblyUrl("");
@@ -1060,8 +1077,22 @@ export default function AdminSuppliersPage() {
         if (inspectSupplier) {
           handleOpenFeedInspector(inspectSupplier);
         }
+      } else if (data.failedCount > 0 || (Array.isArray(data.errors) && data.errors.length > 0)) {
+        const firstErr = data.errors?.[0];
+        const reasonText = firstErr?.reasons?.map((r: any) => `${r.field}: ${r.reason}`).join("; ") || firstErr?.error || data.message || data.error || "Validation rejected by supplier policy";
+        setToastMsg({
+          type: "error",
+          text: `FTG Import failed: ${reasonText}`,
+        });
+        if (Array.isArray(data.errors) && data.errors.length > 0) {
+          setFtgScrapeErrors(data.errors.map((e: any) => ({
+            url: e.url,
+            issues: e.reasons || [{ field: "import", reason: e.error || "Rejected" }]
+          })));
+          setFtgStagingTab("errors");
+        }
       } else {
-        setToastMsg({ type: "error", text: data.error || "Failed to import verified products." });
+        setToastMsg({ type: "error", text: data.error || data.message || "Failed to import verified products." });
       }
     } catch {
       setToastMsg({ type: "error", text: "Network error confirming import." });

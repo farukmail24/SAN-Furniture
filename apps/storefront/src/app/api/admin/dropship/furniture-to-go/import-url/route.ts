@@ -35,6 +35,19 @@ export async function POST(request: Request) {
           const title = item.title ? String(item.title).trim() : null;
           const images = Array.isArray(item.images) && item.images.length > 0 ? item.images : null;
 
+          const stagedData = {
+            sku: item.sku || null,
+            title: title || item.title || null,
+            dimensions: item.dimensions || null,
+            weightKg: item.weightKg || null,
+            description: item.description || null,
+            images: images || [],
+            tradeCostPennies: tradeCostPennies > 0 ? tradeCostPennies : null,
+            categoryId,
+            deliveryTier,
+            assemblyUrl
+          };
+
           const imported = await furnitureToGoExtractor.extractAndImportUrl(
             pool,
             item.url.trim(),
@@ -44,7 +57,8 @@ export async function POST(request: Request) {
             tradeCostPennies,
             markup,
             title,
-            images
+            images,
+            stagedData
           );
 
           importedProducts.push(imported);
@@ -59,16 +73,27 @@ export async function POST(request: Request) {
         }
       }
 
+      const hasImported = importedProducts.length > 0;
+      let message = "";
+      if (hasImported && importErrors.length === 0) {
+        message = `Successfully confirmed & imported ${importedProducts.length} verified products into catalog!`;
+      } else if (hasImported && importErrors.length > 0) {
+        message = `Imported ${importedProducts.length} verified FTG products into catalog (${importErrors.length} failed/skipped).`;
+      } else {
+        const firstReason = importErrors[0]?.reasons?.[0]?.reason || importErrors[0]?.error || "Validation rejected";
+        message = `Failed to import ${importErrors.length} product(s): ${firstReason}`;
+      }
+
       return NextResponse.json(
         {
-          success: true,
+          success: hasImported,
           importedCount: importedProducts.length,
           failedCount: importErrors.length,
-          message: `Successfully confirmed & imported ${importedProducts.length} verified products into catalog!`,
+          message,
           products: importedProducts,
           errors: importErrors,
         },
-        { status: 201 }
+        { status: hasImported ? 201 : 422 }
       );
     }
 
