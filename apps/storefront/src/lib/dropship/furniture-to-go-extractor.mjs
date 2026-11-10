@@ -180,6 +180,27 @@ export const FTG_CATALOG_DATABASE = [
     images: [
       "https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?auto=format&fit=crop&w=1200&q=80"
     ]
+  },
+  {
+    sku: "90A1120733p",
+    title: "Omaha Set of 2 x 3 Seater Sofas in Basel Light Grey Brown Fabric",
+    range_name: "Omaha Collection",
+    category_id: "cat_sofas",
+    url: "https://furniture-to-go.co.uk/omaha-3-3-seater-sofa-in-basel-light-grey-brown-34-fabric-base-matt-black-steel.html",
+    slug: "omaha-3-3-seater-sofa-in-basel-light-grey-brown-34-fabric-base-matt-black-steel",
+    trade_price_gbp: 637.03,
+    rrp_inc_vat_gbp: 1337.50,
+    width_cm: 220.0,
+    height_cm: 80.0,
+    depth_cm: 90.0,
+    weight_kg: 92,
+    delivery_tier: "two_man_white_glove",
+    color: "Basel Light Grey Brown 34 Fabric",
+    material: "FSC Hardwood Frame, High-Resilience Foam & Basel Fabric",
+    description: "Looking for a stylish, practical, and super comfortable sofa solution to expand your product catalogue? Meet the Omaha 3+3 Seater Sofa package in elegant Basel Light Grey Brown, perfect for developers, homeowners, and hospitality professionals who want to blend durability with a touch of luxury. This package includes two spacious 3 seater sofas wrapped in soft, neutral fabric and set on sleek matte black steel bases. Features modular, flat-pack design and fire-resistant, stain-resistant upholstery.",
+    images: [
+      "https://furniture-to-go.co.uk/media/catalog/product/9/0/90a1120733p_1.jpg"
+    ]
   }
 ];
 
@@ -405,14 +426,44 @@ export class FurnitureToGoExtractorEngine {
           if (wMatch) weightKg = parseFloat(wMatch[1]);
         }
 
-        // Realistic trade pricing based on offers price, known database, or weight tiers
-        let rawPriceGbp = parseFloat(productSchema.offers?.price) || matchedKnown?.trade_price_gbp;
+        // Realistic trade pricing:
+        // Priority 1: Schema.org offers price (price, lowPrice, or priceSpecification)
+        // Priority 2: HTML price selectors (data-price-amount, .price, Magento price-box)
+        // Priority 3: Verified known supplier catalog database
+        let rawPriceGbp = parseFloat(productSchema.offers?.price) ||
+                          parseFloat(productSchema.offers?.lowPrice) ||
+                          parseFloat(productSchema.offers?.priceSpecification?.price) ||
+                          matchedKnown?.trade_price_gbp;
+
         if (!rawPriceGbp || isNaN(rawPriceGbp)) {
-          if (weightKg < 18) rawPriceGbp = 65;
-          else if (weightKg < 35) rawPriceGbp = 105;
-          else if (weightKg < 60) rawPriceGbp = 155;
-          else if (weightKg < 85) rawPriceGbp = 210;
-          else rawPriceGbp = 285;
+          // Check HTML regex for Magento price-box or data-price-amount
+          const priceAmountMatch = html.match(/data-price-amount=["']([0-9.]+)["']/i);
+          if (priceAmountMatch) {
+            const p = parseFloat(priceAmountMatch[1]);
+            if (!isNaN(p) && p > 0) rawPriceGbp = p;
+          }
+        }
+
+        if (!rawPriceGbp || isNaN(rawPriceGbp)) {
+          const finalPriceMatch = html.match(/"finalPrice":\s*([0-9.]+)/i);
+          if (finalPriceMatch) {
+            const p = parseFloat(finalPriceMatch[1]);
+            if (!isNaN(p) && p > 0) rawPriceGbp = p;
+          }
+        }
+
+        // Check if price was found anywhere in price span e.g. <span class="price">£637.03</span>
+        if (!rawPriceGbp || isNaN(rawPriceGbp)) {
+          const priceSpanMatch = html.match(/<span[^>]*class=["'][^"']*price[^"']*["'][^>]*>\s*(?:£|&pound;)?\s*([0-9,.]+)\s*<\/span>/i);
+          if (priceSpanMatch) {
+            const p = parseFloat(priceSpanMatch[1].replace(/,/g, ""));
+            if (!isNaN(p) && p > 0) rawPriceGbp = p;
+          }
+        }
+
+        const priceVerified = Boolean(rawPriceGbp && !isNaN(rawPriceGbp) && rawPriceGbp > 0);
+        if (!priceVerified) {
+          rawPriceGbp = 0;
         }
 
         // --- COMPREHENSIVE IMAGE EXTRACTION ---
@@ -481,6 +532,7 @@ export class FurnitureToGoExtractorEngine {
           sku: String(sku).trim(),
           priceGbp: rawPriceGbp,
           rawPriceGbp,
+          priceVerified,
           rangeName: matchedKnown?.range_name || "Scandinavian Contemporary",
           finishColor: matchedKnown?.color || "Scandinavian Natural Oak & White",
           material: matchedKnown?.material || "European Certified Melamine & Engineered Timber",
@@ -502,6 +554,7 @@ export class FurnitureToGoExtractorEngine {
         sku: matchedKnown.sku,
         priceGbp: matchedKnown.trade_price_gbp,
         rawPriceGbp: matchedKnown.trade_price_gbp,
+        priceVerified: true,
         rangeName: matchedKnown.range_name,
         finishColor: matchedKnown.color,
         material: matchedKnown.material,
@@ -544,8 +597,9 @@ export class FurnitureToGoExtractorEngine {
     return {
       title,
       sku: `SAN-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}`,
-      priceGbp: 149.00,
-      rawPriceGbp: 149.00,
+      priceGbp: 0,
+      rawPriceGbp: 0,
+      priceVerified: false,
       rangeName: "Scandinavian Range",
       finishColor: "Danish Oak & White",
       material: "European Certified Engineered Hardwood",
@@ -681,18 +735,34 @@ export class FurnitureToGoExtractorEngine {
   /**
    * Extract & Import single URL into SAN Furniture Catalog
    */
-  async extractAndImportUrl(pool, url, categoryId = "auto", deliveryTierOverride = null, assemblyUrlOverride = null) {
+  async extractAndImportUrl(
+    pool,
+    url,
+    categoryId = "auto",
+    deliveryTierOverride = null,
+    assemblyUrlOverride = null,
+    tradeCostPenniesOverride = null,
+    markupPercentOverride = null,
+    titleOverride = null,
+    imagesOverride = null
+  ) {
     const liveData = await this.extractProductData(url);
-    const tradeCostPennies = Math.round(liveData.priceGbp * 100);
+    const tradeCostPennies = (tradeCostPenniesOverride !== null && tradeCostPenniesOverride !== undefined && !isNaN(Number(tradeCostPenniesOverride)) && Number(tradeCostPenniesOverride) > 0)
+      ? Math.round(Number(tradeCostPenniesOverride))
+      : Math.round(Number(liveData.priceGbp || 0) * 100);
+
+    const markup = (markupPercentOverride !== null && markupPercentOverride !== undefined && !isNaN(Number(markupPercentOverride)))
+      ? Number(markupPercentOverride)
+      : 40;
 
     const tier = deliveryTierOverride || liveData.deliveryTier || "standard_parcel";
     // FTG B2B Policy: "Our Store and Home Delivery prices include delivery for most mainland areas"
     // Standard UK Mainland delivery carriage is £0.00 (already included in trade price).
     const carriagePennies = 0;
 
-    const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, 40);
+    const { retailPricePennies, compareAtPennies } = this.calculateRetailPrice(tradeCostPennies, carriagePennies, markup);
 
-    const cleanTitle = this.cleanProductTitle(liveData.title);
+    const cleanTitle = titleOverride ? this.cleanProductTitle(titleOverride) : this.cleanProductTitle(liveData.title);
 
     let finalCategoryId = categoryId;
     if (!finalCategoryId || finalCategoryId === "auto") {
@@ -710,7 +780,10 @@ export class FurnitureToGoExtractorEngine {
     const cleanDesc = this.cleanHtmlDescription(liveData.description);
     const handle = cleanTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
     const productId = `prod_ftg_${liveData.sku.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
-    const primaryThumbnail = liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
+    const images = (imagesOverride && Array.isArray(imagesOverride) && imagesOverride.length > 0)
+      ? imagesOverride
+      : liveData.images;
+    const primaryThumbnail = images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2";
 
     const finalAssemblyUrl = (assemblyUrlOverride && typeof assemblyUrlOverride === "string" && assemblyUrlOverride.trim())
       ? assemblyUrlOverride.trim()
@@ -747,7 +820,7 @@ export class FurnitureToGoExtractorEngine {
       compareAtPennies,
       `50609129${String(Date.now()).slice(-5)}`,
       primaryThumbnail,
-      JSON.stringify(liveData.images)
+      JSON.stringify(images)
     ]);
 
     // 2. Insert or update Specs table
@@ -790,9 +863,10 @@ export class FurnitureToGoExtractorEngine {
         id, supplier_id, supplier_sku, product_id, cost_price_pennies,
         shipping_cost_pennies, markup_percentage, retail_price_pennies,
         stock_level, lead_time_days, source_url, last_synced_at
-      ) VALUES (?, 'furniture_to_go', ?, ?, ?, ?, 40.00, ?, ?, 3, ?, NOW())
+      ) VALUES (?, 'furniture_to_go', ?, ?, ?, ?, ?, ?, ?, 3, ?, NOW())
       ON DUPLICATE KEY UPDATE
         cost_price_pennies = VALUES(cost_price_pennies),
+        markup_percentage = VALUES(markup_percentage),
         retail_price_pennies = VALUES(retail_price_pennies),
         stock_level = VALUES(stock_level),
         source_url = VALUES(source_url),
@@ -803,6 +877,7 @@ export class FurnitureToGoExtractorEngine {
       productId,
       tradeCostPennies,
       carriagePennies,
+      markup,
       retailPricePennies,
       liveData.isOutOfStock ? 0 : 25,
       url

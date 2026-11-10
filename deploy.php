@@ -488,6 +488,12 @@ if ($githubEvent === 'push') {
                 $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'");
                 $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'");
             } catch (Exception $imgErr) {}
+
+            // Auto-heal Omaha Sofa price to real FTG trade cost £637.03 and customer retail £1,070.21
+            try {
+                $pdo->exec("UPDATE products SET price_pennies = 107021, compare_at_price_pennies = 133750, updated_at = NOW() WHERE (handle LIKE '%omaha-set-of-2-x-3-seater-sofas%' OR sku LIKE '%90A1120733%' OR title LIKE '%Omaha Set of 2 x 3 Seater Sofas%') AND price_pennies < 60000");
+                $pdo->exec("UPDATE supplier_feed_items SET cost_price_pennies = 63703, retail_price_pennies = 107021, last_synced_at = NOW() WHERE (supplier_sku LIKE '%90A1120733%' OR product_id LIKE '%90a1120733%' OR product_id LIKE '%omaha%') AND cost_price_pennies < 50000");
+            } catch (Exception $omahaErr) {}
         } catch (Exception $dbErr) {
             $auditErrorMsg = $dbErr->getMessage();
         }

@@ -1,6 +1,7 @@
 // @ts-ignore
-import { furnitureToGoExtractor } from "./furniture-to-go-extractor.mjs";
+import { furnitureToGoExtractor as rawFtg } from "./furniture-to-go-extractor.mjs";
 // @ts-ignore
-import { amosMannExtractor } from "./amos-mann-extractor.mjs";
+import { amosMannExtractor as rawAmos } from "./amos-mann-extractor.mjs";
 
-export { furnitureToGoExtractor, amosMannExtractor };
+export const furnitureToGoExtractor: any = rawFtg;
+export const amosMannExtractor: any = rawAmos;
