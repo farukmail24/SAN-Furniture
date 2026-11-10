@@ -72,7 +72,7 @@ export async function POST(request: Request) {
           url,
           title: cleanTitle,
           sku: liveData.sku,
-          thumbnail: liveData.images[0] || "https://images.unsplash.com/photo-1595428774223-ef52624120d2",
+          thumbnail: liveData.images[0] || "",
           images: liveData.images,
           tradePriceGbp,
           tradeCostPennies,
@@ -87,8 +87,8 @@ export async function POST(request: Request) {
           categoryId: finalCategoryId,
           categoryLabel: finalCategoryLabel,
           deliveryTier: tier,
-          weightKg: liveData.weightKg || 30,
-          dimensions: liveData.dimensions || { width_cm: 100, height_cm: 80, depth_cm: 50 },
+          weightKg: liveData.weightKg || null,
+          dimensions: liveData.dimensions || null,
           description: liveData.description || "",
           rangeName: liveData.rangeName || "Scandinavian Range",
           isOutOfStock: Boolean(liveData.isOutOfStock),
@@ -98,7 +98,17 @@ export async function POST(request: Request) {
             : "Wholesale trade cost could not be detected automatically. Please verify supplier trade price (£).",
         });
       } catch (err: any) {
-        errors.push({ url, error: err.message || "Failed to extract product" });
+        const reasons = Array.isArray(err.problems)
+          ? err.problems
+          : Array.isArray(err.reasons)
+          ? err.reasons
+          : [{ field: "scrape", reason: err.message || "Failed to extract product" }];
+
+        errors.push({
+          url,
+          error: err.message || "Failed to extract product",
+          reasons,
+        });
       }
     }
 

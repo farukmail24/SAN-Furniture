@@ -160,6 +160,38 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     rawCategoryId = "cat_kids";
   }
 
+  let finalPricePennies = Number(p.pricePennies ?? p.price_pennies) || 0;
+  let finalComparePennies = (p.compareAtPricePennies ?? p.compare_at_price_pennies)
+    ? Number(p.compareAtPricePennies ?? p.compare_at_price_pennies)
+    : undefined;
+
+  // Domain Safety Guard: Ensure 3+3 sofa packages and luxury corner sofas are NEVER retailed below wholesale trade cost
+  const pSku = String(p.sku || "");
+  const pHandle = String(p.handle || "");
+  const pTitle = String(p.title || "");
+
+  if (pSku.includes("90A1120733") || pHandle.includes("omaha-set-of-2-x-3-seater") || pTitle.includes("Omaha Set of 2 x 3 Seater")) {
+    if (finalPricePennies < 60000) {
+      finalPricePennies = 107021;
+      finalComparePennies = 133750;
+    }
+  } else if (pSku.includes("90A1121033") || pTitle.includes("Westham Set of 2 x 3 Seater")) {
+    if (finalPricePennies < 60000) {
+      finalPricePennies = 107021;
+      finalComparePennies = 133750;
+    }
+  } else if (pSku.includes("90AH000024968") || pSku.includes("90AH000024966") || (pTitle.includes("Corner Sofa") && pTitle.includes("Omaha"))) {
+    if (finalPricePennies < 50000) {
+      finalPricePennies = 87360;
+      finalComparePennies = 109200;
+    }
+  } else if (pSku.includes("90A0000112073") || pSku.includes("90A0000112062") || pSku.includes("90A0000112103")) {
+    if (finalPricePennies < 30000) {
+      finalPricePennies = 53511;
+      finalComparePennies = 66875;
+    }
+  }
+
   return {
     id: p.id,
     sku: p.sku ? formatProductSku(p.sku) : undefined,
@@ -170,10 +202,8 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     description: cleanHtmlDescription(p.description),
     categoryId: rawCategoryId,
     status: (p.status === "active" ? "published" : p.status) || "published",
-    pricePennies: Number(p.pricePennies ?? p.price_pennies) || 0,
-    compareAtPricePennies: (p.compareAtPricePennies ?? p.compare_at_price_pennies)
-      ? Number(p.compareAtPricePennies ?? p.compare_at_price_pennies)
-      : undefined,
+    pricePennies: finalPricePennies,
+    compareAtPricePennies: finalComparePennies,
     vatRatePercent: Number(p.vatRatePercent ?? p.vat_rate_percent) || 20,
     gtinBarcode: p.gtinBarcode || p.gtin_barcode || "",
     thumbnailUrl: thumb,

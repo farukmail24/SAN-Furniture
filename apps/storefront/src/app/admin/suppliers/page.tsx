@@ -41,6 +41,13 @@ import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
 import { formatGBP } from "@san-furniture/types";
 
+interface ScrapeIssueItem {
+  url: string;
+  title?: string;
+  error: string;
+  reasons?: Array<{ field: string; reason: string }>;
+}
+
 interface StagedFtgItem {
   url: string;
   title: string;
@@ -174,6 +181,15 @@ export default function AdminSuppliersPage() {
   const [importingUrl, setImportingUrl] = useState<boolean>(false);
   const [activeModalTab, setActiveModalTab] = useState<"items" | "logs">("items");
 
+  // Amos Mann Staging & Scrape Issues State
+  const [amosStagedItems, setAmosStagedItems] = useState<StagedFtgItem[]>([]);
+  const [amosScrapeErrors, setAmosScrapeErrors] = useState<ScrapeIssueItem[]>([]);
+  const [amosInStagingStep, setAmosInStagingStep] = useState<boolean>(false);
+  const [amosPreviewing, setAmosPreviewing] = useState<boolean>(false);
+  const [amosConfirmingImport, setAmosConfirmingImport] = useState<boolean>(false);
+  const [amosStagingTab, setAmosStagingTab] = useState<"valid" | "errors">("valid");
+  const [amosGlobalMarkup, setAmosGlobalMarkup] = useState<number>(40);
+
   // Sitemap Discovery State
   const [sitemapData, setSitemapData] = useState<{
     totalInSitemap: number;
@@ -228,6 +244,8 @@ export default function AdminSuppliersPage() {
   const [ftgPreviewing, setFtgPreviewing] = useState<boolean>(false);
   const [ftgConfirmingImport, setFtgConfirmingImport] = useState<boolean>(false);
   const [ftgInStagingStep, setFtgInStagingStep] = useState<boolean>(false);
+  const [ftgScrapeErrors, setFtgScrapeErrors] = useState<ScrapeIssueItem[]>([]);
+  const [ftgStagingTab, setFtgStagingTab] = useState<"valid" | "errors">("valid");
   const [globalMarkup, setGlobalMarkup] = useState<number>(40);
 
   // Feed SKU Inspector Modal Open Flag
@@ -438,42 +456,179 @@ export default function AdminSuppliersPage() {
     }
   };
 
-  const handleImportAmosUrl = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAmosUrl.trim()) return;
-    setImportingUrl(true);
+  
+  const handlePreviewAmos = async (targetUrls: string[]) => {
+    if (targetUrls.length === 0) return;
+    setAmosPreviewing(true);
+    try {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/preview"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls: targetUrls,
+          categoryId: newAmosCategory,
+          deliveryTier: newAmosDeliveryTier,
+          markupPercent: amosGlobalMarkup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const items = Array.isArray(data.items) ? data.items : [];
+        const errors = Array.isArray(data.errors) ? data.errors : [];
+        setAmosStagedItems(items);
+        setAmosScrapeErrors(errors);
+        if (items.length > 0 || errors.length > 0) {
+          setAmosInStagingStep(true);
+          setAmosStagingTab(items.length > 0 ? "valid" : "errors");
+        }
+        if (items.length > 0 && errors.length > 0) {
+          setToastMsg({
+            type: "success",
+            text: `Extracted ${items.length} items. ${errors.length} items skipped due to validation/scraping issues.`,
+          });
+        } else if (items.length > 0) {
+          setToastMsg({
+            type: "success",
+            text: `Successfully extracted ${items.length} Amos Mann products ready for verification!`,
+          });
+        } else if (errors.length > 0) {
+          setToastMsg({
+            type: "error",
+            text: `${errors.length} products skipped due to missing/invalid supplier data. See issues tab.`,
+          });
+        }
+      } else {
+        setToastMsg({ type: "error", text: data.error || "Failed to extract product preview from Amos Mann." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error extracting product preview." });
+    } finally {
+      setAmosPreviewing(false);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
+  const handleConfirmBatchImportAmos = async () => {
+    if (amosStagedItems.length === 0) return;
+    const hasZeroPrice = amosStagedItems.some((item) => !item.tradePriceGbp || item.tradePriceGbp <= 0);
+    if (hasZeroPrice) {
+      setToastMsg({
+        type: "error",
+        text: "Please enter a valid wholesale trade price (£) for all items before importing.",
+      });
+      setTimeout(() => setToastMsg(null), 5000);
+      return;
+    }
+
+    setAmosConfirmingImport(true);
     try {
       const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: newAmosUrl.trim(),
-          categoryId: newAmosCategory,
-          deliveryTier: newAmosDeliveryTier
-        })
+        body: JSON.stringify({ items: amosStagedItems }),
       });
       const data = await res.json();
       if (res.ok) {
         setToastMsg({
           type: "success",
-          text: data.message || "Product imported successfully from live website!"
+          text: data.message || `Successfully imported ${data.importedCount || amosStagedItems.length} Amos Mann products!`,
         });
-        setImportUrlModalOpen(false);
+        setAmosInStagingStep(false);
+        setAmosStagedItems([]);
+        setAmosScrapeErrors([]);
+        setSelectedSitemapUrls([]);
         setNewAmosUrl("");
+        setImportUrlModalOpen(false);
+        fetchSuppliers();
         if (inspectSupplier) {
           handleOpenFeedInspector(inspectSupplier);
         }
-        fetchSuppliers();
       } else {
-        setToastMsg({ type: "error", text: data.error || "Failed to extract product." });
+        setToastMsg({ type: "error", text: data.error || "Failed to import verified products." });
       }
     } catch {
-      setToastMsg({ type: "error", text: "Network error extracting product." });
+      setToastMsg({ type: "error", text: "Network error confirming import." });
     } finally {
-      setImportingUrl(false);
+      setAmosConfirmingImport(false);
       setTimeout(() => setToastMsg(null), 5000);
     }
   };
+
+  const updateAmosStagedItemPrice = (index: number, newTradePrice: number, newMarkup?: number) => {
+    setAmosStagedItems((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[index] };
+      const cost = Math.max(0, Number(newTradePrice) || 0);
+      const markup = typeof newMarkup === "number" ? newMarkup : item.markupPercent;
+      const costPennies = Math.round(cost * 100);
+      const carriagePennies = item.deliveryTier === "standard_parcel" ? 1995 : 4900;
+      const landedCostPennies = costPennies + carriagePennies;
+      const netRetailPennies = Math.round(landedCostPennies * (1 + markup / 100));
+      const retailPennies = Math.round(netRetailPennies * 1.20);
+      const compareAtPennies = Math.round(retailPennies * 1.25);
+
+      item.tradePriceGbp = cost;
+      item.tradeCostPennies = costPennies;
+      item.markupPercent = markup;
+      item.netRetailGbp = netRetailPennies / 100;
+      item.vatGbp = Math.round(retailPennies - netRetailPennies) / 100;
+      item.retailPriceGbp = retailPennies / 100;
+      item.retailPricePennies = retailPennies;
+      item.compareAtPennies = compareAtPennies;
+      item.profitGbp = Math.round(netRetailPennies - landedCostPennies) / 100;
+      item.priceVerified = cost > 0;
+      item.warning = cost > 0 ? null : "Please enter a valid wholesale trade price (£).";
+
+      updated[index] = item;
+      return updated;
+    });
+  };
+
+  const applyAmosGlobalMarkup = (markup: number) => {
+    setAmosGlobalMarkup(markup);
+    setAmosStagedItems((prev) =>
+      prev.map((item) => {
+        const cost = item.tradePriceGbp || 0;
+        const costPennies = Math.round(cost * 100);
+        const carriagePennies = item.deliveryTier === "standard_parcel" ? 1995 : 4900;
+        const landedCostPennies = costPennies + carriagePennies;
+        const netRetailPennies = Math.round(landedCostPennies * (1 + markup / 100));
+        const retailPennies = Math.round(netRetailPennies * 1.20);
+        const compareAtPennies = Math.round(retailPennies * 1.25);
+        return {
+          ...item,
+          markupPercent: markup,
+          netRetailGbp: netRetailPennies / 100,
+          vatGbp: Math.round(retailPennies - netRetailPennies) / 100,
+          retailPriceGbp: retailPennies / 100,
+          retailPricePennies: retailPennies,
+          compareAtPennies: compareAtPennies,
+          profitGbp: Math.round(netRetailPennies - landedCostPennies) / 100,
+        };
+      })
+    );
+  };
+
+  const removeAmosStagedItem = (index: number) => {
+    setAmosStagedItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateAmosStagedItemCategory = (index: number, newCat: string) => {
+    setAmosStagedItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], categoryId: newCat };
+      return updated;
+    });
+  };
+
+  const updateAmosStagedItemDeliveryTier = (index: number, newTier: string) => {
+    setAmosStagedItems((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], deliveryTier: newTier };
+      return updated;
+    });
+  };
+
 
   const fetchSitemapCatalog = async (category = "all") => {
     setLoadingSitemap(true);
@@ -494,41 +649,11 @@ export default function AdminSuppliersPage() {
     }
   };
 
+  
   const handleBatchImportSitemap = async () => {
-    if (selectedSitemapUrls.length === 0) return;
-    setImportingUrl(true);
-    try {
-      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/import-url"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          urls: selectedSitemapUrls,
-          categoryId: newAmosCategory,
-          deliveryTier: newAmosDeliveryTier,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setToastMsg({
-          type: "success",
-          text: data.message || `Successfully batch-imported ${data.importedCount || selectedSitemapUrls.length} products!`,
-        });
-        setSelectedSitemapUrls([]);
-        setImportUrlModalOpen(false);
-        fetchSuppliers();
-        if (inspectSupplier) {
-          handleOpenFeedInspector(inspectSupplier);
-        }
-      } else {
-        setToastMsg({ type: "error", text: data.error || "Batch import failed." });
-      }
-    } catch {
-      setToastMsg({ type: "error", text: "Network error during batch import." });
-    } finally {
-      setImportingUrl(false);
-      setTimeout(() => setToastMsg(null), 5000);
-    }
+    handlePreviewAmos(selectedSitemapUrls);
   };
+
 
   const fetchFtgCatalog = async (category = "all") => {
     setLoadingFtgCatalog(true);
@@ -639,9 +764,31 @@ export default function AdminSuppliersPage() {
         }),
       });
       const data = await res.json();
-      if (res.ok && Array.isArray(data.items) && data.items.length > 0) {
-        setFtgStagedItems(data.items);
-        setFtgInStagingStep(true);
+      if (res.ok) {
+        const items = Array.isArray(data.items) ? data.items : [];
+        const errors = Array.isArray(data.errors) ? data.errors : [];
+        setFtgStagedItems(items);
+        setFtgScrapeErrors(errors);
+        if (items.length > 0 || errors.length > 0) {
+          setFtgInStagingStep(true);
+          setFtgStagingTab(items.length > 0 ? "valid" : "errors");
+        }
+        if (items.length > 0 && errors.length > 0) {
+          setToastMsg({
+            type: "success",
+            text: `Extracted ${items.length} items. ${errors.length} items skipped due to validation/scraping issues.`,
+          });
+        } else if (items.length > 0) {
+          setToastMsg({
+            type: "success",
+            text: `Successfully extracted ${items.length} FTG products ready for verification!`,
+          });
+        } else if (errors.length > 0) {
+          setToastMsg({
+            type: "error",
+            text: `${errors.length} products failed extraction or lacked required data. See scrape issues tab.`,
+          });
+        }
       } else {
         setToastMsg({ type: "error", text: data.error || "Failed to extract product preview from FTG." });
       }
@@ -1255,359 +1402,786 @@ export default function AdminSuppliersPage() {
       {/* AMOS MANN AUTO-IMPORT & SITEMAP BATCH CATALOG MODAL */}
       {importUrlModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-navy-950/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white border border-[#E8E2D5] rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col">
+          <div className={`bg-white border border-[#E8E2D5] rounded-2xl w-full p-6 shadow-2xl space-y-4 max-h-[92vh] flex flex-col transition-all duration-200 ${amosInStagingStep ? "max-w-5xl" : "max-w-2xl"}`}>
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#E8E2D5]">
-              <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-[#C89B3C]" />
-                <h3 className="font-serif font-bold text-lg text-[#00072D]">
-                  Amos Mann Dropship Catalog Importer
-                </h3>
+              <div className="flex items-center gap-2.5">
+                {amosInStagingStep ? (
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <Globe className="w-5 h-5 text-[#C89B3C]" />
+                )}
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-[#00072D]">
+                    {amosInStagingStep
+                      ? `Step 2: Review & Verify Amos Mann Pricing (${amosStagedItems.length} Products)`
+                      : "Amos Mann Dropship Catalog Importer"}
+                  </h3>
+                  {amosInStagingStep && (
+                    <p className="text-[11px] text-[#4F6D7A]">
+                      Verify supplier wholesale trade cost (£), adjust markup %, and review calculated UK storefront prices before importing.
+                    </p>
+                  )}
+                </div>
               </div>
               <button
-                onClick={() => setImportUrlModalOpen(false)}
-                className="text-[#4F6D7A] hover:text-[#00072D]"
+                onClick={() => {
+                  setAmosInStagingStep(false);
+                  setAmosStagedItems([]);
+                  setAmosScrapeErrors([]);
+                  setImportUrlModalOpen(false);
+                }}
+                className="text-[#4F6D7A] hover:text-[#00072D] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Mode Switch Tabs */}
-            <div className="flex border-b border-[#E8E2D5] gap-2">
-              <button
-                type="button"
-                onClick={() => setImportMode("sitemap")}
-                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
-                  importMode === "sitemap"
-                    ? "border-[#C89B3C] text-[#00072D]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 text-[#C89B3C]" />
-                <span>Auto-Discover Live Sitemap ({sitemapData?.totalInSitemap || 310} SKUs)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setImportMode("manual")}
-                className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
-                  importMode === "manual"
-                    ? "border-[#C89B3C] text-[#00072D]"
-                    : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
-                }`}
-              >
-                <ListPlus className="w-3.5 h-3.5 text-[#C89B3C]" />
-                <span>Paste URLs (Single or Multiple)</span>
-              </button>
-            </div>
-
-            {/* TAB 1: SITEMAP AUTO-DISCOVERY */}
-            {importMode === "sitemap" && (
+            {amosInStagingStep ? (
+              /* STEP 2: STAGING & PRICING VERIFICATION SCREEN */
               <div className="flex-1 flex flex-col overflow-hidden space-y-3">
-                {/* Stats Bar */}
-                <div className="grid grid-cols-3 gap-2 bg-[#FAF8F5] p-3 rounded-lg border border-[#E8E2D5] text-center text-xs">
-                  <div>
-                    <div className="text-[11px] text-[#4F6D7A]">Live on Supplier Site</div>
-                    <div className="font-serif font-bold text-base text-[#00072D]">
-                      {sitemapData ? sitemapData.totalInSitemap : "310"} Products
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-emerald-700">Already in Catalog</div>
-                    <div className="font-serif font-bold text-base text-emerald-800">
-                      {sitemapData ? sitemapData.alreadyImportedCount : "—"} SKUs
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[11px] text-[#C89B3C]">Available to Import</div>
-                    <div className="font-serif font-bold text-base text-[#C89B3C]">
-                      {sitemapData ? sitemapData.availableToImportCount : "—"} New
-                    </div>
-                  </div>
+                {/* Tabs: Valid Items vs Scrape Issues */}
+                <div className="flex border-b border-[#E8E2D5] gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAmosStagingTab("valid")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                      amosStagingTab === "valid"
+                        ? "border-[#C89B3C] text-[#00072D]"
+                        : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Ready to Import ({amosStagedItems.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAmosStagingTab("errors")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                      amosStagingTab === "errors"
+                        ? "border-rose-600 text-rose-900"
+                        : "border-transparent text-[#7A8B99] hover:text-rose-700"
+                    }`}
+                  >
+                    <AlertTriangle className={`w-4 h-4 ${amosScrapeErrors.length > 0 ? "text-rose-600" : "text-[#7A8B99]"}`} />
+                    <span>Scrape Issues & Skipped</span>
+                    {amosScrapeErrors.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                        {amosScrapeErrors.length}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
-                {/* Filter and Search Bar */}
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <div className="relative flex-1 w-full">
-                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
-                    <input
-                      type="text"
-                      placeholder="Filter by product name or slug..."
-                      value={sitemapSearch}
-                      onChange={(e) => setSitemapSearch(e.target.value)}
-                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C]"
-                    />
-                  </div>
+                {amosStagingTab === "valid" ? (
+                  <>
+                    {/* Header info bar */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-[#FAF8F5] border border-[#E8E2D5] rounded-xl text-xs">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-[#00072D]">Landed Cost & Formula Verification</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#F4F1EA] text-[#00072D]">
+                            Formula: (Trade Cost + Carriage) × (1 + Markup%) × 1.20 VAT
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#4F6D7A]">
+                          Click on any Trade Cost (£) to edit. Customer retail price recalculates automatically with 20% UK VAT.
+                        </p>
+                      </div>
 
-                  <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const available = (sitemapData?.products || [])
-                          .filter((p) => !p.is_imported)
-                          .filter((p) =>
-                            sitemapSearch ? p.slug.toLowerCase().includes(sitemapSearch.toLowerCase()) : true
-                          )
-                          .map((p) => p.url);
-                        setSelectedSitemapUrls(available);
-                      }}
-                      className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
-                    >
-                      Select All New
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedSitemapUrls([])}
-                      className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-
-                {/* Product List Scroll Area */}
-                <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-56 bg-white">
-                  {loadingSitemap ? (
-                    <div className="p-8 text-center text-xs text-[#7A8B99] flex items-center justify-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
-                      <span>Scanning live amosmannfurniture.co.uk sitemap...</span>
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <span className="text-[11px] font-semibold text-[#00072D] whitespace-nowrap">Global Markup:</span>
+                        <div className="flex items-center border border-[#E8E2D5] rounded-lg overflow-hidden bg-white">
+                          <input
+                            type="number"
+                            min="10"
+                            max="200"
+                            value={amosGlobalMarkup}
+                            onChange={(e) => setAmosGlobalMarkup(Number(e.target.value) || 0)}
+                            className="w-14 px-2 py-1 text-xs text-center font-bold text-[#00072D] focus:outline-none"
+                          />
+                          <span className="text-xs text-[#7A8B99] pr-1.5 font-bold">%</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => applyAmosGlobalMarkup(amosGlobalMarkup)}
+                          className="px-2.5 py-1 text-[11px] font-semibold bg-[#C89B3C] text-white rounded-lg hover:bg-[#B38728] transition-colors cursor-pointer"
+                        >
+                          Apply
+                        </button>
+                      </div>
                     </div>
-                  ) : !sitemapData || sitemapData.products.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-[#7A8B99]">
-                      No products found.
+
+                    {/* Staged Items Table */}
+                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-xl bg-white divide-y divide-[#E8E2D5] max-h-[50vh]">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-[#FAF8F5] text-[#00072D] sticky top-0 z-10 font-semibold border-b border-[#E8E2D5] text-[11px]">
+                          <tr>
+                            <th className="py-2.5 px-3">Product & Amos Link</th>
+                            <th className="py-2.5 px-3 w-36">Trade Cost (£ ex VAT)</th>
+                            <th className="py-2.5 px-3 w-24">Markup %</th>
+                            <th className="py-2.5 px-3 w-40">Storefront Price (inc VAT)</th>
+                            <th className="py-2.5 px-3 w-36">Store Category</th>
+                            <th className="py-2.5 px-3 w-36">Delivery Tier</th>
+                            <th className="py-2.5 px-3 w-10 text-center">Remove</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#E8E2D5]">
+                          {amosStagedItems.map((item, idx) => {
+                            const isCostZero = !item.tradePriceGbp || item.tradePriceGbp <= 0;
+                            return (
+                              <tr key={item.url || idx} className="hover:bg-slate-50/80 transition-colors">
+                                {/* Product Info */}
+                                <td className="py-2.5 px-3 max-w-xs">
+                                  <div className="flex items-start gap-2.5">
+                                    {item.thumbnail ? (
+                                      <img
+                                        src={item.thumbnail}
+                                        alt={item.title}
+                                        className="w-12 h-12 rounded-lg object-cover border border-[#E8E2D5] shrink-0"
+                                      />
+                                    ) : (
+                                      <div className="w-12 h-12 rounded-lg bg-[#FAF8F5] border border-[#E8E2D5] flex items-center justify-center text-[10px] text-slate-400 shrink-0">
+                                        No Img
+                                      </div>
+                                    )}
+                                    <div className="min-w-0">
+                                      <div className="font-semibold text-[#00072D] truncate" title={item.title}>
+                                        {item.title}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="font-mono text-[10px] text-[#7A8B99] bg-[#FAF8F5] px-1.5 py-0.5 rounded border border-[#E8E2D5]">
+                                          SKU: {item.sku}
+                                        </span>
+                                        <a
+                                          href={item.url}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-[10px] text-[#C89B3C] hover:underline inline-flex items-center gap-0.5"
+                                        >
+                                          <span>View on Amos Mann</span>
+                                          <ExternalLink className="w-2.5 h-2.5" />
+                                        </a>
+                                      </div>
+                                      {item.warning && (
+                                        <div className="text-[10px] text-amber-700 flex items-center gap-1 mt-1 font-medium">
+                                          <AlertTriangle className="w-3 h-3 shrink-0" />
+                                          <span>{item.warning}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Trade Cost (Editable) */}
+                                <td className="py-2.5 px-3">
+                                  <div className="space-y-1">
+                                    <div className="relative">
+                                      <span className="absolute left-2.5 top-2 text-xs font-bold text-[#7A8B99]">£</span>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={item.tradePriceGbp || ""}
+                                        onChange={(e) => updateAmosStagedItemPrice(idx, parseFloat(e.target.value) || 0)}
+                                        placeholder="0.00"
+                                        className={`w-full pl-6 pr-2 py-1.5 text-xs font-mono font-bold rounded-lg border focus:outline-none transition-colors ${
+                                          isCostZero
+                                            ? "border-amber-400 bg-amber-50 text-amber-900 focus:border-amber-600 ring-1 ring-amber-300"
+                                            : "border-[#E8E2D5] bg-white text-[#00072D] focus:border-[#C89B3C]"
+                                        }`}
+                                      />
+                                    </div>
+                                    <div>
+                                      {item.priceVerified && !isCostZero ? (
+                                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-0.5">
+                                          <Check className="w-2.5 h-2.5" /> Verified Cost
+                                        </span>
+                                      ) : (
+                                        <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-0.5">
+                                          <AlertTriangle className="w-2.5 h-2.5" /> Enter Trade Cost
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Markup % (Editable) */}
+                                <td className="py-2.5 px-3">
+                                  <div className="relative">
+                                    <input
+                                      type="number"
+                                      step="1"
+                                      min="5"
+                                      max="300"
+                                      value={item.markupPercent || 40}
+                                      onChange={(e) => updateAmosStagedItemPrice(idx, item.tradePriceGbp, parseFloat(e.target.value) || 0)}
+                                      className="w-full px-2 py-1.5 text-xs text-center font-bold text-[#00072D] border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C]"
+                                    />
+                                    <span className="absolute right-2 top-2 text-[10px] text-[#7A8B99] font-bold">%</span>
+                                  </div>
+                                </td>
+
+                                {/* Storefront Retail Price (Formula) */}
+                                <td className="py-2.5 px-3">
+                                  <div>
+                                    <div className="font-serif font-bold text-sm text-[#00072D]">
+                                      £{item.retailPriceGbp.toFixed(2)}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">
+                                      Profit: +£{item.profitGbp.toFixed(2)} | VAT: £{item.vatGbp.toFixed(2)}
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Store Category */}
+                                <td className="py-2.5 px-3">
+                                  <select
+                                    value={item.categoryId}
+                                    onChange={(e) => updateAmosStagedItemCategory(idx, e.target.value)}
+                                    className="w-full px-2 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#00072D] bg-white font-medium"
+                                  >
+                                    {storeCategories.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
+
+                                {/* Delivery Tier */}
+                                <td className="py-2.5 px-3">
+                                  <select
+                                    value={item.deliveryTier}
+                                    onChange={(e) => updateAmosStagedItemDeliveryTier(idx, e.target.value)}
+                                    className="w-full px-2 py-1.5 text-[11px] border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#00072D] bg-white font-medium"
+                                  >
+                                    {dynamicDeliveryOptions.length > 0 ? (
+                                      dynamicDeliveryOptions.map((opt) => (
+                                        <option key={opt.id} value={opt.id}>
+                                          {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                                        </option>
+                                      ))
+                                    ) : (
+                                      <>
+                                        <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                                        <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                                        <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                                      </>
+                                    )}
+                                  </select>
+                                </td>
+
+                                {/* Remove button */}
+                                <td className="py-2.5 px-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAmosStagedItem(idx)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                    title="Remove item from batch"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  /* TAB 2: SCRAPE ISSUES & SKIPPED PRODUCTS */
+                  amosScrapeErrors.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-[#7A8B99] bg-[#FAF8F5] rounded-xl border border-[#E8E2D5]">
+                      <ShieldCheck className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                      <div className="font-semibold text-emerald-900 text-sm">Zero Scrape Issues</div>
+                      <p className="text-[11px] text-[#4F6D7A] mt-1 max-w-md mx-auto">
+                        All requested products passed our strict zero-fake-data validation. Supplier images, dimensions, and specifications were cleanly extracted.
+                      </p>
                     </div>
                   ) : (
-                    sitemapData.products
-                      .filter((p) =>
-                        sitemapCategoryFilter === "all" ? true : p.category_id === sitemapCategoryFilter
-                      )
-                      .filter((p) =>
-                        sitemapSearch ? p.slug.toLowerCase().includes(sitemapSearch.toLowerCase()) : true
-                      )
-                      .map((p) => {
-                        const isSelected = selectedSitemapUrls.includes(p.url);
-                        const cleanName = p.slug
-                          .replace(/---[0-9]+(-[0-9]+)?-p\.asp$/i, "")
-                          .replace(/-/g, " ")
-                          .replace(/\b\w/g, (c) => c.toUpperCase());
+                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[50vh] pr-1">
+                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-bold text-amber-950">
+                            Zero-Fake-Data Enforcement: {amosScrapeErrors.length} Product(s) Excluded from Import
+                          </div>
+                          <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                            SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications. The products below lacked required supplier images, had missing dimensions, or required an authenticated wholesale portal login.
+                          </p>
+                        </div>
+                      </div>
 
-                        return (
-                          <label
-                            key={p.url}
-                            className={`flex items-center justify-between p-2.5 hover:bg-slate-50 cursor-pointer text-xs transition-colors ${
-                              p.is_imported ? "bg-slate-50/60 opacity-60" : isSelected ? "bg-amber-50/50" : ""
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                disabled={p.is_imported}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedSitemapUrls((prev) => [...prev, p.url]);
-                                  } else {
-                                    setSelectedSitemapUrls((prev) => prev.filter((u) => u !== p.url));
-                                  }
-                                }}
-                                className="rounded text-[#C89B3C] focus:ring-[#C89B3C]"
-                              />
-                              <div className="truncate">
-                                <div className="font-medium text-[#00072D] truncate">{cleanName}</div>
-                                <div className="text-[10px] text-[#7A8B99] truncate font-mono">{p.url}</div>
+                      <div className="border border-[#E8E2D5] rounded-xl bg-white divide-y divide-[#E8E2D5] overflow-hidden">
+                        {amosScrapeErrors.map((err, errIdx) => (
+                          <div key={err.url || errIdx} className="p-3 hover:bg-slate-50/60 transition-colors text-xs space-y-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 uppercase tracking-wider">
+                                    IMPORT REFUSED
+                                  </span>
+                                  <span className="font-mono text-[11px] text-[#00072D] font-semibold truncate" title={err.url}>
+                                    {err.title || err.url.split("/").pop() || err.url}
+                                  </span>
+                                </div>
+                                <a
+                                  href={err.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] text-[#C89B3C] hover:underline inline-flex items-center gap-1 mt-1 font-mono truncate max-w-lg"
+                                >
+                                  <span>{err.url}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                                </a>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {err.reasons?.length || 1} Issue(s)
+                                </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
-                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F4F1EA] text-[#00072D]">
-                                {p.category_label}
-                              </span>
-                              {p.is_imported ? (
-                                <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 flex items-center gap-1">
-                                  <Check className="w-3 h-3" /> Already Imported
-                                </span>
+                            {/* Breakdown of Problems */}
+                            <div className="bg-[#FAF8F5] rounded-lg p-2.5 border border-[#E8E2D5]/70 space-y-1">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-[#4F6D7A]">
+                                Failed Validation Checks:
+                              </div>
+                              {Array.isArray(err.reasons) && err.reasons.length > 0 ? (
+                                <ul className="space-y-1">
+                                  {err.reasons.map((r, rIdx) => (
+                                    <li key={rIdx} className="flex items-start gap-1.5 text-[11px] text-[#00072D]">
+                                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 shrink-0">
+                                        {r.field}
+                                      </span>
+                                      <span className="text-slate-700">{r.reason}</span>
+                                    </li>
+                                  ))}
+                                </ul>
                               ) : (
-                                <span className="text-[10px] text-[#C89B3C] font-medium">Ready</span>
+                                <div className="text-[11px] text-rose-700 font-medium">{err.error}</div>
                               )}
                             </div>
-                          </label>
-                        );
-                      })
-                  )}
-                </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
 
-                {/* Batch Options */}
-                <div className="grid grid-cols-2 gap-3 pt-1">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
-                      Target Store Category
-                    </label>
-                    <select
-                      value={newAmosCategory}
-                      onChange={(e) => setNewAmosCategory(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
-                    >
-                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      {storeCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
-                      Store Delivery Option
-                    </label>
-                    <select
-                      value={newAmosDeliveryTier}
-                      onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
-                      className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
-                    >
-                      {dynamicDeliveryOptions.length > 0 ? (
-                        dynamicDeliveryOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
-                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
-                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Footer Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-[#E8E2D5]">
-                  <div className="text-xs text-[#4F6D7A]">
-                    <strong>{selectedSitemapUrls.length}</strong> products selected
-                  </div>
-
+                {/* Staging Footer Actions */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#E8E2D5]">
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setImportUrlModalOpen(false)}
-                      className="px-3.5 py-1.5 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium"
+                      onClick={() => setAmosInStagingStep(false)}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 border border-[#E8E2D5] text-[#00072D] hover:bg-slate-50 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Back to Selection</span>
+                    </button>
+                    <span className="text-xs text-[#7A8B99]">
+                      Total Staged: <strong>{amosStagedItems.length}</strong> items
+                      {amosScrapeErrors.length > 0 && (
+                        <span className="text-rose-600 font-semibold ml-2">
+                          • Skipped: {amosScrapeErrors.length}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAmosInStagingStep(false);
+                        setAmosStagedItems([]);
+                        setAmosScrapeErrors([]);
+                        setImportUrlModalOpen(false);
+                      }}
+                      className="px-3.5 py-2 text-xs font-semibold text-[#4F6D7A] hover:text-[#00072D] cursor-pointer"
                     >
                       Cancel
                     </button>
 
                     <button
                       type="button"
-                      onClick={handleBatchImportSitemap}
-                      disabled={importingUrl || selectedSitemapUrls.length === 0}
-                      className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                      onClick={handleConfirmBatchImportAmos}
+                      disabled={
+                        amosConfirmingImport ||
+                        amosStagedItems.length === 0 ||
+                        amosStagedItems.some((i) => !i.tradePriceGbp || i.tradePriceGbp <= 0)
+                      }
+                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold disabled:opacity-50 transition-all shadow-md cursor-pointer"
                     >
-                      {importingUrl ? (
+                      {amosConfirmingImport ? (
                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       ) : (
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Check className="w-3.5 h-3.5" />
                       )}
                       <span>
-                        {importingUrl
-                          ? `Extracting (${selectedSitemapUrls.length})...`
-                          : `Batch Import (${selectedSitemapUrls.length}) Products`}
+                        {amosConfirmingImport
+                          ? `Importing ${amosStagedItems.length} Products...`
+                          : `Confirm & Batch Import (${amosStagedItems.length}) Verified Products`}
                       </span>
                     </button>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* TAB 2: MANUAL URL(S) PASTE */}
-            {importMode === "manual" && (
-              <form onSubmit={handleImportAmosUrl} className="space-y-4">
-                <p className="text-xs text-[#4F6D7A]">
-                  Paste one or more Amos Mann URLs (one per line). The engine will extract live CDN images, dimensions, trade prices, calculate retail prices with 20% VAT, and add them to your catalog.
-                </p>
-
-                <div>
-                  <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
-                    Amos Mann URLs (One per line or single URL)
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    placeholder="https://www.amosmannfurniture.co.uk/venice-alpine-white-bedside---2394-2394-p.asp&#10;https://www.amosmannfurniture.co.uk/madrid-wardrobe-internal-drawers---2428-2428-p.asp"
-                    value={newAmosUrl}
-                    onChange={(e) => setNewAmosUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
-                      Category
-                    </label>
-                    <select
-                      value={newAmosCategory}
-                      onChange={(e) => setNewAmosCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
-                    >
-                      <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
-                      {storeCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
-                      Store Delivery Option
-                    </label>
-                    <select
-                      value={newAmosDeliveryTier}
-                      onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
-                    >
-                      {dynamicDeliveryOptions.length > 0 ? (
-                        dynamicDeliveryOptions.map((opt) => (
-                          <option key={opt.id} value={opt.id}>
-                            {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
-                          </option>
-                        ))
-                      ) : (
-                        <>
-                          <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
-                          <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
-                          <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
-                        </>
-                      )}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D5]">
+            ) : (
+              /* STEP 1: SITEMAP AUTO-DISCOVERY OR MANUAL URLS */
+              <>
+                {/* Mode Switch Tabs */}
+                <div className="flex border-b border-[#E8E2D5] gap-2">
                   <button
                     type="button"
-                    onClick={() => setImportUrlModalOpen(false)}
-                    className="px-4 py-2 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium"
+                    onClick={() => setImportMode("sitemap")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                      importMode === "sitemap"
+                        ? "border-[#C89B3C] text-[#00072D]"
+                        : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                    }`}
                   >
-                    Cancel
+                    <Sparkles className="w-3.5 h-3.5 text-[#C89B3C]" />
+                    <span>Auto-Discover Live Sitemap ({sitemapData?.totalInSitemap || 310} SKUs)</span>
                   </button>
 
                   <button
-                    type="submit"
-                    disabled={importingUrl || !newAmosUrl.trim()}
-                    className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm"
+                    type="button"
+                    onClick={() => setImportMode("manual")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all ${
+                      importMode === "manual"
+                        ? "border-[#C89B3C] text-[#00072D]"
+                        : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                    }`}
                   >
-                    {importingUrl ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-3.5 h-3.5" />
-                    )}
-                    <span>{importingUrl ? "Extracting & Importing..." : "Extract & Add to Catalog"}</span>
+                    <ListPlus className="w-3.5 h-3.5 text-[#C89B3C]" />
+                    <span>Paste URLs (Single or Multiple)</span>
                   </button>
                 </div>
-              </form>
+
+                {/* TAB 1: SITEMAP AUTO-DISCOVERY */}
+                {importMode === "sitemap" && (
+                  <div className="flex-1 flex flex-col overflow-hidden space-y-3">
+                    {/* Stats Bar */}
+                    <div className="grid grid-cols-3 gap-2 bg-[#FAF8F5] p-3 rounded-lg border border-[#E8E2D5] text-center text-xs">
+                      <div>
+                        <div className="text-[11px] text-[#4F6D7A]">Live on Supplier Site</div>
+                        <div className="font-serif font-bold text-base text-[#00072D]">
+                          {sitemapData ? sitemapData.totalInSitemap : "310"} Products
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-emerald-700">Already in Catalog</div>
+                        <div className="font-serif font-bold text-base text-emerald-800">
+                          {sitemapData ? sitemapData.alreadyImportedCount : "—"} SKUs
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-[#C89B3C]">Available to Import</div>
+                        <div className="font-serif font-bold text-base text-[#C89B3C]">
+                          {sitemapData ? sitemapData.availableToImportCount : "—"} New
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Filter and Search Bar */}
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                      <div className="relative flex-1 w-full">
+                        <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#7A8B99]" />
+                        <input
+                          type="text"
+                          placeholder="Filter by product name or slug..."
+                          value={sitemapSearch}
+                          onChange={(e) => setSitemapSearch(e.target.value)}
+                          className="w-full pl-8 pr-3 py-1.5 text-xs border border-[#E8E2D5] rounded-lg focus:outline-none focus:border-[#C89B3C]"
+                        />
+                      </div>
+
+                      <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const available = (sitemapData?.products || [])
+                              .filter((p) => !p.is_imported)
+                              .filter((p) =>
+                                sitemapSearch ? p.slug.toLowerCase().includes(sitemapSearch.toLowerCase()) : true
+                              )
+                              .map((p) => p.url);
+                            setSelectedSitemapUrls(available);
+                          }}
+                          className="text-xs px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#E8E2D5] border border-[#E8E2D5] rounded-lg font-medium text-[#00072D]"
+                        >
+                          Select All New
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSitemapUrls([])}
+                          className="text-xs px-2.5 py-1.5 text-[#7A8B99] hover:text-[#00072D]"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Product List Scroll Area */}
+                    <div className="flex-1 overflow-y-auto border border-[#E8E2D5] rounded-lg divide-y divide-[#E8E2D5] max-h-56 bg-white">
+                      {loadingSitemap ? (
+                        <div className="p-8 text-center text-xs text-[#7A8B99] flex items-center justify-center gap-2">
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#C89B3C]" />
+                          <span>Scanning live amosmannfurniture.co.uk sitemap...</span>
+                        </div>
+                      ) : !sitemapData || sitemapData.products.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-[#7A8B99]">
+                          No products found.
+                        </div>
+                      ) : (
+                        sitemapData.products
+                          .filter((p) =>
+                            sitemapCategoryFilter === "all" ? true : p.category_id === sitemapCategoryFilter
+                          )
+                          .filter((p) =>
+                            sitemapSearch ? p.slug.toLowerCase().includes(sitemapSearch.toLowerCase()) : true
+                          )
+                          .map((p) => {
+                            const isSelected = selectedSitemapUrls.includes(p.url);
+                            const cleanName = p.slug
+                              .replace(/---[0-9]+(-[0-9]+)?-p\.asp$/i, "")
+                              .replace(/-/g, " ")
+                              .replace(/\b\w/g, (c) => c.toUpperCase());
+
+                            return (
+                              <label
+                                key={p.url}
+                                className={`flex items-center justify-between p-2.5 hover:bg-slate-50 cursor-pointer text-xs transition-colors ${
+                                  p.is_imported ? "bg-slate-50/60 opacity-60" : isSelected ? "bg-amber-50/50" : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    disabled={p.is_imported}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedSitemapUrls((prev) => [...prev, p.url]);
+                                      } else {
+                                        setSelectedSitemapUrls((prev) => prev.filter((u) => u !== p.url));
+                                      }
+                                    }}
+                                    className="rounded text-[#C89B3C] focus:ring-[#C89B3C]"
+                                  />
+                                  <div className="truncate">
+                                    <div className="font-medium text-[#00072D] truncate">{cleanName}</div>
+                                    <div className="text-[10px] text-[#7A8B99] truncate font-mono">{p.url}</div>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-[#F4F1EA] text-[#00072D]">
+                                    {p.category_label}
+                                  </span>
+                                  {p.is_imported ? (
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                                      <Check className="w-3 h-3" /> Already Imported
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-[#C89B3C] font-medium">Ready</span>
+                                  )}
+                                </div>
+                              </label>
+                            );
+                          })
+                      )}
+                    </div>
+
+                    {/* Batch Options */}
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
+                          Target Store Category
+                        </label>
+                        <select
+                          value={newAmosCategory}
+                          onChange={(e) => setNewAmosCategory(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                        >
+                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          {storeCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-semibold text-[#00072D] mb-1">
+                          Store Delivery Option
+                        </label>
+                        <select
+                          value={newAmosDeliveryTier}
+                          onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
+                          className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
+                        >
+                          {dynamicDeliveryOptions.length > 0 ? (
+                            dynamicDeliveryOptions.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                              <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                              <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex items-center justify-between pt-3 border-t border-[#E8E2D5]">
+                      <div className="text-xs text-[#4F6D7A]">
+                        <strong>{selectedSitemapUrls.length}</strong> products selected
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setImportUrlModalOpen(false)}
+                          className="px-3.5 py-1.5 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewAmos(selectedSitemapUrls)}
+                          disabled={amosPreviewing || selectedSitemapUrls.length === 0}
+                          className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                        >
+                          {amosPreviewing ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {amosPreviewing
+                              ? `Extracting & Analyzing (${selectedSitemapUrls.length})...`
+                              : `Preview & Verify Scraped Data (${selectedSitemapUrls.length}) Products`}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: MANUAL URL(S) PASTE */}
+                {importMode === "manual" && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const urls = newAmosUrl
+                        .split(/[\r\n,]+/)
+                        .map((u) => u.trim())
+                        .filter((u) => u.startsWith("http"));
+                      handlePreviewAmos(urls);
+                    }}
+                    className="space-y-4"
+                  >
+                    <p className="text-xs text-[#4F6D7A]">
+                      Paste one or more Amos Mann URLs (one per line). The engine will extract live CDN images, dimensions, trade prices, calculate retail prices with 20% VAT, and show a preview table for verification before importing.
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                        Amos Mann URLs (One per line or single URL)
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        placeholder="https://www.amosmannfurniture.co.uk/venice-alpine-white-bedside---2394-2394-p.asp&#10;https://www.amosmannfurniture.co.uk/madrid-wardrobe-internal-drawers---2428-2428-p.asp"
+                        value={newAmosUrl}
+                        onChange={(e) => setNewAmosUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg font-mono text-xs focus:outline-none focus:border-[#C89B3C]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                          Category
+                        </label>
+                        <select
+                          value={newAmosCategory}
+                          onChange={(e) => setNewAmosCategory(e.target.value)}
+                          className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
+                        >
+                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          {storeCategories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#00072D] mb-1.5">
+                          Store Delivery Option
+                        </label>
+                        <select
+                          value={newAmosDeliveryTier}
+                          onChange={(e) => setNewAmosDeliveryTier(e.target.value)}
+                          className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C] bg-white text-[#00072D] font-medium"
+                        >
+                          {dynamicDeliveryOptions.length > 0 ? (
+                            dynamicDeliveryOptions.map((opt) => (
+                              <option key={opt.id} value={opt.id}>
+                                {opt.name} ({opt.pricePennies === 0 ? "FREE" : formatGBP(opt.pricePennies)})
+                              </option>
+                            ))
+                          ) : (
+                            <>
+                              <option value="del_opt_001">Free UK Mainland Delivery (FREE)</option>
+                              <option value="del_opt_002">White Glove Delivery & Packaging Disposal (£29.00)</option>
+                              <option value="del_opt_003">Priority Saturday / Weekend White Glove Delivery (£49.00)</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#E8E2D5]">
+                      <button
+                        type="button"
+                        onClick={() => setImportUrlModalOpen(false)}
+                        className="px-4 py-2 border border-[#E8E2D5] text-[#4F6D7A] hover:bg-slate-50 rounded-lg text-xs font-medium cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={amosPreviewing || !newAmosUrl.trim()}
+                        className="inline-flex items-center gap-2 px-5 py-2 bg-[#C89B3C] hover:bg-[#B38728] text-white rounded-lg text-xs font-semibold disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+                      >
+                        {amosPreviewing ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-3.5 h-3.5" />
+                        )}
+                        <span>{amosPreviewing ? "Extracting & Analyzing URLs..." : "Preview & Verify Scraped Data"}</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1890,7 +2464,43 @@ export default function AdminSuppliersPage() {
             {ftgInStagingStep ? (
               /* STEP 2: STAGING & PRICING VERIFICATION SCREEN */
               <div className="flex-1 flex flex-col overflow-hidden space-y-3">
-                {/* Header info bar */}
+                {/* Tabs: Valid Items vs Scrape Issues */}
+                <div className="flex border-b border-[#E8E2D5] gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFtgStagingTab("valid")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                      ftgStagingTab === "valid"
+                        ? "border-[#00072D] text-[#00072D]"
+                        : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                    }`}
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Ready to Import ({ftgStagedItems.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFtgStagingTab("errors")}
+                    className={`flex items-center gap-2 pb-2.5 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+                      ftgStagingTab === "errors"
+                        ? "border-rose-600 text-rose-900"
+                        : "border-transparent text-[#7A8B99] hover:text-rose-700"
+                    }`}
+                  >
+                    <AlertTriangle className={`w-4 h-4 ${ftgScrapeErrors.length > 0 ? "text-rose-600" : "text-[#7A8B99]"}`} />
+                    <span>Scrape Issues & Skipped</span>
+                    {ftgScrapeErrors.length > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                        {ftgScrapeErrors.length}
+                      </span>
+                    )}
+                  </button>
+                </div>
+
+                {ftgStagingTab === "valid" ? (
+                  <>
+                    {/* Header info bar */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-[#FAF8F5] border border-[#E8E2D5] rounded-xl text-xs">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-2">
@@ -2098,6 +2708,87 @@ export default function AdminSuppliersPage() {
                     </tbody>
                   </table>
                 </div>
+                  </>
+                ) : (
+                  /* TAB 2: SCRAPE ISSUES & SKIPPED PRODUCTS */
+                  ftgScrapeErrors.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-[#7A8B99] bg-[#FAF8F5] rounded-xl border border-[#E8E2D5]">
+                      <ShieldCheck className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                      <div className="font-semibold text-emerald-900 text-sm">Zero Scrape Issues</div>
+                      <p className="text-[11px] text-[#4F6D7A] mt-1 max-w-md mx-auto">
+                        All requested products passed our strict zero-fake-data validation. Supplier images, dimensions, and specifications were cleanly extracted.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 flex-1 overflow-y-auto max-h-[50vh] pr-1">
+                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                        <div>
+                          <div className="font-bold text-amber-950">
+                            Zero-Fake-Data Enforcement: {ftgScrapeErrors.length} Product(s) Excluded from Import
+                          </div>
+                          <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                            SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications. The products below lacked required supplier images, had missing dimensions, or required an authenticated wholesale portal login.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="border border-[#E8E2D5] rounded-xl bg-white divide-y divide-[#E8E2D5] overflow-hidden">
+                        {ftgScrapeErrors.map((err, errIdx) => (
+                          <div key={err.url || errIdx} className="p-3 hover:bg-slate-50/60 transition-colors text-xs space-y-2">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 uppercase tracking-wider">
+                                    IMPORT REFUSED
+                                  </span>
+                                  <span className="font-mono text-[11px] text-[#00072D] font-semibold truncate" title={err.url}>
+                                    {err.title || err.url.split("/").pop() || err.url}
+                                  </span>
+                                </div>
+                                <a
+                                  href={err.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] text-[#C89B3C] hover:underline inline-flex items-center gap-1 mt-1 font-mono truncate max-w-lg"
+                                >
+                                  <span>{err.url}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                                </a>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="text-[10px] text-slate-500 font-mono">
+                                  {err.reasons?.length || 1} Issue(s)
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Breakdown of Problems */}
+                            <div className="bg-[#FAF8F5] rounded-lg p-2.5 border border-[#E8E2D5]/70 space-y-1">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-[#4F6D7A]">
+                                Failed Validation Checks:
+                              </div>
+                              {Array.isArray(err.reasons) && err.reasons.length > 0 ? (
+                                <ul className="space-y-1">
+                                  {err.reasons.map((r, rIdx) => (
+                                    <li key={rIdx} className="flex items-start gap-1.5 text-[11px] text-[#00072D]">
+                                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-100 text-amber-900 shrink-0">
+                                        {r.field}
+                                      </span>
+                                      <span className="text-slate-700">{r.reason}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <div className="text-[11px] text-rose-700 font-medium">{err.error}</div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                )}
 
                 {/* Staging Footer Actions */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-[#E8E2D5]">
@@ -2112,6 +2803,11 @@ export default function AdminSuppliersPage() {
                     </button>
                     <span className="text-xs text-[#7A8B99]">
                       Total Staged: <strong>{ftgStagedItems.length}</strong> items
+                      {ftgScrapeErrors.length > 0 && (
+                        <span className="text-rose-600 font-semibold ml-2">
+                          • Skipped: {ftgScrapeErrors.length}
+                        </span>
+                      )}
                     </span>
                   </div>
 

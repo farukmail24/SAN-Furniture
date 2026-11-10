@@ -50,7 +50,12 @@ export async function POST(request: Request) {
           importedProducts.push(imported);
         } catch (itemErr: any) {
           console.error(`[FTG Staged Import Error] ${item.url}:`, itemErr.message);
-          importErrors.push({ url: item.url, error: itemErr.message });
+          const reasons = Array.isArray(itemErr.problems)
+            ? itemErr.problems
+            : Array.isArray(itemErr.reasons)
+            ? itemErr.reasons
+            : [{ field: "import", reason: itemErr.message || "Failed to import" }];
+          importErrors.push({ url: item.url, error: itemErr.message, reasons });
         }
       }
 
@@ -125,8 +130,13 @@ export async function POST(request: Request) {
     }
   } catch (err: any) {
     console.error("[FTG Import URL Error]:", err);
+    const reasons = Array.isArray(err.problems)
+      ? err.problems
+      : Array.isArray(err.reasons)
+      ? err.reasons
+      : [{ field: "import", reason: err.message || "Failed to import" }];
     return NextResponse.json(
-      { success: false, error: err.message || "Failed to import Furniture To Go product" },
+      { success: false, error: err.message || "Failed to import Furniture To Go product", reasons },
       { status: 500 }
     );
   }
