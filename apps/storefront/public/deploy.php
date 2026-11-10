@@ -209,6 +209,10 @@ if ($requestMethod === 'GET') {
                 'storefrontDot' => glob($projectRoot . '/apps/storefront/.*'),
                 'backend' => glob($projectRoot . '/apps/backend/*'),
                 'backendDot' => glob($projectRoot . '/apps/backend/.*'),
+                'homeFiles' => glob('/home/sansoft/*'),
+                'homeDotFiles' => glob('/home/sansoft/.*'),
+                'envKeys' => array_keys(getenv() ?: []),
+                'serverKeys' => array_keys($_SERVER ?: [])
             ],
             'dbHost' => $dbHost,
             'dbPort' => $dbPort,
