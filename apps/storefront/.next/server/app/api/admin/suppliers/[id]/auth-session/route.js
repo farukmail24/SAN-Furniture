@@ -8,19 +8,19 @@
          auth_status = 'connected',
          auth_last_verified_at = NOW(),
          auth_error = NULL
-     WHERE code = ? OR id = ?`,[d,b,b]),{success:!0,message:"Wholesale Trade Session successfully connected and verified!"}):{success:!1,message:"No valid cookies provided"}}async function H(a,b){try{let c=JSON.stringify({username:a,password:b}),d=await fetch("https://furniture-to-go.co.uk/rest/V1/integration/customer/token",{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",Accept:"application/json"},body:c}),e=await d.text();if(d.ok){let a=e.trim();return a.startsWith('"')&&a.endsWith('"')&&(a=a.slice(1,-1)),{success:!0,token:a}}{let a=e;try{a=JSON.parse(e).message||e}catch{}return{success:!1,error:a}}}catch(a){return{success:!1,error:a.message}}}async function I(a,b,c,d){await B(a);let e=c?c.trim():"",f=d?d.trim():"",g=!1,h=null;if((b.includes("furniture_to_go")||"sup_furniture_to_go"===b)&&e&&f)try{let a=await H(e,f);a.success&&a.token&&(g=!0,h=a.token)}catch(a){console.warn("[FTG Auth] Token verification note:",a.message)}return f?await a.query(`UPDATE suppliers
+     WHERE code = ? OR id = ?`,[d,b,b]),{success:!0,message:"Wholesale Trade Session successfully connected and verified!"}):{success:!1,message:"No valid cookies provided"}}async function H(a,b){try{let c=JSON.stringify({username:a,password:b}),d=await fetch("https://furniture-to-go.co.uk/rest/V1/integration/customer/token",{method:"POST",headers:{"Content-Type":"application/json","User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",Accept:"application/json"},body:c}),e=await d.text();if(d.ok){let a=e.trim();return a.startsWith('"')&&a.endsWith('"')&&(a=a.slice(1,-1)),{success:!0,token:a}}{let a=e;try{a=JSON.parse(e).message||e}catch{}return{success:!1,error:a}}}catch(a){return{success:!1,error:a.message}}}async function I(a,b,c,d){await B(a);let e=c?c.trim():"",f=d?d.trim():"",g=null;if((b.includes("furniture_to_go")||"sup_furniture_to_go"===b)&&e&&f)try{let a=await H(e,f);a.success&&a.token&&(g=a.token)}catch(a){console.warn("[FTG Auth] Token verification note:",a.message)}let[h]=await a.query("SELECT auth_cookies FROM suppliers WHERE (code = ? OR id = ?) LIMIT 1",[b,b]),i=!!(h&&h[0]?.auth_cookies),j=!!(g||i),k=j?"connected":"credentials_saved";return f?await a.query(`UPDATE suppliers
        SET auth_username = ?,
            auth_password = ?,
            auth_cookies = COALESCE(?, auth_cookies),
-           auth_status = 'connected',
+           auth_status = ?,
            auth_last_verified_at = NOW(),
            auth_error = NULL
-       WHERE code = ? OR id = ?`,[e,f,h?`customer_token=${h}`:null,b,b]):await a.query(`UPDATE suppliers
+       WHERE code = ? OR id = ?`,[e,f,g?`customer_token=${g}`:null,k,b,b]):await a.query(`UPDATE suppliers
        SET auth_username = ?,
-           auth_status = CASE WHEN (auth_password IS NOT NULL AND auth_password != '') THEN 'connected' ELSE auth_status END,
+           auth_status = ?,
            auth_last_verified_at = NOW(),
            auth_error = NULL
-       WHERE code = ? OR id = ?`,[e,b,b]),{success:!0,message:g?"Supplier trade credentials authenticated & token generated successfully":"Supplier trade credentials saved securely to database",verified:g,...h?{token:h}:{}}}async function J(a,b){return await B(a),await a.query(`UPDATE suppliers
+       WHERE code = ? OR id = ?`,[e,k,b,b]),{success:!0,message:j?"Supplier trade credentials authenticated & session active!":"Supplier trade credentials saved to database. Please paste active B2B session cookies (PHPSESSID) in Method 1 to unlock live trade wholesale pricing and inventory.",verified:j,...g?{token:g}:{}}}async function J(a,b){return await B(a),await a.query(`UPDATE suppliers
      SET auth_cookies = NULL,
          auth_status = 'unauthenticated',
          auth_error = NULL

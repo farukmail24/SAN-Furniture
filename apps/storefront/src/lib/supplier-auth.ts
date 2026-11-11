@@ -5,7 +5,7 @@ export interface SupplierAuthState {
   id: string;
   code: string;
   name: string;
-  authStatus: "unauthenticated" | "connected" | "expired" | "error";
+  authStatus: "unauthenticated" | "connected" | "expired" | "error" | "credentials_saved";
   authLastVerifiedAt: string | null;
   authUsername: string | null;
   hasCookies: boolean;
@@ -304,13 +304,21 @@ export async function saveSupplierCredentials(
     }
   }
 
+  const [existing] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT auth_cookies FROM suppliers WHERE (code = ? OR id = ?) LIMIT 1",
+    [supplierCodeOrId, supplierCodeOrId]
+  );
+  const hasExistingCookies = Boolean(existing && existing[0]?.auth_cookies);
+  const isConnected = Boolean(customerToken || hasExistingCookies);
+  const statusToSet = isConnected ? "connected" : "credentials_saved";
+
   if (cleanPass) {
     await pool.query(
       `UPDATE suppliers
        SET auth_username = ?,
            auth_password = ?,
            auth_cookies = COALESCE(?, auth_cookies),
-           auth_status = 'connected',
+           auth_status = ?,
            auth_last_verified_at = NOW(),
            auth_error = NULL
        WHERE code = ? OR id = ?`,
@@ -318,6 +326,7 @@ export async function saveSupplierCredentials(
         cleanUser,
         cleanPass,
         customerToken ? `customer_token=${customerToken}` : null,
+        statusToSet,
         supplierCodeOrId,
         supplierCodeOrId
       ]
@@ -326,20 +335,20 @@ export async function saveSupplierCredentials(
     await pool.query(
       `UPDATE suppliers
        SET auth_username = ?,
-           auth_status = CASE WHEN (auth_password IS NOT NULL AND auth_password != '') THEN 'connected' ELSE auth_status END,
+           auth_status = ?,
            auth_last_verified_at = NOW(),
            auth_error = NULL
        WHERE code = ? OR id = ?`,
-      [cleanUser, supplierCodeOrId, supplierCodeOrId]
+      [cleanUser, statusToSet, supplierCodeOrId, supplierCodeOrId]
     );
   }
 
   return {
     success: true,
-    message: verified
-      ? "Supplier trade credentials authenticated & token generated successfully"
-      : "Supplier trade credentials saved securely to database",
-    verified,
+    message: isConnected
+      ? "Supplier trade credentials authenticated & session active!"
+      : "Supplier trade credentials saved to database. Please paste active B2B session cookies (PHPSESSID) in Method 1 to unlock live trade wholesale pricing and inventory.",
+    verified: isConnected,
     ...(customerToken ? { token: customerToken } : {})
   };
 }

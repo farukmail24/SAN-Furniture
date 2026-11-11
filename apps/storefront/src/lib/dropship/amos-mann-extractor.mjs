@@ -952,7 +952,15 @@ export class AmosMannExtractorEngine {
     let imagesUpdated = false;
 
     if (live) {
-      if (live.sku !== String(item.supplier_sku).trim()) {
+      const normLive = String(live.sku || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+      const normItem = String(item.supplier_sku || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase().replace(/^SAN/, "");
+      const skuMatches =
+        normLive === normItem ||
+        normLive.replace(/RZ$/i, "") === normItem.replace(/RZ$/i, "") ||
+        (normItem.length >= 3 && normLive.includes(normItem)) ||
+        (normLive.length >= 3 && normItem.includes(normLive));
+
+      if (!skuMatches) {
         throw new ProductRejectedError(item.source_url, [
           { field: "sku", reason: `page SKU "${live.sku}" doesn't match stored supplier SKU "${item.supplier_sku}"` }
         ]);

@@ -327,7 +327,7 @@ export default function AdminSuppliersPage() {
   const [amosAuthEmailInput, setAmosAuthEmailInput] = useState<string>("");
   const [amosAuthPasswordInput, setAmosAuthPasswordInput] = useState<string>("");
   const [authLoadingSupplier, setAuthLoadingSupplier] = useState<string | null>(null);
-  const [authDialogTab, setAuthDialogTab] = useState<"cookie" | "credentials">("credentials");
+  const [authDialogTab, setAuthDialogTab] = useState<"cookie" | "credentials">("cookie");
   const [copiedScript, setCopiedScript] = useState<boolean>(false);
 
   const getAdminAuthHeaders = () => {
@@ -3958,25 +3958,6 @@ export default function AdminSuppliersPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthDialogTab("credentials");
-                    if (typeof window !== "undefined") localStorage.setItem("san_preferred_auth_method", "credentials");
-                  }}
-                  className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
-                    authDialogTab === "credentials"
-                      ? "border-[#C89B3C] text-[#00072D]"
-                      : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
-                  }`}
-                >
-                  <Lock className="w-4 h-4 text-[#C89B3C]" />
-                  <span>Method 2: Trade Login Credentials (Email & Password)</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                    Recommended
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
                     setAuthDialogTab("cookie");
                     if (typeof window !== "undefined") localStorage.setItem("san_preferred_auth_method", "cookie");
                   }}
@@ -3988,6 +3969,25 @@ export default function AdminSuppliersPage() {
                 >
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>Method 1: Paste B2B Session Cookie</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                    Recommended & 100% Reliable
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthDialogTab("credentials");
+                    if (typeof window !== "undefined") localStorage.setItem("san_preferred_auth_method", "credentials");
+                  }}
+                  className={`flex items-center gap-2 pb-3 px-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                    authDialogTab === "credentials"
+                      ? "border-[#C89B3C] text-[#00072D]"
+                      : "border-transparent text-[#7A8B99] hover:text-[#00072D]"
+                  }`}
+                >
+                  <Lock className="w-4 h-4 text-[#7A8B99]" />
+                  <span>Method 2: Trade Login Credentials (Optional)</span>
                 </button>
               </div>
 
@@ -4115,20 +4115,44 @@ export default function AdminSuppliersPage() {
               ) : (
                 <div className="space-y-4 text-xs">
                   {(showFtgAuthDialog ? (ftgAuth.hasPassword || ftgAuthPasswordInput) : (amosAuth.hasPassword || amosAuthPasswordInput)) && (
-                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 flex items-start gap-3">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <Check className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
-                          <span>Trade Account Credentials Saved & Active</span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">MySQL Stored</span>
+                    showFtgAuthDialog && !ftgAuth.hasCookies ? (
+                      <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-950 flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                          <AlertTriangle className="w-4 h-4" />
                         </div>
-                        <p className="text-[11px] text-emerald-800 mt-0.5">
-                          Account: <strong>{showFtgAuthDialog ? (ftgAuth.authUsername || ftgAuthEmailInput) : (amosAuth.authUsername || amosAuthEmailInput)}</strong> • Password is saved and active in the database.
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs text-amber-900 flex items-center gap-1.5">
+                            <span>Trade Account Credentials Saved in MySQL</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-200 text-amber-900">Session Cookie Required</span>
+                          </div>
+                          <p className="text-[11px] text-amber-800 mt-1 leading-relaxed">
+                            Account: <strong>{ftgAuth.authUsername || ftgAuthEmailInput}</strong> is stored securely. However, FTG&apos;s Cloudflare anti-bot firewall blocks automated server-side logins. To unlock wholesale trade prices &amp; live inventory for scraping, please switch to <strong>Method 1</strong> and paste your active browser session cookie (<code>PHPSESSID</code>).
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setAuthDialogTab("cookie")}
+                            className="mt-2.5 inline-flex items-center gap-1 px-3 py-1 bg-white border border-amber-300 rounded-lg text-[11px] font-bold text-amber-900 hover:bg-amber-100 transition-colors cursor-pointer"
+                          >
+                            <span>Switch to Method 1 to paste PHPSESSID &rarr;</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-950 flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                          <Check className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-xs text-emerald-900 flex items-center gap-1.5">
+                            <span>Trade Account Credentials Saved &amp; Session Active</span>
+                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200 text-emerald-900">Connected</span>
+                          </div>
+                          <p className="text-[11px] text-emerald-800 mt-0.5">
+                            Account: <strong>{showFtgAuthDialog ? (ftgAuth.authUsername || ftgAuthEmailInput) : (amosAuth.authUsername || amosAuthEmailInput)}</strong> • Active wholesale session connected.
+                          </p>
+                        </div>
+                      </div>
+                    )
                   )}
 
                   <p className="text-[#4F6D7A] leading-relaxed">

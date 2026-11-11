@@ -105,7 +105,11 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
-      const data = await res.json();
+      const text = await res.text().catch(() => "");
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {}
       if (data?.sections) {
         serverSectionsCache.set(cacheKey, { data: data.sections, timestamp: Date.now() });
         return data.sections;

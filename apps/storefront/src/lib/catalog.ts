@@ -91,8 +91,12 @@ function syncCatalogCacheInBackground(): Promise<CatalogProduct[]> {
         signal: AbortSignal.timeout(4000),
       });
       if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.products)) {
+        const text = await res.text().catch(() => "");
+        let data: any = null;
+        try {
+          data = text ? JSON.parse(text) : null;
+        } catch {}
+        if (data && Array.isArray(data.products)) {
           inMemoryLiveProducts = data.products.filter((p: CatalogProduct) => p.status === "published");
           lastLiveFetchTimestamp = Date.now();
         }
@@ -193,8 +197,12 @@ export async function getLiveCategories(): Promise<ProductCategory[]> {
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data.categories) && data.categories.length > 0) {
+      const text = await res.text().catch(() => "");
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {}
+      if (data && Array.isArray(data.categories) && data.categories.length > 0) {
         inMemoryLiveCategories = data.categories.map((c: any) => ({
           id: c.id,
           name: c.name,
@@ -268,8 +276,12 @@ export async function getLiveProductByHandle(handle: string): Promise<CatalogPro
       signal: AbortSignal.timeout(3000),
     });
     if (res.ok) {
-      const data = await res.json();
-      if (data.product && data.product.status === "published") {
+      const text = await res.text().catch(() => "");
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {}
+      if (data && data.product && data.product.status === "published") {
         return data.product;
       }
     }

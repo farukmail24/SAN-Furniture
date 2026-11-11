@@ -663,14 +663,21 @@ function extractFinishFromTitle(title) {
 
 function readHtmlStock(html) {
   if (!html) return null;
+  // 1. Magento 2 script config flags
+  if (/"is_in_stock":\s*(?:true|1)\b/i.test(html) || /"isInStock":\s*(?:true|1)\b/i.test(html)) return false;
+  if (/"is_in_stock":\s*(?:false|0)\b/i.test(html) || /"isInStock":\s*(?:false|0)\b/i.test(html)) return true;
+
+  // 2. Class-based stock indicators
   if (/class="[^"]*\bavailable\b[^"]*\bstock\b[^"]*"/i.test(html) || /class="[^"]*\bstock\b[^"]*\bavailable\b[^"]*"/i.test(html)) {
     return false; // in stock
   }
   if (/class="[^"]*\bunavailable\b[^"]*\bstock\b[^"]*"/i.test(html) || /class="[^"]*\bstock\b[^"]*\bunavailable\b[^"]*"/i.test(html)) {
     return true; // out of stock
   }
-  if (/\b(?:In Stock|Available now)\b/i.test(html)) return false;
-  if (/\b(?:Out of Stock|Sold Out)\b/i.test(html)) return true;
+
+  // 3. Text-based stock phrases
+  if (/\b\d+\s+in\s+stock\b/i.test(html) || /\b(?:In Stock|Available now|Available to order)\b/i.test(html)) return false;
+  if (/\b(?:Out of Stock|Sold Out|Backorder|Currently unavailable)\b/i.test(html)) return true;
   return null;
 }
 
