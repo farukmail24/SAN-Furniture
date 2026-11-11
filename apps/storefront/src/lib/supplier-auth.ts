@@ -100,6 +100,29 @@ export async function testSupplierSession(
 
   let testUrl = "";
   if (supplierCode === "furniture_to_go" || supplierCode === "sup_furniture_to_go") {
+    // If we have a customer_token, test via official Magento 2 customer profile API
+    const tokenMatch = cleanCookies.match(/customer_token=([^;]+)/);
+    if (tokenMatch) {
+      try {
+        const token = tokenMatch[1].trim();
+        const meRes = await fetch("https://furniture-to-go.co.uk/rest/V1/customers/me", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json"
+          }
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          const identity = meData.addresses?.[0]?.company || `${meData.firstname || ""} ${meData.lastname || ""}`.trim() || meData.email;
+          return {
+            valid: true,
+            statusCode: 200,
+            message: `FTG Trade Account Verified & Connected as: ${identity} (${meData.email})`
+          };
+        }
+      } catch {}
+    }
     testUrl = "https://furniture-to-go.co.uk/customer/account/";
   } else if (supplierCode === "amos_mann_furniture" || supplierCode === "sup_amos_mann") {
     testUrl = "https://www.amosmannfurniture.co.uk/?function=MYACCOUNT";
@@ -247,7 +270,16 @@ export async function saveSupplierCookies(
 /**
  * Attempt to authenticate directly with FTG Magento 2 REST customer token endpoint.
  */
-export async function authenticateFtgToken(username: string, password: string): Promise<{ success: boolean; token?: string; error?: string }> {
+export async function authenticateFtgToken(
+  username: string,
+  password: string
+): Promise<{
+  success: boolean;
+  token?: string;
+  phpSessId?: string;
+  customer?: { id: number; email: string; name: string; company?: string };
+  error?: string;
+}> {
   try {
     const postData = JSON.stringify({ username, password });
     const res = await fetch("https://furniture-to-go.co.uk/rest/V1/integration/customer/token", {
@@ -263,7 +295,34 @@ export async function authenticateFtgToken(username: string, password: string): 
     if (res.ok) {
       let token = text.trim();
       if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
-      return { success: true, token };
+
+      let phpSessId: string | undefined = undefined;
+      const rawCookies = res.headers.get("set-cookie") || "";
+      const m = rawCookies.match(/PHPSESSID=([^;]+)/);
+      if (m) phpSessId = m[1];
+
+      // Retrieve customer profile to verify approval & account identity
+      let customer: { id: number; email: string; name: string; company?: string } | undefined = undefined;
+      try {
+        const meRes = await fetch("https://furniture-to-go.co.uk/rest/V1/customers/me", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Accept": "application/json"
+          }
+        });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          customer = {
+            id: meData.id,
+            email: meData.email,
+            name: `${meData.firstname || ""} ${meData.lastname || ""}`.trim(),
+            company: meData.addresses?.[0]?.company || undefined
+          };
+        }
+      } catch {}
+
+      return { success: true, token, phpSessId, customer };
     } else {
       let msg = text;
       try {
@@ -285,19 +344,24 @@ export async function saveSupplierCredentials(
   supplierCodeOrId: string,
   username: string,
   password?: string
-): Promise<{ success: boolean; message: string; verified?: boolean; token?: string }> {
+): Promise<{ success: boolean; message: string; verified?: boolean; token?: string; customer?: any }> {
   await ensureSupplierAuthSchema(pool);
   const cleanUser = username ? username.trim() : "";
   const cleanPass = password ? password.trim() : "";
 
   let verified = false;
   let customerToken: string | null = null;
+  let phpSessId: string | null = null;
+  let customerProfile: any = null;
+
   if ((supplierCodeOrId.includes("furniture_to_go") || supplierCodeOrId === "sup_furniture_to_go") && cleanUser && cleanPass) {
     try {
       const authRes = await authenticateFtgToken(cleanUser, cleanPass);
       if (authRes.success && authRes.token) {
         verified = true;
         customerToken = authRes.token;
+        phpSessId = authRes.phpSessId || null;
+        customerProfile = authRes.customer || null;
       }
     } catch (e: any) {
       console.warn("[FTG Auth] Token verification note:", e.message);
@@ -312,6 +376,11 @@ export async function saveSupplierCredentials(
   const isConnected = Boolean(customerToken || hasExistingCookies);
   const statusToSet = isConnected ? "connected" : "credentials_saved";
 
+  const cookiesParts: string[] = [];
+  if (phpSessId) cookiesParts.push(`PHPSESSID=${phpSessId}`);
+  if (customerToken) cookiesParts.push(`customer_token=${customerToken}`);
+  const combinedCookies = cookiesParts.length > 0 ? cookiesParts.join("; ") : null;
+
   if (cleanPass) {
     await pool.query(
       `UPDATE suppliers
@@ -325,7 +394,7 @@ export async function saveSupplierCredentials(
       [
         cleanUser,
         cleanPass,
-        customerToken ? `customer_token=${customerToken}` : null,
+        combinedCookies,
         statusToSet,
         supplierCodeOrId,
         supplierCodeOrId
@@ -343,12 +412,14 @@ export async function saveSupplierCredentials(
     );
   }
 
+  const identityText = customerProfile?.company || customerProfile?.name || cleanUser;
   return {
     success: true,
     message: isConnected
-      ? "Supplier trade credentials authenticated & session active!"
-      : "Supplier trade credentials saved to database. Please paste active B2B session cookies (PHPSESSID) in Method 1 to unlock live trade wholesale pricing and inventory.",
+      ? `Supplier trade credentials authenticated & verified with FTG! Connected as: ${identityText}`
+      : "Supplier trade credentials saved to database.",
     verified: isConnected,
+    customer: customerProfile,
     ...(customerToken ? { token: customerToken } : {})
   };
 }

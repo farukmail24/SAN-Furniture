@@ -90,11 +90,30 @@ export async function POST(
     if (action === "test_connection") {
       const existingCookies = await getSupplierAuthCookies(pool, id);
       const testCookies = body.cookies ? String(body.cookies) : existingCookies;
+      const state = await getSupplierAuthState(pool, id);
+
+      if (!testCookies && state?.authUsername && state?.authPassword && (id.includes("furniture_to_go") || id === "sup_furniture_to_go")) {
+        const { authenticateFtgToken } = await import("@/lib/supplier-auth");
+        const authRes = await authenticateFtgToken(state.authUsername, state.authPassword);
+        if (authRes.success) {
+          const identity = authRes.customer?.company || authRes.customer?.name || state.authUsername;
+          return NextResponse.json({
+            success: true,
+            message: `FTG Trade Account Verified & Connected as: ${identity} (${state.authUsername})`,
+            testResult: { valid: true, statusCode: 200, message: `FTG Trade Login Successful (${identity})` }
+          });
+        } else {
+          return NextResponse.json({
+            success: false,
+            error: authRes.error || "Failed to authenticate FTG login credentials",
+          }, { status: 400 });
+        }
+      }
 
       if (!testCookies) {
         return NextResponse.json({
           success: false,
-          error: "No active session cookies to test. Please connect your trade session first.",
+          error: "No active session cookies or trade credentials found to test. Please save your login credentials or session first.",
         }, { status: 400 });
       }
 

@@ -712,21 +712,172 @@ export class FurnitureToGoExtractorEngine {
 
   setAuthCookies(cookies) {
     this.authCookies = cookies ? String(cookies).trim() : null;
+    if (this.authCookies) {
+      const m = this.authCookies.match(/customer_token=([^;]+)/);
+      if (m) this.apiToken = m[1].trim();
+    }
   }
 
   async loadAuthSession(pool) {
     if (!pool) return null;
+    this.pool = pool;
     try {
       const [rows] = await pool.query(
-        "SELECT auth_cookies, auth_status FROM suppliers WHERE code = 'furniture_to_go' OR id = 'sup_furniture_to_go' LIMIT 1"
+        "SELECT auth_cookies, auth_username, auth_password, auth_status FROM suppliers WHERE code = 'furniture_to_go' OR id = 'sup_furniture_to_go' LIMIT 1"
       );
-      if (rows && rows.length > 0 && rows[0].auth_cookies) {
-        this.authCookies = String(rows[0].auth_cookies).trim();
+      if (rows && rows.length > 0) {
+        if (rows[0].auth_cookies) {
+          this.authCookies = String(rows[0].auth_cookies).trim();
+          const tokenMatch = this.authCookies.match(/customer_token=([^;]+)/);
+          if (tokenMatch) {
+            this.apiToken = tokenMatch[1].trim();
+          }
+        }
+        if (rows[0].auth_username) {
+          this.authUsername = String(rows[0].auth_username).trim();
+        }
+        if (rows[0].auth_password) {
+          this.authPassword = String(rows[0].auth_password).trim();
+        }
         return this.authCookies;
       }
     } catch (err) {
       console.warn("[FTG] Could not load auth session from DB:", err.message);
     }
+    return null;
+  }
+
+  /**
+   * Ensure or auto-refresh Magento 2 customer Bearer token using saved FTG credentials.
+   */
+  async getOrRefreshApiToken() {
+    if (this.apiToken) return this.apiToken;
+    if (!this.authUsername || !this.authPassword) {
+      if (this.pool) {
+        await this.loadAuthSession(this.pool);
+      }
+    }
+    if (!this.authUsername || !this.authPassword) return null;
+
+    try {
+      const postData = JSON.stringify({ username: this.authUsername, password: this.authPassword });
+      const res = await new Promise((resolve) => {
+        const req = https.request({
+          hostname: "furniture-to-go.co.uk",
+          path: "/rest/V1/integration/customer/token",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(postData),
+            "User-Agent": this.userAgent,
+            "Accept": "application/json"
+          },
+          timeout: 10000
+        }, (resp) => {
+          let body = "";
+          resp.on("data", (chunk) => (body += chunk));
+          resp.on("end", () => {
+            let token = body.trim();
+            if (token.startsWith('"') && token.endsWith('"')) token = token.slice(1, -1);
+            let phpSessId = null;
+            const setCookies = resp.headers["set-cookie"] || [];
+            for (const c of setCookies) {
+              const m = c.match(/PHPSESSID=([^;]+)/);
+              if (m) phpSessId = m[1];
+            }
+            resolve({ ok: resp.statusCode === 200, token, phpSessId });
+          });
+        });
+        req.on("error", (e) => resolve({ ok: false, error: e.message }));
+        req.on("timeout", () => { req.destroy(); resolve({ ok: false, error: "timeout" }); });
+        req.write(postData);
+        req.end();
+      });
+
+      if (res && res.ok && res.token && res.token.length > 20) {
+        this.apiToken = res.token;
+        const newCookies = [
+          res.phpSessId ? `PHPSESSID=${res.phpSessId}` : null,
+          `customer_token=${res.token}`,
+          this.authCookies || ""
+        ].filter(Boolean).join("; ");
+        this.authCookies = newCookies;
+
+        if (this.pool) {
+          await this.pool.query(
+            "UPDATE suppliers SET auth_cookies = ?, auth_status = 'connected', auth_last_verified_at = NOW(), auth_error = NULL WHERE code = 'furniture_to_go' OR id = 'sup_furniture_to_go'",
+            [newCookies]
+          ).catch(() => {});
+        }
+        return this.apiToken;
+      }
+    } catch (err) {
+      console.warn("[FTG] Auto token refresh error:", err.message);
+    }
+    return null;
+  }
+
+  /**
+   * Fetch live B2B wholesale trade price directly via FTG Magento 2 products-render-info endpoint.
+   * Completely bypasses HTML MAP (Minimum Advertised Price) masking.
+   */
+  async fetchPriceFromApi(sku = null, productId = null) {
+    const token = await this.getOrRefreshApiToken();
+    if (!token) return null;
+
+    const tryFetch = (filterField, filterVal) => {
+      return new Promise((resolve) => {
+        const queryPath = `/rest/V1/products-render-info?searchCriteria[filterGroups][0][filters][0][field]=${filterField}&searchCriteria[filterGroups][0][filters][0][value]=${encodeURIComponent(filterVal)}&searchCriteria[filterGroups][0][filters][0][conditionType]=eq&storeId=1&currencyCode=GBP`;
+        const req = https.get({
+          hostname: "furniture-to-go.co.uk",
+          path: queryPath,
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": this.userAgent,
+            "Accept": "application/json"
+          },
+          timeout: 10000
+        }, (res) => {
+          let body = "";
+          res.on("data", (chunk) => (body += chunk));
+          res.on("end", () => {
+            try {
+              const data = JSON.parse(body);
+              if (Array.isArray(data.items) && data.items.length > 0) {
+                const item = data.items[0];
+                const priceInfo = item.price_info;
+                const finalAmt = priceInfo?.final_price ?? priceInfo?.regular_price ?? priceInfo?.minimal_price;
+                if (typeof finalAmt === "number" && finalAmt > 0) {
+                  return resolve({
+                    costPennies: Math.round(finalAmt * 100),
+                    rawPennies: Math.round(finalAmt * 100),
+                    priceGbp: finalAmt
+                  });
+                }
+              }
+              resolve(null);
+            } catch {
+              resolve(null);
+            }
+          });
+        });
+        req.on("error", () => resolve(null));
+        req.on("timeout", () => { req.destroy(); resolve(null); });
+      });
+    };
+
+    // Try 1: By entity_id (fastest and exact)
+    if (productId) {
+      const p = await tryFetch("entity_id", productId);
+      if (p) return p;
+    }
+
+    // Try 2: By SKU
+    if (sku) {
+      const p = await tryFetch("sku", sku);
+      if (p) return p;
+    }
+
     return null;
   }
 
@@ -858,8 +1009,8 @@ export class FurnitureToGoExtractorEngine {
 
   /* ------------------------------- extraction ------------------------------ */
 
-  /** Price: Schema.org first, then THIS product's Magento price box; validated + cross-checked. */
-  readPrice(node, html, fail) {
+  /** Price: Schema.org first, then THIS product's Magento price box; validated + cross-checked. Fallback to authenticated B2B REST API. */
+  async readPrice(node, html, fail, sku = null, productId = null) {
     const schema = readSchemaOffer(node);
     const ftgPrice = readFtgPrice(html);
     let pennies;
@@ -890,7 +1041,23 @@ export class FurnitureToGoExtractorEngine {
     } else if (ftgPrice) {
       pennies = ftgPrice.pennies;
       vat = false; // FTG trade wholesale prices are ex-VAT
-    } else {
+    }
+
+    // Step 3 Fallback: If price is not on the public page (due to FTG Minimum Advertised Price / Trade restrictions),
+    // fetch the real wholesale trade cost via Magento 2 B2B products-render-info endpoint using customer auth token
+    if (!pennies || pennies === 0) {
+      try {
+        const apiPrice = await this.fetchPriceFromApi(sku, productId);
+        if (apiPrice && apiPrice.costPennies > 0) {
+          pennies = apiPrice.costPennies;
+          vat = false; // FTG trade wholesale prices from render-info are ex-VAT
+        }
+      } catch (err) {
+        console.warn("[FTG] API price fetch attempt error:", err.message);
+      }
+    }
+
+    if (!pennies || pennies === 0) {
       fail("price", schema.reason || "Wholesale trade price not detected automatically");
       return null;
     }
@@ -970,8 +1137,15 @@ export class FurnitureToGoExtractorEngine {
     const sku = typeof rawSku === "string" || typeof rawSku === "number" ? String(rawSku).trim() : "";
     if (!sku) fail("sku", "missing in Product schema (sku / productID)");
 
-    // 3. Price
-    const price = this.readPrice(node, html, fail);
+    // Product ID from Magento Add-To-Cart Form or JavaScript state (e.g. name="product" value="288")
+    const idMatch =
+      html.match(/<input[^>]*\bname=["']product["'][^>]*\bvalue=["'](\d+)["']/i) ||
+      html.match(/<input[^>]*\bvalue=["'](\d+)["'][^>]*\bname=["']product["']/i) ||
+      html.match(/["']productId["']\s*:\s*["']?(\d+)["']?/i);
+    const productId = idMatch ? idMatch[1] : null;
+
+    // 3. Price (validated from Schema, HTML, or B2B REST API fallback)
+    const price = await this.readPrice(node, html, fail, sku, productId);
 
     // 4. Stock — schema's explicit availability, with Magento HTML fallback
     const offers = flattenOffers(node);
