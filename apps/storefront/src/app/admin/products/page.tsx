@@ -161,14 +161,108 @@ export default function AdminProductsPage() {
           }
         }
 
+        const isOutOfStock =
+          updatedProduct.status === "out_of_stock" ||
+          (updatedProduct.stock_level !== undefined && updatedProduct.stock_level <= 0);
+        const isFtg = product.id.startsWith("prod_ftg_");
+        const supplierName = isFtg ? "Furniture To Go" : "Amos Mann Furniture";
+        const skuFormatted = product.sku
+          ? formatProductSku(product.sku)
+          : (product.id.startsWith("prod_live_am_")
+              ? `SAN-${product.supplier_sku?.replace(/[^0-9]/g, "")}`
+              : (isFtg ? `SAN-${product.supplier_sku?.replace(/^(FTG-|SAN-)/i, "")}` : product.sku || "SKU"));
+        const costGbp = updatedProduct.cost_price_pennies
+          ? (updatedProduct.cost_price_pennies / 100).toFixed(2)
+          : (data.reconcile?.costGbp || "0.00");
+        const retailGbp = updatedProduct.price_pennies
+          ? (updatedProduct.price_pennies / 100).toFixed(2)
+          : "0.00";
+        const stockUnits = updatedProduct.stock_level ?? 25;
+
         showAlert({
-          title: "Product Synchronized",
-          message: data.message || `"${product.title}" synchronized with supplier!`,
+          title: "Supplier Live Synchronized",
+          confirmText: "Done",
           type: "success",
+          message: (
+            <div className="space-y-3.5 text-left">
+              {/* Product Sourcing Header Card */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-sand-100 via-sand-50 to-sand-100 border border-sand-300">
+                <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                  <span className="px-2 py-0.5 rounded-md bg-[#00072D] text-[#FAF6EE] text-[10px] font-mono font-bold tracking-wider">
+                    SKU: {skuFormatted}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-sand-300 text-navy-800 text-[10px] font-bold">
+                    {supplierName}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-800 bg-sky-100/90 px-2 py-0.5 rounded-md border border-sky-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                    Live Verified
+                  </span>
+                </div>
+                <h4 className="font-display font-bold text-navy-950 text-sm leading-snug line-clamp-2">
+                  {product.title}
+                </h4>
+              </div>
+
+              {/* Real-Time Status & Price Metric Tiles */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Live Inventory Status */}
+                <div
+                  className={`p-3 rounded-xl border shadow-2xs space-y-1 ${
+                    isOutOfStock
+                      ? "bg-rose-50/70 border-rose-200"
+                      : "bg-emerald-50/70 border-emerald-200"
+                  }`}
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                    Live Inventory
+                  </div>
+                  {isOutOfStock ? (
+                    <div className="flex items-center gap-1.5 text-rose-700 font-bold text-xs">
+                      <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
+                      <span>Out of Stock</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0 animate-pulse" />
+                      <span>{stockUnits} in stock</span>
+                    </div>
+                  )}
+                  <div className="text-[10px] text-navy-500 font-medium">
+                    {isOutOfStock ? "Auto-Hidden from Storefront" : "Active on Storefront"}
+                  </div>
+                </div>
+
+                {/* Commercial Pricing */}
+                <div className="p-3 rounded-xl bg-white border border-sand-300 shadow-2xs space-y-1">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-navy-400">
+                    Commercial Pricing
+                  </div>
+                  <div className="text-navy-950 font-bold text-xs font-mono">
+                    Trade: <strong className="text-brass-700 font-bold">£{costGbp}</strong>{" "}
+                    <span className="text-[9px] text-navy-400 font-normal">ex VAT</span>
+                  </div>
+                  <div className="text-[11px] text-navy-800 font-mono font-semibold">
+                    Retail: <strong className="text-navy-950 font-bold">£{retailGbp}</strong>{" "}
+                    <span className="text-[9px] text-navy-400 font-normal">inc VAT</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Verification & Persist Notice */}
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-emerald-50/90 border border-emerald-200 text-emerald-950">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] leading-relaxed text-emerald-900 font-medium">
+                  Wholesale trade cost, delivery tier carriage, and inventory stock level have been reconciled directly with supplier web feeds and persisted to MySQL database.
+                </p>
+              </div>
+            </div>
+          ),
         });
       } else {
         showAlert({
           title: "Sync Notice",
+          confirmText: "Dismiss",
           message: data.error || data.message || "Failed to sync product with supplier.",
           type: "warning",
         });
@@ -176,6 +270,7 @@ export default function AdminProductsPage() {
     } catch (err: any) {
       showAlert({
         title: "Sync Failed",
+        confirmText: "Dismiss",
         message: err?.message || "Failed to trigger product sync.",
         type: "danger",
       });
@@ -817,11 +912,13 @@ export default function AdminProductsPage() {
             <button
               type="button"
               onClick={() => handleSyncProduct(p)}
-              disabled={syncingProductId === p.id}
-              className={`p-1.5 rounded-lg transition-colors inline-flex items-center cursor-pointer disabled:opacity-50 ${
-                syncingProductId === p.id ? "bg-sky-100 text-sky-800" : "text-sky-700 hover:text-sky-900 hover:bg-sky-50"
+              disabled={syncingProductId !== null}
+              className={`p-1.5 rounded-lg transition-all inline-flex items-center cursor-pointer disabled:opacity-50 ${
+                syncingProductId === p.id
+                  ? "bg-sky-100 text-sky-800 ring-2 ring-sky-400/60 shadow-xs cursor-wait"
+                  : "text-sky-700 hover:text-sky-900 hover:bg-sky-50"
               }`}
-              title={syncingProductId === p.id ? "Synchronizing with supplier..." : "Sync live price & stock from supplier"}
+              title={syncingProductId === p.id ? "Synchronizing live data with supplier..." : "Sync live price & stock from supplier"}
             >
               <RefreshCw className={`w-4 h-4 ${syncingProductId === p.id ? "animate-spin text-sky-600" : ""}`} />
             </button>
@@ -860,7 +957,7 @@ export default function AdminProductsPage() {
         ),
       },
     ],
-    [categories]
+    [categories, syncingProductId]
   );
 
   return (

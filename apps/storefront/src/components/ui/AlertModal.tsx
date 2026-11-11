@@ -124,7 +124,7 @@ export function showAlert(
                 : "Information",
             message: optionsOrMessage,
             type,
-            confirmText: "Understood",
+            confirmText: "Done",
             isConfirm: false
           }
         : {
@@ -137,7 +137,7 @@ export function showAlert(
                 : "Notice"),
             message: optionsOrMessage.message,
             type: optionsOrMessage.type || type,
-            confirmText: optionsOrMessage.confirmText || "Understood",
+            confirmText: optionsOrMessage.confirmText || "Done",
             isConfirm: false
           };
 
@@ -242,27 +242,27 @@ export function AlertModalProvider({ children }: { children: React.ReactNode }) 
   // Visual Theme mapping based on Alert Type
   const theme = {
     danger: {
-      accentBar: "bg-rose-600",
-      iconBg: "bg-rose-50 border-rose-200 text-rose-600",
+      accentBar: "bg-gradient-to-r from-rose-500 via-red-500 to-rose-600",
+      iconBg: "bg-rose-50 border-rose-200 text-rose-600 ring-4 ring-rose-500/10",
       icon: <Trash2 className="w-5 h-5 text-rose-600" />,
       confirmBtn:
         "bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white shadow-md shadow-rose-600/20"
     },
     warning: {
-      accentBar: "bg-amber-500",
-      iconBg: "bg-amber-50 border-amber-200 text-amber-600",
+      accentBar: "bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500",
+      iconBg: "bg-amber-50 border-amber-200 text-amber-600 ring-4 ring-amber-500/10",
       icon: <AlertTriangle className="w-5 h-5 text-amber-600" />,
       confirmBtn: "bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20"
     },
     success: {
-      accentBar: "bg-emerald-600",
-      iconBg: "bg-emerald-50 border-emerald-200 text-emerald-600",
+      accentBar: "bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-600",
+      iconBg: "bg-emerald-50 border-emerald-200 text-emerald-600 ring-4 ring-emerald-500/10",
       icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" />,
-      confirmBtn: "bg-emerald-700 hover:bg-emerald-800 text-white shadow-md shadow-emerald-700/20"
+      confirmBtn: "bg-[#00072D] hover:bg-navy-900 text-[#FAF6EE] shadow-md shadow-navy-950/20 border border-navy-800"
     },
     info: {
-      accentBar: "bg-[#00072D]",
-      iconBg: "bg-[#FAF6EE] border-[#C89B3C]/50 text-[#00072D]",
+      accentBar: "bg-gradient-to-r from-[#00072D] via-[#C89B3C] to-[#00072D]",
+      iconBg: "bg-[#FAF6EE] border-[#C89B3C]/50 text-[#00072D] ring-4 ring-[#C89B3C]/10",
       icon: <Info className="w-5 h-5 text-[#C89B3C]" />,
       confirmBtn: "bg-[#00072D] hover:bg-navy-900 text-[#FAF6EE] shadow-md shadow-navy-950/20"
     }
@@ -288,11 +288,11 @@ export function AlertModalProvider({ children }: { children: React.ReactNode }) 
 
             {/* Modal Dialog Card */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 8 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: "spring", damping: 25, stiffness: 320 }}
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-sand-300 overflow-hidden z-10"
+              className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-sand-300 overflow-hidden z-10"
               role="alertdialog"
               aria-modal="true"
               aria-labelledby="alert-modal-title"
@@ -304,29 +304,32 @@ export function AlertModalProvider({ children }: { children: React.ReactNode }) 
               <div className="p-6">
                 {/* Header Row: Icon, Title & Close Button */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <div
-                      className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 shadow-xs ${theme.iconBg}`}
+                      className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 shadow-xs ${theme.iconBg}`}
                     >
                       {theme.icon}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <h3
                         id="alert-modal-title"
-                        className="font-display text-base sm:text-lg font-bold text-navy-950 leading-tight"
+                        className="font-display text-base sm:text-lg font-bold text-navy-950 leading-tight truncate"
                       >
                         {modalState.title || "Notification"}
                       </h3>
-                      <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-navy-400">
-                        SAN Furniture UK
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-brass-500 shrink-0" />
+                        <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-navy-400">
+                          SAN Furniture UK • Operations Suite
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => handleClose(false)}
-                    className="p-1.5 rounded-lg text-navy-400 hover:text-navy-700 hover:bg-sand-100 transition-colors cursor-pointer"
+                    className="w-8 h-8 rounded-full bg-sand-100 hover:bg-sand-200 text-navy-500 hover:text-navy-900 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label="Close dialog"
                   >
                     <X className="w-4 h-4" />
@@ -334,12 +337,18 @@ export function AlertModalProvider({ children }: { children: React.ReactNode }) 
                 </div>
 
                 {/* Body Message */}
-                <div
-                  id="alert-modal-description"
-                  className="mt-4 text-xs sm:text-sm text-navy-600 leading-relaxed font-normal bg-sand-50/80 p-3.5 rounded-xl border border-sand-200/80 whitespace-pre-line"
-                >
-                  {modalState.message}
-                </div>
+                {React.isValidElement(modalState.message) ? (
+                  <div id="alert-modal-description" className="mt-4">
+                    {modalState.message}
+                  </div>
+                ) : (
+                  <div
+                    id="alert-modal-description"
+                    className="mt-4 text-xs sm:text-sm text-navy-700 leading-relaxed font-normal bg-sand-50/80 p-4 rounded-xl border border-sand-200/80 whitespace-pre-line shadow-2xs"
+                  >
+                    {modalState.message}
+                  </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="mt-6 flex items-center justify-end gap-2.5">
@@ -357,9 +366,9 @@ export function AlertModalProvider({ children }: { children: React.ReactNode }) 
                     ref={confirmButtonRef}
                     type="button"
                     onClick={() => handleClose(true)}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${theme.confirmBtn}`}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-1.5 ${theme.confirmBtn}`}
                   >
-                    {modalState.confirmText || (modalState.isConfirm ? "Confirm" : "OK")}
+                    <span>{modalState.confirmText || (modalState.isConfirm ? "Confirm" : "Done")}</span>
                   </button>
                 </div>
               </div>
