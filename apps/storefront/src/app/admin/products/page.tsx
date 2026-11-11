@@ -1665,12 +1665,12 @@ export default function AdminProductsPage() {
           >
             {/* Modal Header */}
             <div className="px-6 py-4 bg-sand-100 border-b border-sand-300 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-navy-950 flex items-center justify-center shadow-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-navy-950 flex items-center justify-center shadow-xs shrink-0">
                   <Calculator className="w-5 h-5 text-brass-400" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-display text-base font-bold text-navy-950">
                       Dynamic Landed Cost &amp; Profit Breakdown
                     </h3>
@@ -1683,28 +1683,28 @@ export default function AdminProductsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-navy-600 line-clamp-1">
+                  <p className="text-xs text-navy-600 truncate mt-0.5">
                     Mathematical breakdown of wholesale trade cost, freight, 20% UK VAT &amp; supplier sourcing for <span className="font-semibold text-navy-900">{calcProduct.title}</span>
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleSyncProduct(calcProduct)}
                   disabled={syncingProductId === calcProduct.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-300 text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-2xs"
-                  title="Sync live price & stock directly from supplier"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sand-300 bg-white hover:bg-sand-50 text-navy-800 hover:text-navy-950 text-xs font-semibold shadow-2xs transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                  title="Synchronize live pricing and stock status directly from supplier"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 text-sky-600 ${syncingProductId === calcProduct.id ? "animate-spin" : ""}`} />
-                  <span>{syncingProductId === calcProduct.id ? "Syncing..." : "Sync Live Supplier"}</span>
+                  <span>{syncingProductId === calcProduct.id ? "Syncing..." : "Sync Supplier"}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setCalcProduct(null)}
-                  className="w-8 h-8 rounded-full bg-sand-200 hover:bg-sand-300 text-navy-700 hover:text-navy-950 flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-sand-200 hover:bg-sand-300 text-navy-700 hover:text-navy-950 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1712,7 +1712,7 @@ export default function AdminProductsPage() {
             </div>
 
             {/* Modal Body (Scrollable) */}
-            <div className="p-6 space-y-6 overflow-y-auto">
+            <div className="p-6 space-y-6 overflow-y-auto overflow-x-hidden">
               {/* Section 1: Target Markup Presets & Landed Cost Controls */}
               <div className="p-4 rounded-2xl bg-white border border-sand-300 shadow-2xs space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1955,19 +1955,31 @@ export default function AdminProductsPage() {
                 const supplier = getSupplierInfo(calcProduct);
                 return (
                   <div className="p-5 rounded-2xl bg-gradient-to-r from-sand-100 via-sand-200/60 to-sand-100 border border-sand-300 shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      {/* Left: Supplier Info & Real-Time Stock Status */}
+                      <div className="flex items-start sm:items-center gap-3 min-w-0">
                         <div className="w-10 h-10 rounded-xl bg-navy-900 text-brass-400 flex items-center justify-center shrink-0 shadow-xs">
                           <Building className="w-5 h-5" />
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-display font-bold text-navy-950 text-sm">
                               {supplier.name}
                             </span>
                             <span className="px-2 py-0.5 rounded-full bg-navy-950 text-brass-400 text-[10px] font-bold">
                               {supplier.badge}
                             </span>
+                            {calcProduct.status === "out_of_stock" || (calcProduct.stock_level !== undefined && calcProduct.stock_level <= 0) ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                                <AlertCircle className="w-3 h-3 text-rose-600" />
+                                Out of Stock (Auto-Hidden)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                {calcProduct.stock_level ? `${calcProduct.stock_level} in stock` : "In Stock"}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-xs text-navy-600 flex-wrap">
                             <span>Supplier SKU: <strong className="text-navy-900 font-mono">{supplier.sku}</strong></span>
@@ -1976,50 +1988,39 @@ export default function AdminProductsPage() {
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               {supplier.isDirect ? "Direct Verified Link" : "Catalog Search Fallback"}
                             </span>
-                            <span>•</span>
-                            {calcProduct.status === "out_of_stock" || (calcProduct.stock_level !== undefined && calcProduct.stock_level <= 0) ? (
-                              <span className="inline-flex items-center gap-1 text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                                <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
-                                Out of Stock (Auto-Hidden)
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                {calcProduct.stock_level ? `${calcProduct.stock_level} in stock` : "In Stock"}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>
 
-                      {/* 1-Click Buttons directly to Supplier */}
-                      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      {/* Right: Action Buttons */}
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => handleSyncProduct(calcProduct)}
                           disabled={syncingProductId === calcProduct.id}
-                          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-sand-50 font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer disabled:opacity-60"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer disabled:opacity-60 whitespace-nowrap"
                           title="Synchronize wholesale cost, carriage, and inventory status directly from supplier website"
                         >
-                          <RefreshCw className={`w-4 h-4 text-sky-200 ${syncingProductId === calcProduct.id ? "animate-spin" : ""}`} />
-                          <span>{syncingProductId === calcProduct.id ? "Syncing Live..." : `Sync with ${supplier.name}`}</span>
+                          <RefreshCw className={`w-3.5 h-3.5 text-sky-100 ${syncingProductId === calcProduct.id ? "animate-spin" : ""}`} />
+                          <span>{syncingProductId === calcProduct.id ? "Syncing..." : "Sync Live Data"}</span>
                         </button>
 
                         <a
                           href={supplier.productUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs shadow-md hover:shadow-lg transition-all shrink-0 cursor-pointer group"
+                          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-navy-950 hover:bg-navy-900 text-sand-50 font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer group whitespace-nowrap"
+                          title={`Open official product page on ${supplier.name}`}
                         >
-                          <ExternalLink className="w-4 h-4 text-brass-400 group-hover:scale-110 transition-transform" />
-                          <span>Open Product on {supplier.name}</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-brass-400 group-hover:scale-110 transition-transform" />
+                          <span>Open on Supplier</span>
                         </a>
                       </div>
                     </div>
 
                     {/* URL Bar & Quick Helper */}
-                    <div className="p-3 rounded-xl bg-white/80 border border-sand-300 flex items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-2 truncate text-navy-600 font-mono text-[11px]">
+                    <div className="p-3 rounded-xl bg-white/80 border border-sand-300 flex items-center justify-between gap-3 text-xs min-w-0">
+                      <div className="flex items-center gap-2 truncate text-navy-600 font-mono text-[11px] min-w-0">
                         <span className="text-navy-400 shrink-0">Source URL:</span>
                         <a
                           href={supplier.productUrl}
@@ -2091,16 +2092,6 @@ export default function AdminProductsPage() {
                   className="px-4 py-2 rounded-xl bg-sand-200 hover:bg-sand-300 text-navy-800 font-semibold text-xs transition-colors cursor-pointer"
                 >
                   Close
-                </button>
-                <button
-                  type="button"
-                  disabled={syncingProductId === calcProduct.id}
-                  onClick={() => handleSyncProduct(calcProduct)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-sky-300 text-xs font-semibold text-sky-800 bg-sky-50 hover:bg-sky-100 transition-colors cursor-pointer disabled:opacity-50"
-                  title="Sync live pricing & stock status from supplier"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 text-sky-600 ${syncingProductId === calcProduct.id ? "animate-spin" : ""}`} />
-                  <span>{syncingProductId === calcProduct.id ? "Syncing..." : "Sync Supplier"}</span>
                 </button>
                 <Link
                   href={`/admin/products/${calcProduct.id}/edit`}
