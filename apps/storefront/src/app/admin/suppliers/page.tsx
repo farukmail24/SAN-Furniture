@@ -192,6 +192,7 @@ export default function AdminSuppliersPage() {
   const [amosConfirmingImport, setAmosConfirmingImport] = useState<boolean>(false);
   const [amosStagingTab, setAmosStagingTab] = useState<"valid" | "errors">("valid");
   const [amosGlobalMarkup, setAmosGlobalMarkup] = useState<number>(40);
+  const [amosRescrapingUrl, setAmosRescrapingUrl] = useState<string | null>(null);
 
   // Sitemap Discovery State
   const [sitemapData, setSitemapData] = useState<{
@@ -284,6 +285,7 @@ export default function AdminSuppliersPage() {
   const [ftgScrapeErrors, setFtgScrapeErrors] = useState<ScrapeIssueItem[]>([]);
   const [ftgStagingTab, setFtgStagingTab] = useState<"valid" | "errors">("valid");
   const [globalMarkup, setGlobalMarkup] = useState<number>(40);
+  const [ftgRescrapingUrl, setFtgRescrapingUrl] = useState<string | null>(null);
 
   // Feed SKU Inspector Modal Open Flag
   const [feedInspectorOpen, setFeedInspectorOpen] = useState<boolean>(false);
@@ -731,6 +733,108 @@ export default function AdminSuppliersPage() {
     }
   };
 
+
+  // Re-scrape a single Amos Mann skipped item
+  const handleRescrapeAmosItem = async (targetUrl: string) => {
+    if (!targetUrl || amosRescrapingUrl) return;
+    setAmosRescrapingUrl(targetUrl);
+    try {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/preview"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls: [targetUrl],
+          categoryId: newAmosCategory,
+          deliveryTier: newAmosDeliveryTier,
+          markupPercent: amosGlobalMarkup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.items) && data.items.length > 0) {
+        const item = data.items[0];
+        setAmosStagedItems((prev) => {
+          const exists = prev.some((it) => it.url === targetUrl);
+          if (exists) return prev.map((it) => (it.url === targetUrl ? item : it));
+          return [...prev, item];
+        });
+        setAmosScrapeErrors((prev) => prev.filter((err) => err.url !== targetUrl));
+        setToastMsg({
+          type: "success",
+          text: `Successfully re-scraped "${item.title}"! Added to Ready to Import.`,
+        });
+        if (amosScrapeErrors.length <= 1) {
+          setAmosStagingTab("valid");
+        }
+      } else {
+        const errObj = (data.errors && data.errors[0]) || { error: "Failed to re-scrape product data from Amos Mann." };
+        setAmosScrapeErrors((prev) =>
+          prev.map((err) => (err.url === targetUrl ? { ...err, ...errObj } : err))
+        );
+        setToastMsg({
+          type: "error",
+          text: errObj.error || "Product still failed validation checks on re-scrape.",
+        });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error while re-scraping product." });
+    } finally {
+      setAmosRescrapingUrl(null);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
+  // Re-scrape all skipped Amos Mann items in batch
+  const handleRescrapeAllAmosItems = async () => {
+    if (amosScrapeErrors.length === 0 || amosRescrapingUrl) return;
+    const urls = amosScrapeErrors.map((e) => e.url).filter(Boolean);
+    if (urls.length === 0) return;
+    setAmosRescrapingUrl("all");
+    try {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/amos-mann/preview"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls,
+          categoryId: newAmosCategory,
+          deliveryTier: newAmosDeliveryTier,
+          markupPercent: amosGlobalMarkup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const newItems = Array.isArray(data.items) ? data.items : [];
+        const newErrors = Array.isArray(data.errors) ? data.errors : [];
+        if (newItems.length > 0) {
+          const successfulUrls = new Set(newItems.map((it: any) => it.url));
+          setAmosStagedItems((prev) => {
+            const preserved = prev.filter((it) => !successfulUrls.has(it.url));
+            return [...preserved, ...newItems];
+          });
+          setAmosScrapeErrors(newErrors);
+          setToastMsg({
+            type: "success",
+            text: `Re-scraped batch: ${newItems.length} product(s) successfully verified and added to Ready to Import!`,
+          });
+          if (newErrors.length === 0) {
+            setAmosStagingTab("valid");
+          }
+        } else {
+          setAmosScrapeErrors(newErrors);
+          setToastMsg({
+            type: "error",
+            text: `All ${newErrors.length} products still failed supplier validation checks.`,
+          });
+        }
+      } else {
+        setToastMsg({ type: "error", text: data.error || "Batch re-scrape failed." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error during batch re-scrape." });
+    } finally {
+      setAmosRescrapingUrl(null);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
   const handleConfirmBatchImportAmos = async () => {
     if (amosStagedItems.length === 0) return;
     const hasZeroPrice = amosStagedItems.some((item) => !item.tradePriceGbp || item.tradePriceGbp <= 0);
@@ -1041,6 +1145,108 @@ export default function AdminSuppliersPage() {
     }
   };
 
+
+  // Re-scrape a single FTG skipped item
+  const handleRescrapeFtgItem = async (targetUrl: string) => {
+    if (!targetUrl || ftgRescrapingUrl) return;
+    setFtgRescrapingUrl(targetUrl);
+    try {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/furniture-to-go/preview"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls: [targetUrl],
+          categoryId: newFtgCategory,
+          deliveryTier: newFtgDeliveryTier,
+          markupPercent: globalMarkup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.items) && data.items.length > 0) {
+        const item = data.items[0];
+        setFtgStagedItems((prev) => {
+          const exists = prev.some((it) => it.url === targetUrl);
+          if (exists) return prev.map((it) => (it.url === targetUrl ? item : it));
+          return [...prev, item];
+        });
+        setFtgScrapeErrors((prev) => prev.filter((err) => err.url !== targetUrl));
+        setToastMsg({
+          type: "success",
+          text: `Successfully re-scraped "${item.title}"! Added to Ready to Import.`,
+        });
+        if (ftgScrapeErrors.length <= 1) {
+          setFtgStagingTab("valid");
+        }
+      } else {
+        const errObj = (data.errors && data.errors[0]) || { error: "Failed to re-scrape product data from FTG." };
+        setFtgScrapeErrors((prev) =>
+          prev.map((err) => (err.url === targetUrl ? { ...err, ...errObj } : err))
+        );
+        setToastMsg({
+          type: "error",
+          text: errObj.error || "Product still failed validation checks on re-scrape.",
+        });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error while re-scraping FTG product." });
+    } finally {
+      setFtgRescrapingUrl(null);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
+
+  // Re-scrape all skipped FTG items in batch
+  const handleRescrapeAllFtgItems = async () => {
+    if (ftgScrapeErrors.length === 0 || ftgRescrapingUrl) return;
+    const urls = ftgScrapeErrors.map((e) => e.url).filter(Boolean);
+    if (urls.length === 0) return;
+    setFtgRescrapingUrl("all");
+    try {
+      const res = await adminFetch(apiUrl("/api/admin/dropship/furniture-to-go/preview"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          urls,
+          categoryId: newFtgCategory,
+          deliveryTier: newFtgDeliveryTier,
+          markupPercent: globalMarkup,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const newItems = Array.isArray(data.items) ? data.items : [];
+        const newErrors = Array.isArray(data.errors) ? data.errors : [];
+        if (newItems.length > 0) {
+          const successfulUrls = new Set(newItems.map((it: any) => it.url));
+          setFtgStagedItems((prev) => {
+            const preserved = prev.filter((it) => !successfulUrls.has(it.url));
+            return [...preserved, ...newItems];
+          });
+          setFtgScrapeErrors(newErrors);
+          setToastMsg({
+            type: "success",
+            text: `Re-scraped batch: ${newItems.length} product(s) successfully verified and added to Ready to Import!`,
+          });
+          if (newErrors.length === 0) {
+            setFtgStagingTab("valid");
+          }
+        } else {
+          setFtgScrapeErrors(newErrors);
+          setToastMsg({
+            type: "error",
+            text: `All ${newErrors.length} products still failed supplier validation checks.`,
+          });
+        }
+      } else {
+        setToastMsg({ type: "error", text: data.error || "Batch re-scrape failed." });
+      }
+    } catch {
+      setToastMsg({ type: "error", text: "Network error during batch re-scrape." });
+    } finally {
+      setFtgRescrapingUrl(null);
+      setTimeout(() => setToastMsg(null), 5000);
+    }
+  };
   const handleConfirmBatchImportFtg = async () => {
     if (ftgStagedItems.length === 0) return;
     const hasZeroPrice = ftgStagedItems.some((item) => !item.tradePriceGbp || item.tradePriceGbp <= 0);
@@ -1953,16 +2159,30 @@ export default function AdminSuppliersPage() {
                     </div>
                   ) : (
                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[50vh] pr-1">
-                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                        <div>
-                          <div className="font-bold text-amber-950">
-                            Zero-Fake-Data Enforcement: {amosScrapeErrors.length} Product(s) Excluded from Import
+                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-amber-950">
+                              Zero-Fake-Data Enforcement: {amosScrapeErrors.length} Product(s) Excluded from Import
+                            </div>
+                            <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                              SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications.
+                            </p>
                           </div>
-                          <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                            SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications. The products below lacked required supplier images, had missing dimensions, or required an authenticated wholesale portal login.
-                          </p>
                         </div>
+                        {amosScrapeErrors.length > 1 && (
+                          <button
+                            type="button"
+                            disabled={amosRescrapingUrl !== null}
+                            onClick={handleRescrapeAllAmosItems}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#00072D] text-white hover:bg-[#C89B3C] transition-colors shadow-sm disabled:opacity-50 shrink-0 cursor-pointer"
+                            title="Re-scrape all skipped products in batch"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${amosRescrapingUrl === "all" ? "animate-spin text-amber-300" : ""}`} />
+                            <span>Re-scrape All ({amosScrapeErrors.length})</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="border border-[#E8E2D5] rounded-xl bg-white divide-y divide-[#E8E2D5] overflow-hidden">
@@ -3046,16 +3266,30 @@ export default function AdminSuppliersPage() {
                     </div>
                   ) : (
                     <div className="space-y-3 flex-1 overflow-y-auto max-h-[50vh] pr-1">
-                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
-                        <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                        <div>
-                          <div className="font-bold text-amber-950">
-                            Zero-Fake-Data Enforcement: {ftgScrapeErrors.length} Product(s) Excluded from Import
+                      <div className="p-3 bg-amber-50/90 border border-amber-200 rounded-xl text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-start gap-2.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-amber-950">
+                              Zero-Fake-Data Enforcement: {ftgScrapeErrors.length} Product(s) Excluded from Import
+                            </div>
+                            <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                              SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications.
+                            </p>
                           </div>
-                          <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                            SAN Furniture strictly enforces a <strong>Zero Fabricated Data Policy</strong>. We refuse to substitute Unsplash placeholders or invent dummy specifications. The products below lacked required supplier images, had missing dimensions, or required an authenticated wholesale portal login.
-                          </p>
                         </div>
+                        {ftgScrapeErrors.length > 1 && (
+                          <button
+                            type="button"
+                            disabled={ftgRescrapingUrl !== null}
+                            onClick={handleRescrapeAllFtgItems}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#00072D] text-white hover:bg-[#C89B3C] transition-colors shadow-sm disabled:opacity-50 shrink-0 cursor-pointer"
+                            title="Re-scrape all skipped products in batch"
+                          >
+                            <RefreshCw className={`w-3.5 h-3.5 ${ftgRescrapingUrl === "all" ? "animate-spin text-amber-300" : ""}`} />
+                            <span>Re-scrape All ({ftgScrapeErrors.length})</span>
+                          </button>
+                        )}
                       </div>
 
                       <div className="border border-[#E8E2D5] rounded-xl bg-white divide-y divide-[#E8E2D5] overflow-hidden">

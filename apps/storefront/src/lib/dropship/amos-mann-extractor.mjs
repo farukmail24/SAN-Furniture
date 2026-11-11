@@ -278,42 +278,107 @@ function collectImageCandidates(node, html, pageUrl) {
   return [...new Set(out)].slice(0, MAX_IMAGES);
 }
 
-/** Dimensions in cm. Every one of W/H/D must be found exactly once (or consistently) with an explicit unit. */
-function parseDimensions(text) {
+/** Dimensions in cm. Every one of W/H/D must be found (or consistently) with an explicit unit. */
+function parseDimensions(text, title = "") {
   const t = String(text || "").replace(/[×✕]/g, "x");
   const KEY = {
     h: "height_cm", height: "height_cm", high: "height_cm",
     w: "width_cm", width: "width_cm", wide: "width_cm",
     d: "depth_cm", depth: "depth_cm", deep: "depth_cm"
   };
-  const found = { width_cm: new Set(), height_cm: new Set(), depth_cm: new Set() };
   const NUM = "\\d+(?:\\.\\d+)?";
   const LABEL = "(?:height|width|depth|h|w|d)(?![a-z])";
   const LABEL_AFTER = "(?:height|width|depth|high|wide|deep|h|w|d)(?![a-z])";
-  const add = (label, value, unit) => {
-    const key = KEY[label.toLowerCase()];
-    const num = parseFloat(value);
-    if (!key || !(num > 0)) return;
-    found[key].add(Math.round((unit.toLowerCase() === "mm" ? num / 10 : num) * 10) / 10);
+
+  const extractFromChunk = (chunk) => {
+    const found = { width_cm: new Set(), height_cm: new Set(), depth_cm: new Set() };
+    const add = (label, value, unit) => {
+      const key = KEY[label.toLowerCase()];
+      const num = parseFloat(value);
+      if (!key || !(num > 0)) return;
+      found[key].add(Math.round((unit.toLowerCase() === "mm" ? num / 10 : num) * 10) / 10);
+    };
+
+    // "H 90cm" · "Width: 125 cm" · "W120cm"
+    for (const m of chunk.matchAll(new RegExp(`\\b(${LABEL})\\s*[:=]?\\s*(${NUM})\\s*(cm|mm)\\b`, "gi"))) add(m[1], m[2], m[3]);
+    // "120cm (W)" · "200cm high"
+    for (const m of chunk.matchAll(new RegExp(`\\b(${NUM})\\s*(cm|mm)\\s*\\(?\\s*(${LABEL_AFTER})(?!\\s*[:=]?\\s*\\d)\\s*\\)?`, "gi"))) add(m[3], m[1], m[2]);
+    // "H90 x W125 x D40 cm"
+    for (const m of chunk.matchAll(new RegExp(`((?:\\b${LABEL}\\s*[:=]?\\s*${NUM}\\s*(?:x|,|/|&)?\\s*){2,3})(cm|mm)\\b`, "gi"))) {
+      for (const part of m[1].matchAll(new RegExp(`\\b(${LABEL})\\s*[:=]?\\s*(${NUM})`, "gi"))) add(part[1], part[2], m[2]);
+    }
+
+    const value = {};
+    const problems = [];
+    for (const [key, set] of Object.entries(found)) {
+      const name = key.replace("_cm", "");
+      if (set.size === 1) value[key] = [...set][0];
+      else problems.push(set.size === 0 ? `${name} not found` : `${name} ambiguous (${[...set].join(" / ")} cm)`);
+    }
+    return { value, problems, found };
   };
 
-  // "H 90cm" · "Width: 125 cm" · "W120cm"
-  for (const m of t.matchAll(new RegExp(`\\b(${LABEL})\\s*[:=]?\\s*(${NUM})\\s*(cm|mm)\\b`, "gi"))) add(m[1], m[2], m[3]);
-  // "120cm (W)" · "200cm high"  (label must NOT be followed by its own number, or it belongs to the next value)
-  for (const m of t.matchAll(new RegExp(`\\b(${NUM})\\s*(cm|mm)\\s*\\(?\\s*(${LABEL_AFTER})(?!\\s*[:=]?\\s*\\d)\\s*\\)?`, "gi"))) add(m[3], m[1], m[2]);
-  // "H90 x W125 x D40 cm" (unit written once at the end)
-  for (const m of t.matchAll(new RegExp(`((?:\\b${LABEL}\\s*[:=]?\\s*${NUM}\\s*(?:x|,|/|&)?\\s*){2,3})(cm|mm)\\b`, "gi"))) {
-    for (const part of m[1].matchAll(new RegExp(`\\b(${LABEL})\\s*[:=]?\\s*(${NUM})`, "gi"))) add(part[1], part[2], m[2]);
+  // Priority 1: Check for explicit Overall / Total / Assembled / Outer Dimensions block
+  const overallPatterns = [
+    /(?:overall|total|outer|assembled|main)\s+(?:dimensions?|measurements?|size)[\s:–—-]+.*?(?=(?:desk\s+dimensions|bookcase\s+dimensions|size\s+as|\bdispatch\b|\bdhd\b|\n|\r|$))/gi,
+    /dimensions?[\s:–—-]+(?:overall|total|outer|assembled)[\s:–—-]+.*?(?=(?:desk\s+dimensions|bookcase\s+dimensions|size\s+as|\bdispatch\b|\bdhd\b|\n|\r|$))/gi
+  ];
+  for (const pat of overallPatterns) {
+    for (const m of t.matchAll(pat)) {
+      const res = extractFromChunk(m[0]);
+      if (!res.problems.length && res.value.width_cm && res.value.height_cm && res.value.depth_cm) {
+        return { value: res.value, problems: [] };
+      }
+    }
   }
 
-  const value = {};
-  const problems = [];
-  for (const [key, set] of Object.entries(found)) {
-    const name = key.replace("_cm", "");
-    if (set.size === 1) value[key] = [...set][0];
-    else problems.push(set.size === 0 ? `${name} not found` : `${name} ambiguous (${[...set].join(" / ")} cm)`);
+  // Priority 2: Check for title-specific configuration block (e.g. 'Size as Corner Desk' when title contains 'Corner Desk')
+  if (/corner\s*desk/i.test(title || t)) {
+    const cornerMatch = t.match(/(?:size\s+as\s+corner\s+desk|corner\s+desk\s+dimensions?)[\s:–—-]+.*?(?=(?:size\s+as|\bdispatch\b|\bdhd\b|dimensions?|\n|\r|$))/i);
+    if (cornerMatch) {
+      const res = extractFromChunk(cornerMatch[0]);
+      if (!res.problems.length && res.value.width_cm && res.value.height_cm && res.value.depth_cm) {
+        return { value: res.value, problems: [] };
+      }
+    }
   }
-  return problems.length ? { value: null, problems } : { value, problems };
+
+  // Priority 3: Standard full text parse
+  const res = extractFromChunk(t);
+  if (!res.problems.length) {
+    return { value: res.value, problems: [] };
+  }
+
+  // Priority 4: If ambiguous across multiple blocks, check lines with explicit dimension markers
+  const lines = t.split(/[\r\n\<\>]+/);
+  for (const line of lines) {
+    if (/(?:overall|total|dimensions)/i.test(line)) {
+      const lineRes = extractFromChunk(line);
+      if (!lineRes.problems.length && lineRes.value.width_cm && lineRes.value.height_cm && lineRes.value.depth_cm) {
+        return { value: lineRes.value, problems: [] };
+      }
+    }
+  }
+
+  // Priority 5: Corner/Straight configuration where height is unique
+  if (res.found.height_cm.size === 1 && res.found.width_cm.size >= 1 && res.found.depth_cm.size >= 1) {
+    const cornerBlock = t.match(/size\s+as\s+corner\s+desk[^\n\r<]+/i);
+    if (cornerBlock) {
+      const bRes = extractFromChunk(cornerBlock[0]);
+      if (bRes.value.width_cm && bRes.value.depth_cm) {
+        return {
+          value: {
+            width_cm: bRes.value.width_cm,
+            height_cm: [...res.found.height_cm][0],
+            depth_cm: bRes.value.depth_cm
+          },
+          problems: []
+        };
+      }
+    }
+  }
+
+  return { value: null, problems: res.problems };
 }
 
 /** Optional: weight in kg, only if the description states it clearly once. */
@@ -656,7 +721,7 @@ export class AmosMannExtractorEngine {
     if (description.length < MIN_DESCRIPTION_CHARS) fail("description", "missing or too short in Product schema");
 
     // 6. Dimensions (no default sizes, ever)
-    const dims = parseDimensions(description);
+    const dims = parseDimensions(description, title);
     if (!dims.value) fail("dimensions", dims.problems.join(", "));
 
     // 7. Finish / colour (schema `color` first, otherwise taken verbatim from the title)
