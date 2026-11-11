@@ -1415,6 +1415,41 @@ export default function AdminPagesCustomizer() {
                           })}
                         </div>
 
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-sand-50/80 border border-sand-200 mt-3">
+                          <div>
+                            <span className="text-xs font-bold text-navy-950 flex items-center gap-1.5">
+                              <Sparkles className="w-3.5 h-3.5 text-brass-600" />
+                              Auto-Slide Showcase Products
+                            </span>
+                            <p className="text-[11px] text-navy-600 mt-0.5">
+                              Automatically rotate and slide through top catalog items on the storefront hero when set to Automatic.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-navy-900">
+                              <input
+                                type="checkbox"
+                                checked={sec.content.auto_slide_enabled !== false}
+                                onChange={(e) => handleFieldChange(sec.sectionKey, "auto_slide_enabled", e.target.checked)}
+                                className="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                              />
+                              <span>Active</span>
+                            </label>
+                            <select
+                              value={sec.content.auto_slide_interval_seconds || 5}
+                              onChange={(e) => handleFieldChange(sec.sectionKey, "auto_slide_interval_seconds", Number(e.target.value))}
+                              disabled={sec.content.auto_slide_enabled === false}
+                              className="rounded-lg border border-sand-300 bg-white px-2.5 py-1.5 text-xs text-navy-900 font-medium disabled:opacity-50"
+                            >
+                              <option value={3}>Slide every 3s</option>
+                              <option value={4}>Slide every 4s</option>
+                              <option value={5}>Slide every 5s (Recommended)</option>
+                              <option value={7}>Slide every 7s</option>
+                              <option value={10}>Slide every 10s</option>
+                            </select>
+                          </div>
+                        </div>
+
                         <div className="border-t border-sand-200 pt-5">
                           <div className="mb-3">
                             <h4 className="text-sm font-bold text-navy-950">Hero background</h4>
@@ -1523,6 +1558,8 @@ export default function AdminPagesCustomizer() {
                             "hero_product_1_id",
                             "hero_product_2_id",
                             "hero_product_3_id",
+                            "auto_slide_enabled",
+                            "auto_slide_interval_seconds",
                             "background_image_url",
                             "background_image_opacity",
                             "background_color",

@@ -10,6 +10,8 @@ import {
 import {
   ArrowRight,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Star,
   ShoppingBag,
   Eye,
@@ -85,27 +87,90 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
   const reviewsSec = getSection("home_reviews", DEFAULT_STOREFRONT_SECTIONS.home_reviews.content);
 
   const [productsList, setProductsList] = useState<CatalogProduct[]>(initialProducts || []);
+  const [heroSlideIndex, setHeroSlideIndex] = useState<number>(0);
+  const [isHeroHovered, setIsHeroHovered] = useState<boolean>(false);
+
+  // Available catalog products for hero showcase
+  const availableHeroPool = useMemo(() => {
+    return productsList.filter((p) => p.status === "published");
+  }, [productsList]);
+
+  // Check if any slot is automatic
+  const hasAutoSlots =
+    !heroSec.content.hero_product_1_id ||
+    !heroSec.content.hero_product_2_id ||
+    !heroSec.content.hero_product_3_id;
+
+  const isAutoSlideActive =
+    heroSec.content.auto_slide_enabled !== false && hasAutoSlots;
+
+  const slideIntervalMs = Math.max(
+    3000,
+    (Number(heroSec.content.auto_slide_interval_seconds) || 5) * 1000
+  );
+
+  const totalHeroSlides = useMemo(() => {
+    if (!hasAutoSlots) return 1;
+    const poolSize = availableHeroPool.length;
+    if (poolSize <= 3) return 1;
+    return Math.min(5, Math.ceil(poolSize / 3));
+  }, [hasAutoSlots, availableHeroPool.length]);
+
+  useEffect(() => {
+    if (!isAutoSlideActive || isHeroHovered || totalHeroSlides <= 1) return;
+
+    const timer = setInterval(() => {
+      setHeroSlideIndex((prev) => (prev + 1) % totalHeroSlides);
+    }, slideIntervalMs);
+
+    return () => clearInterval(timer);
+  }, [isAutoSlideActive, isHeroHovered, totalHeroSlides, slideIntervalMs]);
+
   const heroShowcaseProducts = useMemo(() => {
     const selectedIds = [
       heroSec.content.hero_product_1_id,
       heroSec.content.hero_product_2_id,
       heroSec.content.hero_product_3_id,
     ];
-    const availableProducts = [...productsList];
-    return selectedIds
-      .map((selectedId) => {
-        const selectedIndex = selectedId
-          ? availableProducts.findIndex((product) => product.id === selectedId)
-          : -1;
-        const [product] = availableProducts.splice(selectedIndex >= 0 ? selectedIndex : 0, 1);
-        return product;
-      })
-      .filter((product): product is CatalogProduct => Boolean(product));
+
+    const pinned1 = selectedIds[0] ? productsList.find((p) => p.id === selectedIds[0]) : null;
+    const pinned2 = selectedIds[1] ? productsList.find((p) => p.id === selectedIds[1]) : null;
+    const pinned3 = selectedIds[2] ? productsList.find((p) => p.id === selectedIds[2]) : null;
+
+    const unpinnedCandidates = availableHeroPool.filter(
+      (p) => p.id !== pinned1?.id && p.id !== pinned2?.id && p.id !== pinned3?.id
+    );
+
+    if (pinned1 && pinned2 && pinned3) {
+      return [pinned1, pinned2, pinned3];
+    }
+
+    const neededCount = [pinned1, pinned2, pinned3].filter((p) => !p).length;
+    const offset = (heroSlideIndex * neededCount) % Math.max(1, unpinnedCandidates.length);
+    const rotated = [
+      ...unpinnedCandidates.slice(offset),
+      ...unpinnedCandidates.slice(0, offset),
+    ];
+
+    let rotIdx = 0;
+    const result: CatalogProduct[] = [];
+    if (pinned1) result.push(pinned1);
+    else if (rotated[rotIdx]) result.push(rotated[rotIdx++]);
+
+    if (pinned2) result.push(pinned2);
+    else if (rotated[rotIdx]) result.push(rotated[rotIdx++]);
+
+    if (pinned3) result.push(pinned3);
+    else if (rotated[rotIdx]) result.push(rotated[rotIdx++]);
+
+    return result.filter((product): product is CatalogProduct => Boolean(product));
   }, [
     productsList,
+    availableHeroPool,
     heroSec.content.hero_product_1_id,
     heroSec.content.hero_product_2_id,
     heroSec.content.hero_product_3_id,
+    heroSlideIndex,
   ]);
   const heroBackgroundImageOpacity =
     normalizeOpacity(heroSec.content.background_image_opacity, 15) / 100;
@@ -359,58 +424,135 @@ export function HomePageClient({ initialProducts, initialSections, initialReview
                 </div>
               </ScrollReveal>
 
-              {/* Right Column: Featured Furniture Showcase Cards */}
-              <ScrollReveal direction="scale" delay={0.2} duration={0.85} className="lg:col-span-6 grid grid-cols-2 gap-3 sm:gap-6">
-                {heroShowcaseProducts[0] ? (
-                  <Link
-                    href={`/products/${heroShowcaseProducts[0].handle}`}
-                    className="group relative rounded-2xl overflow-hidden aspect-[4/5] bg-sand-200 border border-sand-300 shadow-elevation block"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={heroShowcaseProducts[0].thumbnailUrl}
-                      alt={heroShowcaseProducts[0].title}
-                      fetchPriority="high"
-                      decoding="async"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex flex-col justify-end p-3 sm:p-5 text-sand-50">
-                      <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-brass-400 font-semibold">{heroSec.content.featured_badge || "Featured Masterpiece"}</span>
-                      <h3 className="font-display font-bold text-xs sm:text-lg text-sand-50 group-hover:text-brass-300 transition-colors line-clamp-2">{heroShowcaseProducts[0].title}</h3>
-                      <div className="flex items-baseline justify-between mt-1">
-                        <span className="font-bold text-xs sm:text-base text-sand-50">{formatGBP(heroShowcaseProducts[0].pricePennies)}</span>
-                        <span className="text-[10px] sm:text-[11px] text-sand-300 underline">View Item &rarr;</span>
-                      </div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="rounded-2xl aspect-[4/5] bg-sand-200/50 animate-pulse" />
-                )}
+              {/* Right Column: Featured Furniture Showcase Cards with Smooth Auto-Slide */}
+              <ScrollReveal direction="scale" delay={0.2} duration={0.85} className="lg:col-span-6">
+                <div
+                  className="relative group/hero-showcase"
+                  onMouseEnter={() => setIsHeroHovered(true)}
+                  onMouseLeave={() => setIsHeroHovered(false)}
+                >
+                  <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                    {/* Big Masterpiece Card */}
+                    {heroShowcaseProducts[0] ? (
+                      <Link
+                        key={`hero-slot-0-${heroShowcaseProducts[0].id}-${heroSlideIndex}`}
+                        href={`/products/${heroShowcaseProducts[0].handle}`}
+                        className="group relative rounded-2xl overflow-hidden aspect-[4/5] bg-sand-200 border border-sand-300 shadow-elevation block animate-in fade-in duration-500"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={heroShowcaseProducts[0].thumbnailUrl}
+                          alt={heroShowcaseProducts[0].title}
+                          fetchPriority="high"
+                          decoding="async"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/85 via-navy-950/20 to-transparent flex flex-col justify-end p-3 sm:p-5 text-sand-50">
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-brass-400 font-semibold">
+                            {heroSec.content.featured_badge || "Featured Masterpiece"}
+                          </span>
+                          <h3 className="font-display font-bold text-xs sm:text-lg text-sand-50 group-hover:text-brass-300 transition-colors line-clamp-2">
+                            {heroShowcaseProducts[0].title}
+                          </h3>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="font-bold text-xs sm:text-base text-sand-50">
+                              {formatGBP(heroShowcaseProducts[0].pricePennies)}
+                            </span>
+                            <span className="text-[10px] sm:text-[11px] text-sand-300 underline group-hover:text-brass-300">
+                              View Item &rarr;
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ) : (
+                      <div className="rounded-2xl aspect-[4/5] bg-sand-200/50 animate-pulse" />
+                    )}
 
-                <div className="space-y-3 sm:space-y-6 flex flex-col justify-between">
-                  {heroShowcaseProducts.slice(1, 3).map((prod, idx) => (
-                    <Link
-                      key={prod.id || idx}
-                      href={`/products/${prod.handle}`}
-                      className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-sand-200 border border-sand-300 shadow-elevation block flex-1"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={prod.thumbnailUrl}
-                        alt={prod.title}
-                        decoding="async"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent flex flex-col justify-end p-2.5 sm:p-4 text-sand-50">
-                        <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-sage-400 font-semibold">{prod.specs?.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "In Stock"}</span>
-                        <h3 className="font-display font-bold text-xs sm:text-base text-sand-50 group-hover:text-brass-300 transition-colors truncate">{prod.title}</h3>
-                        <div className="flex items-baseline justify-between mt-0.5">
-                          <span className="font-bold text-xs sm:text-sm text-sand-50">{formatGBP(prod.pricePennies)}</span>
-                          <span className="text-[10px] text-sand-300 underline">View &rarr;</span>
+                    {/* Stacked Cards */}
+                    <div className="space-y-3 sm:space-y-6 flex flex-col justify-between">
+                      {heroShowcaseProducts.slice(1, 3).map((prod, idx) => (
+                        <Link
+                          key={`hero-slot-${idx + 1}-${prod.id}-${heroSlideIndex}`}
+                          href={`/products/${prod.handle}`}
+                          className="group relative rounded-2xl overflow-hidden aspect-[4/3] bg-sand-200 border border-sand-300 shadow-elevation block flex-1 animate-in fade-in duration-500"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={prod.thumbnailUrl}
+                            alt={prod.title}
+                            decoding="async"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-navy-950/85 via-navy-950/20 to-transparent flex flex-col justify-end p-2.5 sm:p-4 text-sand-50">
+                            <span className="text-[9px] sm:text-[10px] uppercase tracking-wider text-sage-400 font-semibold">
+                              {prod.specs?.delivery_tier === "two_man_white_glove" ? "Room of Choice" : "In Stock"}
+                            </span>
+                            <h3 className="font-display font-bold text-xs sm:text-base text-sand-50 group-hover:text-brass-300 transition-colors truncate">
+                              {prod.title}
+                            </h3>
+                            <div className="flex items-baseline justify-between mt-0.5">
+                              <span className="font-bold text-xs sm:text-sm text-sand-50">
+                                {formatGBP(prod.pricePennies)}
+                              </span>
+                              <span className="text-[10px] text-sand-300 underline group-hover:text-brass-300">
+                                View &rarr;
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Auto-Slide Carousel Indicators & Controls */}
+                  {totalHeroSlides > 1 && (
+                    <div className="flex items-center justify-between pt-3 px-1 mt-1">
+                      {/* Dots */}
+                      <div className="flex items-center gap-1.5">
+                        {Array.from({ length: totalHeroSlides }).map((_, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setHeroSlideIndex(idx)}
+                            aria-label={`Go to slide ${idx + 1}`}
+                            className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                              heroSlideIndex === idx
+                                ? "w-6 bg-brass-600"
+                                : "w-1.5 bg-sand-300 hover:bg-sand-400"
+                            }`}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Live Status and Prev/Next Navigation */}
+                      <div className="flex items-center gap-2 text-[10px] text-navy-600 font-medium">
+                        {isAutoSlideActive && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sand-200/80 text-navy-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Auto-Sliding ({heroSlideIndex + 1}/{totalHeroSlides})
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setHeroSlideIndex((prev) => (prev - 1 + totalHeroSlides) % totalHeroSlides)}
+                            className="p-1 rounded-full bg-sand-100 border border-sand-300 hover:bg-white text-navy-800 transition-colors cursor-pointer"
+                            title="Previous showcase items"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setHeroSlideIndex((prev) => (prev + 1) % totalHeroSlides)}
+                            className="p-1 rounded-full bg-sand-100 border border-sand-300 hover:bg-white text-navy-800 transition-colors cursor-pointer"
+                            title="Next showcase items"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                    </Link>
-                  ))}
+                    </div>
+                  )}
                 </div>
               </ScrollReveal>
 

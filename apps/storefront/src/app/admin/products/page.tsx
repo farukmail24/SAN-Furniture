@@ -25,7 +25,10 @@ import {
   Building,
   TrendingUp,
   RefreshCw,
-  FileText
+  FileText,
+  Filter,
+  RotateCcw,
+  ChevronDown
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -46,6 +49,8 @@ interface ProductItem {
   subtitle?: string;
   description?: string;
   category_id: string;
+  category?: string;
+  supplier?: string;
   price_pennies: number;
   compare_at_price_pennies?: number;
   thumbnail_url: string;
@@ -85,6 +90,62 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "out_of_stock">("all");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedSupplier, setSelectedSupplier] = useState<string>("all");
+  const [selectedDeliveryTier, setSelectedDeliveryTier] = useState<string>("all");
+  const [syncingProductId, setSyncingProductId] = useState<string | null>(null);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== "all") count++;
+    if (selectedCategory !== "all") count++;
+    if (selectedSupplier !== "all") count++;
+    if (selectedDeliveryTier !== "all") count++;
+    return count;
+  }, [statusFilter, selectedCategory, selectedSupplier, selectedDeliveryTier]);
+
+  const resetAllFilters = () => {
+    setStatusFilter("all");
+    setSelectedCategory("all");
+    setSelectedSupplier("all");
+    setSelectedDeliveryTier("all");
+  };
+
+  const handleSyncProduct = async (product: ProductItem) => {
+    try {
+      setSyncingProductId(product.id);
+      const res = await fetch(apiUrl(`/api/admin/products/${product.id}/sync`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.success && data.product) {
+        setProducts((prev) =>
+          prev.map((item) => (item.id === product.id ? { ...item, ...data.product } : item))
+        );
+        showAlert({
+          title: "Product Synchronized",
+          message: data.message || `"${product.title}" synchronized with supplier!`,
+          type: "success",
+        });
+      } else {
+        showAlert({
+          title: "Sync Notice",
+          message: data.error || data.message || "Failed to sync product with supplier.",
+          type: "warning",
+        });
+      }
+    } catch (err: any) {
+      showAlert({
+        title: "Sync Failed",
+        message: err?.message || "Failed to trigger product sync.",
+        type: "danger",
+      });
+    } finally {
+      setSyncingProductId(null);
+    }
+  };
 
   const publishedCount = useMemo(() => {
     return products.filter((p) => p.status === "published" || p.status === "active").length;
@@ -95,14 +156,39 @@ export default function AdminProductsPage() {
   }, [products]);
 
   const displayedProducts = useMemo(() => {
-    if (statusFilter === "published") {
-      return products.filter((p) => p.status === "published" || p.status === "active");
-    }
-    if (statusFilter === "out_of_stock") {
-      return products.filter((p) => p.status === "out_of_stock");
-    }
-    return products;
-  }, [products, statusFilter]);
+    return products.filter((p) => {
+      // 1. Status Filter
+      if (statusFilter === "published" && p.status !== "published" && p.status !== "active") return false;
+      if (statusFilter === "out_of_stock" && p.status !== "out_of_stock") return false;
+
+      // 2. Category Filter
+      if (selectedCategory !== "all") {
+        if (p.category_id !== selectedCategory && p.category !== selectedCategory) return false;
+      }
+
+      // 3. Supplier Filter
+      if (selectedSupplier !== "all") {
+        const sup = String(p.supplier_id || p.supplier || "").toLowerCase();
+        const sku = String(p.sku || "").toLowerCase();
+        const supSku = String(p.supplier_sku || "").toLowerCase();
+        const url = String(p.supplier_source_url || p.source_url || "").toLowerCase();
+        if (selectedSupplier === "amos_mann") {
+          const isAmos = sup.includes("amos") || sku.includes("am_") || supSku.includes("am_") || url.includes("amosmann");
+          if (!isAmos) return false;
+        } else if (selectedSupplier === "furniture_to_go") {
+          const isFtg = sup.includes("ftg") || sup.includes("furniture_to_go") || sku.includes("ftg_") || url.includes("furniture-to-go");
+          if (!isFtg) return false;
+        }
+      }
+
+      // 4. Delivery Tier Filter
+      if (selectedDeliveryTier !== "all") {
+        if (p.delivery_tier !== selectedDeliveryTier) return false;
+      }
+
+      return true;
+    });
+  }, [products, statusFilter, selectedCategory, selectedSupplier, selectedDeliveryTier]);
 
   // View Modal state
   const [viewingProduct, setViewingProduct] = useState<ProductItem | null>(null);
@@ -693,6 +779,15 @@ export default function AdminProductsPage() {
           <div className="flex items-center justify-end gap-1.5">
             <button
               type="button"
+              onClick={() => handleSyncProduct(p)}
+              disabled={syncingProductId === p.id}
+              className="p-1.5 rounded-lg text-sky-700 hover:text-sky-900 hover:bg-sky-50 transition-colors inline-flex items-center cursor-pointer disabled:opacity-50"
+              title="Sync live price & stock from supplier"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncingProductId === p.id ? "animate-spin text-sky-600" : ""}`} />
+            </button>
+            <button
+              type="button"
               onClick={() => handleOpenCalculationModal(p)}
               className="p-1.5 rounded-lg text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 transition-colors inline-flex items-center cursor-pointer"
               title="View Landed Cost Calculation & Supplier Sourcing"
@@ -765,7 +860,13 @@ export default function AdminProductsPage() {
 
       {/* Overview Metric Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
+        <div
+          onClick={() => setStatusFilter("all")}
+          className={`p-4 rounded-xl border shadow-sm cursor-pointer transition-all ${
+            statusFilter === "all" ? "bg-sand-100 border-navy-900/30 ring-1 ring-navy-950" : "bg-sand-50 border-sand-200 hover:bg-sand-100"
+          }`}
+          title="Click to view all products"
+        >
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Catalog Items</span>
           <p className="text-2xl font-display font-bold text-navy-950 mt-1">{products.length}</p>
           <p className="text-[11px] text-navy-600 mt-1 flex items-center gap-1.5 flex-wrap">
@@ -780,7 +881,13 @@ export default function AdminProductsPage() {
             </span>
           </p>
         </div>
-        <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
+        <div
+          onClick={() => setStatusFilter("published")}
+          className={`p-4 rounded-xl border shadow-sm cursor-pointer transition-all ${
+            statusFilter === "published" ? "bg-emerald-50 border-emerald-300 ring-2 ring-emerald-500" : "bg-sand-50 border-sand-200 hover:bg-emerald-50/50"
+          }`}
+          title="Click to view published in-stock products"
+        >
           <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Live Units In Stock</span>
           <p className="text-2xl font-display font-bold text-emerald-700 mt-1">
             {products.reduce((acc, p) => acc + (p.status === "out_of_stock" ? 0 : (p.stock_level ?? 25)), 0)}
@@ -797,10 +904,25 @@ export default function AdminProductsPage() {
           <p className="text-2xl font-display font-bold text-emerald-700 mt-1">100%</p>
           <p className="text-[11px] text-navy-600 mt-1">BS 5852 Compliant</p>
         </div>
-        <div className="p-4 rounded-xl bg-sand-50 border border-sand-200 shadow-sm">
-          <span className="text-[11px] font-semibold text-navy-600 uppercase tracking-wider">Database Source</span>
-          <p className="text-sm font-mono font-bold text-navy-900 mt-2">MySQL / port 3306</p>
-          <p className="text-[11px] text-emerald-700 mt-1 font-medium">Direct Sync Active</p>
+        <div
+          onClick={() => setStatusFilter(statusFilter === "out_of_stock" ? "all" : "out_of_stock")}
+          className={`p-4 rounded-xl border shadow-sm cursor-pointer transition-all ${
+            statusFilter === "out_of_stock"
+              ? "bg-rose-50 border-rose-300 ring-2 ring-rose-500"
+              : "bg-sand-50 border-sand-200 hover:bg-rose-50/50 hover:border-rose-300"
+          }`}
+          title="Click to view out of stock products"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-rose-800 uppercase tracking-wider">Out of Stock</span>
+            {outOfStockCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            )}
+          </div>
+          <p className="text-2xl font-display font-bold text-rose-700 mt-1">{outOfStockCount}</p>
+          <p className="text-[11px] text-rose-700/80 mt-1">
+            {outOfStockCount === 0 ? "Zero Out-of-Stock Items" : "Auto-Hidden from Storefront"}
+          </p>
         </div>
       </div>
 
@@ -853,6 +975,123 @@ export default function AdminProductsPage() {
         onRefresh={fetchProducts}
         onBulkDelete={handleBulkDelete}
         exportFileName="san_furniture_catalog"
+        filterSlot={
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
+                activeFilterCount > 0
+                  ? "bg-sand-100 border-brass-500 text-navy-950 ring-1 ring-brass-500/40"
+                  : "bg-white border-[#E8E2D5] hover:bg-sand-50 text-[#00072D]"
+              }`}
+              title="Filter products by Category, Stock, Supplier, or Logistics"
+            >
+              <Filter className={`w-3.5 h-3.5 ${activeFilterCount > 0 ? "text-brass-600" : "text-[#C89B3C]"}`} />
+              <span>ফিল্টার (Filter)</span>
+              {activeFilterCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-brass-600 text-sand-50 text-[10px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+              <ChevronDown className={`w-3 h-3 text-[#4F6D7A] transition-transform ${isFilterDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isFilterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 bg-white border border-[#E8E2D5] rounded-xl shadow-2xl z-40 p-4 text-xs space-y-3.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between pb-2 border-b border-sand-200">
+                  <span className="font-bold text-navy-950 flex items-center gap-1.5 text-xs">
+                    <Filter className="w-3.5 h-3.5 text-brass-600" />
+                    Filter Products ({displayedProducts.length} Results)
+                  </span>
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="text-[11px] font-semibold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset All
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-navy-800 block">Category</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-2.5 py-1.5 text-xs text-navy-900 focus:outline-none focus:ring-1 focus:ring-navy-950"
+                  >
+                    <option value="all">All Categories ({products.length})</option>
+                    {categories.map((c) => {
+                      const count = products.filter((p) => p.category_id === c.id || p.category === c.name).length;
+                      return (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({count})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Stock Status Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-navy-800 block">Stock & Storefront Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as any)}
+                    className="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-2.5 py-1.5 text-xs text-navy-900 focus:outline-none focus:ring-1 focus:ring-navy-950"
+                  >
+                    <option value="all">All Statuses ({products.length})</option>
+                    <option value="published">Live on Storefront ({publishedCount})</option>
+                    <option value="out_of_stock">Out of Stock / Hidden ({outOfStockCount})</option>
+                  </select>
+                </div>
+
+                {/* Supplier Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-navy-800 block">Dropship Supplier</label>
+                  <select
+                    value={selectedSupplier}
+                    onChange={(e) => setSelectedSupplier(e.target.value)}
+                    className="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-2.5 py-1.5 text-xs text-navy-900 focus:outline-none focus:ring-1 focus:ring-navy-950"
+                  >
+                    <option value="all">All Suppliers</option>
+                    <option value="amos_mann">Amos Mann Furniture (Leicester Hub)</option>
+                    <option value="furniture_to_go">Furniture To Go (Wiltshire Hub)</option>
+                  </select>
+                </div>
+
+                {/* Delivery Tier Filter */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-navy-800 block">UK Logistics Delivery Tier</label>
+                  <select
+                    value={selectedDeliveryTier}
+                    onChange={(e) => setSelectedDeliveryTier(e.target.value)}
+                    className="w-full rounded-lg border border-sand-300 bg-sand-50/60 px-2.5 py-1.5 text-xs text-navy-900 focus:outline-none focus:ring-1 focus:ring-navy-950"
+                  >
+                    <option value="all">All Delivery Tiers</option>
+                    <option value="standard_parcel">Standard Parcel (Small items / Stools)</option>
+                    <option value="pallet">Pallet Delivery (Flatpack / Tables)</option>
+                    <option value="two_man_white_glove">Two-Man White Glove (Sofas / Wardrobes)</option>
+                  </select>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between border-t border-sand-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsFilterDropdownOpen(false)}
+                    className="w-full py-1.5 rounded-lg bg-navy-950 text-sand-50 font-semibold text-xs hover:bg-navy-900 text-center cursor-pointer"
+                  >
+                    Apply & Close
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        }
       />
 
       {/* Product Quick-View Spec Modal */}

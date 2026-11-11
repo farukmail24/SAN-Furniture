@@ -42,6 +42,7 @@ interface DataTableProps<T> {
   onBulkDelete?: (selectedIds: string[]) => void;
   actions?: React.ReactNode;
   exportFileName?: string;
+  filterSlot?: React.ReactNode;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -57,6 +58,7 @@ export function DataTable<T extends Record<string, any>>({
   onBulkDelete,
   actions,
   exportFileName = "export",
+  filterSlot,
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -290,8 +292,10 @@ export function DataTable<T extends Record<string, any>>({
           </div>
         )}
 
-        {/* Right Tools: Column Visibility & Export CSV */}
-        <div className="flex items-center gap-2">
+        {/* Right Tools: Filter Slot, Column Visibility & Export CSV */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {filterSlot}
+
           {/* Column Toggler */}
           <div className="relative">
             <button

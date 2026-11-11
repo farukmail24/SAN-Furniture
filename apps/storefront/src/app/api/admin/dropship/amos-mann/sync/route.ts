@@ -18,13 +18,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json().catch(() => ({}));
     const pool = getDbPool();
-    const syncResult = await amosMannExtractor.syncTrackedCatalog(pool, {
-      triggerType: body.triggerType || "manual",
-      sku: body.sku || body.productId || null,
-      url: body.url || null
-    });
+    const syncResult = await amosMannExtractor.syncTrackedCatalog(pool, { triggerType: "manual" });
 
     return NextResponse.json(syncResult);
   } catch (err: any) {

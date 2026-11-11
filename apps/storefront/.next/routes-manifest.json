@@ -201,6 +201,14 @@
       "namedRegex": "^/api/admin/products/(?<nxtPid>[^/]+?)(?:/)?$"
     },
     {
+      "page": "/api/admin/products/[id]/sync",
+      "regex": "^/api/admin/products/([^/]+?)/sync(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/products/(?<nxtPid>[^/]+?)/sync(?:/)?$"
+    },
+    {
       "page": "/api/admin/promotions/[id]",
       "regex": "^/api/admin/promotions/([^/]+?)(?:/)?$",
       "routeKeys": {

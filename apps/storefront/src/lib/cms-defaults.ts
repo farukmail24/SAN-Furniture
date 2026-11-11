@@ -105,6 +105,8 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       hero_product_1_id: "",
       hero_product_2_id: "",
       hero_product_3_id: "",
+      auto_slide_enabled: true,
+      auto_slide_interval_seconds: 5,
       background_image_url: "",
       background_image_opacity: 15,
       background_color: "#f5f1e9",
