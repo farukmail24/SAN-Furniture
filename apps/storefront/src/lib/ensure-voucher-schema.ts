@@ -80,6 +80,20 @@ export async function ensureVoucherSchema(force = false): Promise<{ success: boo
       changes.push("added_voucher_code");
     }
 
+    // 3.1 Check and migrate support_messages table columns (is_edited, edited_at)
+    const [msgColumns]: any = await pool.query("SHOW COLUMNS FROM support_messages").catch(() => [[]]);
+    const existingMsgCols = new Set(
+      Array.isArray(msgColumns) ? msgColumns.map((c: any) => c.Field.toLowerCase()) : []
+    );
+    if (!existingMsgCols.has("is_edited")) {
+      await pool.query("ALTER TABLE support_messages ADD COLUMN is_edited TINYINT(1) DEFAULT 0 AFTER is_internal_note").catch(() => {});
+      changes.push("added_support_messages_is_edited");
+    }
+    if (!existingMsgCols.has("edited_at")) {
+      await pool.query("ALTER TABLE support_messages ADD COLUMN edited_at DATETIME NULL AFTER is_edited").catch(() => {});
+      changes.push("added_support_messages_edited_at");
+    }
+
     // 4. Ensure default seed vouchers exist if promotions table is empty
     const [existingCount]: any = await pool.query("SELECT COUNT(*) as count FROM promotions").catch(() => [[{ count: 1 }]]);
     if (existingCount?.[0]?.count === 0) {

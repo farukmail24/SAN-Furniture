@@ -24,10 +24,13 @@ import {
   Check,
   ArrowRight,
   Truck,
-  FileText
+  FileText,
+  Pencil,
+  Trash2,
+  X
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
-import { showAlert } from "@/components/ui/AlertModal";
+import { showAlert, showConfirm } from "@/components/ui/AlertModal";
 import { fetchWithSwr, invalidateCache } from "@/lib/api-cache";
 
 interface SupportMessage {
@@ -38,6 +41,8 @@ interface SupportMessage {
   message: string;
   is_internal_note: number;
   created_at: string;
+  is_edited?: number | boolean;
+  edited_at?: string;
 }
 
 interface LinkedOrder {
@@ -113,11 +118,17 @@ export default function AdminSupportHelpdeskPage() {
   } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Filters
+  // Filters & Intelligent Default State
+  const hasUserSelectedFilter = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("open");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  // Chat Message Edit & Delete State (WhatsApp style)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Reply Composer
   const [replyMessage, setReplyMessage] = useState("");
@@ -130,6 +141,120 @@ export default function AdminSupportHelpdeskPage() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleStartEdit = (msg: SupportMessage) => {
+    setEditingMessageId(msg.id);
+    setEditingText(msg.message);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
+  };
+
+  const handleSaveEdit = async (messageId: string) => {
+    if (!selectedTicketId || !editingText.trim()) return;
+    try {
+      setIsSavingEdit(true);
+      const res = await fetch(apiUrl(`/api/support/tickets/${selectedTicketId}/messages`), {
+        method: "PATCH",
+        headers: getAuthHeaders(true),
+        credentials: "include",
+        body: JSON.stringify({
+          messageId,
+          message: editingText.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTicketDetail((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === messageId
+                ? { ...m, message: editingText.trim(), is_edited: 1, edited_at: new Date().toISOString() }
+                : m
+            ),
+          };
+        });
+
+        setTickets((prev) =>
+          prev.map((t) =>
+            t.id === selectedTicketId
+              ? { ...t, last_message_preview: editingText.trim().slice(0, 255) }
+              : t
+          )
+        );
+
+        setEditingMessageId(null);
+        setEditingText("");
+        showToast("Message updated");
+      } else {
+        await showAlert({
+          title: "Update Failed",
+          message: data.error || "Could not update message.",
+          type: "danger",
+        });
+      }
+    } catch (err: any) {
+      await showAlert({
+        title: "Network Error",
+        message: err.message || "Failed to update message.",
+        type: "danger",
+      });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!selectedTicketId) return;
+    const ok = await showConfirm({
+      title: "Delete Message?",
+      message: "Are you sure you want to permanently delete this message from the conversation thread?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch(
+        apiUrl(`/api/support/tickets/${selectedTicketId}/messages?messageId=${encodeURIComponent(messageId)}`),
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(false),
+          credentials: "include",
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTicketDetail((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            messages: prev.messages.filter((m) => m.id !== messageId),
+          };
+        });
+
+        fetchTickets(true);
+        showToast("Message deleted");
+      } else {
+        await showAlert({
+          title: "Delete Failed",
+          message: data.error || "Could not delete message.",
+          type: "danger",
+        });
+      }
+    } catch (err: any) {
+      await showAlert({
+        title: "Network Error",
+        message: err.message || "Failed to delete message.",
+        type: "danger",
+      });
+    }
   };
 
   const getAuthHeaders = useCallback((includeJson = true) => {
@@ -163,13 +288,21 @@ export default function AdminSupportHelpdeskPage() {
           if (data && data.tickets) {
             setTickets(data.tickets);
             if (data.counts) {
+              const openCount = Number(data.counts.open || 0);
+              const waitingCount = Number(data.counts.waiting_customer || 0);
               setCounts({
                 total: Number(data.counts.total || 0),
-                open: Number(data.counts.open || 0),
+                open: openCount,
                 in_progress: Number(data.counts.in_progress || 0),
-                waiting_customer: Number(data.counts.waiting_customer || 0),
+                waiting_customer: waitingCount,
                 resolved: Number(data.counts.resolved || 0),
               });
+
+              if (!hasUserSelectedFilter.current) {
+                if (openCount === 0 && waitingCount > 0 && statusFilter === "open") {
+                  setStatusFilter("waiting_customer");
+                }
+              }
             }
             if (!selectedTicketId && data.tickets.length > 0) {
               setSelectedTicketId(data.tickets[0].id);
@@ -455,17 +588,20 @@ export default function AdminSupportHelpdeskPage() {
               {[
                 { key: "all", label: "All" },
                 { key: "open", label: counts.open > 0 ? `Needs Reply (${counts.open})` : "Needs Reply" },
-                { key: "in_progress", label: "In Progress" },
-                { key: "waiting_customer", label: "Waiting Client" },
-                { key: "resolved", label: "Resolved" },
+                { key: "in_progress", label: counts.in_progress > 0 ? `In Progress (${counts.in_progress})` : "In Progress" },
+                { key: "waiting_customer", label: counts.waiting_customer > 0 ? `Waiting Client (${counts.waiting_customer})` : "Waiting Client" },
+                { key: "resolved", label: counts.resolved > 0 ? `Resolved (${counts.resolved})` : "Resolved" },
               ].map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setStatusFilter(tab.key)}
-                  className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition-colors ${
+                  onClick={() => {
+                    hasUserSelectedFilter.current = true;
+                    setStatusFilter(tab.key);
+                  }}
+                  className={`px-2.5 py-1 rounded-md font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                     statusFilter === tab.key
-                      ? "bg-[#00072D] text-sand-50"
+                      ? "bg-[#00072D] text-sand-50 shadow-2xs"
                       : "bg-white text-navy-700 border border-[#E8E2D5] hover:bg-sand-100"
                   }`}
                 >
@@ -725,26 +861,91 @@ export default function AdminSupportHelpdeskPage() {
                 {ticketDetail.messages.map((m) => {
                   const isInternal = Boolean(m.is_internal_note);
                   const isAgent = m.sender_type === "agent";
+                  const isEditingThis = editingMessageId === m.id;
 
                   if (isInternal) {
                     return (
                       <div
                         key={m.id}
-                        className="bg-amber-50/90 border border-amber-300 rounded-xl p-3 text-xs shadow-xs"
+                        className="group relative bg-amber-50/90 border border-amber-300 rounded-xl p-3 text-xs shadow-xs"
                       >
                         <div className="flex items-center justify-between text-amber-900 font-semibold mb-1">
                           <span className="flex items-center gap-1.5 text-[11px]">
                             <Lock className="w-3.5 h-3.5 text-amber-700" />
                             Internal Staff Note ({m.sender_name})
                           </span>
-                          <span className="text-[10px] text-amber-700 font-normal">
-                            {new Date(m.created_at).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-amber-700 font-normal">
+                              {new Date(m.created_at).toLocaleTimeString("en-GB", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                              {Boolean(m.is_edited) && " (edited)"}
+                            </span>
+                            {!isEditingThis && (
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEdit(m)}
+                                  title="Edit note"
+                                  className="p-1 hover:bg-amber-200/60 rounded text-amber-800 transition-colors cursor-pointer"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMessage(m.id)}
+                                  title="Delete note"
+                                  className="p-1 hover:bg-rose-100 rounded text-amber-800 hover:text-rose-700 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-navy-900 whitespace-pre-wrap">{m.message}</p>
+
+                        {isEditingThis ? (
+                          <div className="mt-2 space-y-2">
+                            <textarea
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSaveEdit(m.id);
+                                } else if (e.key === "Escape") {
+                                  handleCancelEdit();
+                                }
+                              }}
+                              className="w-full bg-white border border-amber-300 rounded-lg p-2 text-xs text-navy-950 focus:outline-none focus:ring-2 focus:ring-amber-500/50 resize-y"
+                              rows={3}
+                              autoFocus
+                            />
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-amber-800">Enter to save, Esc to cancel</span>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  className="px-2 py-1 rounded bg-amber-200/50 hover:bg-amber-200 text-amber-900 font-medium cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEdit(m.id)}
+                                  disabled={isSavingEdit || !editingText.trim()}
+                                  className="px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-700 text-white font-bold cursor-pointer disabled:opacity-50"
+                                >
+                                  {isSavingEdit ? "Saving..." : "Save"}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-navy-900 whitespace-pre-wrap">{m.message}</p>
+                        )}
                       </div>
                     );
                   }
@@ -752,7 +953,7 @@ export default function AdminSupportHelpdeskPage() {
                   return (
                     <div
                       key={m.id}
-                      className={`flex flex-col ${isAgent ? "items-end" : "items-start"}`}
+                      className={`group relative flex flex-col ${isAgent ? "items-end" : "items-start"}`}
                     >
                       <div className="flex items-center gap-1.5 text-[10px] text-navy-500 mb-1 px-1">
                         <span className="font-semibold text-navy-800">{m.sender_name}</span>
@@ -763,16 +964,104 @@ export default function AdminSupportHelpdeskPage() {
                             minute: "2-digit",
                           })}
                         </span>
+                        {Boolean(m.is_edited) && (
+                          <span className="italic text-[10px] text-navy-400 font-normal">
+                            (edited)
+                          </span>
+                        )}
                       </div>
 
-                      <div
-                        className={`max-w-[85%] rounded-2xl p-3.5 text-xs shadow-xs ${
-                          isAgent
-                            ? "bg-[#00072D] text-sand-50 border border-navy-800 rounded-br-xs"
-                            : "bg-white text-navy-950 border border-[#E8E2D5] rounded-bl-xs"
-                        }`}
-                      >
-                        <p className="whitespace-pre-wrap leading-relaxed">{m.message}</p>
+                      <div className="relative max-w-[85%]">
+                        {/* WhatsApp-Style Floating Hover Action Bar */}
+                        {!isEditingThis && (
+                          <div
+                            className={`absolute -top-3.5 z-10 opacity-0 group-hover:opacity-100 transition-all duration-150 flex items-center gap-0.5 p-0.5 rounded-lg border shadow-xs bg-white ${
+                              isAgent ? "right-2 border-sand-300" : "left-2 border-sand-300"
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(m)}
+                              title="Edit message (WhatsApp style)"
+                              className="p-1 rounded text-navy-600 hover:text-navy-950 hover:bg-sand-100 transition-colors cursor-pointer"
+                            >
+                              <Pencil className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMessage(m.id)}
+                              title="Delete message"
+                              className="p-1 rounded text-navy-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        <div
+                          className={`rounded-2xl p-3.5 text-xs shadow-xs transition-colors ${
+                            isAgent
+                              ? "bg-[#00072D] text-sand-50 border border-navy-800 rounded-br-xs"
+                              : "bg-white text-navy-950 border border-[#E8E2D5] rounded-bl-xs"
+                          }`}
+                        >
+                          {isEditingThis ? (
+                            <div className="space-y-2 min-w-[240px] sm:min-w-[320px]">
+                              <textarea
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSaveEdit(m.id);
+                                  } else if (e.key === "Escape") {
+                                    handleCancelEdit();
+                                  }
+                                }}
+                                className={`w-full rounded-xl p-2.5 text-xs outline-none focus:ring-2 resize-y ${
+                                  isAgent
+                                    ? "bg-navy-900 border border-sand-300/30 text-sand-50 focus:ring-brass-400"
+                                    : "bg-sand-50 border border-sand-300 text-navy-950 focus:ring-navy-800"
+                                }`}
+                                rows={3}
+                                autoFocus
+                              />
+                              <div className="flex items-center justify-between text-[10px]">
+                                <span className={isAgent ? "text-sand-300" : "text-navy-500"}>
+                                  Enter to save, Esc to cancel
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className={`px-2 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                                      isAgent
+                                        ? "bg-navy-800 hover:bg-navy-700 text-sand-200"
+                                        : "bg-sand-200 hover:bg-sand-300 text-navy-800"
+                                    }`}
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSaveEdit(m.id)}
+                                    disabled={isSavingEdit || !editingText.trim()}
+                                    className={`px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1 ${
+                                      isAgent
+                                        ? "bg-brass-500 hover:bg-brass-400 text-navy-950"
+                                        : "bg-[#00072D] hover:bg-navy-900 text-sand-50"
+                                    }`}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    <span>{isSavingEdit ? "Saving..." : "Save"}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="whitespace-pre-wrap leading-relaxed">{m.message}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

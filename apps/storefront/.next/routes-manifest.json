@@ -377,6 +377,15 @@
       "namedRegex": "^/api/support/tickets/(?<nxtPid>[^/]+?)/messages(?:/)?$"
     },
     {
+      "page": "/api/support/tickets/[id]/messages/[messageId]",
+      "regex": "^/api/support/tickets/([^/]+?)/messages/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid",
+        "nxtPmessageId": "nxtPmessageId"
+      },
+      "namedRegex": "^/api/support/tickets/(?<nxtPid>[^/]+?)/messages/(?<nxtPmessageId>[^/]+?)(?:/)?$"
+    },
+    {
       "page": "/categories/[handle]",
       "regex": "^/categories/([^/]+?)(?:/)?$",
       "routeKeys": {
