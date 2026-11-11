@@ -536,7 +536,7 @@ export class AmosMannExtractorEngine {
   /* ------------------------------ networking ------------------------------ */
 
   /** Fetch a page; only HTTP 200 is accepted. Returns { html, finalUrl } (after redirects). */
-  fetchPage(url, redirectsLeft = 5) {
+  fetchPage(url, redirectsLeft = 5, retriesLeft = 2) {
     return new Promise((resolve, reject) => {
       let target;
       try {
@@ -569,7 +569,17 @@ export class AmosMannExtractorEngine {
             } catch {
               return reject(new Error(`Bad redirect location from ${url}`));
             }
-            return this.fetchPage(next, redirectsLeft - 1).then(resolve, reject);
+            return this.fetchPage(next, redirectsLeft - 1, retriesLeft).then(resolve, reject);
+          }
+          if (status === 403 || status === 429) {
+            res.resume();
+            if (retriesLeft > 0) {
+              const backoff = (3 - retriesLeft) * 2000;
+              return sleep(backoff)
+                .then(() => this.fetchPage(url, redirectsLeft, retriesLeft - 1))
+                .then(resolve, reject);
+            }
+            return reject(new HttpStatusError(url, status));
           }
           if (status !== 200) {
             res.resume();
@@ -1058,14 +1068,24 @@ export class AmosMannExtractorEngine {
     const startTime = Date.now();
     const triggerType = options.triggerType || "manual";
 
-    const [rows] = await pool.query(`
+    let sql = `
       SELECT fi.id as feed_item_id, fi.supplier_sku, fi.source_url, fi.cost_price_pennies,
              fi.shipping_cost_pennies, fi.markup_percentage, fi.retail_price_pennies,
-             fi.stock_level, p.id as product_id, p.title, p.price_pennies, p.status, p.images_json
+             fi.stock_level, p.id as product_id, p.title, p.sku as product_sku, p.price_pennies, p.status, p.images_json
       FROM supplier_feed_items fi
       JOIN products p ON fi.product_id = p.id
-      WHERE fi.supplier_id IN ('${SUPPLIER_ID}', 'sup_amos_mann') OR fi.source_url LIKE '%amosmannfurniture.co.uk%'
-    `);
+      WHERE (fi.supplier_id IN ('${SUPPLIER_ID}', 'sup_amos_mann') OR fi.source_url LIKE '%amosmannfurniture.co.uk%')
+    `;
+    const params = [];
+    if (options.sku) {
+      const cleanTarget = String(options.sku).replace(/^SAN-?/i, "").trim();
+      sql += ` AND (fi.supplier_sku LIKE ? OR p.sku LIKE ? OR p.id LIKE ?)`;
+      params.push(`%${cleanTarget}%`, `%${cleanTarget}%`, `%${cleanTarget}%`);
+    } else if (options.url) {
+      sql += ` AND fi.source_url LIKE ?`;
+      params.push(`%${options.url}%`);
+    }
+    const [rows] = await pool.query(sql, params);
 
     let itemsScanned = 0;
     let itemsFailed = 0;
@@ -1076,9 +1096,21 @@ export class AmosMannExtractorEngine {
     for (const item of rows) {
       if (!item.source_url) continue;
       itemsScanned++;
-      await sleep(300); // polite rate limit
+      if (rows.length > 1) {
+        await sleep(800); // polite rate limit prevents 403 anti-burst
+      }
       try {
-        const r = await this.reconcileItem(pool, item);
+        let r;
+        try {
+          r = await this.reconcileItem(pool, item);
+        } catch (innerErr) {
+          if (String(innerErr.message).includes("403") || String(innerErr.message).includes("429")) {
+            await sleep(3000);
+            r = await this.reconcileItem(pool, item);
+          } else {
+            throw innerErr;
+          }
+        }
         pricesUpdated += r.pricesUpdated;
         stockUpdated += r.stockUpdated;
         diffs.push({
