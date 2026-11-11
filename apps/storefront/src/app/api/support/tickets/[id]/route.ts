@@ -143,3 +143,50 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin privileges required to delete tickets" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+    const pool = getDbPool();
+
+    const [tRows]: any = await pool.query(
+      "SELECT id, ticket_number FROM support_tickets WHERE id = ? OR ticket_number = ? LIMIT 1",
+      [id, id]
+    );
+
+    if (!tRows || tRows.length === 0) {
+      return NextResponse.json({ success: false, error: "Ticket not found" }, { status: 404 });
+    }
+
+    const ticketId = tRows[0].id;
+
+    // Delete associated messages first
+    await pool.query("DELETE FROM support_messages WHERE ticket_id = ?", [ticketId]).catch(() => {});
+
+    // Delete ticket
+    await pool.query("DELETE FROM support_tickets WHERE id = ?", [ticketId]);
+
+    return NextResponse.json({
+      success: true,
+      message: "Ticket deleted successfully",
+      ticketId,
+    });
+  } catch (err: any) {
+    console.error("[Delete Ticket Error]:", err);
+    return NextResponse.json(
+      { success: false, error: "Failed to delete ticket", details: err?.message || String(err) },
+      { status: 500 }
+    );
+  }
+}

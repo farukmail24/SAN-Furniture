@@ -200,3 +200,42 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const admin = await getAdminFromRequest(request);
+    if (!admin) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Admin privileges required to delete tickets" },
+        { status: 403 }
+      );
+    }
+
+    const pool = getDbPool();
+    const body = await request.json().catch(() => ({}));
+    const rawIds = Array.isArray(body.ticketIds) ? body.ticketIds : (body.id ? [body.id] : []);
+    const ticketIds: string[] = rawIds.filter((id: any) => typeof id === "string" && id.trim().length > 0);
+
+    if (ticketIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No ticket IDs provided for deletion" },
+        { status: 400 }
+      );
+    }
+
+    // Delete associated messages
+    await pool.query("DELETE FROM support_messages WHERE ticket_id IN (?)", [ticketIds]).catch(() => {});
+
+    // Delete tickets
+    await pool.query("DELETE FROM support_tickets WHERE id IN (?)", [ticketIds]);
+
+    return NextResponse.json({
+      success: true,
+      message: `${ticketIds.length} ticket(s) deleted successfully`,
+      deletedCount: ticketIds.length,
+    });
+  } catch (err: any) {
+    console.error("[Bulk Delete Tickets Error]:", err);
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

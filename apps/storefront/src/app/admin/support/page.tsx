@@ -136,6 +136,126 @@ export default function AdminSupportHelpdeskPage() {
   const [sendingReply, setSendingReply] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Ticket Multi-Select & Bulk Deletion
+  const [selectedTicketIds, setSelectedTicketIds] = useState<Set<string>>(new Set());
+
+  const handleToggleSelectTicket = (id: string) => {
+    setSelectedTicketIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllVisible = () => {
+    if (selectedTicketIds.size === tickets.length) {
+      setSelectedTicketIds(new Set());
+    } else {
+      setSelectedTicketIds(new Set(tickets.map((t) => t.id)));
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId: string, ticketNumber?: string) => {
+    const ok = await showConfirm({
+      title: "Delete Support Ticket?",
+      message: `Are you sure you want to permanently delete inquiry ${ticketNumber || ticketId}? All messages, attachments, and internal notes in this thread will be permanently deleted.`,
+      confirmText: "Delete Ticket",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch(apiUrl(`/api/support/tickets/${ticketId}`), {
+        method: "DELETE",
+        headers: getAuthHeaders(false),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`Ticket ${ticketNumber || ""} deleted`);
+        setSelectedTicketIds((prev) => {
+          const next = new Set(prev);
+          next.delete(ticketId);
+          return next;
+        });
+
+        setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+
+        if (selectedTicketId === ticketId) {
+          setSelectedTicketId(null);
+          setTicketDetail(null);
+        }
+
+        fetchTickets(true);
+      } else {
+        await showAlert({
+          title: "Deletion Failed",
+          message: data.error || "Could not delete ticket.",
+          type: "danger",
+        });
+      }
+    } catch (err: any) {
+      await showAlert({
+        title: "Network Error",
+        message: err.message || "Failed to delete ticket.",
+        type: "danger",
+      });
+    }
+  };
+
+  const handleBulkDeleteTickets = async () => {
+    if (selectedTicketIds.size === 0) return;
+    const count = selectedTicketIds.size;
+    const ok = await showConfirm({
+      title: `Delete ${count} Ticket(s)?`,
+      message: `Are you sure you want to permanently delete ${count} selected support inquiry ticket(s)? All messages and internal notes will be removed. This cannot be undone.`,
+      confirmText: `Delete ${count} Ticket(s)`,
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!ok) return;
+
+    try {
+      const idsToDelete = Array.from(selectedTicketIds);
+      const res = await fetch(apiUrl(`/api/support/tickets`), {
+        method: "DELETE",
+        headers: getAuthHeaders(true),
+        credentials: "include",
+        body: JSON.stringify({ ticketIds: idsToDelete }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast(`${count} ticket(s) deleted successfully`);
+        setSelectedTicketIds(new Set());
+        setTickets((prev) => prev.filter((t) => !idsToDelete.includes(t.id)));
+
+        if (selectedTicketId && idsToDelete.includes(selectedTicketId)) {
+          setSelectedTicketId(null);
+          setTicketDetail(null);
+        }
+
+        fetchTickets(true);
+      } else {
+        await showAlert({
+          title: "Bulk Delete Failed",
+          message: data.error || "Could not delete tickets.",
+          type: "danger",
+        });
+      }
+    } catch (err: any) {
+      await showAlert({
+        title: "Network Error",
+        message: err.message || "Failed to bulk delete tickets.",
+        type: "danger",
+      });
+    }
+  };
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const showToast = (msg: string) => {
@@ -639,6 +759,35 @@ export default function AdminSupportHelpdeskPage() {
             </div>
           </div>
 
+          {/* Bulk Selection & Batch Actions Bar */}
+          {tickets.length > 0 && (
+            <div className="px-3.5 py-2 bg-sand-100/90 border-b border-[#E8E2D5] flex items-center justify-between text-xs text-navy-700 shrink-0">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={selectedTicketIds.size === tickets.length && tickets.length > 0}
+                  onChange={handleSelectAllVisible}
+                  className="rounded text-[#00072D] focus:ring-[#00072D] cursor-pointer"
+                />
+                <span className="font-semibold text-[11px] text-navy-800">
+                  {selectedTicketIds.size > 0 ? `${selectedTicketIds.size} of ${tickets.length} selected` : "Select All"}
+                </span>
+              </label>
+
+              {selectedTicketIds.size > 0 && (
+                <button
+                  type="button"
+                  onClick={handleBulkDeleteTickets}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer"
+                  title="Permanently delete selected inquiries"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Selected ({selectedTicketIds.size})</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Ticket List Queue */}
           <div className="flex-1 overflow-y-auto divide-y divide-[#E8E2D5]">
             {loading ? (
@@ -658,24 +807,36 @@ export default function AdminSupportHelpdeskPage() {
                 const isNeedsReply = Boolean(
                   t.needs_reply ?? (t.status === "open" || t.last_sender_type === "customer")
                 );
+                const isChecked = selectedTicketIds.has(t.id);
+
                 return (
-                  <button
+                  <div
                     key={t.id}
-                    type="button"
                     onClick={() => {
                       setSelectedTicketId(t.id);
                       fetchTicketDetails(t.id);
                     }}
-                    className={`w-full text-left p-3.5 transition-all flex flex-col gap-1.5 cursor-pointer active-press relative ${
+                    className={`group w-full text-left p-3.5 transition-all flex flex-col gap-1.5 cursor-pointer relative ${
                       isSelected
                         ? "bg-sand-100/95 border-l-4 border-l-brass-500 shadow-xs ring-1 ring-brass-500/10"
                         : isNeedsReply
                         ? "bg-amber-50/40 hover:bg-amber-50/70 border-l-4 border-l-amber-500"
+                        : isChecked
+                        ? "bg-sand-50"
                         : "hover:bg-sand-50"
                     }`}
                   >
                     <div className="flex items-center justify-between text-[11px] gap-2">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Checkbox for Bulk Actions */}
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={() => handleToggleSelectTicket(t.id)}
+                          className="rounded text-[#00072D] focus:ring-[#00072D] cursor-pointer shrink-0"
+                          title="Select ticket"
+                        />
                         <span className="font-mono font-bold text-navy-950">{t.ticket_number}</span>
                         <span className={`px-2 py-0.5 rounded-full text-[10px] border capitalize ${getPriorityBadge(t.priority)}`}>
                           {t.priority}
@@ -687,9 +848,24 @@ export default function AdminSupportHelpdeskPage() {
                           </span>
                         )}
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] border capitalize font-medium shrink-0 ${getStatusBadge(t.status)}`}>
-                        {t.status === "open" ? "Open (Unreplied)" : t.status.replace("_", " ")}
-                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] border capitalize font-medium shrink-0 ${getStatusBadge(t.status)}`}>
+                          {t.status === "open" ? "Open (Unreplied)" : t.status.replace("_", " ")}
+                        </span>
+                        {/* Hover Quick Delete Action */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTicket(t.id, t.ticket_number);
+                          }}
+                          className="p-1 rounded-md text-navy-400 hover:text-rose-600 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                          title={`Delete ticket ${t.ticket_number}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <h4 className="text-xs font-bold text-navy-950 truncate flex items-center gap-1.5">
@@ -723,7 +899,7 @@ export default function AdminSupportHelpdeskPage() {
                         <span>Order #{t.order_id}</span>
                       </div>
                     )}
-                  </button>
+                  </div>
                 );
               })
             )}
@@ -802,6 +978,16 @@ export default function AdminSupportHelpdeskPage() {
                       <option value="Oliver Vance (Senior Concierge)">Oliver Vance</option>
                       <option value="SAN Logistics Team">SAN Logistics Team</option>
                     </select>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTicket(ticketDetail.ticket.id, ticketDetail.ticket.ticket_number)}
+                      className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 transition-colors inline-flex items-center gap-1.5 font-bold text-xs cursor-pointer shadow-xs shrink-0"
+                      title="Permanently delete this entire support inquiry"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="hidden sm:inline">Delete Ticket</span>
+                    </button>
                   </div>
                 </div>
 
