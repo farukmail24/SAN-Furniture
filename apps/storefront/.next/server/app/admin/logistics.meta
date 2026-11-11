@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/admin/layout,_N_T_/admin/logistics/layout,_N_T_/admin/logistics/page,_N_T_/admin/logistics"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/9c43c85e86799669c68637344b05e16136c47605024cc1b119b3e1a637c8e14b/$/admin/logistics",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/admin/logistics/page"
+    },
+    "isFallback": false
+  }
+}

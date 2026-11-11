@@ -1,0 +1,15 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/fire-safety/layout,_N_T_/fire-safety/page,_N_T_/fire-safety"
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/d3b022f1256dd04ebefb96575613ee6ab4b72cc7edc341beea24bf226fc2040c/$/fire-safety",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/fire-safety/page"
+    },
+    "isFallback": false
+  }
+}

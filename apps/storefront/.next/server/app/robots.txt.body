@@ -1,0 +1,8 @@
+User-Agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /basket
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://sanfurniture.com/sitemap.xml
