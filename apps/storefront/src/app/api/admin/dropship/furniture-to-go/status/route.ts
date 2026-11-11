@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import https from "node:https";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
+import { furnitureToGoExtractor } from "@/lib/dropship";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +14,101 @@ export async function GET(request: Request) {
     }
 
     const pool = getDbPool();
+
+    const probe = new URL(request.url).searchParams.get("probe");
+    if (probe) {
+      await furnitureToGoExtractor.loadAuthSession(pool);
+      const token = await (furnitureToGoExtractor as any).getOrRefreshApiToken();
+      const sku = new URL(request.url).searchParams.get("sku") || "4023544";
+      
+      const results: any = { token: token ? "acquired" : "failed" };
+
+      // 1. products-render-info
+      const renderRes = await new Promise((resolve) => {
+        const queryPath = `/rest/V1/products-render-info?searchCriteria[filterGroups][0][filters][0][field]=sku&searchCriteria[filterGroups][0][filters][0][value]=${encodeURIComponent(sku)}&searchCriteria[filterGroups][0][filters][0][conditionType]=eq&storeId=1&currencyCode=GBP`;
+        const req = https.get({
+          hostname: "furniture-to-go.co.uk",
+          path: queryPath,
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": (furnitureToGoExtractor as any).userAgent,
+            "Accept": "application/json"
+          },
+          timeout: 10000
+        }, (res) => {
+          let b = "";
+          res.on("data", c => b += c);
+          res.on("end", () => {
+            try { resolve(JSON.parse(b)); } catch { resolve(b.slice(0, 500)); }
+          });
+        });
+        req.on("error", (e) => resolve({ error: e.message }));
+      });
+      results.renderInfo = renderRes;
+
+      // 2. check rest schema or attachment endpoints
+      const schemaPaths = await new Promise((resolve) => {
+        const req = https.get({
+          hostname: "furniture-to-go.co.uk",
+          path: "/rest/all/schema?services=all",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": (furnitureToGoExtractor as any).userAgent,
+            "Accept": "application/json"
+          },
+          timeout: 15000
+        }, (res) => {
+          let b = "";
+          res.on("data", c => b += c);
+          res.on("end", () => {
+            try {
+              const j = JSON.parse(b);
+              const paths = Object.keys(j.paths || {}).filter(p => /download|attach|file|mageworx/i.test(p));
+              resolve({ status: res.statusCode, paths });
+            } catch {
+              resolve({ status: res.statusCode, raw: b.slice(0, 300) });
+            }
+          });
+        });
+        req.on("error", (e) => resolve({ error: e.message }));
+      });
+      results.schemaPaths = schemaPaths;
+
+      // 3. Test direct file / downloads controllers for 4023544
+      const candidatePaths = [
+        "/media/mageworx/downloads/attachment/4023544.pdf",
+        "/media/mageworx/downloads/attachment/chelsea_4023544.pdf",
+        "/media/downloads/4023544.pdf",
+        "/downloads/attachment/download/id/288/",
+        "/mageworx_downloads/attachment/download/id/288/",
+        "/mageworx_downloads/attachment/file/id/288/",
+        "/media/catalog/product/4/0/4023544_assembly.pdf",
+        "/media/documents/4023544.pdf"
+      ];
+      const candidateStatuses: Record<string, any> = {};
+      for (const p of candidatePaths) {
+        candidateStatuses[p] = await new Promise((resolve) => {
+          const req = https.request({
+            hostname: "furniture-to-go.co.uk",
+            path: p,
+            method: "HEAD",
+            headers: {
+              "User-Agent": (furnitureToGoExtractor as any).userAgent,
+              "Authorization": `Bearer ${token}`
+            },
+            timeout: 5000
+          }, (res) => {
+            resolve({ status: res.statusCode, contentType: res.headers["content-type"], length: res.headers["content-length"], location: res.headers["location"] });
+          });
+          req.on("error", (e) => resolve({ error: e.message }));
+          req.end();
+        });
+      }
+      results.candidateStatuses = candidateStatuses;
+
+      return NextResponse.json({ success: true, probe: results });
+    }
+
     const [items]: any = await pool.query(`
       SELECT fi.*, p.title, p.handle, p.thumbnail_url
       FROM supplier_feed_items fi
