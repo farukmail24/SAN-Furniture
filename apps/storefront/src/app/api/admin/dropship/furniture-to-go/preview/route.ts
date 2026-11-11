@@ -100,6 +100,7 @@ export async function POST(request: Request) {
           rangeName: liveData.rangeName || "Scandinavian Range",
           isOutOfStock: Boolean(liveData.isOutOfStock),
           assemblyInstructionsUrl: liveData.assemblyInstructionsUrl || null,
+          debugSnippets: liveData.debugSnippets || [],
           warning: liveData.priceVerified
             ? null
             : "Wholesale trade cost could not be detected automatically. Please verify supplier trade price (£).",

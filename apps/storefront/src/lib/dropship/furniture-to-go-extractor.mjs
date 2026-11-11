@@ -741,8 +741,10 @@ function parseAssemblyUrl(html) {
 
   // 3. Match any MageWorx / mwdownloads / mageworx_downloads links anywhere on page
   for (const m of html.matchAll(/(?:https?:\/\/[^\s"'<>]+?)?\/(?:mwdownloads|mageworx_downloads|downloads\/attachment|amfile\/file\/download)[^\s"'<>]+/gi)) {
+    const raw = m[0];
+    if (/\.(css|js|png|jpg|jpeg|svg|gif|webp)($|\?)/i.test(raw)) continue;
     try {
-      const fullUrl = new URL(m[0], SUPPLIER_BASE).toString();
+      const fullUrl = new URL(raw, SUPPLIER_BASE).toString();
       candidates.push({ url: fullUrl, text: "mwdownload", score: 12 });
     } catch {}
   }
@@ -750,6 +752,7 @@ function parseAssemblyUrl(html) {
   // 4. Match any direct .pdf links
   for (const m of html.matchAll(/(?:https?:\/\/[^\s"'<>]+?)?[^\s"'<>]+\.pdf(?:\?[^\s"'<>]*)?/gi)) {
     const raw = m[0];
+    if (/\.(css|js|png|jpg|jpeg|svg|gif|webp)($|\?)/i.test(raw)) continue;
     if (/assembly|instruction|manual|guide|chelsea|\d{6,}/i.test(raw)) {
       try {
         const fullUrl = new URL(raw, SUPPLIER_BASE).toString();
@@ -760,9 +763,10 @@ function parseAssemblyUrl(html) {
 
   if (candidates.length === 0) return null;
 
-  // Deduplicate by URL
+  // Deduplicate by URL and filter out assets
   const uniqueMap = new Map();
   for (const c of candidates) {
+    if (/\.(css|js|png|jpg|jpeg|svg|gif|webp)($|\?)/i.test(c.url)) continue;
     if (!uniqueMap.has(c.url) || uniqueMap.get(c.url).score < c.score) {
       uniqueMap.set(c.url, c);
     }
@@ -1418,6 +1422,21 @@ export class FurnitureToGoExtractorEngine {
     const rangeMatch = (title || "").match(/^(Paris|Oslo|Modena|Copenhagen|Chelsea|Richmond|Valdo|Milano|Venice|Madrid|Omaha|Westham)\b/i);
     const rangeName = rangeMatch ? `${rangeMatch[1]} Collection` : "Scandinavian Collection";
 
+    // Debug snippets for document discovery
+    const debugSnippets = [];
+    const lowerHtml = html.toLowerCase();
+    for (const term of ["4023544", "assembly", "download document", "mageworx", ".pdf"]) {
+      let pos = 0;
+      while ((pos = lowerHtml.indexOf(term, pos)) !== -1) {
+        debugSnippets.push({
+          term,
+          snippet: html.slice(Math.max(0, pos - 100), Math.min(html.length, pos + 350))
+        });
+        pos += term.length + 50;
+        if (debugSnippets.length > 8) break;
+      }
+    }
+
     return {
       title: title ? cleanProductTitle(title) : null,
       sku,
@@ -1435,6 +1454,7 @@ export class FurnitureToGoExtractorEngine {
       dimensions: dims.value,
       weightKg,
       assemblyInstructionsUrl,
+      debugSnippets,
       gtin,
       images
     };
