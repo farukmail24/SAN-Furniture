@@ -41,7 +41,8 @@ import {
   Copy,
   Info,
   ArrowRight,
-  Lightbulb
+  Lightbulb,
+  FileText
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
@@ -3134,6 +3135,12 @@ export default function AdminSuppliersPage() {
                                       <span>View on FTG</span>
                                       <ExternalLink className="w-2.5 h-2.5" />
                                     </a>
+                                    {item.assemblyInstructionsUrl && (
+                                      <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-medium inline-flex items-center gap-1">
+                                        <FileText className="w-2.5 h-2.5" />
+                                        <span>Assembly PDF</span>
+                                      </span>
+                                    )}
                                   </div>
                                   {item.warning && (
                                     <div className="text-[10px] text-amber-700 flex items-center gap-1 mt-1 font-medium">

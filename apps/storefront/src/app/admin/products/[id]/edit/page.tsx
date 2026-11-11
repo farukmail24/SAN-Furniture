@@ -30,7 +30,8 @@ import {
   Equal,
   Info,
   X,
-  Building
+  Building,
+  Download
 } from "lucide-react";
 import { MediaPickerModal } from "@/components/admin/MediaPickerModal";
 import { apiUrl } from "@/lib/api-config";
@@ -98,6 +99,7 @@ export default function AdminEditProductPage({ params }: PageProps) {
   const [fireSafety, setFireSafety] = useState(true);
   const [assemblyRequired, setAssemblyRequired] = useState(false);
   const [assemblyInstructionsUrl, setAssemblyInstructionsUrl] = useState("");
+  const [downloadingManual, setDownloadingManual] = useState(false);
   const [deliveryTier, setDeliveryTier] = useState("two_man_white_glove");
   const [status, setStatus] = useState("published");
 
@@ -243,6 +245,37 @@ export default function AdminEditProductPage({ params }: PageProps) {
     const net = landedCost * (1 + markupToApply / 100);
     const incVat = net * 1.20;
     setPriceGbp(incVat.toFixed(2));
+  };
+
+  const handleFetchAndDownloadManual = async () => {
+    try {
+      setDownloadingManual(true);
+      setErrorMsg(null);
+      setSuccessMsg(null);
+      const res = await fetch(apiUrl(`/api/admin/products/${productId}/sync`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh product details
+        const resProd = await fetch(apiUrl(`/api/admin/products/${productId}`));
+        const dataProd = await resProd.json();
+        if (dataProd.product?.assembly_instructions_url) {
+          setAssemblyInstructionsUrl(dataProd.product.assembly_instructions_url);
+          setAssemblyRequired(true);
+          setSuccessMsg(`Assembly instructions manual downloaded & saved to SAN storage: ${dataProd.product.assembly_instructions_url}`);
+        } else {
+          setSuccessMsg(data.message || "Synced successfully from supplier. No new assembly manual found on supplier page.");
+        }
+      } else {
+        setErrorMsg(data.error || "Failed to download assembly manual from supplier.");
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || "Failed to download manual.");
+    } finally {
+      setDownloadingManual(false);
+    }
   };
 
   // Supplier source helper
@@ -1125,6 +1158,16 @@ export default function AdminEditProductPage({ params }: PageProps) {
                     placeholder="/documents/assembly/90A0000102468.pdf or https://..."
                     className="flex-1 px-3 py-2 bg-sand-100 border border-sand-300 rounded-lg text-xs font-mono text-navy-950 focus:outline-none focus:border-brass-500"
                   />
+                  <button
+                    type="button"
+                    onClick={handleFetchAndDownloadManual}
+                    disabled={downloadingManual}
+                    className="px-3 py-2 rounded-lg bg-sand-200 hover:bg-sand-300 text-navy-950 font-bold text-xs transition-colors inline-flex items-center gap-1.5 shrink-0 border border-sand-300 cursor-pointer disabled:opacity-50"
+                    title="Detect and download assembly instructions PDF from supplier into local SAN storage"
+                  >
+                    <Download className={`w-3.5 h-3.5 text-navy-700 ${downloadingManual ? "animate-bounce" : ""}`} />
+                    <span>{downloadingManual ? "Downloading..." : "Download from Supplier"}</span>
+                  </button>
                   {assemblyInstructionsUrl.trim() && (
                     <a
                       href={assemblyInstructionsUrl.trim()}

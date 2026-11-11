@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import http from "node:http";
 import https from "node:https";
 import zlib from "node:zlib";
 import { classifyFurnitureProduct } from "@san-furniture/types";
@@ -570,17 +573,151 @@ function weightFromSchema(w) {
   return null;
 }
 
-/** Optional: the product's own assembly-manual link (FTG "mwdownloads" module). Exactly one distinct link or nothing. */
-function parseAssemblyUrl(html) {
-  const found = new Set();
-  for (const m of html.matchAll(/(?:https?:\/\/[^\s"'<>]+?)?\/mwdownloads\/download\/link\/id\/\d+/gi)) {
+/** Helper to download binary files (PDFs, documents) with redirect following and auth cookies. */
+function fetchBinaryFile(url, { userAgent, authCookies, redirectsLeft = 5 } = {}) {
+  return new Promise((resolve, reject) => {
+    let target;
     try {
-      found.add(new URL(m[0], `${SUPPLIER_BASE}/`).toString());
+      target = new URL(url);
     } catch {
-      /* ignore */
+      return reject(new Error(`Invalid URL for download: ${url}`));
+    }
+    const client = target.protocol === "https:" ? https : http;
+
+    const req = client.get(
+      target,
+      {
+        headers: {
+          "User-Agent": userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+          "Accept": "application/pdf,application/octet-stream,*/*;q=0.9",
+          "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+          "Referer": SUPPLIER_BASE,
+          ...(authCookies ? { "Cookie": authCookies } : {})
+        },
+        timeout: 25000
+      },
+      (res) => {
+        const status = res.statusCode || 0;
+        if (status >= 300 && status < 400 && res.headers.location) {
+          res.resume();
+          if (redirectsLeft <= 0) return reject(new Error(`Too many redirects downloading ${url}`));
+          let next;
+          try {
+            next = new URL(res.headers.location, target).toString();
+          } catch {
+            return reject(new Error(`Bad redirect location downloading ${url}`));
+          }
+          return fetchBinaryFile(next, { userAgent, authCookies, redirectsLeft: redirectsLeft - 1 }).then(resolve, reject);
+        }
+
+        if (status !== 200) {
+          res.resume();
+          return reject(new Error(`HTTP ${status} downloading ${url}`));
+        }
+
+        const chunks = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => {
+          const buffer = Buffer.concat(chunks);
+          resolve({ buffer, contentType: res.headers["content-type"] || "", headers: res.headers });
+        });
+      }
+    );
+
+    req.on("error", reject);
+    req.on("timeout", () => {
+      req.destroy();
+      reject(new Error(`Timeout downloading ${url}`));
+    });
+  });
+}
+
+/**
+ * Detect product assembly instruction manual link from FTG page HTML.
+ * Handles:
+ * 1. Links inside the "Download documents" / document accordion block
+ * 2. Anchor tags with text/title matching assembly / manual / instruction / guide
+ * 3. MageWorx / MWDownloads / mageworx_downloads / downloads/attachment URLs
+ * 4. Direct .pdf links on FTG domain matching SKU or assembly keywords
+ */
+function parseAssemblyUrl(html) {
+  if (!html || typeof html !== "string") return null;
+
+  const candidates = [];
+
+  // 1. Check inside "Download documents" or "Product Attachments" section specifically
+  const docSectionIndices = [
+    html.toLowerCase().indexOf("download documents"),
+    html.toLowerCase().indexOf("product attachments"),
+    html.toLowerCase().indexOf("downloads-content"),
+    html.toLowerCase().indexOf("mageworx-downloads"),
+  ].filter((idx) => idx !== -1);
+
+  for (const secIdx of docSectionIndices) {
+    const sectionHtml = html.slice(secIdx, secIdx + 4000);
+    for (const match of sectionHtml.matchAll(/<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+      const href = match[1].trim();
+      const text = match[2].replace(/<[^>]+>/g, " ").trim();
+      if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
+        try {
+          const fullUrl = new URL(href, SUPPLIER_BASE).toString();
+          candidates.push({ url: fullUrl, text, score: 35 });
+        } catch {}
+      }
     }
   }
-  return found.size === 1 ? [...found][0] : null;
+
+  // 2. Search for any anchor link whose text or href mentions assembly / manual / instruction / guide / fittings
+  const aRegex = /<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+  for (const match of html.matchAll(aRegex)) {
+    const href = match[1].trim();
+    const text = match[2].replace(/<[^>]+>/g, " ").trim();
+    if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
+      const isAssemblyText = /assembly|instructions?|manual|fittings?|assembly\s*guide/i.test(text);
+      const isAssemblyHref = /assembly|instructions?|manual|fittings?|\.pdf/i.test(href);
+      const isDownloadModule = /\/(?:mwdownloads|mageworx_downloads|downloads\/attachment|amfile|productattachment)\//i.test(href);
+
+      if (isAssemblyText || (isAssemblyHref && isDownloadModule)) {
+        try {
+          const fullUrl = new URL(href, SUPPLIER_BASE).toString();
+          const score = (isAssemblyText ? 20 : 0) + (isAssemblyHref ? 10 : 0) + (isDownloadModule ? 10 : 0);
+          candidates.push({ url: fullUrl, text, score });
+        } catch {}
+      }
+    }
+  }
+
+  // 3. Match any MageWorx / mwdownloads / mageworx_downloads links anywhere on page
+  for (const m of html.matchAll(/(?:https?:\/\/[^\s"'<>]+?)?\/(?:mwdownloads|mageworx_downloads|downloads\/attachment|amfile\/file\/download)[^\s"'<>]+/gi)) {
+    try {
+      const fullUrl = new URL(m[0], SUPPLIER_BASE).toString();
+      candidates.push({ url: fullUrl, text: "mwdownload", score: 12 });
+    } catch {}
+  }
+
+  // 4. Match any direct .pdf links
+  for (const m of html.matchAll(/(?:https?:\/\/[^\s"'<>]+?)?[^\s"'<>]+\.pdf(?:\?[^\s"'<>]*)?/gi)) {
+    const raw = m[0];
+    if (/assembly|instruction|manual|guide|chelsea|\d{6,}/i.test(raw)) {
+      try {
+        const fullUrl = new URL(raw, SUPPLIER_BASE).toString();
+        candidates.push({ url: fullUrl, text: "direct_pdf", score: 15 });
+      } catch {}
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Deduplicate by URL
+  const uniqueMap = new Map();
+  for (const c of candidates) {
+    if (!uniqueMap.has(c.url) || uniqueMap.get(c.url).score < c.score) {
+      uniqueMap.set(c.url, c);
+    }
+  }
+
+  const sorted = Array.from(uniqueMap.values()).sort((a, b) => b.score - a.score);
+  return sorted[0].url;
 }
 
 /** Finish/colour exactly as written in the title (last resort), e.g. "Cashmere & Artisan Oak Effect". */
@@ -826,6 +963,68 @@ export class FurnitureToGoExtractorEngine {
       if (p) return p;
     }
 
+    return null;
+  }
+
+  /**
+   * Download assembly manual PDF from supplier and store locally in public/documents/assembly/
+   * Returns relative URL: /documents/assembly/<filename>.pdf
+   */
+  async downloadAndSaveAssemblyManual(remoteUrl, skuOrId) {
+    if (!remoteUrl || !remoteUrl.startsWith("http")) return null;
+
+    try {
+      const cleanSku = String(skuOrId || "manual")
+        .replace(/^(?:SAN-|FTG-)/i, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "_")
+        .toLowerCase();
+      const filename = `${cleanSku}_assembly_instructions.pdf`;
+
+      const { buffer, contentType } = await fetchBinaryFile(remoteUrl, {
+        userAgent: this.userAgent,
+        authCookies: this.authCookies
+      });
+
+      if (!buffer || buffer.length < 500) {
+        console.warn(`[FTG Manual Downloader] File at ${remoteUrl} too small: ${buffer?.length} bytes`);
+        return null;
+      }
+
+      // Check if it's a PDF: magic bytes %PDF (hex 25 50 44 46) or content-type
+      const isPdfHeader = buffer.slice(0, 4).toString("utf8").startsWith("%PDF");
+      const isPdfType = (contentType || "").toLowerCase().includes("pdf") || remoteUrl.toLowerCase().includes(".pdf");
+
+      if (!isPdfHeader && !isPdfType) {
+        console.warn(`[FTG Manual Downloader] File at ${remoteUrl} is not a PDF (content-type: ${contentType})`);
+        return null;
+      }
+
+      // Candidate destination directories
+      const candidates = [
+        path.join(process.cwd(), "apps/storefront/public/documents/assembly"),
+        path.join(process.cwd(), "public/documents/assembly"),
+        "/home/sansoft/sanfurniture.com/apps/storefront/public/documents/assembly",
+        "/home/sansoft/sanfurniture.com/public/documents/assembly"
+      ];
+
+      let saved = false;
+      for (const dir of candidates) {
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+          const filePath = path.join(dir, filename);
+          fs.writeFileSync(filePath, buffer);
+          saved = true;
+        } catch {}
+      }
+
+      if (saved) {
+        const publicPath = `/documents/assembly/${filename}`;
+        console.log(`[FTG Manual Downloader] Successfully downloaded and stored ${filename} (${buffer.length} bytes) -> ${publicPath}`);
+        return publicPath;
+      }
+    } catch (err) {
+      console.warn(`[FTG Manual Downloader] Error downloading manual from ${remoteUrl}:`, err.message);
+    }
     return null;
   }
 
@@ -1342,11 +1541,24 @@ export class FurnitureToGoExtractorEngine {
         notes.push("Placeholder image still in use — supplier page has no usable image");
       }
 
-      // Assembly manual (only the product's own link; only when it changed)
-      if (live.assemblyInstructionsUrl && live.assemblyInstructionsUrl !== item.current_assembly_url) {
-        ops.push([`UPDATE furniture_specs SET assembly_instructions_url = ? WHERE product_id = ?`, [live.assemblyInstructionsUrl, item.product_id]]);
-        manualsUpdated = 1;
-        notes.push("Assembly manual link updated");
+      // Assembly manual: download to our storage if it's a remote URL, and update specs
+      if (live.assemblyInstructionsUrl) {
+        let manualToStore = live.assemblyInstructionsUrl;
+        if (manualToStore.startsWith("http")) {
+          try {
+            const localDocPath = await this.downloadAndSaveAssemblyManual(manualToStore, b.supplier_sku || b.product_id);
+            if (localDocPath) {
+              manualToStore = localDocPath;
+            }
+          } catch (err) {
+            console.warn("[FTG Sync] Error auto-downloading assembly manual:", err.message);
+          }
+        }
+        if (manualToStore && manualToStore !== item.current_assembly_url) {
+          ops.push([`UPDATE furniture_specs SET assembly_instructions_url = ? WHERE product_id = ?`, [manualToStore, item.product_id]]);
+          manualsUpdated = 1;
+          notes.push(`Assembly manual saved to storage: ${manualToStore}`);
+        }
       }
     }
 
@@ -1593,9 +1805,20 @@ export class FurnitureToGoExtractorEngine {
 
     const finalCategoryId = normalizeToValidCategoryId(categoryId, cleanTitle, live.description || stagedData?.description, cleanUrl);
 
-    const finalAssemblyUrl = isProvided(assemblyUrlOverride) && String(assemblyUrlOverride).trim()
+    let finalAssemblyUrl = isProvided(assemblyUrlOverride) && String(assemblyUrlOverride).trim()
       ? String(assemblyUrlOverride).trim()
       : live.assemblyInstructionsUrl || stagedData?.assemblyUrl || null;
+
+    if (finalAssemblyUrl && finalAssemblyUrl.startsWith("http")) {
+      try {
+        const localDocPath = await this.downloadAndSaveAssemblyManual(finalAssemblyUrl, rawFtgSku);
+        if (localDocPath) {
+          finalAssemblyUrl = localDocPath;
+        }
+      } catch (err) {
+        console.warn("[FTG Import] Error auto-downloading assembly manual:", err.message);
+      }
+    }
 
     const status = live.isOutOfStock ? "out_of_stock" : "published";
     const stockLevel = live.isOutOfStock ? 0 : this.inStockLevel;
