@@ -38,7 +38,10 @@ import {
   TrendingUp,
   KeyRound,
   Lock,
-  Copy
+  Copy,
+  Info,
+  ArrowRight,
+  Lightbulb
 } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 import { fetchWithSwr, invalidateCache, getCachedData } from "@/lib/api-cache";
@@ -2569,7 +2572,7 @@ export default function AdminSuppliersPage() {
                           onChange={(e) => setNewAmosCategory(e.target.value)}
                           className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                         >
-                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          <option value="auto">Smart Auto-Detect Category (Recommended)</option>
                           {storeCategories.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name}
@@ -2672,7 +2675,7 @@ export default function AdminSuppliersPage() {
                           onChange={(e) => setNewAmosCategory(e.target.value)}
                           className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                         >
-                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          <option value="auto">Smart Auto-Detect Category (Recommended)</option>
                           {storeCategories.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name}
@@ -3687,7 +3690,7 @@ export default function AdminSuppliersPage() {
                           onChange={(e) => setNewFtgCategory(e.target.value)}
                           className="w-full px-2.5 py-1.5 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#00072D]"
                         >
-                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          <option value="auto">Smart Auto-Detect Category (Recommended)</option>
                           {storeCategories.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name}
@@ -3807,7 +3810,7 @@ export default function AdminSuppliersPage() {
                           onChange={(e) => setNewFtgCategory(e.target.value)}
                           className="w-full px-3 py-2 border border-[#E8E2D5] rounded-lg text-xs focus:outline-none focus:border-[#C89B3C]"
                         >
-                          <option value="auto">✨ Smart Auto-Detect Category (Recommended)</option>
+                          <option value="auto">Smart Auto-Detect Category (Recommended)</option>
                           {storeCategories.map((c) => (
                             <option key={c.id} value={c.id}>
                               {c.name}
@@ -4050,7 +4053,7 @@ export default function AdminSuppliersPage() {
 
                     {showFtgAuthDialog && (
                       <div className="mt-2.5 p-2.5 bg-amber-50/90 border border-amber-200 rounded-lg text-amber-950 text-[11px] leading-relaxed">
-                        <span className="font-bold">💡 How to unlock FTG wholesale dealer trade prices:</span> FTG identifies logged-in dealers via <code className="bg-white px-1 py-0.5 rounded font-mono font-bold text-amber-900 border border-amber-200">PHPSESSID</code>. 
+                        <span className="font-bold inline-flex items-center gap-1.5"><Lightbulb className="w-3.5 h-3.5 text-amber-600 shrink-0" /> How to unlock FTG wholesale dealer trade prices:</span> FTG identifies logged-in dealers via <code className="bg-white px-1 py-0.5 rounded font-mono font-bold text-amber-900 border border-amber-200">PHPSESSID</code>. 
                         In DevTools, switch to <strong>Application</strong> &rarr; <strong>Cookies</strong> &rarr; <strong>furniture-to-go.co.uk</strong>, double-click the <strong>Value</strong> of <strong>PHPSESSID</strong> and paste it below (or paste full <code className="bg-white px-1 py-0.5 rounded font-mono">cookie:</code> header from <strong>Network</strong> tab).
                       </div>
                     )}
@@ -4102,8 +4105,9 @@ export default function AdminSuppliersPage() {
                         <p className="text-[11px] leading-relaxed">
                           Chrome hides <code>PHPSESSID</code> from <code>copy(document.cookie)</code> because of HttpOnly protection. Without <code>PHPSESSID</code>, FTG serves public pages without trade prices.
                         </p>
-                        <p className="text-[11px] font-semibold text-amber-950">
-                          👉 To unlock trade pricing: Open DevTools &rarr; <strong>Network</strong> tab &rarr; refresh FTG &rarr; click top request &rarr; copy full <strong>Cookie</strong> header, or copy <code>PHPSESSID</code> from <strong>Application &rarr; Cookies</strong>.
+                        <p className="text-[11px] font-semibold text-amber-950 flex items-center gap-1.5">
+                          <ArrowRight className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                          <span>To unlock trade pricing: Open DevTools &rarr; <strong>Network</strong> tab &rarr; refresh FTG &rarr; click top request &rarr; copy full <strong>Cookie</strong> header, or copy <code>PHPSESSID</code> from <strong>Application &rarr; Cookies</strong>.</span>
                         </p>
                       </div>
                     )}

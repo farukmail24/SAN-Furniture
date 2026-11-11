@@ -28,7 +28,8 @@ import {
   FileText,
   Filter,
   RotateCcw,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { formatGBP } from "@san-furniture/types";
@@ -988,7 +989,7 @@ export default function AdminProductsPage() {
               title="Filter products by Category, Stock, Supplier, or Logistics"
             >
               <Filter className={`w-3.5 h-3.5 ${activeFilterCount > 0 ? "text-brass-600" : "text-[#C89B3C]"}`} />
-              <span>ফিল্টার (Filter)</span>
+              <span>Filter</span>
               {activeFilterCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-brass-600 text-sand-50 text-[10px] font-bold flex items-center justify-center">
                   {activeFilterCount}
@@ -1990,8 +1991,11 @@ export default function AdminProductsPage() {
                       );
                     })()}
 
-                    <p className="text-[11px] text-navy-500 leading-relaxed">
-                      💡 <strong>সাপ্লায়ার ডাইরেক্ট নেভিগেশন:</strong> উপরের বাটনে ক্লিক করলে এক ক্লিকে সরাসরি {supplier.name} ({supplier.domain}) এর মূল প্রোডাক্ট পেজ ওপেন হবে। সেখান থেকে আপনি সাপ্লায়ারের লাইভ স্টক লেভেল, পাইকারি অফার, ডাইমেনশন স্পেসিফিকেশন ও অ্যাসেম্বলি গাইড সরাসরি যাচাই করতে পারবেন।
+                    <p className="text-[11px] text-navy-500 leading-relaxed flex items-start gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-brass-600 shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Direct Supplier Navigation:</strong> Click the button above to navigate directly to the official product page on {supplier.name} ({supplier.domain}) in a single click. Verify live inventory levels, wholesale trade pricing, technical dimensions, and assembly instructions directly on the source portal.
+                      </span>
                     </p>
                   </div>
                 );

@@ -1584,8 +1584,11 @@ export default function AdminEditProductPage({ params }: PageProps) {
                       </a>
                     </div>
 
-                    <p className="text-[11px] text-navy-500 leading-relaxed">
-                      💡 <strong>সাপ্লায়ার ডাইরেক্ট নেভিগেশন:</strong> উপরের বাটনে ক্লিক করলে এক ক্লিকে সরাসরি {supplier.name} ({supplier.domain}) এর মূল প্রোডাক্ট পেজ ওপেন হবে। সেখান থেকে আপনি সাপ্লায়ারের লাইভ স্টক লেভেল, পাইকারি অফার, ডাইমেনশন স্পেসিফিকেশন ও অ্যাসেম্বলি গাইড সরাসরি যাচাই করতে পারবেন।
+                    <p className="text-[11px] text-navy-500 leading-relaxed flex items-start gap-1.5">
+                      <Info className="w-3.5 h-3.5 text-brass-600 shrink-0 mt-0.5" />
+                      <span>
+                        <strong>Direct Supplier Navigation:</strong> Click the button above to navigate directly to the official product page on {supplier.name} ({supplier.domain}) in a single click. Verify live inventory levels, wholesale trade pricing, technical dimensions, and assembly instructions directly on the source portal.
+                      </span>
                     </p>
                   </div>
                 );
