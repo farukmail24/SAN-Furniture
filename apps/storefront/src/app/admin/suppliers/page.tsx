@@ -2020,6 +2020,11 @@ export default function AdminSuppliersPage() {
                                         <span className="font-mono text-[10px] text-[#7A8B99] bg-[#FAF8F5] px-1.5 py-0.5 rounded border border-[#E8E2D5]">
                                           SKU: {item.sku}
                                         </span>
+                                        {item.isOutOfStock && (
+                                          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-300">
+                                            Out of Stock
+                                          </span>
+                                        )}
                                         <a
                                           href={item.url}
                                           target="_blank"

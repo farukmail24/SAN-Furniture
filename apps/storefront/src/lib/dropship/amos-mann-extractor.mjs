@@ -37,12 +37,66 @@ const REQUIRED_FIELDS = {
 // Schema.org availability values we understand. Anything else => reject (we never guess stock).
 const AVAILABILITY_IS_OUT_OF_STOCK = {
   instock: false,
+  in_stock: false,
   limitedavailability: false,
   onlineonly: false,
   outofstock: true,
   soldout: true,
   discontinued: true
 };
+
+/**
+ * Detect visible Out of Stock signals from Amos Mann Furniture (EKM platform) HTML.
+ * EKM themes (e.g. Hitbox / 1549 used by Amos Mann) often leave the Schema.org JSON-LD
+ * statically set to InStock, but prominently display "OUT OF STOCK" in main-short-desc,
+ * main-product-stock, or product info badges.
+ */
+function readAmosMannHtmlStock(html) {
+  if (!html || typeof html !== "string") return false;
+
+  // 1. Direct check on Amos Mann's EKM short description container (which contains "OUT OF STOCK")
+  const shortDescMatch = html.match(/<div[^>]*class=["'][^"']*main-short-desc[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+  if (shortDescMatch) {
+    const text = shortDescMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (/\b(?:out\s*of\s*stock|sold\s*out|awaiting\s*stock|temporarily\s*unavailable)\b/i.test(text)) {
+      return true; // Out of stock
+    }
+  }
+
+  // 2. Direct check on Amos Mann's EKM product stock container
+  const stockDivMatch = html.match(/<div[^>]*class=["'][^"']*main-product-stock[^"']*["'][^>]*>([\s\S]*?)<\/div>/i);
+  if (stockDivMatch) {
+    const text = stockDivMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (/\b(?:out\s*of\s*stock|sold\s*out|awaiting\s*stock|temporarily\s*unavailable)\b/i.test(text)) {
+      return true; // Out of stock
+    }
+  }
+
+  // 3. Strip script, style, comments to inspect visible page text
+  const cleanBody = html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ");
+
+  const oosRegex = /\b(?:out\s+of\s+stock|sold\s+out|currently\s+out\s+of\s+stock|temporarily\s+out\s+of\s+stock|awaiting\s+stock)\b/i;
+
+  // 4. Product page info container
+  const detailsAreaMatch = cleanBody.match(/<div[^>]*class=["'][^"']*(?:product-page-info|product-details|product-info)[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<!--\s*\/\.(?:product-page-info|product-details|product-info)/i);
+  if (detailsAreaMatch) {
+    const plainText = detailsAreaMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (oosRegex.test(plainText)) {
+      return true; // Out of stock
+    }
+  }
+
+  // 5. Explicit HTML headings or tags with out of stock text
+  const badgeMatch = cleanBody.match(/<(?:h[1-6]|div|span|p|strong|b|em)[^>]*>([^<]*(?:out\s+of\s+stock|sold\s+out)[^<]*)<\/(?:h[1-6]|div|span|p|strong|b|em)>/i);
+  if (badgeMatch) {
+    return true; // Out of stock
+  }
+
+  return false;
+}
 
 // Words used to pull the finish/colour text *exactly as written* from the product title.
 const FINISH_WORDS = new Set([
@@ -665,8 +719,12 @@ export class AmosMannExtractorEngine {
     const required = new Set(REQUIRED_FIELDS[mode].filter((f) => !optionalFields.includes(f)));
 
     const { html, finalUrl } = await this.fetchPage(url);
-        if (pathOf(finalUrl) !== pathOf(url)) {
-      if (finalUrl.includes("ERROR404") || finalUrl.includes("function=ERROR404") || finalUrl.includes("type=PRODUCT")) {
+        const origId = (url.match(/-(\d+)(?:-\d+)?-p\.asp/i) || [])[1];
+    const finalId = (finalUrl.match(/-(\d+)(?:-\d+)?-p\.asp/i) || [])[1];
+    const isSameProduct = origId && finalId && origId === finalId;
+
+    if (pathOf(finalUrl) !== pathOf(url) && !isSameProduct) {
+      if (finalUrl.includes("ERROR404") || finalUrl.includes("function=ERROR404") || finalUrl.includes("type=PRODUCT") || pathOf(finalUrl) === "" || pathOf(finalUrl) === "/") {
         throw new ProductRejectedError(url, [
           { field: "discontinued", reason: "Product discontinued or removed by supplier (404 Not Found on amosmannfurniture.co.uk)" }
         ]);
@@ -708,13 +766,26 @@ export class AmosMannExtractorEngine {
     // 3. Price
     const price = this.readPrice(node, html, fail);
 
-    // 4. Stock — only from the schema's explicit availability
+    // 4. Stock — Schema.org availability verified against live page HTML
+    // (EKM stores often hardcode Schema to InStock even when the visible page shows OUT OF STOCK)
     const offers = flattenOffers(node);
-    const availKeys = [...new Set(offers.map((o) => String((o && o.availability) || "").split("/").pop().toLowerCase()))];
+    const availKeys = [...new Set(offers.map((o) => String((o && o.availability) || "").split("/").pop().toLowerCase()))].filter(Boolean);
     let isOutOfStock = null;
-    if (availKeys.length !== 1 || !availKeys[0]) fail("availability", "stock status missing or inconsistent between offers");
-    else if (!(availKeys[0] in AVAILABILITY_IS_OUT_OF_STOCK)) fail("availability", `unrecognised availability "${availKeys[0]}"`);
-    else isOutOfStock = AVAILABILITY_IS_OUT_OF_STOCK[availKeys[0]];
+
+    const htmlIsOutOfStock = readAmosMannHtmlStock(html);
+
+    if (htmlIsOutOfStock) {
+      // Visible HTML takes precedence when the page explicitly says OUT OF STOCK
+      isOutOfStock = true;
+    } else if (availKeys.length === 1 && availKeys[0] in AVAILABILITY_IS_OUT_OF_STOCK) {
+      isOutOfStock = AVAILABILITY_IS_OUT_OF_STOCK[availKeys[0]];
+    } else if (availKeys.length > 0 && availKeys.some((k) => AVAILABILITY_IS_OUT_OF_STOCK[k] === true)) {
+      isOutOfStock = true;
+    } else if (optionalFields.includes("availability") || mode === "preview" || mode === "sync") {
+      isOutOfStock = false;
+    } else {
+      fail("availability", "stock status missing or unrecognised");
+    }
 
     // 5. Description
     const description = cleanHtmlDescription(node.description);
@@ -939,16 +1010,22 @@ export class AmosMannExtractorEngine {
     // Drafts / archived products are never re-published by the sync.
     const wantOut = removedCode ? true : live.isOutOfStock;
     const nextStatus = wantOut ? "out_of_stock" : "published";
-    if ((item.status === "published" || item.status === "out_of_stock") && item.status !== nextStatus) {
-      ops.push([`UPDATE products SET status = ?, updated_at = NOW() WHERE id = ?`, [nextStatus, item.product_id]]);
-      ops.push([`UPDATE supplier_feed_items SET stock_level = ? WHERE id = ?`, [wantOut ? 0 : this.inStockLevel, item.feed_item_id]]);
+    const targetStock = wantOut ? 0 : this.inStockLevel;
+    const needsStatusUpdate = (item.status === "published" || item.status === "out_of_stock") && item.status !== nextStatus;
+    const needsStockUpdate = Number(item.stock_level) !== targetStock;
+
+    if (needsStatusUpdate || needsStockUpdate) {
+      if (needsStatusUpdate) {
+        ops.push([`UPDATE products SET status = ?, updated_at = NOW() WHERE id = ?`, [nextStatus, item.product_id]]);
+      }
+      ops.push([`UPDATE supplier_feed_items SET stock_level = ? WHERE id = ?`, [targetStock, item.feed_item_id]]);
       stockUpdated = 1;
       notes.push(
         removedCode
           ? `Supplier page removed (HTTP ${removedCode}) -> Product hidden from storefront`
           : wantOut
-          ? `Supplier stock out -> Product hidden from storefront (status: ${nextStatus})`
-          : `Supplier restocked -> Product restored to storefront (status: ${nextStatus})`
+          ? `Supplier stock out -> Product hidden from storefront (status: ${nextStatus}, stock: 0)`
+          : `Supplier restocked -> Product restored to storefront (status: ${nextStatus}, stock: ${targetStock})`
       );
     }
 
@@ -979,7 +1056,7 @@ export class AmosMannExtractorEngine {
              fi.stock_level, p.id as product_id, p.title, p.price_pennies, p.status, p.images_json
       FROM supplier_feed_items fi
       JOIN products p ON fi.product_id = p.id
-      WHERE fi.supplier_id = '${SUPPLIER_ID}'
+      WHERE fi.supplier_id IN ('${SUPPLIER_ID}', 'sup_amos_mann') OR fi.source_url LIKE '%amosmannfurniture.co.uk%'
     `);
 
     let itemsScanned = 0;
@@ -1147,8 +1224,9 @@ export class AmosMannExtractorEngine {
 
     const finalCategoryId = normalizeToValidCategoryId(categoryId, cleanTitle, live.description || stagedData?.description, url);
 
-    const status = live.isOutOfStock ? "out_of_stock" : "published";
-    const stockLevel = live.isOutOfStock ? 0 : this.inStockLevel;
+    const isOut = Boolean(live.isOutOfStock || stagedData?.isOutOfStock);
+    const status = isOut ? "out_of_stock" : "published";
+    const stockLevel = isOut ? 0 : this.inStockLevel;
 
     await this.withTransaction(pool, async (conn) => {
       // 1. Product — only real, scraped data. Anything we don't have stays NULL / DB default.

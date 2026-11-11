@@ -43,7 +43,8 @@ export async function POST(request: Request) {
             images: images || [],
             tradeCostPennies: tradeCostPennies > 0 ? tradeCostPennies : null,
             categoryId,
-            deliveryTier
+            deliveryTier,
+            isOutOfStock: item.isOutOfStock !== undefined ? Boolean(item.isOutOfStock) : null
           };
 
           const imported = await amosMannExtractor.extractAndImportUrl(
