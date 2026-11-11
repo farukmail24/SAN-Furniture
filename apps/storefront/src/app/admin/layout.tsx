@@ -97,7 +97,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
-  const [openTicketsCount, setOpenTicketsCount] = useState<number>(3);
+  const [openTicketsCount, setOpenTicketsCount] = useState<number>(0);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const isFetchingNotifications = useRef(false);
@@ -154,14 +154,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (ticketsResult.status === "fulfilled") {
         const counts = ticketsResult.value?.counts;
         const totalOpen = Number(counts?.open || 0) + Number(counts?.in_progress || 0);
-        if (totalOpen > 0) {
-          setOpenTicketsCount(totalOpen);
-        }
+        setOpenTicketsCount(totalOpen);
+      } else {
+        setOpenTicketsCount(0);
       }
     } finally {
       isFetchingNotifications.current = false;
     }
   }, []);
+
+  // Listen for instant support ticket badge updates dispatched from Support Helpdesk
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleTicketUpdate = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      const counts = customEvt.detail?.counts;
+      if (counts) {
+        const totalOpen = Number(counts.open || 0) + Number(counts.in_progress || 0);
+        setOpenTicketsCount(totalOpen);
+      } else {
+        fetchNotifications();
+      }
+    };
+    window.addEventListener("san_support_tickets_updated", handleTicketUpdate);
+    return () => {
+      window.removeEventListener("san_support_tickets_updated", handleTicketUpdate);
+    };
+  }, [fetchNotifications]);
 
   useEffect(() => {
     if (isLoginPage) return;

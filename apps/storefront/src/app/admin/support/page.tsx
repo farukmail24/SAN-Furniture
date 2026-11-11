@@ -410,13 +410,34 @@ export default function AdminSupportHelpdeskPage() {
             if (data.counts) {
               const openCount = Number(data.counts.open || 0);
               const waitingCount = Number(data.counts.waiting_customer || 0);
+              const resolvedCount = Number(data.counts.resolved || 0);
+              const inProgressCount = Number(data.counts.in_progress || 0);
+              const totalCount = Number(data.counts.total || 0);
+
               setCounts({
-                total: Number(data.counts.total || 0),
+                total: totalCount,
                 open: openCount,
-                in_progress: Number(data.counts.in_progress || 0),
+                in_progress: inProgressCount,
                 waiting_customer: waitingCount,
-                resolved: Number(data.counts.resolved || 0),
+                resolved: resolvedCount,
               });
+
+              // Instantly synchronize sidebar badge in admin layout
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(
+                  new CustomEvent("san_support_tickets_updated", {
+                    detail: {
+                      counts: {
+                        total: totalCount,
+                        open: openCount,
+                        in_progress: inProgressCount,
+                        waiting_customer: waitingCount,
+                        resolved: resolvedCount,
+                      },
+                    },
+                  })
+                );
+              }
 
               if (!hasUserSelectedFilter.current) {
                 if (openCount === 0 && waitingCount > 0 && statusFilter === "open") {
