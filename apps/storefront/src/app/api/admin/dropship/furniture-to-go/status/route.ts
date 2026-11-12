@@ -115,18 +115,19 @@ export async function GET(request: Request) {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
                   res3.on("end", () => {
-                    const lowerB3 = b3.toLowerCase();
-                    const boxesIndex = lowerB3.indexOf("boxesopen");
-                    const afterBoxesHtml = boxesIndex !== -1
-                      ? b3.slice(boxesIndex, boxesIndex + 8000)
+                    // Inspect from Boxes header forward 10,000 chars
+                    const boxesHeaderIdx = b3.indexOf("uppercase\">Boxes");
+                    const afterBoxesSection = boxesHeaderIdx !== -1
+                      ? b3.slice(boxesHeaderIdx, boxesHeaderIdx + 10000)
                       : "not found";
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      afterBoxesHtml: afterBoxesHtml.slice(0, 4000)
+                      afterBoxesSection
                     });
+
                   });
                 });
 
