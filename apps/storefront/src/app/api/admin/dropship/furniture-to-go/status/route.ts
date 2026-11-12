@@ -23,7 +23,28 @@ export async function GET(request: Request) {
       
       const results: any = { token: token ? "acquired" : "failed" };
 
-      // 1. products-render-info
+      // 1. products-render-info AND products/:sku
+      const restProductRes = await new Promise((resolve) => {
+        const req = https.get({
+          hostname: "furniture-to-go.co.uk",
+          path: `/rest/V1/products/${encodeURIComponent(sku)}`,
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "User-Agent": (furnitureToGoExtractor as any).userAgent,
+            "Accept": "application/json"
+          },
+          timeout: 10000
+        }, (res) => {
+          let b = "";
+          res.on("data", c => b += c);
+          res.on("end", () => {
+            try { resolve({ status: res.statusCode, data: JSON.parse(b) }); } catch { resolve({ status: res.statusCode, raw: b.slice(0, 500) }); }
+          });
+        });
+        req.on("error", (e) => resolve({ error: e.message }));
+      });
+      results.restProduct = restProductRes;
+
       const renderRes = await new Promise((resolve) => {
         const queryPath = `/rest/V1/products-render-info?searchCriteria[filterGroups][0][filters][0][field]=sku&searchCriteria[filterGroups][0][filters][0][value]=${encodeURIComponent(sku)}&searchCriteria[filterGroups][0][filters][0][conditionType]=eq&storeId=1&currencyCode=GBP`;
         const req = https.get({
@@ -143,11 +164,43 @@ export async function GET(request: Request) {
                       req4.on("error", (e) => resolve({ error: e.message }));
                     });
 
+                    // Analyze b3 HTML for download/assembly/pdf
+                    const pdfMatches = Array.from(new Set(b3.match(/https?:\/\/[^\s"'<>]+\.pdf[^\s"'<>]*|\/[^\s"'<>]+\.pdf[^\s"'<>]*/gi) || []));
+                    const mageworxMatches = Array.from(new Set(b3.match(/https?:\/\/[^\s"'<>]*(?:mageworx|attachment|downloads?)[^\s"'<>]*|\/[^\s"'<>]*(?:mageworx|attachment|downloads?)[^\s"'<>]*/gi) || []));
+                    const has541 = b3.includes("5.41");
+                    const hasAssembly = b3.toLowerCase().includes("assembly");
+                    const hasDownloadDocs = b3.toLowerCase().includes("download documents");
+
+                    // Find context around "4023544"
+                    const skuSnippets: string[] = [];
+                    let idx = 0;
+                    while ((idx = b3.indexOf("4023544", idx)) !== -1 && skuSnippets.length < 10) {
+                      skuSnippets.push(b3.slice(Math.max(0, idx - 100), Math.min(b3.length, idx + 150)).replace(/\s+/g, " "));
+                      idx += 7;
+                    }
+
+                    // Find context around "Download documents" or "5.41" if found
+                    const docSnippets: string[] = [];
+                    if (has541) {
+                      const pos = b3.indexOf("5.41");
+                      docSnippets.push(b3.slice(Math.max(0, pos - 200), Math.min(b3.length, pos + 200)).replace(/\s+/g, " "));
+                    }
+
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      sectionData: sectionDataRes
+                      pdfMatches,
+                      mageworxMatches: mageworxMatches.slice(0, 20),
+                      has541,
+                      hasAssembly,
+                      hasDownloadDocs,
+                      skuSnippets: skuSnippets.slice(0, 5),
+                      docSnippets,
+                      sectionData: {
+                        status: (sectionDataRes as any)?.status,
+                        sectionKeys: (sectionDataRes as any)?.sectionKeys
+                      }
                     });
 
 
