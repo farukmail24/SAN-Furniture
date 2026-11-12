@@ -4,6 +4,23 @@
  * Guaranteed resilient fallback for SSR, SSG, and Client rendering
  */
 
+import { LEGAL_TERMS_DEFAULT_CONTENT, LEGAL_PRIVACY_DEFAULT_CONTENT } from "@/lib/legal-defaults";
+
+export function getPageKeyForSection(sectionKey: string): string {
+  if (sectionKey.startsWith("header_")) return "header";
+  if (sectionKey.startsWith("footer_")) return "footer";
+  if (sectionKey.startsWith("catalog_")) return "catalog";
+  if (sectionKey.startsWith("pdp_")) return "product_detail";
+  if (sectionKey.startsWith("cart_")) return "cart";
+  if (sectionKey.startsWith("checkout_")) return "checkout";
+  if (sectionKey.startsWith("about_")) return "about";
+  if (sectionKey.startsWith("delivery_") || sectionKey.startsWith("returns_")) return "delivery_returns";
+  if (sectionKey.startsWith("contact_") || sectionKey.startsWith("faq_")) return "contact_faq";
+  if (sectionKey.startsWith("account_")) return "account";
+  if (sectionKey.startsWith("legal_")) return "legal";
+  return "home";
+}
+
 export interface SiteSection<T = Record<string, any>> {
   id: string;
   pageKey: string;
@@ -1388,5 +1405,15 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       support_shortcut_text:
         "Need urgent delivery rescheduling? Speak to dispatch directly via our live helpdesk.",
     },
+  },
+  legal_terms: {
+    isEnabled: true,
+    sectionName: "Terms and Conditions (/terms)",
+    content: LEGAL_TERMS_DEFAULT_CONTENT,
+  },
+  legal_privacy: {
+    isEnabled: true,
+    sectionName: "Privacy Policy & Cookies Schedule (/privacy)",
+    content: LEGAL_PRIVACY_DEFAULT_CONTENT,
   },
 };

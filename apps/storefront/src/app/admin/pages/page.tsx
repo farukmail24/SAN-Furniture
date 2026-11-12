@@ -160,6 +160,14 @@ const PAGE_TABS: PageTabDef[] = [
     color: "brass",
   },
   {
+    key: "legal",
+    label: "Terms & Privacy (Legal)",
+    icon: FileText,
+    desc: "SAN Furniture Limited Terms & Conditions (/terms) and Privacy Policy & Cookies Schedule (/privacy)",
+    liveUrl: "/terms",
+    color: "navy",
+  },
+  {
     key: "account",
     label: "Client Account Portal",
     icon: User,
@@ -467,6 +475,7 @@ export default function AdminPagesCustomizer() {
               newItem[k] = "";
             }
             if ("title" in newItem) newItem.title = "New Item Title";
+            if ("id" in newItem && !newItem.id) newItem.id = `section-${arr.length + 1}`;
           } else {
             newItem = { title: "New Item", description: "" };
           }
@@ -1927,7 +1936,7 @@ export default function AdminPagesCustomizer() {
                             </button>
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className={sec.sectionKey.startsWith("legal_") && arrayKey === "sections" ? "grid grid-cols-1 gap-4" : "grid grid-cols-1 sm:grid-cols-2 gap-4"}>
                             {arrValue.map((itemObj: any, idx: number) => {
                               const itemTitle =
                                 itemObj.title ||
@@ -1966,7 +1975,7 @@ export default function AdminPagesCustomizer() {
                                       const isSubDesc =
                                         subK === "description" ||
                                         subK === "answer" ||
-                                        subK === "story";
+                                        subK === "story" || subK === "body" || (typeof subV === "string" && (subV.includes("\n") || subV.length > 90));
                                       return (
                                         <div key={subK} className="space-y-0.5">
                                           <div className="flex items-center justify-between">
@@ -1979,7 +1988,7 @@ export default function AdminPagesCustomizer() {
                                           </div>
                                           {isSubDesc ? (
                                             <textarea
-                                              rows={2}
+                                              rows={subK === "body" ? 6 : 2}
                                               value={(subV as string) || ""}
                                               onChange={(e) =>
                                                 handleNestedArrayItemChange(

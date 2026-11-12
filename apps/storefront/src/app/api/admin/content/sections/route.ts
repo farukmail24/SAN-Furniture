@@ -1,26 +1,13 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
+import { DEFAULT_STOREFRONT_SECTIONS, getPageKeyForSection } from "@/lib/cms-defaults";
 import { getAdminFromRequest } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
-function getPageKeyForSection(sectionKey: string): string {
-  if (sectionKey.startsWith("header_")) return "header";
-  if (sectionKey.startsWith("footer_")) return "footer";
-  if (sectionKey.startsWith("catalog_")) return "catalog";
-  if (sectionKey.startsWith("pdp_")) return "product_detail";
-  if (sectionKey.startsWith("cart_")) return "cart";
-  if (sectionKey.startsWith("checkout_")) return "checkout";
-  if (sectionKey.startsWith("about_")) return "about";
-  if (sectionKey.startsWith("delivery_") || sectionKey.startsWith("returns_")) return "delivery_returns";
-  if (sectionKey.startsWith("contact_") || sectionKey.startsWith("faq_")) return "contact_faq";
-  if (sectionKey.startsWith("account_")) return "account";
-  return "home";
-}
-
 async function ensureAndSeedSectionsTable(pool: any): Promise<any[]> {
-  await pool.query(`
+  await pool
+    .query(`
     CREATE TABLE IF NOT EXISTS site_page_sections (
       id VARCHAR(64) PRIMARY KEY,
       page_key VARCHAR(64) NOT NULL,
@@ -33,39 +20,49 @@ async function ensureAndSeedSectionsTable(pool: any): Promise<any[]> {
       INDEX idx_page_key (page_key),
       INDEX idx_sort_order (sort_order)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  `).catch(() => {});
+  `)
+    .catch(() => {});
 
-  const [rows]: any = await pool.query(
-    "SELECT * FROM site_page_sections ORDER BY page_key ASC, sort_order ASC"
-  ).catch(() => [[]]);
+  const [rows]: any = await pool
+    .query("SELECT * FROM site_page_sections ORDER BY page_key ASC, sort_order ASC")
+    .catch(() => [[]]);
 
-  if (Array.isArray(rows) && rows.length > 0) {
+  const existingKeys = new Set(
+    Array.isArray(rows) ? rows.map((r: any) => String(r.section_key || "")) : []
+  );
+  const missingEntries = Object.entries(DEFAULT_STOREFRONT_SECTIONS).filter(
+    ([sectionKey]) => !existingKeys.has(sectionKey)
+  );
+
+  if (Array.isArray(rows) && rows.length > 0 && missingEntries.length === 0) {
     return rows;
   }
 
-  // Auto-seed default sections into database table
+  // Auto-seed any missing default sections into database table
   try {
-    for (const [sectionKey, sec] of Object.entries(DEFAULT_STOREFRONT_SECTIONS)) {
+    for (const [sectionKey, sec] of missingEntries) {
       const secId = `sec_${sectionKey}`;
       const pageKey = getPageKeyForSection(sectionKey);
-      await pool.query(
-        `INSERT IGNORE INTO site_page_sections (id, page_key, section_key, section_name, is_enabled, sort_order, content_json, updated_at)
+      await pool
+        .query(
+          `INSERT IGNORE INTO site_page_sections (id, page_key, section_key, section_name, is_enabled, sort_order, content_json, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          secId,
-          pageKey,
-          sectionKey,
-          sec.sectionName,
-          sec.isEnabled ? 1 : 0,
-          0,
-          JSON.stringify(sec.content || {}),
-        ]
-      ).catch(() => {});
+          [
+            secId,
+            pageKey,
+            sectionKey,
+            sec.sectionName,
+            sec.isEnabled ? 1 : 0,
+            0,
+            JSON.stringify(sec.content || {}),
+          ]
+        )
+        .catch(() => {});
     }
 
-    const [reFetched]: any = await pool.query(
-      "SELECT * FROM site_page_sections ORDER BY page_key ASC, sort_order ASC"
-    ).catch(() => [[]]);
+    const [reFetched]: any = await pool
+      .query("SELECT * FROM site_page_sections ORDER BY page_key ASC, sort_order ASC")
+      .catch(() => [[]]);
 
     if (Array.isArray(reFetched) && reFetched.length > 0) {
       return reFetched;
@@ -74,7 +71,7 @@ async function ensureAndSeedSectionsTable(pool: any): Promise<any[]> {
     console.warn("Auto-seeding site_page_sections failed:", err);
   }
 
-  return [];
+  return Array.isArray(rows) ? rows : [];
 }
 
 export async function GET(request: Request) {

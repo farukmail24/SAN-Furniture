@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getDbPool } from "@/lib/db";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 import { invalidateServerSectionsCache } from "@/lib/cms-server";
@@ -17,6 +18,7 @@ function getPageKeyForSection(sectionKey: string): string {
   if (sectionKey.startsWith("delivery_") || sectionKey.startsWith("returns_")) return "delivery_returns";
   if (sectionKey.startsWith("contact_") || sectionKey.startsWith("faq_")) return "contact_faq";
   if (sectionKey.startsWith("account_")) return "account";
+  if (sectionKey.startsWith("legal_")) return "legal";
   return "home";
 }
 
@@ -87,6 +89,11 @@ export async function POST(
     );
 
     invalidateServerSectionsCache();
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/terms");
+      revalidatePath("/privacy");
+    } catch {}
 
     return NextResponse.json({
       success: true,

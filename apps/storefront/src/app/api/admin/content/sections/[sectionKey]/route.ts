@@ -18,6 +18,7 @@ function getPageKeyForSection(sectionKey: string): string {
   if (sectionKey.startsWith("delivery_") || sectionKey.startsWith("returns_")) return "delivery_returns";
   if (sectionKey.startsWith("contact_") || sectionKey.startsWith("faq_")) return "contact_faq";
   if (sectionKey.startsWith("account_")) return "account";
+  if (sectionKey.startsWith("legal_")) return "legal";
   return "home";
 }
 
@@ -225,6 +226,8 @@ async function handleUpdate(
       revalidatePath("/about");
       revalidatePath("/delivery");
       revalidatePath("/returns");
+      revalidatePath("/terms");
+      revalidatePath("/privacy");
     } catch {
       // Revalidation warning or not supported in current environment
     }

@@ -1,31 +1,31 @@
 {
   "..\\..\\..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
-    "id": 27655,
+    "id": 7655,
     "files": [
-      "static/chunks/7655.ab77175f0ba71705.js"
+      "static/chunks/7655.d224f7e17f3dd2ff.js"
     ]
   },
   "..\\..\\..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
-    "id": 43826,
+    "id": 3826,
     "files": [
-      "static/chunks/3826.1e73c87af964d137.js"
+      "static/chunks/3826.0898489250f4d54b.js"
     ]
   },
   "components\\layout\\StorefrontShell.tsx -> ./StorefrontFrame": {
-    "id": 82668,
+    "id": 2668,
     "files": [
-      "static/chunks/9664-bbf55e28a0306eec.js",
-      "static/chunks/3916-6475694aaba0826a.js",
-      "static/chunks/6032-157cd8c3cdd8565c.js",
-      "static/chunks/4868-27b214dd9e9741a7.js",
-      "static/chunks/6890-eecd6dcb9986b8d6.js",
-      "static/chunks/2668.63fe84ccdbe17233.js"
+      "static/chunks/9664-af80478aa73ba424.js",
+      "static/chunks/3916-7f124b1f088a2675.js",
+      "static/chunks/6032-041e02bdd37247f1.js",
+      "static/chunks/321-81c518bf55db87f3.js",
+      "static/chunks/6890-adebc02750cc97a9.js",
+      "static/chunks/2668.6a2b4e29bdd5235b.js"
     ]
   },
   "lib\\catalog.ts -> ./products-seed-data.json": {
-    "id": 80893,
+    "id": 893,
     "files": [
-      "static/chunks/893.5554c57b323c995f.js"
+      "static/chunks/893.d7d2d646652b9706.js"
     ]
   }
 }

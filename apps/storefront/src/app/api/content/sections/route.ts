@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
-import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
+import { DEFAULT_STOREFRONT_SECTIONS, getPageKeyForSection } from "@/lib/cms-defaults";
 
 export const dynamic = "force-dynamic";
 
@@ -60,12 +60,41 @@ export async function GET(request: Request) {
         sectionsMap[row.section_key] = secObj;
         list.push(secObj);
       }
+      for (const [key, defaultSec] of Object.entries(DEFAULT_STOREFRONT_SECTIONS)) {
+        const defaultPageKey = getPageKeyForSection(key);
+        if (
+          !sectionsMap[key] &&
+          (!pageFilter || pageFilter === "all" || defaultPageKey === pageFilter)
+        ) {
+          const fallbackObj = {
+            id: `sec_${key}`,
+            pageKey: defaultPageKey,
+            sectionKey: key,
+            sectionName: defaultSec.sectionName,
+            isEnabled: defaultSec.isEnabled,
+            sortOrder: 0,
+            content: defaultSec.content,
+          };
+          sectionsMap[key] = fallbackObj;
+          list.push(fallbackObj);
+        }
+      }
     } else {
       // Fallback to cms defaults if database table is empty
       for (const [key, defaultSec] of Object.entries(DEFAULT_STOREFRONT_SECTIONS)) {
-        if (!pageFilter || pageFilter === "all" || (defaultSec as any).pageKey === pageFilter) {
-          sectionsMap[key] = defaultSec;
-          list.push(defaultSec);
+        const defaultPageKey = getPageKeyForSection(key);
+        if (!pageFilter || pageFilter === "all" || defaultPageKey === pageFilter) {
+          const fallbackObj = {
+            id: `sec_${key}`,
+            pageKey: defaultPageKey,
+            sectionKey: key,
+            sectionName: defaultSec.sectionName,
+            isEnabled: defaultSec.isEnabled,
+            sortOrder: 0,
+            content: defaultSec.content,
+          };
+          sectionsMap[key] = fallbackObj;
+          list.push(fallbackObj);
         }
       }
     }

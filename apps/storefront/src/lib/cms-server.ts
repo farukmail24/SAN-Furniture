@@ -1,6 +1,6 @@
 import { apiUrl } from "@/lib/api-config";
 import type { SiteSection } from "@/lib/cms";
-import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
+import { DEFAULT_STOREFRONT_SECTIONS, getPageKeyForSection } from "@/lib/cms-defaults";
 import { getDbPool } from "@/lib/db";
 
 // Server-side in-memory hot cache for instant 0ms SSR rendering
@@ -92,6 +92,21 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
           content,
           updatedAt: String(row.updated_at),
         };
+      }
+
+      for (const [key, defaultSec] of Object.entries(DEFAULT_STOREFRONT_SECTIONS)) {
+        const defaultPageKey = getPageKeyForSection(key);
+        if (!sectionsMap[key] && (cacheKey === "all" || defaultPageKey === cacheKey)) {
+          sectionsMap[key] = {
+            id: `sec_${key}`,
+            pageKey: defaultPageKey,
+            sectionKey: key,
+            sectionName: defaultSec.sectionName,
+            isEnabled: defaultSec.isEnabled,
+            sortOrder: 0,
+            content: defaultSec.content,
+          };
+        }
       }
 
       serverSectionsCache.set(cacheKey, { data: sectionsMap, timestamp: Date.now() });
