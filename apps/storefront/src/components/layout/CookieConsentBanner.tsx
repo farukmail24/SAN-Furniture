@@ -26,7 +26,15 @@ export function CookieConsentBanner() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<CookiePreferences>;
+        setPreferences({
+          essential: true,
+          functional: Boolean(parsed.functional),
+          analytics: Boolean(parsed.analytics),
+          marketing: Boolean(parsed.marketing),
+        });
+      } else {
         // Small delay to prevent layout shift during initial paint
         const timer = setTimeout(() => setIsVisible(true), 600);
         return () => clearTimeout(timer);
@@ -34,6 +42,15 @@ export function CookieConsentBanner() {
     } catch {
       setIsVisible(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const handleOpenPreferences = () => {
+      setIsVisible(true);
+      setShowPreferences(true);
+    };
+    window.addEventListener("san:open-cookie-preferences", handleOpenPreferences);
+    return () => window.removeEventListener("san:open-cookie-preferences", handleOpenPreferences);
   }, []);
 
   const saveConsent = (prefs: CookiePreferences) => {
