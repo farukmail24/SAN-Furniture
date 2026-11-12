@@ -363,7 +363,7 @@ if ($githubEvent === 'push') {
         }
     }
 
-    exec("git fetch origin {$branch} 2>&1", $output, $exitCode);
+    exec("git -c pack.threads=1 fetch origin {$branch} 2>&1", $output, $exitCode);
     exec("git reset --hard origin/{$branch} 2>&1", $output, $exitCode);
 
     // 2. Restore CloudLinux / Passenger block to .htaccess if it is not present
