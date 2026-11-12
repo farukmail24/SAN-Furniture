@@ -115,24 +115,18 @@ export async function GET(request: Request) {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
                   res3.on("end", () => {
-                    // Find all x-data attributes and all scripts mentioning download / mageworx / attachment
-                    const xDataMatches = [...b3.matchAll(/x-data=["']([^"']+)["']/gi)].map(m => m[1]);
-                    const scriptMatches = [...b3.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+                    // Find the entire mage-cache-storage script
+                    const mageCacheScript = [...b3.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
                       .map(m => m[1])
-                      .filter(s => /mageworx|attachment|download|section\/load/i.test(s))
-                      .map(s => s.slice(0, 300).replace(/[\r\n\t]+/g, " "));
-
-                    // Also search customer sections
-                    const sectionMatches = [...b3.matchAll(/sections(?:Names)?["']?\s*:\s*(\[[^\]]+\])/gi)].map(m => m[1]);
+                      .find(s => s.includes("mage-cache-storage")) || "not found";
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      xDataMatches,
-                      scriptMatches,
-                      sectionMatches
+                      mageCacheScript: mageCacheScript.slice(0, 4000)
                     });
+
 
 
                   });
