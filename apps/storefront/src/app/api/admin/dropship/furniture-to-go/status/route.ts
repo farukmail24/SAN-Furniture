@@ -115,28 +115,17 @@ export async function GET(request: Request) {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
                   res3.on("end", () => {
-                    const snippets = [];
                     const lowerB3 = b3.toLowerCase();
-                    for (const term of ["boxes", "specifications", "download documents", "download document", "chelsea 4023544", "4023544", "hyva"]) {
-                      let p = 0;
-                      while ((p = lowerB3.indexOf(term, p)) !== -1) {
-                        snippets.push({
-                          term,
-                          pos: p,
-                          snippet: b3.slice(Math.max(0, p - 60), Math.min(b3.length, p + 250)).replace(/[\r\n\t]+/g, " ")
-                        });
-                        p += term.length + 80;
-                        if (snippets.length > 25) break;
-                      }
-                      if (snippets.length > 25) break;
-                    }
-
+                    const boxesIndex = lowerB3.indexOf("boxesopen");
+                    const afterBoxesHtml = boxesIndex !== -1
+                      ? b3.slice(boxesIndex, boxesIndex + 8000)
+                      : "not found";
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      snippets
+                      afterBoxesHtml: afterBoxesHtml.slice(0, 4000)
                     });
                   });
                 });
