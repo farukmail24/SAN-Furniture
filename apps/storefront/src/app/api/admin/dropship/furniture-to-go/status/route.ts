@@ -46,9 +46,10 @@ export async function GET(request: Request) {
       });
       results.renderInfo = renderRes;
 
-      // 2. Test fetching customer login page and ajax login from UK server
-      const loginProbe = await new Promise((resolve) => {
-        const req = https.get({
+      // 2. Test full B2B login and fetch authenticated product page
+      const b2bLoginAndFetch = await new Promise((resolve) => {
+        // Step A: Get form_key and initial PHPSESSID
+        const req1 = https.get({
           hostname: "furniture-to-go.co.uk",
           path: "/customer/account/login/",
           headers: {
@@ -56,26 +57,101 @@ export async function GET(request: Request) {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
           },
           timeout: 10000
-        }, (res) => {
-          let b = "";
-          res.on("data", c => b += c);
-          res.on("end", () => {
-            const isAnubis = b.includes("Making sure you're not a bot") || b.includes("anubis");
-            const formKeyMatch = b.match(/name=["']form_key["'][^>]*value=["']([^"']+)["']/i) ||
-                                 b.match(/value=["']([^"']+)["'][^>]*name=["']form_key["']/i);
-            const cookies = (res.headers["set-cookie"] || []).map(c => c.split(";")[0]);
-            resolve({
-              status: res.statusCode,
-              isAnubis,
-              htmlLength: b.length,
-              formKey: formKeyMatch ? formKeyMatch[1] : null,
-              cookies
+        }, (res1) => {
+          let b1 = "";
+          res1.on("data", c => b1 += c);
+          res1.on("end", () => {
+            const formKeyMatch = b1.match(/name=["']form_key["'][^>]*value=["']([^"']+)["']/i) ||
+                                 b1.match(/value=["']([^"']+)["'][^>]*name=["']form_key["']/i);
+            const formKey = formKeyMatch ? formKeyMatch[1] : null;
+            const cookies1 = (res1.headers["set-cookie"] || []).map(c => c.split(";")[0]).join("; ");
+
+            if (!formKey) {
+              return resolve({ step: "get_form_key", error: "form_key not found" });
+            }
+
+            // Step B: POST login
+            const postData = new URLSearchParams({
+              form_key: formKey,
+              "login[username]": "arif@sanfurniture.com",
+              "login[password]": "njaWt78ATtDm!brViHeMU"
+            }).toString();
+
+            const req2 = https.request({
+              hostname: "furniture-to-go.co.uk",
+              path: "/customer/account/loginPost/",
+              method: "POST",
+              headers: {
+                "User-Agent": (furnitureToGoExtractor as any).userAgent,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Content-Length": Buffer.byteLength(postData),
+                "Cookie": cookies1,
+                "Referer": "https://furniture-to-go.co.uk/customer/account/login/",
+                "Origin": "https://furniture-to-go.co.uk"
+              },
+              timeout: 15000
+            }, (res2) => {
+              let b2 = "";
+              res2.on("data", c => b2 += c);
+              res2.on("end", () => {
+                const cookies2 = (res2.headers["set-cookie"] || []).map(c => c.split(";")[0]);
+                const combinedCookies = [
+                  ...cookies1.split("; ").filter(Boolean),
+                  ...cookies2
+                ].join("; ");
+
+                // Step C: Fetch authenticated product page
+                const req3 = https.get({
+                  hostname: "furniture-to-go.co.uk",
+                  path: "/chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim.html",
+                  headers: {
+                    "User-Agent": (furnitureToGoExtractor as any).userAgent,
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                    "Cookie": combinedCookies,
+                    "Referer": "https://furniture-to-go.co.uk/"
+                  },
+                  timeout: 15000
+                }, (res3) => {
+                  let b3 = "";
+                  res3.on("data", c => b3 += c);
+                  res3.on("end", () => {
+                    const hasDocSec = /download\s+documents/i.test(b3);
+                    const hasAssembly = /assembly\s+instructions/i.test(b3);
+                    
+                    // Extract all links that could be documents
+                    const foundLinks = [];
+                    for (const m of b3.matchAll(/<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+                      const href = m[1];
+                      const text = m[2].replace(/<[^>]+>/g, " ").trim();
+                      if (/pdf|download|attachment|manual|assembly|instruction/i.test(href) || /pdf|download|attachment|manual|assembly|instruction/i.test(text)) {
+                        foundLinks.push({ href, text });
+                      }
+                    }
+
+                    resolve({
+                      loginStatus: res2.statusCode,
+                      loginLocation: res2.headers["location"],
+                      combinedCookiesLength: combinedCookies.length,
+                      productPageStatus: res3.statusCode,
+                      productPageLength: b3.length,
+                      hasDocSec,
+                      hasAssembly,
+                      foundLinks
+                    });
+                  });
+                });
+                req3.on("error", (e) => resolve({ step: "fetch_product", error: e.message }));
+              });
             });
+            req2.on("error", (e) => resolve({ step: "login_post", error: e.message }));
+            req2.write(postData);
+            req2.end();
           });
         });
-        req.on("error", (e) => resolve({ error: e.message }));
+        req1.on("error", (e) => resolve({ step: "get_login_page", error: e.message }));
       });
-      results.loginProbe = loginProbe;
+      results.b2bLoginAndFetch = b2bLoginAndFetch;
+
 
 
       // 3. Test direct file / downloads controllers for 4023544
