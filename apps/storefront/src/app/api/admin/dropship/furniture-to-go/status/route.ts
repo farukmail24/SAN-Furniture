@@ -198,6 +198,7 @@ export async function GET(request: Request) {
                 ingestCookies(res2.headers["set-cookie"]);
                 const redirectLocation = res2.headers["location"] || "/customer/account/";
 
+                let bRInfo = "";
                 // Step C: Follow redirect to /customer/account/ to establish Magento customer session
                 await new Promise((resNav) => {
                   const reqRedir = https.get({
@@ -215,6 +216,12 @@ export async function GET(request: Request) {
                     resR.on("data", c => bR += c);
                     resR.on("end", () => {
                       ingestCookies(resR.headers["set-cookie"]);
+                      bRInfo = JSON.stringify({
+                        status: resR.statusCode,
+                        hasArif: bR.toLowerCase().includes("arif"),
+                        hasMyAccount: bR.toLowerCase().includes("my account"),
+                        hasInvalidFormKey: bR.toLowerCase().includes("invalid form key")
+                      });
                       resNav(true);
                     });
                   });
@@ -269,18 +276,30 @@ export async function GET(request: Request) {
                       } catch {}
                     }
 
+                    // Find snippets of mageworx or attachment
+                    const mwSnippets: string[] = [];
+                    let mwIdx = 0;
+                    while ((mwIdx = b3.toLowerCase().indexOf("attachment", mwIdx)) !== -1 && mwSnippets.length < 5) {
+                      mwSnippets.push(b3.slice(Math.max(0, mwIdx - 150), Math.min(b3.length, mwIdx + 200)));
+                      mwIdx += 10;
+                    }
+
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
+                      bRInfo,
                       cookieJarKeys: Array.from(cookieJar.keys()),
                       productPageStatus: res3.statusCode,
                       productPageLength: b3.length,
                       has541,
                       hasAssembly,
                       hasDownloadDocs,
+                      hasBoxes: b3.toLowerCase().includes("boxes"),
+                      hasProductSpecs: b3.toLowerCase().includes("product specifications"),
                       assemblyLinks,
                       pdfMatches,
                       mageworxMatches: mageworxMatches.slice(0, 10),
+                      mwSnippets,
                       downloadedDocPath
                     });
                   });
