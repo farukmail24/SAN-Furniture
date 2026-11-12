@@ -550,7 +550,10 @@ if ($githubEvent === 'push') {
             'pusher' => $pusher,
             'timestamp' => date('c')
         ]);
-        if (function_exists('fastcgi_finish_request')) {
+        if (function_exists('litespeed_finish_request')) {
+            echo $ackPayload;
+            litespeed_finish_request();
+        } elseif (function_exists('fastcgi_finish_request')) {
             echo $ackPayload;
             fastcgi_finish_request();
         } else {

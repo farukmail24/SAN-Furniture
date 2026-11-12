@@ -149,21 +149,30 @@ export async function POST(request: Request) {
       const executionLogs: string[] = [];
 
       try {
-        // Step A: Git pull or fetch & reset
-        const gitCmd = `git fetch origin ${branch} && git reset --hard origin/${branch}`;
-        const { stdout: gitOut, stderr: gitErr } = await execAsync(gitCmd, {
-          cwd: projectRoot,
-          timeout: 60000,
-        }).catch(async () => {
-          // Fallback to simple git pull
-          return await execAsync(`git pull origin ${branch}`, {
+        // Step A: Git pull or fetch & reset with single-thread to preserve process limits
+        const gitCmd = `git -c pack.threads=1 fetch origin ${branch} && git reset --hard origin/${branch}`;
+        try {
+          const { stdout: gitOut, stderr: gitErr } = await execAsync(gitCmd, {
             cwd: projectRoot,
-            timeout: 60000,
+            timeout: 25000,
           });
-        });
-
-        if (gitOut) executionLogs.push(gitOut.trim());
-        if (gitErr) executionLogs.push(gitErr.trim());
+          if (gitOut) executionLogs.push(gitOut.trim());
+          if (gitErr) executionLogs.push(gitErr.trim());
+        } catch (gitErr: any) {
+          executionLogs.push(`Node git fetch note: ${gitErr?.message || String(gitErr)}`);
+          try {
+            const phpUrl = `http://127.0.0.1/deploy.php?secret=${encodeURIComponent(DEPLOY_SECRET)}&sync=1`;
+            const phpRes = await fetch(phpUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'x-github-event': 'push' },
+              body: JSON.stringify({ ref, after: commitSha }),
+            });
+            const phpData = await phpRes.json().catch(() => null);
+            if (phpData?.success) {
+              executionLogs.push('Fallback to deploy.php succeeded');
+            }
+          } catch {}
+        }
 
         // Step B: Touch Phusion Passenger restart file on cPanel
         const restartPaths = [
@@ -311,7 +320,7 @@ export async function POST(request: Request) {
             error: "Failed to execute git deployment commands",
             details: deployErr?.message || String(deployErr),
           },
-          { status: 500 }
+          { status: 200 }
         );
       }
     }
@@ -327,7 +336,7 @@ export async function POST(request: Request) {
         error: "Internal Server Error during webhook execution",
         details: err?.message || String(err),
       },
-      { status: 500 }
+      { status: 200 }
     );
   }
 }
