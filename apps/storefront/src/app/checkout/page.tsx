@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ShieldCheck,
@@ -255,6 +255,12 @@ export default function CheckoutPage() {
   const [savedAddresses, setSavedAddresses] = useState<SavedCustomerAddress[]>([]);
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState<string>("new");
   const [isLoadingSavedAddresses, setIsLoadingSavedAddresses] = useState(false);
+
+  // Legal terms & conditions acceptance state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState(false);
+  const termsContainerRef = useRef<HTMLDivElement | null>(null);
+  const termsCheckboxRef = useRef<HTMLInputElement | null>(null);
 
   const applySavedAddress = (addr: SavedCustomerAddress) => {
     setBillingAddress1(addr.addressLine1 || "");
@@ -724,6 +730,8 @@ export default function CheckoutPage() {
     setBillingCountry("United Kingdom");
     setBillingEmail(activeEmail);
     setBillingPhone(activePhone);
+    setTermsAccepted(true);
+    setTermsError(false);
   };
 
   // Quick helper to autofill demo test card
@@ -884,6 +892,17 @@ export default function CheckoutPage() {
           return;
         }
       }
+    }
+
+    // Mandatory Terms & Conditions acceptance validation
+    if (!termsAccepted) {
+      setTermsError(true);
+      setSubmitError("Please tick the checkbox to agree to the Terms and Conditions before placing your order.");
+      if (termsContainerRef.current) {
+        termsContainerRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      termsCheckboxRef.current?.focus();
+      return;
     }
 
     setIsProcessingPayment(true);
@@ -2646,6 +2665,79 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Mandatory Legal Terms & Conditions Acceptance Checkbox */}
+              <div
+                ref={termsContainerRef}
+                className={`p-4 rounded-xl border transition-all ${
+                  termsError
+                    ? "bg-rose-50/90 border-rose-400 ring-2 ring-rose-200"
+                    : termsAccepted
+                    ? "bg-sand-100/90 border-forest-400/60"
+                    : "bg-sand-100/70 border-sand-300 hover:border-sand-400"
+                }`}
+              >
+                <label
+                  htmlFor="checkout-terms-checkbox"
+                  className="flex items-start gap-3 cursor-pointer select-none"
+                >
+                  <input
+                    id="checkout-terms-checkbox"
+                    ref={termsCheckboxRef}
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setTermsAccepted(checked);
+                      if (checked) {
+                        setTermsError(false);
+                        if (submitError && submitError.includes("Terms and Conditions")) {
+                          setSubmitError(null);
+                        }
+                      }
+                    }}
+                    className={`mt-0.5 w-4 h-4 rounded text-brass-600 focus:ring-brass-500 border-sand-400 accent-brass-600 cursor-pointer shrink-0 transition-transform ${
+                      termsError ? "ring-2 ring-rose-500" : ""
+                    }`}
+                  />
+                  <div className="text-xs text-navy-900 leading-relaxed">
+                    <span className="font-semibold text-navy-950">
+                      By clicking on a button marked &apos;I accept&apos;, I agree to the{" "}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="underline font-bold text-brass-700 hover:text-brass-900 focus:outline-none focus:ring-1 focus:ring-brass-500 rounded px-0.5 transition-colors inline-flex items-center gap-0.5"
+                      >
+                        <span>terms and conditions</span>
+                        <ExternalLink className="w-3 h-3 inline text-brass-600 opacity-80" />
+                      </Link>
+                      {" "}and{" "}
+                      <Link
+                        href="/delivery"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="underline font-semibold text-brass-700 hover:text-brass-900 focus:outline-none focus:ring-1 focus:ring-brass-500 rounded px-0.5 transition-colors"
+                      >
+                        Delivery Policy
+                      </Link>
+                      {" "}<span className="text-rose-600 font-bold">*</span>
+                    </span>
+                    <p className="text-[11px] text-navy-600 mt-1">
+                      Your purchase is protected under the UK Consumer Rights Act 2015 and Consumer Contracts Regulations with a 14-day statutory cooling-off period.
+                    </p>
+                  </div>
+                </label>
+
+                {termsError && (
+                  <div className="mt-2.5 pt-2 border-t border-rose-200/80 flex items-center gap-1.5 text-xs text-rose-700 font-medium animate-in fade-in">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
+                    <span>Please tick the box above to accept the terms and conditions before placing your order.</span>
+                  </div>
+                )}
+              </div>
+
               {/* Submit Error Alert right at CTA */}
               {submitError && (
                 <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs flex items-start gap-2.5 animate-in fade-in">
@@ -2697,7 +2789,7 @@ export default function CheckoutPage() {
                 ) : (
                   <>
                     <Lock className="w-4 h-4" />
-                    <span>Pay {formatGBP(grandTotalPennies)} & Confirm Order</span>
+                    <span>I Accept — Pay {formatGBP(grandTotalPennies)} & Confirm Order</span>
                   </>
                 )}
               </button>

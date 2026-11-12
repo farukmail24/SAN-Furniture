@@ -121,7 +121,8 @@ export function Footer() {
               <li><Link href="/about" className="hover:text-brass-400 block py-0.5">About SAN Furniture</Link></li>
               <li><Link href="/delivery" className="hover:text-brass-400 block py-0.5">Furniture Care & Protection</Link></li>
               <li><Link href="/catalog" className="hover:text-brass-400 block py-0.5">Contemporary Room Inspiration</Link></li>
-              <li><Link href="/privacy" className="hover:text-brass-400 block py-0.5">Terms & Privacy Policy</Link></li>
+              <li><Link href="/terms" className="hover:text-brass-400 block py-0.5">Terms & Conditions</Link></li>
+              <li><Link href="/privacy" className="hover:text-brass-400 block py-0.5">Privacy Policy</Link></li>
             </ul>
           </details>
         </div>
@@ -188,7 +189,8 @@ export function Footer() {
             <li><Link href="/about" className="hover:text-brass-400">About SAN Furniture</Link></li>
             <li><Link href="/delivery" className="hover:text-brass-400">Furniture Care & Protection</Link></li>
             <li><Link href="/catalog" className="hover:text-brass-400">Contemporary Room Inspiration</Link></li>
-            <li><Link href="/privacy" className="hover:text-brass-400">Terms & Privacy Policy</Link></li>
+            <li><Link href="/terms" className="hover:text-brass-400">Terms & Conditions</Link></li>
+            <li><Link href="/privacy" className="hover:text-brass-400">Privacy Policy</Link></li>
           </ul>
         </div>
       </div>
