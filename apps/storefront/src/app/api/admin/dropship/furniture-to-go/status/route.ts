@@ -117,19 +117,20 @@ export async function GET(request: Request) {
                   res3.on("end", () => {
                     const snippets = [];
                     const lowerB3 = b3.toLowerCase();
-                    for (const term of ["5.41", "size:", "document", "instruction", "sideboard 109", "mageworx", "attachment", "4023544"]) {
+                    for (const term of ["boxes", "specifications", "download documents", "download document", "chelsea 4023544", "4023544", "hyva"]) {
                       let p = 0;
                       while ((p = lowerB3.indexOf(term, p)) !== -1) {
                         snippets.push({
                           term,
                           pos: p,
-                          snippet: b3.slice(Math.max(0, p - 80), Math.min(b3.length, p + 180)).replace(/[\r\n]+/g, " ")
+                          snippet: b3.slice(Math.max(0, p - 60), Math.min(b3.length, p + 250)).replace(/[\r\n\t]+/g, " ")
                         });
-                        p += term.length + 50;
+                        p += term.length + 80;
                         if (snippets.length > 25) break;
                       }
                       if (snippets.length > 25) break;
                     }
+
 
                     resolve({
                       loginStatus: res2.statusCode,
