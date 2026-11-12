@@ -115,18 +115,25 @@ export async function GET(request: Request) {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
                   res3.on("end", () => {
-                    // Inspect from Boxes header forward 10,000 chars
-                    const boxesHeaderIdx = b3.indexOf("uppercase\">Boxes");
-                    const afterBoxesSection = boxesHeaderIdx !== -1
-                      ? b3.slice(boxesHeaderIdx, boxesHeaderIdx + 10000)
-                      : "not found";
+                    // Find all x-data attributes and all scripts mentioning download / mageworx / attachment
+                    const xDataMatches = [...b3.matchAll(/x-data=["']([^"']+)["']/gi)].map(m => m[1]);
+                    const scriptMatches = [...b3.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+                      .map(m => m[1])
+                      .filter(s => /mageworx|attachment|download|section\/load/i.test(s))
+                      .map(s => s.slice(0, 300).replace(/[\r\n\t]+/g, " "));
+
+                    // Also search customer sections
+                    const sectionMatches = [...b3.matchAll(/sections(?:Names)?["']?\s*:\s*(\[[^\]]+\])/gi)].map(m => m[1]);
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      afterBoxesSection
+                      xDataMatches,
+                      scriptMatches,
+                      sectionMatches
                     });
+
 
                   });
                 });
