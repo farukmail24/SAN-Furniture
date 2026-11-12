@@ -275,6 +275,34 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       accepted_methods: ["Visa", "Mastercard", "American Express", "Maestro"],
     },
   },
+  footer_navigation_menus: {
+    isEnabled: true,
+    sectionName: "Footer Navigation Columns (3 Menus)",
+    content: {
+      column_1_title: "Living Collections",
+      column_1_links: [
+        { label: "Sofas & Lounges", href: "/sofas" },
+        { label: "Accent Chairs & Stools", href: "/armchairs" },
+        { label: "Solid Oak Dining Sets", href: "/dining" },
+        { label: "Storage Beds & Wardrobes", href: "/bedroom" },
+      ],
+      column_2_title: "Delivery & Orders",
+      column_2_links: [
+        { label: "Mainland UK Delivery Guide", href: "/delivery" },
+        { label: "Track Furniture Dispatch", href: "/track-order" },
+        { label: "Packaging & Assembly Guide", href: "/delivery" },
+        { label: "Order Status & Helpdesk", href: "/account" },
+      ],
+      column_3_title: "Quality & Living",
+      column_3_links: [
+        { label: "About SAN Furniture", href: "/about" },
+        { label: "Furniture Care & Protection", href: "/delivery" },
+        { label: "Contemporary Room Inspiration", href: "/catalog" },
+        { label: "Terms & Conditions", href: "/terms" },
+        { label: "Privacy Policy", href: "/privacy" },
+      ],
+    },
+  },
   catalog_header: {
     isEnabled: true,
     sectionName: "Catalog Page Banner & Hero Text",

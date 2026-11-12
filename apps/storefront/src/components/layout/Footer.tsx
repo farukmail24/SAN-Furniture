@@ -19,6 +19,24 @@ export function Footer() {
   const assuranceSec = getSection("footer_assurance", DEFAULT_STOREFRONT_SECTIONS.footer_assurance.content);
   const brandSec = getSection("footer_brand_info", DEFAULT_STOREFRONT_SECTIONS.footer_brand_info.content);
   const paymentSec = getSection("footer_payment_trust", DEFAULT_STOREFRONT_SECTIONS.footer_payment_trust?.content);
+  const menusSec = getSection("footer_navigation_menus", DEFAULT_STOREFRONT_SECTIONS.footer_navigation_menus.content);
+  const defaultMenus = DEFAULT_STOREFRONT_SECTIONS.footer_navigation_menus.content;
+  const menuContent = menusSec.content || defaultMenus;
+  const footerColumns = ([1, 2, 3] as const).map((idx) => {
+    const titleKey = `column_${idx}_title` as const;
+    const linksKey = `column_${idx}_links` as const;
+    const rawLinks = Array.isArray(menuContent[linksKey]) ? menuContent[linksKey] : defaultMenus[linksKey];
+    const links = rawLinks
+      .filter((item: any) => item && typeof item.label === "string" && item.label.trim())
+      .map((item: any) => ({
+        label: item.label.trim(),
+        href: typeof item.href === "string" && item.href.trim() ? item.href.trim() : "/",
+      }));
+    return {
+      title: (typeof menuContent[titleKey] === "string" && menuContent[titleKey].trim()) || defaultMenus[titleKey],
+      links,
+    };
+  });
 
   const pillars = Array.isArray(assuranceSec.content?.pillars) ? assuranceSec.content.pillars : DEFAULT_STOREFRONT_SECTIONS.footer_assurance.content.pillars;
 
@@ -85,47 +103,27 @@ export function Footer() {
         </div>
 
         {/* Mobile Accordion Groups */}
-        <div className="space-y-3 pt-2 border-t border-navy-900">
-          <details className="group border-b border-navy-900 pb-3">
-            <summary className="flex items-center justify-between text-xs font-semibold text-sand-50 uppercase tracking-wider cursor-pointer list-none select-none py-1">
-              <span>Living Collections</span>
-              <ChevronDown className="w-4 h-4 text-brass-400 transition-transform duration-200 group-open:rotate-180" />
-            </summary>
-            <ul className="mt-3 space-y-2.5 text-xs text-sand-300 pl-1">
-              <li><Link href="/sofas" className="hover:text-brass-400 block py-0.5">Sofas & Lounges</Link></li>
-              <li><Link href="/armchairs" className="hover:text-brass-400 block py-0.5">Accent Chairs & Stools</Link></li>
-              <li><Link href="/dining" className="hover:text-brass-400 block py-0.5">Solid Oak Dining Sets</Link></li>
-              <li><Link href="/bedroom" className="hover:text-brass-400 block py-0.5">Storage Beds & Wardrobes</Link></li>
-            </ul>
-          </details>
-
-          <details className="group border-b border-navy-900 pb-3">
-            <summary className="flex items-center justify-between text-xs font-semibold text-sand-50 uppercase tracking-wider cursor-pointer list-none select-none py-1">
-              <span>Delivery & Orders</span>
-              <ChevronDown className="w-4 h-4 text-brass-400 transition-transform duration-200 group-open:rotate-180" />
-            </summary>
-            <ul className="mt-3 space-y-2.5 text-xs text-sand-300 pl-1">
-              <li><Link href="/delivery" className="hover:text-brass-400 block py-0.5">Mainland UK Delivery Guide</Link></li>
-              <li><Link href="/track-order" className="hover:text-brass-400 block py-0.5">Track Furniture Dispatch</Link></li>
-              <li><Link href="/delivery" className="hover:text-brass-400 block py-0.5">Packaging & Assembly Guide</Link></li>
-              <li><Link href="/account" className="hover:text-brass-400 block py-0.5">Order Status & Helpdesk</Link></li>
-            </ul>
-          </details>
-
-          <details className="group border-b border-navy-900 pb-3">
-            <summary className="flex items-center justify-between text-xs font-semibold text-sand-50 uppercase tracking-wider cursor-pointer list-none select-none py-1">
-              <span>Quality & Living</span>
-              <ChevronDown className="w-4 h-4 text-brass-400 transition-transform duration-200 group-open:rotate-180" />
-            </summary>
-            <ul className="mt-3 space-y-2.5 text-xs text-sand-300 pl-1">
-              <li><Link href="/about" className="hover:text-brass-400 block py-0.5">About SAN Furniture</Link></li>
-              <li><Link href="/delivery" className="hover:text-brass-400 block py-0.5">Furniture Care & Protection</Link></li>
-              <li><Link href="/catalog" className="hover:text-brass-400 block py-0.5">Contemporary Room Inspiration</Link></li>
-              <li><Link href="/terms" className="hover:text-brass-400 block py-0.5">Terms & Conditions</Link></li>
-              <li><Link href="/privacy" className="hover:text-brass-400 block py-0.5">Privacy Policy</Link></li>
-            </ul>
-          </details>
-        </div>
+        {menusSec.isEnabled && (
+          <div className="space-y-3 pt-2 border-t border-navy-900">
+            {footerColumns.map((col, idx) => (
+              <details key={`m-col-${idx}`} className="group border-b border-navy-900 pb-3">
+                <summary className="flex items-center justify-between text-xs font-semibold text-sand-50 uppercase tracking-wider cursor-pointer list-none select-none py-1">
+                  <span>{col.title}</span>
+                  <ChevronDown className="w-4 h-4 text-brass-400 transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <ul className="mt-3 space-y-2.5 text-xs text-sand-300 pl-1">
+                  {col.links.map((link: { label: string; href: string }, lIdx: number) => (
+                    <li key={`m-link-${idx}-${lIdx}`}>
+                      <Link href={link.href} className="hover:text-brass-400 block py-0.5">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
+        )}
 
         {/* Customer Support Contact */}
         <div className="pt-2 text-xs text-sand-400">
@@ -163,36 +161,21 @@ export function Footer() {
           </div>
         </div>
 
-        <div>
-          <h4 className="text-sand-50 font-semibold text-xs uppercase tracking-wider">Living Collections</h4>
-          <ul className="mt-4 space-y-2.5 text-xs text-sand-300">
-            <li><Link href="/sofas" className="hover:text-brass-400">Sofas & Lounges</Link></li>
-            <li><Link href="/armchairs" className="hover:text-brass-400">Accent Chairs & Stools</Link></li>
-            <li><Link href="/dining" className="hover:text-brass-400">Solid Oak Dining Sets</Link></li>
-            <li><Link href="/bedroom" className="hover:text-brass-400">Storage Beds & Wardrobes</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-sand-50 font-semibold text-xs uppercase tracking-wider">Delivery & Orders</h4>
-          <ul className="mt-4 space-y-2.5 text-xs text-sand-300">
-            <li><Link href="/delivery" className="hover:text-brass-400">Mainland UK Delivery Guide</Link></li>
-            <li><Link href="/track-order" className="hover:text-brass-400">Track Furniture Dispatch</Link></li>
-            <li><Link href="/delivery" className="hover:text-brass-400">Packaging & Assembly Guide</Link></li>
-            <li><Link href="/account" className="hover:text-brass-400">Order Status & Helpdesk</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="text-sand-50 font-semibold text-xs uppercase tracking-wider">Quality & Living</h4>
-          <ul className="mt-4 space-y-2.5 text-xs text-sand-300">
-            <li><Link href="/about" className="hover:text-brass-400">About SAN Furniture</Link></li>
-            <li><Link href="/delivery" className="hover:text-brass-400">Furniture Care & Protection</Link></li>
-            <li><Link href="/catalog" className="hover:text-brass-400">Contemporary Room Inspiration</Link></li>
-            <li><Link href="/terms" className="hover:text-brass-400">Terms & Conditions</Link></li>
-            <li><Link href="/privacy" className="hover:text-brass-400">Privacy Policy</Link></li>
-          </ul>
-        </div>
+        {menusSec.isEnabled &&
+          footerColumns.map((col, idx) => (
+            <div key={`d-col-${idx}`}>
+              <h4 className="text-sand-50 font-semibold text-xs uppercase tracking-wider">{col.title}</h4>
+              <ul className="mt-4 space-y-2.5 text-xs text-sand-300">
+                {col.links.map((link: { label: string; href: string }, lIdx: number) => (
+                  <li key={`d-link-${idx}-${lIdx}`}>
+                    <Link href={link.href} className="hover:text-brass-400">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
       </div>
 
       {/* Mandatory UK Companies Act and Tax Disclosures with Safe Bottom Dock Clearance */}

@@ -67,17 +67,17 @@ export function LegalDocumentLayout({
       <section className="py-10 sm:py-14 max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Sticky Quick-Jump Index */}
-          <aside className="lg:col-span-3 lg:sticky lg:top-24 bg-white rounded-2xl border border-sand-200 p-5 space-y-3">
+          <aside className="lg:col-span-3 lg:sticky lg:top-24 bg-white rounded-2xl border border-sand-200 p-5 space-y-2.5">
             <p className="text-[11px] font-bold uppercase tracking-wider text-navy-500">
               Sections
             </p>
-            <nav aria-label="Document sections" className="max-h-[65vh] overflow-y-auto pr-1">
-              <ol className="space-y-1 text-xs">
+            <nav aria-label="Document sections">
+              <ol className="space-y-0.5 text-xs">
                 {navItems.map((item, idx) => (
                   <li key={item.id}>
                     <a
                       href={`#${item.id}`}
-                      className="flex items-start gap-2 py-1 px-2 rounded-lg text-navy-700 hover:text-navy-950 hover:bg-sand-100/70 transition-colors"
+                      className="flex items-start gap-2 py-0.5 px-2 rounded-lg text-navy-700 hover:text-navy-950 hover:bg-sand-100/70 transition-colors"
                     >
                       <span className="text-[11px] font-mono text-brass-600 shrink-0 mt-0.5">
                         {String(idx + 1).padStart(2, "0")}
