@@ -229,6 +229,108 @@ if ($requestMethod === 'GET') {
         exit;
     }
 
+    if ($isAuthenticated && $action === 'ftg_probe') {
+        $sku = $_GET['sku'] ?? '4023544';
+        $probeResults = ['sku' => $sku];
+
+        // 1. Fetch REST API product details
+        $pdo = null;
+        $token = null;
+        $hostsToTry = array_unique([$dbHost, '127.0.0.1', 'localhost']);
+        foreach ($hostsToTry as $h) {
+            try {
+                $dsn = "mysql:host={$h};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+                $pdo = new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]);
+                $stmt = $pdo->prepare("SELECT api_token, account_email, account_password FROM suppliers WHERE id = 'furniture_to_go'");
+                $stmt->execute();
+                $sup = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($sup) {
+                    $token = $sup['api_token'];
+                    if (empty($token) && !empty($sup['account_email']) && !empty($sup['account_password'])) {
+                        $chToken = curl_init('https://furniture-to-go.co.uk/rest/V1/integration/customer/token');
+                        curl_setopt_array($chToken, [
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_POST => true,
+                            CURLOPT_POSTFIELDS => json_encode(['username' => $sup['account_email'], 'password' => $sup['account_password']]),
+                            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                            CURLOPT_TIMEOUT => 10
+                        ]);
+                        $tokRes = curl_exec($chToken);
+                        curl_close($chToken);
+                        $token = trim((string)$tokRes, '"');
+                    }
+                }
+                break;
+            } catch (Exception $e) {}
+        }
+        $probeResults['tokenAcquired'] = !empty($token);
+
+        if (!empty($token)) {
+            $chProd = curl_init('https://furniture-to-go.co.uk/rest/V1/products/' . urlencode($sku));
+            curl_setopt_array($chProd, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Accept: application/json', 'User-Agent: Mozilla/5.0'],
+                CURLOPT_TIMEOUT => 10
+            ]);
+            $prodRes = curl_exec($chProd);
+            $prodCode = curl_getinfo($chProd, CURLINFO_HTTP_CODE);
+            curl_close($chProd);
+
+            $probeResults['restProductCode'] = $prodCode;
+            $prodJson = json_decode($prodRes, true);
+            if ($prodJson) {
+                $probeResults['restProductName'] = $prodJson['name'] ?? null;
+                $probeResults['restProductCustomAttrs'] = [];
+                foreach (($prodJson['custom_attributes'] ?? []) as $ca) {
+                    $c = strtolower($ca['attribute_code'] ?? '');
+                    if (strpos($c, 'download') !== false || strpos($c, 'attach') !== false || strpos($c, 'pdf') !== false || strpos($c, 'file') !== false || strpos($c, 'doc') !== false || strpos($c, 'manual') !== false || strpos($c, 'instruct') !== false) {
+                        $probeResults['restProductCustomAttrs'][] = $ca;
+                    }
+                }
+                $probeResults['restProductMediaGallery'] = $prodJson['media_gallery_entries'] ?? [];
+                $probeResults['restProductExtensionAttrs'] = array_keys($prodJson['extension_attributes'] ?? []);
+            }
+        }
+
+        // 2. Fetch product page HTML with curl
+        $productUrl = 'https://furniture-to-go.co.uk/chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim.html';
+        $chHtml = curl_init($productUrl);
+        curl_setopt_array($chHtml, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            CURLOPT_TIMEOUT => 15
+        ]);
+        $html = curl_exec($chHtml);
+        $htmlCode = curl_getinfo($chHtml, CURLINFO_HTTP_CODE);
+        curl_close($chHtml);
+
+        $probeResults['htmlCode'] = $htmlCode;
+        $probeResults['htmlLength'] = strlen((string)$html);
+        $probeResults['has541'] = strpos((string)$html, '5.41') !== false;
+        $probeResults['hasAssembly'] = stripos((string)$html, 'assembly') !== false;
+        $probeResults['hasDownloadDocs'] = stripos((string)$html, 'download documents') !== false;
+
+        preg_match_all('/https?:\/\/[^\s"\'<>]+\.pdf[^\s"\'<>]*|\/[^\s"\'<>]+\.pdf[^\s"\'<>]*/i', (string)$html, $pdfMatches);
+        $probeResults['pdfMatches'] = array_values(array_unique($pdfMatches[0] ?? []));
+
+        preg_match_all('/[^\s"\'<>]*(?:mageworx|attachment|downloads)[^\s"\'<>]*/i', (string)$html, $mwMatches);
+        $probeResults['mageworxMatches'] = array_slice(array_values(array_unique($mwMatches[0] ?? [])), 0, 20);
+
+        if ($probeResults['has541']) {
+            $pos = strpos((string)$html, '5.41');
+            $probeResults['snippet541'] = substr((string)$html, max(0, $pos - 250), 500);
+        }
+
+        if ($probeResults['hasDownloadDocs']) {
+            $pos = stripos((string)$html, 'download documents');
+            $probeResults['snippetDownloadDocs'] = substr((string)$html, max(0, $pos - 250), 500);
+        }
+
+        echo json_encode(['success' => true, 'probe' => $probeResults], JSON_PRETTY_PRINT);
+        exit;
+    }
+
     echo json_encode([
         'status' => 'online',
         'service' => 'SAN Furniture GitHub Auto-Deploy Webhook',
