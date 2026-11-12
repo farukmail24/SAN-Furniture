@@ -274,12 +274,31 @@ export async function GET(request: Request) {
                       }
                     }
 
+                    // Save b3 to public/documents/ftg_product.html for full inspection
+                    const fs = await import("node:fs");
+                    const path = await import("node:path");
+                    const savePaths = [
+                      path.join(process.cwd(), "apps/storefront/public/documents/ftg_product.html"),
+                      path.join(process.cwd(), "public/documents/ftg_product.html"),
+                      "/home/sansoft/sanfurniture.com/apps/storefront/public/documents/ftg_product.html",
+                      "/home/sansoft/sanfurniture.com/public/documents/ftg_product.html"
+                    ];
+                    let fileSaved = false;
+                    for (const sp of savePaths) {
+                      try {
+                        fs.mkdirSync(path.dirname(sp), { recursive: true });
+                        fs.writeFileSync(sp, b3, "utf8");
+                        fileSaved = true;
+                      } catch {}
+                    }
+
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
+                      productPageStatus: res3.statusCode,
                       productPageLength: b3.length,
-                      boxesSnippet: boxesSnippet.slice(0, 3500),
-                      allHrefMatches: Array.from(new Set(allHrefMatches))
+                      fileSaved,
+                      headings: (b3.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || []).map(h => h.replace(/<[^>]+>/g, "").trim()).filter(Boolean)
                     });
 
 
