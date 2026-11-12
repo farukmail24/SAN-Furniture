@@ -292,11 +292,47 @@ export async function GET(request: Request) {
                       } catch {}
                     }
 
+                    // Step E: Fetch /b2b-services/images-and-data-to-download.html
+                    const b2bDocsRes = await new Promise((resolve) => {
+                      const reqB2b = https.get({
+                        hostname: "furniture-to-go.co.uk",
+                        path: "/b2b-services/images-and-data-to-download.html",
+                        headers: {
+                          "User-Agent": (furnitureToGoExtractor as any).userAgent,
+                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                          "Cookie": combinedCookies,
+                          "Referer": "https://furniture-to-go.co.uk/"
+                        },
+                        timeout: 15000
+                      }, (resB) => {
+                        let bB = "";
+                        resB.on("data", c => bB += c);
+                        resB.on("end", () => {
+                          const links: string[] = [];
+                          for (const m of bB.matchAll(/href=["']([^"']+)["']/gi)) {
+                            const l = m[1];
+                            if (l.includes("dropbox") || l.includes("drive.google") || l.includes("box.com") || l.includes("media") || l.includes("pdf") || l.includes("download") || l.includes("instruction") || l.includes("assembly")) {
+                              links.push(l);
+                            }
+                          }
+                          resolve({
+                            status: resB.statusCode,
+                            length: bB.length,
+                            hasChelsea: bB.toLowerCase().includes("chelsea"),
+                            has4023544: bB.includes("4023544"),
+                            links: Array.from(new Set(links)).slice(0, 30)
+                          });
+                        });
+                      });
+                      reqB2b.on("error", (e) => resolve({ error: e.message }));
+                    });
+
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageStatus: res3.statusCode,
                       productPageLength: b3.length,
+                      b2bDocsRes,
                       fileSaved,
                       headings: (b3.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || []).map(h => h.replace(/<[^>]+>/g, "").trim()).filter(Boolean)
                     });
