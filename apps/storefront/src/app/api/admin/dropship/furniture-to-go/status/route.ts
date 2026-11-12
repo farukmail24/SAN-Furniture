@@ -114,18 +114,42 @@ export async function GET(request: Request) {
                 }, (res3) => {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
-                  res3.on("end", () => {
-                    // Find the entire mage-cache-storage script
-                    const mageCacheScript = [...b3.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-                      .map(m => m[1])
-                      .find(s => s.includes("mage-cache-storage")) || "not found";
+                  res3.on("end", async () => {
+                    // Step D: Call customer/section/load with combinedCookies
+                    const sectionDataRes = await new Promise((resolve) => {
+                      const req4 = https.get({
+                        hostname: "furniture-to-go.co.uk",
+                        path: "/customer/section/load/?sections=",
+                        headers: {
+                          "User-Agent": (furnitureToGoExtractor as any).userAgent,
+                          "Cookie": combinedCookies,
+                          "X-Requested-With": "XMLHttpRequest",
+                          "Accept": "application/json, text/javascript, */*; q=0.01",
+                          "Referer": "https://furniture-to-go.co.uk/chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim.html"
+                        },
+                        timeout: 15000
+                      }, (res4) => {
+                        let b4 = "";
+                        res4.on("data", c => b4 += c);
+                        res4.on("end", () => {
+                          try {
+                            const j = JSON.parse(b4);
+                            resolve({ status: res4.statusCode, sectionKeys: Object.keys(j), data: j });
+                          } catch {
+                            resolve({ status: res4.statusCode, raw: b4.slice(0, 500) });
+                          }
+                        });
+                      });
+                      req4.on("error", (e) => resolve({ error: e.message }));
+                    });
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      mageCacheScript: mageCacheScript.slice(0, 4000)
+                      sectionData: sectionDataRes
                     });
+
 
 
 
