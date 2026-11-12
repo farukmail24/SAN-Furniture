@@ -340,6 +340,7 @@ const STATIC_MIME_TYPES = {
   ".webp": "image/webp",
   ".avif": "image/avif",
   ".ico": "image/x-icon",
+  ".pdf": "application/pdf",
 };
 
 app.prepare()

@@ -134,8 +134,21 @@ export async function GET(request: Request) {
       });
       results.renderInfo = renderRes;
 
-      // 2. Test full B2B login and fetch authenticated product page
+      // 2. Test full B2B login with robust CookieJar and fetch authenticated product page
       const b2bLoginAndFetch = await new Promise((resolve) => {
+        const cookieJar = new Map<string, string>();
+        const ingestCookies = (header: string | string[] | undefined) => {
+          if (!header) return;
+          const arr = Array.isArray(header) ? header : [header];
+          for (const c of arr) {
+            const parts = c.split(";")[0].split("=");
+            const name = parts[0]?.trim();
+            const val = parts.slice(1).join("=").trim();
+            if (name) cookieJar.set(name, val);
+          }
+        };
+        const getCookieHeader = () => Array.from(cookieJar.entries()).map(([k, v]) => `${k}=${v}`).join("; ");
+
         // Step A: Get form_key and initial PHPSESSID
         const req1 = https.get({
           hostname: "furniture-to-go.co.uk",
@@ -149,10 +162,10 @@ export async function GET(request: Request) {
           let b1 = "";
           res1.on("data", c => b1 += c);
           res1.on("end", () => {
+            ingestCookies(res1.headers["set-cookie"]);
             const formKeyMatch = b1.match(/name=["']form_key["'][^>]*value=["']([^"']+)["']/i) ||
                                  b1.match(/value=["']([^"']+)["'][^>]*name=["']form_key["']/i);
             const formKey = formKeyMatch ? formKeyMatch[1] : null;
-            const cookies1 = (res1.headers["set-cookie"] || []).map(c => c.split(";")[0]).join("; ");
 
             if (!formKey) {
               return resolve({ step: "get_form_key", error: "form_key not found" });
@@ -173,7 +186,7 @@ export async function GET(request: Request) {
                 "User-Agent": (furnitureToGoExtractor as any).userAgent,
                 "Content-Type": "application/x-www-form-urlencoded",
                 "Content-Length": Buffer.byteLength(postData),
-                "Cookie": cookies1,
+                "Cookie": getCookieHeader(),
                 "Referer": "https://furniture-to-go.co.uk/customer/account/login/",
                 "Origin": "https://furniture-to-go.co.uk"
               },
@@ -181,21 +194,41 @@ export async function GET(request: Request) {
             }, (res2) => {
               let b2 = "";
               res2.on("data", c => b2 += c);
-              res2.on("end", () => {
-                const cookies2 = (res2.headers["set-cookie"] || []).map(c => c.split(";")[0]);
-                const combinedCookies = [
-                  ...cookies1.split("; ").filter(Boolean),
-                  ...cookies2
-                ].join("; ");
+              res2.on("end", async () => {
+                ingestCookies(res2.headers["set-cookie"]);
+                const redirectLocation = res2.headers["location"] || "/customer/account/";
 
-                // Step C: Fetch authenticated product page
+                // Step C: Follow redirect to /customer/account/ to establish Magento customer session
+                await new Promise((resNav) => {
+                  const reqRedir = https.get({
+                    hostname: "furniture-to-go.co.uk",
+                    path: redirectLocation.startsWith("http") ? new URL(redirectLocation).pathname : redirectLocation,
+                    headers: {
+                      "User-Agent": (furnitureToGoExtractor as any).userAgent,
+                      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                      "Cookie": getCookieHeader(),
+                      "Referer": "https://furniture-to-go.co.uk/customer/account/login/"
+                    },
+                    timeout: 10000
+                  }, (resR) => {
+                    let bR = "";
+                    resR.on("data", c => bR += c);
+                    resR.on("end", () => {
+                      ingestCookies(resR.headers["set-cookie"]);
+                      resNav(true);
+                    });
+                  });
+                  reqRedir.on("error", () => resNav(false));
+                });
+
+                // Step D: Fetch authenticated product page
                 const req3 = https.get({
                   hostname: "furniture-to-go.co.uk",
                   path: "/chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim.html",
                   headers: {
                     "User-Agent": (furnitureToGoExtractor as any).userAgent,
                     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    "Cookie": combinedCookies,
+                    "Cookie": getCookieHeader(),
                     "Referer": "https://furniture-to-go.co.uk/"
                   },
                   timeout: 15000
@@ -203,34 +236,6 @@ export async function GET(request: Request) {
                   let b3 = "";
                   res3.on("data", c => b3 += c);
                   res3.on("end", async () => {
-                    // Step D: Call customer/section/load with combinedCookies
-                    const sectionDataRes = await new Promise((resolve) => {
-                      const req4 = https.get({
-                        hostname: "furniture-to-go.co.uk",
-                        path: "/customer/section/load/?sections=",
-                        headers: {
-                          "User-Agent": (furnitureToGoExtractor as any).userAgent,
-                          "Cookie": combinedCookies,
-                          "X-Requested-With": "XMLHttpRequest",
-                          "Accept": "application/json, text/javascript, */*; q=0.01",
-                          "Referer": "https://furniture-to-go.co.uk/chelsea-living-1-drawer-2-door-sideboard-in-white-gloss-with-an-oak-trim.html"
-                        },
-                        timeout: 15000
-                      }, (res4) => {
-                        let b4 = "";
-                        res4.on("data", c => b4 += c);
-                        res4.on("end", () => {
-                          try {
-                            const j = JSON.parse(b4);
-                            resolve({ status: res4.statusCode, sectionKeys: Object.keys(j), data: j });
-                          } catch {
-                            resolve({ status: res4.statusCode, raw: b4.slice(0, 500) });
-                          }
-                        });
-                      });
-                      req4.on("error", (e) => resolve({ error: e.message }));
-                    });
-
                     // Analyze b3 HTML for download/assembly/pdf
                     const pdfMatches = Array.from(new Set(b3.match(/https?:\/\/[^\s"'<>]+\.pdf[^\s"'<>]*|\/[^\s"'<>]+\.pdf[^\s"'<>]*/gi) || []));
                     const mageworxMatches = Array.from(new Set(b3.match(/https?:\/\/[^\s"'<>]*(?:mageworx|attachment|downloads?)[^\s"'<>]*|\/[^\s"'<>]*(?:mageworx|attachment|downloads?)[^\s"'<>]*/gi) || []));
@@ -238,108 +243,46 @@ export async function GET(request: Request) {
                     const hasAssembly = b3.toLowerCase().includes("assembly");
                     const hasDownloadDocs = b3.toLowerCase().includes("download documents");
 
-                    // Find context around "4023544"
-                    const skuSnippets: string[] = [];
-                    let idx = 0;
-                    while ((idx = b3.indexOf("4023544", idx)) !== -1 && skuSnippets.length < 10) {
-                      skuSnippets.push(b3.slice(Math.max(0, idx - 100), Math.min(b3.length, idx + 150)).replace(/\s+/g, " "));
-                      idx += 7;
-                    }
-
-                    // Find context around "Download documents" or "5.41" if found
-                    const docSnippets: string[] = [];
-                    if (has541) {
-                      const pos = b3.indexOf("5.41");
-                      docSnippets.push(b3.slice(Math.max(0, pos - 200), Math.min(b3.length, pos + 200)).replace(/\s+/g, " "));
-                    }
-
-                    // Extract snippet around "boxesOpen" and following 3000 characters!
-                    let boxesSnippet = "";
-                    const boxesIdx = b3.indexOf("boxesOpen");
-                    if (boxesIdx !== -1) {
-                      boxesSnippet = b3.slice(boxesIdx, boxesIdx + 4000);
-                    } else {
-                      const specIdx = b3.toLowerCase().indexOf("product specifications");
-                      if (specIdx !== -1) {
-                        boxesSnippet = b3.slice(specIdx, specIdx + 4000);
-                      }
-                    }
-
-                    // Also check for any mentions of "attachment" or "download" in full b3
-                    const allHrefMatches: string[] = [];
-                    for (const m of b3.matchAll(/href=["']([^"']+)["']/gi)) {
+                    // Search for assembly instruction download links
+                    const assemblyLinks: { href: string; text: string }[] = [];
+                    for (const m of b3.matchAll(/<a\b[^>]*\bhref=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
                       const h = m[1];
-                      if (h.includes("download") || h.includes("attach") || h.includes("doc") || h.includes("pdf") || h.includes("file") || h.includes("manual") || h.includes("instruct")) {
-                        allHrefMatches.push(h);
+                      const t = m[2].replace(/<[^>]+>/g, " ").trim();
+                      if (h.toLowerCase().includes("download") || h.toLowerCase().includes("attachment") || h.toLowerCase().includes(".pdf") || t.toLowerCase().includes("assembly") || t.toLowerCase().includes("instruction") || t.toLowerCase().includes("manual")) {
+                        assemblyLinks.push({ href: h, text: t });
                       }
                     }
 
-                    // Save b3 to public/documents/ftg_product.html for full inspection
-                    const fs = await import("node:fs");
-                    const path = await import("node:path");
-                    const savePaths = [
-                      path.join(process.cwd(), "apps/storefront/public/documents/ftg_product.html"),
-                      path.join(process.cwd(), "public/documents/ftg_product.html"),
-                      "/home/sansoft/sanfurniture.com/apps/storefront/public/documents/ftg_product.html",
-                      "/home/sansoft/sanfurniture.com/public/documents/ftg_product.html"
-                    ];
-                    let fileSaved = false;
-                    for (const sp of savePaths) {
+                    // Auto-download manual if a candidate link is detected
+                    let downloadedDocPath: string | null = null;
+                    const primaryLink = assemblyLinks[0]?.href || pdfMatches[0];
+                    if (primaryLink) {
                       try {
-                        fs.mkdirSync(path.dirname(sp), { recursive: true });
-                        fs.writeFileSync(sp, b3, "utf8");
-                        fileSaved = true;
+                        const fullRemoteUrl = primaryLink.startsWith("http") ? primaryLink : `https://furniture-to-go.co.uk${primaryLink.startsWith("/") ? "" : "/"}${primaryLink}`;
+                        downloadedDocPath = await (furnitureToGoExtractor as any).downloadAndSaveAssemblyManual(fullRemoteUrl, sku);
+                        if (downloadedDocPath) {
+                          await pool.query(
+                            `UPDATE furniture_specs SET assembly_instructions_url = ? WHERE product_id = ? OR product_id = ?`,
+                            [downloadedDocPath, `prod_ftg_${sku}`, sku]
+                          ).catch(() => {});
+                        }
                       } catch {}
                     }
-
-                    // Step E: Fetch /b2b-services/images-and-data-to-download.html
-                    const b2bDocsRes = await new Promise((resolve) => {
-                      const reqB2b = https.get({
-                        hostname: "furniture-to-go.co.uk",
-                        path: "/b2b-services/images-and-data-to-download.html",
-                        headers: {
-                          "User-Agent": (furnitureToGoExtractor as any).userAgent,
-                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                          "Cookie": combinedCookies,
-                          "Referer": "https://furniture-to-go.co.uk/"
-                        },
-                        timeout: 15000
-                      }, (resB) => {
-                        let bB = "";
-                        resB.on("data", c => bB += c);
-                        resB.on("end", () => {
-                          const links: string[] = [];
-                          for (const m of bB.matchAll(/href=["']([^"']+)["']/gi)) {
-                            const l = m[1];
-                            if (l.includes("dropbox") || l.includes("drive.google") || l.includes("box.com") || l.includes("media") || l.includes("pdf") || l.includes("download") || l.includes("instruction") || l.includes("assembly")) {
-                              links.push(l);
-                            }
-                          }
-                          resolve({
-                            status: resB.statusCode,
-                            length: bB.length,
-                            hasChelsea: bB.toLowerCase().includes("chelsea"),
-                            has4023544: bB.includes("4023544"),
-                            links: Array.from(new Set(links)).slice(0, 30)
-                          });
-                        });
-                      });
-                      reqB2b.on("error", (e) => resolve({ error: e.message }));
-                    });
 
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
+                      cookieJarKeys: Array.from(cookieJar.keys()),
                       productPageStatus: res3.statusCode,
                       productPageLength: b3.length,
-                      b2bDocsRes,
-                      fileSaved,
-                      headings: (b3.match(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi) || []).map(h => h.replace(/<[^>]+>/g, "").trim()).filter(Boolean)
+                      has541,
+                      hasAssembly,
+                      hasDownloadDocs,
+                      assemblyLinks,
+                      pdfMatches,
+                      mageworxMatches: mageworxMatches.slice(0, 10),
+                      downloadedDocPath
                     });
-
-
-
-
                   });
                 });
 

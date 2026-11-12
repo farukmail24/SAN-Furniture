@@ -22,6 +22,7 @@
              COALESCE(s.depth_cm, 0) as depth_cm,
              s.material,
              s.delivery_tier,
+             s.assembly_instructions_url,
              fi.cost_price_pennies,
              fi.stock_level as feed_stock_level,
              fi.source_url as supplier_source_url
