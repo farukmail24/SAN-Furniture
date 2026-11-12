@@ -277,6 +277,7 @@ export default function CustomerAccountPage() {
     confirmPassword: "",
   });
   const [isUpdatingPassword, setIsUpdatingPassword] = useState<boolean>(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState<boolean>(false);
   const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
@@ -2820,50 +2821,78 @@ export default function CustomerAccountPage() {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-xs">
+                  <div className="space-y-4 text-xs">
                     <div>
-                      <label className="block text-navy-800 font-semibold mb-1.5">New Password</label>
+                      <label className="block text-navy-800 font-semibold mb-1.5">Current Password *</label>
                       <div className="relative">
                         <input
-                          type={showNewPassword ? "text" : "password"}
-                          name="newPassword"
-                          autoComplete="new-password"
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                          placeholder="Minimum 8 characters"
+                          type={showCurrentPassword ? "text" : "password"}
+                          name="currentPassword"
+                          autoComplete="current-password"
+                          value={passwordForm.currentPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                          placeholder="Enter your existing account password"
                           className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sand-300 bg-sand-50/50 text-navy-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brass-500/50 focus:border-brass-600 transition-all shadow-2xs"
                         />
                         <button
                           type="button"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-navy-400 hover:text-navy-700 cursor-pointer"
                           tabIndex={-1}
+                          aria-label={showCurrentPassword ? "Hide current password" : "Show current password"}
                         >
-                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                       </div>
                     </div>
 
-                    <div>
-                      <label className="block text-navy-800 font-semibold mb-1.5">Confirm New Password</label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? "text" : "password"}
-                          name="confirmPassword"
-                          autoComplete="new-password"
-                          value={passwordForm.confirmPassword}
-                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                          placeholder="Repeat new password"
-                          className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sand-300 bg-sand-50/50 text-navy-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brass-500/50 focus:border-brass-600 transition-all shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-navy-400 hover:text-navy-700 cursor-pointer"
-                          tabIndex={-1}
-                        >
-                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-navy-800 font-semibold mb-1.5">New Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showNewPassword ? "text" : "password"}
+                            name="newPassword"
+                            autoComplete="new-password"
+                            value={passwordForm.newPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                            placeholder="Minimum 8 characters"
+                            className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sand-300 bg-sand-50/50 text-navy-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brass-500/50 focus:border-brass-600 transition-all shadow-2xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-navy-400 hover:text-navy-700 cursor-pointer"
+                            tabIndex={-1}
+                            aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                          >
+                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-navy-800 font-semibold mb-1.5">Confirm New Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            name="confirmPassword"
+                            autoComplete="new-password"
+                            value={passwordForm.confirmPassword}
+                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                            placeholder="Repeat new password"
+                            className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-sand-300 bg-sand-50/50 text-navy-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brass-500/50 focus:border-brass-600 transition-all shadow-2xs"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-navy-400 hover:text-navy-700 cursor-pointer"
+                            tabIndex={-1}
+                            aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

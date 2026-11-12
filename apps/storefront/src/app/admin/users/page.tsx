@@ -14,7 +14,9 @@ import {
   AlertCircle,
   X,
   Clock,
-  ShieldAlert
+  ShieldAlert,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
@@ -45,6 +47,8 @@ export default function AdminUsersPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formRole, setFormRole] = useState("catalog_manager");
   const [formPassword, setFormPassword] = useState("");
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchUsers = async () => {
@@ -250,7 +254,11 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-end gap-1.5">
           <button
             type="button"
-            onClick={() => setEditingUser(row)}
+            onClick={() => {
+              setEditingUser(row);
+              setFormPassword("");
+              setShowEditPassword(false);
+            }}
             className="p-1.5 rounded hover:bg-slate-100 text-[#4F6D7A] hover:text-blue-700"
             title="Edit Role & Permissions"
           >
@@ -340,7 +348,11 @@ export default function AdminUsersPage() {
         actions={
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setIsAddModalOpen(true);
+              setFormPassword("");
+              setShowCreatePassword(false);
+            }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#00072D] hover:bg-[#1C2541] text-[#FAF8F5] rounded-lg text-xs font-semibold transition-all shadow-sm"
           >
             <UserPlus className="w-4 h-4 text-[#C89B3C]" />
@@ -408,14 +420,26 @@ export default function AdminUsersPage() {
 
               <div>
                 <label className="block text-xs font-semibold text-[#00072D] mb-1">Temporary Password *</label>
-                <input
-                  type="password"
-                  required
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
-                  placeholder="Minimum 8 characters"
-                />
+                <div className="relative">
+                  <input
+                    type={showCreatePassword ? "text" : "password"}
+                    required
+                    minLength={8}
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-brass-500/50"
+                    placeholder="Minimum 8 characters"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCreatePassword(!showCreatePassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showCreatePassword ? "Hide password" : "Show password"}
+                  >
+                    {showCreatePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8E2D5]">
@@ -508,13 +532,27 @@ export default function AdminUsersPage() {
                 <label className="block text-xs font-semibold text-[#00072D] mb-1">
                   Reset Password (Leave blank to keep current)
                 </label>
-                <input
-                  type="password"
-                  value={formPassword}
-                  onChange={(e) => setFormPassword(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D]"
-                  placeholder="New password if resetting"
-                />
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? "text" : "password"}
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    className="w-full pl-3 pr-10 py-2 rounded-lg border border-[#E8E2D5] text-xs text-[#00072D] focus:outline-none focus:ring-2 focus:ring-brass-500/50"
+                    placeholder="New password if resetting (min 8 chars)"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700 cursor-pointer"
+                    tabIndex={-1}
+                    aria-label={showEditPassword ? "Hide password" : "Show password"}
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#4F6D7A] mt-1">
+                  Leave blank to preserve current password. If entering a new password, it must be at least 8 characters.
+                </p>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E8E2D5]">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getDbPool } from "@/lib/db";
-import { getAdminFromRequest } from "@/lib/auth-token";
+import { getAdminFromRequest, hashPassword } from "@/lib/auth-token";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +20,9 @@ export async function PATCH(
 
     const { id } = await params;
     const pool = getDbPool();
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
 
-    const { fullName, role, isActive } = body;
+    const { fullName, role, isActive, password } = body;
 
     // Privilege check: Only super_admin can modify roles or disable staff accounts
     if (role !== undefined && admin.role !== "super_admin") {
@@ -39,6 +39,22 @@ export async function PATCH(
       );
     }
 
+    // Password change privilege check: Super admin can reset any staff password; users can reset their own.
+    if (password !== undefined && password !== null && password !== "") {
+      if (admin.role !== "super_admin" && admin.id !== id) {
+        return NextResponse.json(
+          { success: false, error: "Forbidden: Only super_admin or the account owner can reset password" },
+          { status: 403 }
+        );
+      }
+      if (typeof password !== "string" || password.trim().length < 8) {
+        return NextResponse.json(
+          { success: false, error: "Password must be at least 8 characters long" },
+          { status: 400 }
+        );
+      }
+    }
+
     const updates: string[] = [];
     const values: any[] = [];
 
@@ -53,6 +69,11 @@ export async function PATCH(
     if (isActive !== undefined) {
       updates.push("is_active = ?");
       values.push(isActive ? 1 : 0);
+    }
+    if (password !== undefined && password !== null && password !== "") {
+      const newHash = hashPassword(password.trim());
+      updates.push("password_hash = ?");
+      values.push(newHash);
     }
 
     if (updates.length > 0) {
@@ -72,7 +93,10 @@ export async function PATCH(
           auditId,
           `${admin.fullName || admin.email} (${admin.role})`,
           `admin_user:${id}`,
-          JSON.stringify({ targetUserId: id, changes: { fullName, role, isActive } }),
+          JSON.stringify({
+            targetUserId: id,
+            changes: { fullName, role, isActive, passwordReset: Boolean(password) },
+          }),
           clientIp,
         ]
       ).catch(() => {});
