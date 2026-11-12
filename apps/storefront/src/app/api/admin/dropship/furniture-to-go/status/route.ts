@@ -23,13 +23,50 @@ export async function GET(request: Request) {
       
       const results: any = { token: token ? "acquired" : "failed" };
 
-      // 1. products-render-info AND products/:sku
-      const restProductRes = await new Promise((resolve) => {
-        const req = https.get({
+      // 1. GraphQL Product & Introspection query
+      const gqlQuery = `query {
+        products(filter: { sku: { eq: "${sku}" } }) {
+          items {
+            name
+            sku
+            description { html }
+            short_description { html }
+            ... on ProductInterface {
+              name
+            }
+          }
+        }
+      }`;
+
+      const gqlQueryWithAttachments = `query {
+        products(filter: { sku: { eq: "${sku}" } }) {
+          items {
+            name
+            sku
+            mw_attachments {
+              tab_title
+              block_title
+              items {
+                id
+                name
+                description
+                url
+                size_str
+              }
+            }
+          }
+        }
+      }`;
+
+      const runGql = (queryStr: string) => new Promise((resolve) => {
+        const payload = JSON.stringify({ query: queryStr });
+        const req = https.request({
           hostname: "furniture-to-go.co.uk",
-          path: `/rest/V1/products/${encodeURIComponent(sku)}`,
+          path: "/graphql",
+          method: "POST",
           headers: {
-            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(payload),
             "User-Agent": (furnitureToGoExtractor as any).userAgent,
             "Accept": "application/json"
           },
@@ -42,8 +79,38 @@ export async function GET(request: Request) {
           });
         });
         req.on("error", (e) => resolve({ error: e.message }));
+        req.write(payload);
+        req.end();
       });
-      results.restProduct = restProductRes;
+
+      results.gqlAttachments = await runGql(gqlQueryWithAttachments);
+      if ((results.gqlAttachments as any)?.data?.errors || !(results.gqlAttachments as any)?.data?.data) {
+        results.gqlBasic = await runGql(gqlQuery);
+      }
+
+      // Also introspect for attachment types
+      const introspectionQuery = `query {
+        __type(name: "ProductInterface") {
+          fields {
+            name
+            type { name kind }
+          }
+        }
+      }`;
+      const introRes: any = await runGql(introspectionQuery);
+      if (introRes?.data?.data?.__type?.fields) {
+        results.productInterfaceAttachmentFields = introRes.data.data.__type.fields.filter((f: any) => 
+          f.name.toLowerCase().includes("attach") || 
+          f.name.toLowerCase().includes("download") || 
+          f.name.toLowerCase().includes("doc") || 
+          f.name.toLowerCase().includes("file") || 
+          f.name.toLowerCase().includes("manual") ||
+          f.name.toLowerCase().includes("instruction") ||
+          f.name.toLowerCase().includes("mw_")
+        );
+      } else {
+        results.introRaw = introRes;
+      }
 
       const renderRes = await new Promise((resolve) => {
         const queryPath = `/rest/V1/products-render-info?searchCriteria[filterGroups][0][filters][0][field]=sku&searchCriteria[filterGroups][0][filters][0][value]=${encodeURIComponent(sku)}&searchCriteria[filterGroups][0][filters][0][conditionType]=eq&storeId=1&currencyCode=GBP`;
