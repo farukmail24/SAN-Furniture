@@ -92,6 +92,18 @@ export async function GET(
       content = {};
     }
 
+    // Auto-heal header_mega_menu in admin if it contains obsolete "Customer Care & Guarantees" or "Warehouse Seasonal Clearance"
+    if (sectionKey === "header_mega_menu") {
+      const rawStr = JSON.stringify(content);
+      if (rawStr.includes("Customer Care & Guarantees") || rawStr.includes("Warehouse Seasonal Clearance")) {
+        content = DEFAULT_STOREFRONT_SECTIONS.header_mega_menu.content;
+        await pool.query(
+          "UPDATE site_page_sections SET content_json = ?, updated_at = NOW() WHERE section_key = 'header_mega_menu'",
+          [JSON.stringify(content)]
+        ).catch(() => {});
+      }
+    }
+
     return NextResponse.json({
       success: true,
       section: {

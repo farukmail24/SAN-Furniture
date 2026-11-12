@@ -62,7 +62,7 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
           content = {};
         }
 
-        // Auto-heal header_mega_menu if DB contains older tabs, obsolete /armchairs links, duplicate type params, or broken unsplash photos
+        // Auto-heal header_mega_menu if DB contains older tabs, obsolete /armchairs links, duplicate type params, broken unsplash photos, or obsolete customer care in sale tab
         const rawContentStr = typeof row.content_json === "string" ? row.content_json : JSON.stringify(row.content_json || "");
         if (
           row.section_key === "header_mega_menu" &&
@@ -70,6 +70,8 @@ async function refreshSectionsInBackground(cacheKey: string): Promise<Record<str
             content.tabs.length < 8 ||
             rawContentStr.includes('"/armchairs"') ||
             rawContentStr.includes("photo-1533090161767") ||
+            rawContentStr.includes("Customer Care & Guarantees") ||
+            rawContentStr.includes("Warehouse Seasonal Clearance") ||
             (rawContentStr.includes("Fluted Center Tables") && rawContentStr.includes("/living-room?type=coffee-tables")) ||
             (rawContentStr.includes("Nesting & Side Tables") && rawContentStr.includes("/living-room?type=coffee-tables")))
         ) {

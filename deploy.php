@@ -191,6 +191,9 @@ if ($requestMethod === 'GET') {
                 $auditLogsCount = (int)$cStmt->fetchColumn();
                 $pdo->exec("UPDATE cms_sections SET content = REPLACE(content, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE content LIKE '%photo-1533090161767-e6ffed986b88%'");
                 $pdo->exec("UPDATE categories SET hero_image = REPLACE(hero_image, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE hero_image LIKE '%photo-1533090161767-e6ffed986b88%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Customer Care & Guarantees', 'Shop By Discount') WHERE content_json LIKE '%Customer Care & Guarantees%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Warehouse Seasonal Clearance', 'Seasonal Direct Clearance') WHERE content_json LIKE '%Warehouse Seasonal Clearance%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Limited UK warehouse stock ready for direct tracked dispatch.', 'Direct UK mainland dispatch on contemporary home furniture.') WHERE content_json LIKE '%Limited UK warehouse stock%'");
                 break;
             } catch (Exception $e) {
                 $dbError = $e->getMessage();
@@ -696,6 +699,9 @@ if ($githubEvent === 'push') {
 
             $pdo->exec("UPDATE cms_sections SET content = REPLACE(content, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE content LIKE '%photo-1533090161767-e6ffed986b88%'");
             $pdo->exec("UPDATE categories SET hero_image = REPLACE(hero_image, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE hero_image LIKE '%photo-1533090161767-e6ffed986b88%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Customer Care & Guarantees', 'Shop By Discount') WHERE content_json LIKE '%Customer Care & Guarantees%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Warehouse Seasonal Clearance', 'Seasonal Direct Clearance') WHERE content_json LIKE '%Warehouse Seasonal Clearance%'");
+            $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Limited UK warehouse stock ready for direct tracked dispatch.', 'Direct UK mainland dispatch on contemporary home furniture.') WHERE content_json LIKE '%Limited UK warehouse stock%'");
 
             $notifId = 'notif_deploy_' . time() . '_' . bin2hex(random_bytes(3));
             $notifTitle = "Auto-Deployed branch '{$branch}' (" . substr($commitSha, 0, 7) . ")";

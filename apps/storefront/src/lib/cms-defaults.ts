@@ -1084,31 +1084,42 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
               ]
             },
             {
-              "title": "Customer Care & Guarantees",
+              "title": "Shop By Discount",
               "links": [
                 {
-                  "label": "Free Mainland UK Delivery",
-                  "href": "/delivery"
+                  "label": "Up to 20% Off Selection",
+                  "href": "/sale?discount=20"
                 },
                 {
-                  "label": "Direct Workshop Pricing",
-                  "href": "/about"
+                  "label": "Up to 30% Off Bestsellers",
+                  "href": "/sale?discount=30"
                 },
                 {
-                  "label": "Statutory Safety Compliance",
-                  "href": "/fire-safety"
+                  "label": "Up to 40% Off Clearance",
+                  "href": "/sale?discount=40",
+                  "badge": "POPULAR"
                 },
                 {
-                  "label": "Customer Concierge Support",
-                  "href": "/contact"
+                  "label": "Up to 50% Off Half Price",
+                  "href": "/sale?discount=50",
+                  "badge": "HALF PRICE"
+                },
+                {
+                  "label": "Deals Under £150",
+                  "href": "/sale?max_price=150"
+                },
+                {
+                  "label": "Last Chance Clearance",
+                  "href": "/sale?tag=last-chance",
+                  "badge": "FINAL STOCK"
                 }
               ]
             }
           ],
           "featured_promo": {
             "badge": "SPECIAL SAVINGS",
-            "title": "Warehouse Seasonal Clearance",
-            "subtitle": "Limited UK warehouse stock ready for direct tracked dispatch.",
+            "title": "Seasonal Direct Clearance",
+            "subtitle": "Direct UK mainland dispatch on contemporary home furniture.",
             "image_url": "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=800&auto=format&fit=crop",
             "cta_label": "Shop All Special Offers",
             "cta_href": "/sale"
