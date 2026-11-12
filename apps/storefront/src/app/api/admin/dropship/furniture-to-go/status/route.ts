@@ -253,21 +253,33 @@ export async function GET(request: Request) {
                       docSnippets.push(b3.slice(Math.max(0, pos - 200), Math.min(b3.length, pos + 200)).replace(/\s+/g, " "));
                     }
 
+                    // Extract snippet around "boxesOpen" and following 3000 characters!
+                    let boxesSnippet = "";
+                    const boxesIdx = b3.indexOf("boxesOpen");
+                    if (boxesIdx !== -1) {
+                      boxesSnippet = b3.slice(boxesIdx, boxesIdx + 4000);
+                    } else {
+                      const specIdx = b3.toLowerCase().indexOf("product specifications");
+                      if (specIdx !== -1) {
+                        boxesSnippet = b3.slice(specIdx, specIdx + 4000);
+                      }
+                    }
+
+                    // Also check for any mentions of "attachment" or "download" in full b3
+                    const allHrefMatches: string[] = [];
+                    for (const m of b3.matchAll(/href=["']([^"']+)["']/gi)) {
+                      const h = m[1];
+                      if (h.includes("download") || h.includes("attach") || h.includes("doc") || h.includes("pdf") || h.includes("file") || h.includes("manual") || h.includes("instruct")) {
+                        allHrefMatches.push(h);
+                      }
+                    }
+
                     resolve({
                       loginStatus: res2.statusCode,
                       loginLocation: res2.headers["location"],
                       productPageLength: b3.length,
-                      pdfMatches,
-                      mageworxMatches: mageworxMatches.slice(0, 20),
-                      has541,
-                      hasAssembly,
-                      hasDownloadDocs,
-                      skuSnippets: skuSnippets.slice(0, 5),
-                      docSnippets,
-                      sectionData: {
-                        status: (sectionDataRes as any)?.status,
-                        sectionKeys: (sectionDataRes as any)?.sectionKeys
-                      }
+                      boxesSnippet: boxesSnippet.slice(0, 3500),
+                      allHrefMatches: Array.from(new Set(allHrefMatches))
                     });
 
 
