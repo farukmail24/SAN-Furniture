@@ -46,33 +46,37 @@ export async function GET(request: Request) {
       });
       results.renderInfo = renderRes;
 
-      // 2. check rest schema or attachment endpoints
-      const schemaPaths = await new Promise((resolve) => {
+      // 2. Test fetching customer login page and ajax login from UK server
+      const loginProbe = await new Promise((resolve) => {
         const req = https.get({
           hostname: "furniture-to-go.co.uk",
-          path: "/rest/all/schema?services=all",
+          path: "/customer/account/login/",
           headers: {
-            "Authorization": `Bearer ${token}`,
             "User-Agent": (furnitureToGoExtractor as any).userAgent,
-            "Accept": "application/json"
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
           },
-          timeout: 15000
+          timeout: 10000
         }, (res) => {
           let b = "";
           res.on("data", c => b += c);
           res.on("end", () => {
-            try {
-              const j = JSON.parse(b);
-              const paths = Object.keys(j.paths || {}).filter(p => /download|attach|file|mageworx/i.test(p));
-              resolve({ status: res.statusCode, paths });
-            } catch {
-              resolve({ status: res.statusCode, raw: b.slice(0, 300) });
-            }
+            const isAnubis = b.includes("Making sure you're not a bot") || b.includes("anubis");
+            const formKeyMatch = b.match(/name=["']form_key["'][^>]*value=["']([^"']+)["']/i) ||
+                                 b.match(/value=["']([^"']+)["'][^>]*name=["']form_key["']/i);
+            const cookies = (res.headers["set-cookie"] || []).map(c => c.split(";")[0]);
+            resolve({
+              status: res.statusCode,
+              isAnubis,
+              htmlLength: b.length,
+              formKey: formKeyMatch ? formKeyMatch[1] : null,
+              cookies
+            });
           });
         });
         req.on("error", (e) => resolve({ error: e.message }));
       });
-      results.schemaPaths = schemaPaths;
+      results.loginProbe = loginProbe;
+
 
       // 3. Test direct file / downloads controllers for 4023544
       const candidatePaths = [
