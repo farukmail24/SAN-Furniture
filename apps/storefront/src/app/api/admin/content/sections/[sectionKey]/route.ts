@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getDbPool } from "@/lib/db";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 import { invalidateServerSectionsCache } from "@/lib/cms-server";
@@ -205,6 +206,16 @@ async function handleUpdate(
     }
 
     invalidateServerSectionsCache();
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/contact");
+      revalidatePath("/about");
+      revalidatePath("/delivery");
+      revalidatePath("/returns");
+    } catch {
+      // Revalidation warning or not supported in current environment
+    }
 
     return NextResponse.json({
       success: true,

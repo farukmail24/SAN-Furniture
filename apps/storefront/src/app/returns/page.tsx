@@ -4,6 +4,9 @@ import { ChevronRight, RotateCcw, ShieldCheck, FileText, CheckCircle2 } from "lu
 import { getLiveSections } from "@/lib/cms-server";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Returns & Customer Resolution Policy | SAN Furniture",
   description:

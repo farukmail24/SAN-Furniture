@@ -77,7 +77,7 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       quality_claim: "UK Quality Checked • Free Mainland Delivery Within 15 Days",
       payment_claim: "Secure Card Payments",
       tax_claim: "Zero Hidden Fees",
-      support_phone: "+44 20 7946 0192",
+      support_phone: "+4420 3150 3472",
       show_support_phone: true,
       banner_link: "/delivery",
     },
@@ -240,9 +240,9 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
       brand_bio:
         "Delivering bespoke craftsmanship, architectural aesthetics, and dedicated customer care straight to British homes.",
       support_title: "Customer Support (UK)",
-      support_hours: "Monday – Friday: 09:00 – 18:00 GMT",
+      support_hours: "Monday – Friday: 08:30 – 18:30 GMT | Saturday: 09:00 – 16:00 GMT",
       support_email: "support@sanfurniture.com",
-      support_phone: "+44 20 7946 0192",
+      support_phone: "+4420 3150 3472",
       legal_note:
         "SAN Furniture UK • Contemporary Home Living, Exceptional Quality & Free Mainland Delivery",
     },
@@ -1323,18 +1323,18 @@ export const DEFAULT_STOREFRONT_SECTIONS: Record<
   },
   contact_details: {
     isEnabled: true,
-    sectionName: "Concierge Contact & Warehouse Address",
+    sectionName: "Concierge Contact & Support Desk",
     content: {
       page_title: "Customer Concierge & Support Desk",
       page_subtitle:
         "Our UK support team is available Monday through Saturday to answer questions regarding orders, product specifications, or room dimensions.",
-      phone: "+44 (0) 20 7946 0192",
-      email: "concierge@sanfurniture.com",
-      whatsapp: "+44 7700 900821",
+      phone: "+4420 3150 3472",
+      email: "support@sanfurniture.com",
+      whatsapp: "+4420 3150 3472",
       hours:
         "Monday – Friday: 08:30 – 18:30 GMT | Saturday: 09:00 – 16:00 GMT",
-      warehouse_address:
-        "SAN Furniture Logistics Hub, Unit 4 Meridian Business Park, Leicester LE19 1RJ, United Kingdom",
+      registered_office:
+        "112 Coventry Road, Exhall, Coventry, CV7 9EU, United Kingdom",
     },
   },
   faq_list: {

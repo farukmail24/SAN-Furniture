@@ -4,6 +4,9 @@ import { ChevronRight, Truck, Box, ShieldCheck, MapPin, Clock, ArrowRight } from
 import { getLiveSections } from "@/lib/cms-server";
 import { DEFAULT_STOREFRONT_SECTIONS } from "@/lib/cms-defaults";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "UK Delivery Services & Surcharge Zones | SAN Furniture",
   description:

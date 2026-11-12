@@ -155,7 +155,7 @@ const PAGE_TABS: PageTabDef[] = [
     key: "contact_faq",
     label: "Contact & FAQs",
     icon: HelpCircle,
-    desc: "Concierge contact numbers, Leicester warehouse address & searchable UK furniture FAQ accordions",
+    desc: "Concierge contact numbers, UK registered office correspondence & searchable UK furniture FAQ accordions",
     liveUrl: "/contact",
     color: "brass",
   },

@@ -1618,7 +1618,7 @@ export class FurnitureToGoExtractorEngine {
         let manualToStore = live.assemblyInstructionsUrl;
         if (manualToStore.startsWith("http")) {
           try {
-            const localDocPath = await this.downloadAndSaveAssemblyManual(manualToStore, b.supplier_sku || b.product_id);
+            const localDocPath = await this.downloadAndSaveAssemblyManual(manualToStore, item.supplier_sku || item.product_id);
             if (localDocPath) {
               manualToStore = localDocPath;
             }
