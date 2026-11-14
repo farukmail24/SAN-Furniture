@@ -397,12 +397,6 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
                   Direct Mainland Dispatch
                 </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-sand-200">
-                <span className="text-navy-500">GTIN-13 Barcode</span>
-                <span className="font-mono font-semibold text-navy-950">
-                  {product.gtinBarcode || product.id}
-                </span>
-              </div>
             </div>
           </div>
 
