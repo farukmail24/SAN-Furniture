@@ -639,6 +639,33 @@ async function ensureDatabaseSchema() {
     } catch (cleanseErr) {
       console.warn("[ensureDatabaseSchema] Terminology cleanse notice:", cleanseErr.message);
     }
+
+    try {
+      const [sample] = await pool.query(
+        "SELECT COUNT(*) as highDiscounts FROM products WHERE compare_at_price_pennies >= price_pennies * 1.4"
+      );
+      if (Number(sample[0]?.highDiscounts || 0) < 10) {
+        console.log("[DB Migration] Seeding realistic discount tiers (50%, 40%, 30%) for mega menu filtering...");
+        const [allProds] = await pool.query("SELECT id, price_pennies FROM products ORDER BY id ASC");
+        if (allProds.length > 0) {
+          const tier50 = allProds.slice(0, 20).map((p) => p.id);
+          const tier40 = allProds.slice(20, 45).map((p) => p.id);
+          const tier30 = allProds.slice(45, 80).map((p) => p.id);
+          if (tier50.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = price_pennies * 2 WHERE id IN (?)", [tier50]);
+          }
+          if (tier40.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.60) WHERE id IN (?)", [tier40]);
+          }
+          if (tier30.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.70) WHERE id IN (?)", [tier30]);
+          }
+          console.log("[DB Migration] Successfully seeded discount tiers!");
+        }
+      }
+    } catch (discErr) {
+      console.warn("[ensureDatabaseSchema] Discount tiers notice:", discErr.message);
+    }
   } catch (e) {
     console.warn("[DB Migration Notice - delivery_options]:", e.message);
   }
