@@ -10,14 +10,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 54900,
-      "compare_at_price_pennies": 62000,
+      "compare_at_price_pennies": 78429,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456011",
       "thumbnail_url": "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:40:52.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_armchair_002",
@@ -29,14 +34,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 74900,
-      "compare_at_price_pennies": 84900,
+      "compare_at_price_pennies": 107000,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456012",
       "thumbnail_url": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_armchair_003",
@@ -48,14 +58,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 69900,
-      "compare_at_price_pennies": 79900,
+      "compare_at_price_pennies": 99857,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456013",
       "thumbnail_url": "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_armchair_004",
@@ -67,14 +82,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 39900,
-      "compare_at_price_pennies": 44900,
+      "compare_at_price_pennies": 57000,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456014",
       "thumbnail_url": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_armchair_005",
@@ -86,14 +106,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 18900,
-      "compare_at_price_pennies": 22900,
+      "compare_at_price_pennies": 27000,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456015",
       "thumbnail_url": "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_dining_003",
@@ -105,14 +130,18 @@
       "category_id": "cat_dining",
       "status": "published",
       "price_pennies": 34900,
-      "compare_at_price_pennies": 39900,
+      "compare_at_price_pennies": 43625,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456023",
       "thumbnail_url": "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_dining_004",
@@ -124,14 +153,18 @@
       "category_id": "cat_dining",
       "status": "published",
       "price_pennies": 39900,
-      "compare_at_price_pennies": 45900,
+      "compare_at_price_pennies": 49875,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456024",
       "thumbnail_url": "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_1014111",
@@ -150,7 +183,11 @@
       "images_json": "[\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/m/i/mirror_pine_700x700x96dpi.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/o/copenhagen_single_dressing_table_chair_mirror_700x700x96dpi_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/s/c/scandi_double_dressing_table_chair_mirror_700x700x96dpi.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/o/copenhagen_creme_single_dressing_table700x700x96_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/2/0/2012811_3.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/2/0/2012811_5.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-21T07:11:56.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_4023544",
@@ -162,14 +199,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 26040,
-      "compare_at_price_pennies": 32550,
+      "compare_at_price_pennies": 43400,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912999841",
       "thumbnail_url": "https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4023544_1.jpg",
       "images_json": "[\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4023544_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4023544_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/402_chelsea_dining_room_2_1000x1000_3.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/402_chelsea_wardrobe_3_1000x1000_1_3.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_detail8_1000x1000_12.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_detail7_1000x1000_8.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_white_melamine_40.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_truffel_oak_melamine_38.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_4025544",
@@ -181,14 +224,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 26040,
-      "compare_at_price_pennies": 32550,
+      "compare_at_price_pennies": 37200,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912959941",
       "thumbnail_url": "https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_1.jpg",
       "images_json": "[\"https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4025544_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4025544_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_4.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4025544_4.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_3.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4025544_3.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/4/0/4025544_5.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4025544_5.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/c/h/chelsea_detail8_1000x1000_17.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_detail8_1000x1000_17.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/c/h/chelsea_detail1_1000x1000_8.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_detail1_1000x1000_8.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/c/h/chelsea_white_melamine_38.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_white_melamine_38.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/c/h/chelsea_truffel_oak_melamine_36.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/c/h/chelsea_truffel_oak_melamine_36.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-29T12:35:59.000Z",
-      "updated_at": "2026-10-29T12:35:59.000Z"
+      "updated_at": "2026-10-29T12:35:59.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_4029644",
@@ -200,14 +248,21 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 13440,
-      "compare_at_price_pennies": 16800,
+      "compare_at_price_pennies": 26880,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912984770",
       "thumbnail_url": "https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4029644_1.jpg",
       "images_json": "[\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4029644_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4029644_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/402_chelsea_bedroom_3_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4029644_5.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/0/4029644_6.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-21T07:08:04.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_4267565",
@@ -226,7 +281,11 @@
       "images_json": "[\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/2/4267565_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/2/4267565_2.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/2/426_lyon_oak_dining_1_1_1_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/4/2/426_lyon_oak_dining_1_2_1_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/w/h/white_frame_1.jpg\",\"https://furniture-to-go.co.uk/media/catalog/product/cache/384edea40d4e170da5e8c6dc52ed3beb/r/i/riviera_oak_melamine_3_5_1_1_2_1_1.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_copenhagen_4dr",
@@ -238,14 +297,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 21900,
-      "compare_at_price_pennies": 27900,
+      "compare_at_price_pennies": 36500,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5707310349821",
       "thumbnail_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=1200&auto=format&fit=crop",
       "images_json": "[\"https://images.unsplash.com/photo-1595428774223-ef52624120d2?q=80&w=1200&auto=format&fit=crop\"]",
       "variants_json": null,
       "created_at": "2026-10-20T10:54:14.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_ftg_lyon_med_5443",
@@ -257,14 +322,20 @@
       "category_id": "cat_dining",
       "status": "published",
       "price_pennies": 25032,
-      "compare_at_price_pennies": 31290,
+      "compare_at_price_pennies": 41720,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912985446",
       "thumbnail_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2",
       "images_json": "[\"https://images.unsplash.com/photo-1595428774223-ef52624120d2\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_ftg_par_2d1dr_wht",
@@ -276,14 +347,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 32886,
-      "compare_at_price_pennies": 41108,
+      "compare_at_price_pennies": 46980,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912929916",
       "thumbnail_url": "https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1200&q=80",
       "images_json": "[\"https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=1200&q=80\",\"https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=1200&q=80\"]",
       "variants_json": "[]",
       "created_at": "2026-10-21T06:45:29.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_modena_dining",
@@ -295,14 +371,18 @@
       "category_id": "cat_dining",
       "status": "published",
       "price_pennies": 49900,
-      "compare_at_price_pennies": 64900,
+      "compare_at_price_pennies": 62375,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5707310349852",
       "thumbnail_url": "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=1200&auto=format&fit=crop",
       "images_json": "[\"https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=1200&auto=format&fit=crop\"]",
       "variants_json": null,
       "created_at": "2026-10-20T10:54:14.000Z",
-      "updated_at": "2026-10-28T06:00:50.000Z"
+      "updated_at": "2026-10-28T06:00:50.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_oslo_desk",
@@ -314,14 +394,20 @@
       "category_id": "cat_office",
       "status": "published",
       "price_pennies": 24900,
-      "compare_at_price_pennies": 31900,
+      "compare_at_price_pennies": 41500,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5707310349845",
       "thumbnail_url": "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1200&auto=format&fit=crop",
       "images_json": "[\"https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=1200&auto=format&fit=crop\"]",
       "variants_json": null,
       "created_at": "2026-10-20T10:54:14.000Z",
-      "updated_at": "2026-10-28T06:00:50.000Z"
+      "updated_at": "2026-10-28T06:00:50.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_ftg_paris_3dr_wardrobe",
@@ -333,14 +419,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 47900,
-      "compare_at_price_pennies": 59900,
+      "compare_at_price_pennies": 68429,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5707310349838",
       "thumbnail_url": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200&auto=format&fit=crop",
       "images_json": "[\"https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200&auto=format&fit=crop\"]",
       "variants_json": null,
       "created_at": "2026-10-20T10:54:14.000Z",
-      "updated_at": "2026-11-01T13:10:32.000Z"
+      "updated_at": "2026-11-01T13:10:32.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2394rz",
@@ -352,14 +443,21 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 11046,
-      "compare_at_price_pennies": 13808,
+      "compare_at_price_pennies": 22092,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802394",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/venice-alpine-white-bedside-2394-2394-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:46.000Z",
-      "updated_at": "2026-10-29T05:47:46.000Z"
+      "updated_at": "2026-10-29T05:47:46.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2413rz",
@@ -371,14 +469,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 7813,
-      "compare_at_price_pennies": 9766,
+      "compare_at_price_pennies": 11161,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802413",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/louise-white-gloss-bedside-table-2413-2413-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/louise-white-gloss-bedside-table-2413-2413-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:59:17.000Z",
-      "updated_at": "2026-10-29T05:47:46.000Z"
+      "updated_at": "2026-10-29T05:47:46.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2428",
@@ -390,14 +493,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 5742,
-      "compare_at_price_pennies": 7178,
+      "compare_at_price_pennies": 8203,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802428",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/madrid-wardrobe-internal-drawers-2428-2428-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/madrid-wardrobe-internal-drawers-2428-2428-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/madrid-wardrobe-internal-drawers-2428-(2)-2428-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T07:04:46.000Z",
-      "updated_at": "2026-10-29T05:47:46.000Z"
+      "updated_at": "2026-10-29T05:47:46.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2429",
@@ -409,14 +517,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 14094,
-      "compare_at_price_pennies": 17618,
+      "compare_at_price_pennies": 20134,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802429",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/madrid-white-gloss-tall-chest-of-drawers-2429-2429-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/madrid-white-gloss-tall-chest-of-drawers-2429-2429-p.png\",\"https://files.ekmcdn.com/amosmann1/images/madrid-white-gloss-tall-chest-of-drawers-2429-(2)-2429-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T13:13:52.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2439",
@@ -435,7 +548,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zing-white-gloss-bookcase-2439-2439-p.png\",\"https://files.ekmcdn.com/amosmann1/images/zing-white-gloss-bookcase-2439-(2)-2439-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-white-gloss-bookcase-2439-(3)-2439-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-white-gloss-bookcase-2439-(4)-2439-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-white-gloss-bookcase-2439-(5)-2439-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T13:13:53.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2444",
@@ -454,7 +571,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/mila-artic-white-bookcase-2444-2444-p.png\",\"https://files.ekmcdn.com/amosmann1/images/mila-artic-white-bookcase-2444-(2)-2444-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-18T09:33:56.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2458",
@@ -466,14 +587,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 18966,
-      "compare_at_price_pennies": 23708,
+      "compare_at_price_pennies": 27094,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802458",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/belas-white-gloss-tv-complete-wall-cabinet-2458-2458-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/belas-white-gloss-tv-complete-wall-cabinet-2458-2458-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-18T09:33:57.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2461",
@@ -492,7 +618,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/madrid-sliding-door-wardrobe-120cm-gloss-white-2461-2461-p.png\",\"https://files.ekmcdn.com/amosmann1/images/madrid-sliding-door-wardrobe-120cm-gloss-white-2461-(2)-2461-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/madrid-sliding-door-wardrobe-120cm-gloss-white-2461-(3)-2461-p.png\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:44.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2462",
@@ -511,7 +641,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zuldy-white-shoe-cupboard-2462-2462-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-white-shoe-cupboard-2462-(2)-2462-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-white-shoe-cupboard-2462-(3)-2462-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-18T09:33:58.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2471rz",
@@ -530,7 +664,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-wide-storage-cupboard-2471-2471-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-wide-storage-cupboard-2471-(2)-2471-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-wide-storage-cupboard-2471-(3)-2471-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-wide-storage-cupboard-2471-(4)-2471-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-18T09:34:00.000Z",
-      "updated_at": "2026-10-29T05:46:30.000Z"
+      "updated_at": "2026-10-29T05:46:30.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2472rz",
@@ -542,14 +680,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 15808,
-      "compare_at_price_pennies": 19760,
+      "compare_at_price_pennies": 22583,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802472",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-2472-2472-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-2472-2472-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-2472-(2)-2472-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-2472-(3)-2472-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-19T07:06:53.000Z",
-      "updated_at": "2026-10-29T05:46:30.000Z"
+      "updated_at": "2026-10-29T05:46:30.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2473rz",
@@ -568,7 +711,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-narrow-storage-cupboard-2473-2473-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-narrow-storage-cupboard-2473-(2)-2473-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-narrow-storage-cupboard-2473-(3)-2473-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-narrow-storage-cupboard-2473-(4)-2473-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-narrow-storage-cupboard-2473-(5)-2473-p.webp\"]",
       "variants_json": "[]",
       "created_at": "2026-10-19T07:06:54.000Z",
-      "updated_at": "2026-10-29T05:46:30.000Z"
+      "updated_at": "2026-10-29T05:46:30.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2474rz",
@@ -587,7 +734,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-narrow-storage-cupboard-2474-2474-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-narrow-storage-cupboard-2474-(2)-2474-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-narrow-storage-cupboard-2474-(3)-2474-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-oak-narrow-storage-cupboard-2474-(4)-2474-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-19T07:06:54.000Z",
-      "updated_at": "2026-10-29T05:46:30.000Z"
+      "updated_at": "2026-10-29T05:46:30.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2476rz",
@@ -606,7 +757,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-storage-wall-cupboard-2476-2476-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2480rz",
@@ -625,7 +780,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/milano-tall-narrow-bathroom-cupboard-white-gloss-2480-2480-p.png\",\"https://files.ekmcdn.com/amosmann1/images/milano-tall-narrow-bathroom-cupboard-white-gloss-2480-(2)-2480-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/milano-tall-narrow-bathroom-cupboard-white-gloss-2480-(3)-2480-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/milano-tall-narrow-bathroom-cupboard-white-gloss-2480-(4)-2480-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/milano-tall-narrow-bathroom-cupboard-white-gloss-2480-(5)-2480-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2483rz",
@@ -644,7 +803,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/milano-bathroom-wall-cupboard-white-gloss-2483-2483-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/milano-bathroom-wall-cupboard-white-gloss-2483-(2)-2483-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2489rz",
@@ -656,14 +819,19 @@
       "category_id": "cat_office",
       "status": "published",
       "price_pennies": 14268,
-      "compare_at_price_pennies": 17835,
+      "compare_at_price_pennies": 20383,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802489",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/kuba-artic-white-desk-with-drawers-2489-2489-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/kuba-artic-white-desk-with-drawers-2489-2489-p.png\",\"https://files.ekmcdn.com/amosmann1/images/kuba-artic-white-desk-with-drawers-2489-(2)-2489-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kuba-artic-white-desk-with-drawers-2489-(3)-2489-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kuba-artic-white-desk-with-drawers-2489-(4)-2489-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:45.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2490rz",
@@ -682,7 +850,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/blanco-artic-white-desk-with-3-drawers-2490-2490-p.png\",\"https://files.ekmcdn.com/amosmann1/images/blanco-artic-white-desk-with-3-drawers-2490-(2)-2490-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/blanco-artic-white-desk-with-3-drawers-2490-(3)-2490-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/blanco-artic-white-desk-with-3-drawers-2490-(4)-2490-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/blanco-artic-white-desk-with-3-drawers-2490-(5)-2490-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2491rz",
@@ -701,7 +873,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/blanco-small-artic-white-desk-2491-2491-p.png\",\"https://files.ekmcdn.com/amosmann1/images/blanco-small-artic-white-desk-2491-(2)-2491-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2503rz",
@@ -720,7 +896,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/turin-artic-white-desk-dressing-table-or-console-table-2503-2503-p.png\",\"https://files.ekmcdn.com/amosmann1/images/turin-artic-white-desk-dressing-table-or-console-table-2503-(2)-2503-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/turin-artic-white-desk-dressing-table-or-console-table-2503-(3)-2503-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/turin-artic-white-desk-dressing-table-or-console-table-2503-(4)-2503-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2505rz",
@@ -739,7 +919,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zuldy-large-30-pairs-white-shoe-cupboard-2505-2505-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-large-30-pairs-white-shoe-cupboard-2505-(2)-2505-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-large-30-pairs-white-shoe-cupboard-2505-(3)-2505-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-large-30-pairs-white-shoe-cupboard-2505-(4)-2505-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zuldy-large-30-pairs-white-shoe-cupboard-2505-(5)-2505-p.png\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:44.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2507rz",
@@ -751,14 +935,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 9568,
-      "compare_at_price_pennies": 11960,
+      "compare_at_price_pennies": 15947,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802507",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-2507-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-2507-p.png\",\"https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-(2)-2507-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-(3)-2507-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-(4)-2507-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-short-white-gloss-bookcase-2507-(5)-2507-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2559rz",
@@ -777,7 +967,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/curro-artic-white-tv-cabinet-entertainment-unit-2559-2559-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2560rz",
@@ -789,14 +983,19 @@
       "category_id": "cat_office",
       "status": "published",
       "price_pennies": 21160,
-      "compare_at_price_pennies": 26450,
+      "compare_at_price_pennies": 30229,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802560",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-white-2560-2560-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-white-2560-2560-p.png\",\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-white-2560-(2)-2560-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-white-2560-(3)-2560-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2561rz",
@@ -815,7 +1014,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-oak-effect-2561-2561-p.png\",\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-oak-effect-2561-(2)-2561-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/carin-corner-flexi-desk-oak-effect-2561-(3)-2561-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2564rz",
@@ -834,7 +1037,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/double-matt-white-computer-desk-table-with-bookcase-2564-2564-p.png\",\"https://files.ekmcdn.com/amosmann1/images/double-matt-white-computer-desk-table-with-bookcase-2564-(2)-2564-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/double-matt-white-computer-desk-table-with-bookcase-2564-(3)-2564-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2589rz",
@@ -853,7 +1060,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zappa-shoe-cabinet-white-gloss-2589-2589-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zappa-shoe-cabinet-white-gloss-2589-(2)-2589-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zappa-shoe-cabinet-white-gloss-2589-(3)-2589-p.png\",\"https://files.ekmcdn.com/amosmann1/images/zappa-shoe-cabinet-white-gloss-2589-(4)-2589-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2591rz",
@@ -872,7 +1083,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-3-door-2591-2591-p.png\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-3-door-2591-(2)-2591-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-3-door-2591-(3)-2591-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-3-door-2591-(4)-2591-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/multi-purpose-white-wide-storage-cupboard-3-door-2591-(5)-2591-p.webp\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2593rz",
@@ -891,7 +1106,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/utility-multi-purpose-white-2-door-storage-broom-cupboard-2593-2593-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/utility-multi-purpose-white-2-door-storage-broom-cupboard-2593-(2)-2593-p.webp\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2600rz",
@@ -903,14 +1122,21 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 12088,
-      "compare_at_price_pennies": 15110,
+      "compare_at_price_pennies": 24176,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802600",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-2600-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-2600-p.png\",\"https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-(2)-2600-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-(3)-2600-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-(4)-2600-p.png\",\"https://files.ekmcdn.com/amosmann1/images/step-bookcase-white-gloss-lounge-furniture-2600-(5)-2600-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2601rz",
@@ -929,7 +1155,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/cadiz-white-gloss-triple-bookcase-2601-2601-p.png\",\"https://files.ekmcdn.com/amosmann1/images/cadiz-white-gloss-triple-bookcase-2601-(2)-2601-p.png\",\"https://files.ekmcdn.com/amosmann1/images/cadiz-white-gloss-triple-bookcase-2601-(3)-2601-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/cadiz-white-gloss-triple-bookcase-2601-(4)-2601-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/cadiz-white-gloss-triple-bookcase-2601-(5)-2601-p.webp\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2604rz",
@@ -948,7 +1178,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/luiz-extending-dining-table-oak-effect-2604-2604-p.png\",\"https://files.ekmcdn.com/amosmann1/images/luiz-extending-dining-table-oak-effect-2604-(2)-2604-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/luiz-extending-dining-table-oak-effect-2604-(3)-2604-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/luiz-extending-dining-table-oak-effect-2604-(4)-2604-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/luiz-extending-dining-table-oak-effect-2604-(5)-2604-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2605rz",
@@ -960,14 +1194,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 15280,
-      "compare_at_price_pennies": 19100,
+      "compare_at_price_pennies": 25467,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802605",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-2605-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-2605-p.png\",\"https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-(2)-2605-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-(3)-2605-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-(4)-2605-p.webp\",\"https://files.ekmcdn.com/amosmann1/images/zing-oak-effect-bookcase-2605-(5)-2605-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2606rz",
@@ -986,7 +1226,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/toris-coffee-table-oak-and-white-2606-2606-p.png\",\"https://files.ekmcdn.com/amosmann1/images/toris-coffee-table-oak-and-white-2606-(2)-2606-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/toris-coffee-table-oak-and-white-2606-(3)-2606-1-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/toris-coffee-table-oak-and-white-2606-(4)-2606-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2607rz",
@@ -998,14 +1242,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 18278,
-      "compare_at_price_pennies": 22848,
+      "compare_at_price_pennies": 26111,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802607",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/toris-sideboard-white-with-oak-effect-2607-2607-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/toris-sideboard-white-with-oak-effect-2607-2607-p.png\",\"https://files.ekmcdn.com/amosmann1/images/toris-sideboard-white-with-oak-effect-2607-(2)-2607-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/toris-sideboard-white-with-oak-effect-2607-(3)-2607-p.png\",\"https://files.ekmcdn.com/amosmann1/images/toris-sideboard-white-with-oak-effect-2607-(4)-2607-p.png\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:45.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2608rz",
@@ -1024,7 +1273,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/valdo-tall-bathroom-cupboard-white-gloss-2608-2608-p.png\",\"https://files.ekmcdn.com/amosmann1/images/valdo-tall-bathroom-cupboard-white-gloss-2608-(2)-2608-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valdo-tall-bathroom-cupboard-white-gloss-2608-(3)-2608-p.png\",\"https://files.ekmcdn.com/amosmann1/images/valdo-tall-bathroom-cupboard-white-gloss-2608-(4)-2608-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2609rz",
@@ -1043,7 +1296,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/valdo-bathroom-vanity-sink-with-undersink-cupboard-white-gloss-2609-2609-p.png\",\"https://files.ekmcdn.com/amosmann1/images/valdo-bathroom-vanity-sink-with-undersink-cupboard-white-gloss-2609-(2)-2609-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2614rz",
@@ -1055,14 +1312,19 @@
       "category_id": "cat_office",
       "status": "published",
       "price_pennies": 20908,
-      "compare_at_price_pennies": 26135,
+      "compare_at_price_pennies": 29869,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802614",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/amur-artic-white-computer-office-desk-table-2614-2614-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/amur-artic-white-computer-office-desk-table-2614-2614-p.png\",\"https://files.ekmcdn.com/amosmann1/images/amur-artic-white-computer-office-desk-table-2614-(2)-2614-p.png\",\"https://files.ekmcdn.com/amosmann1/images/amur-artic-white-computer-office-desk-table-2614-(3)-2614-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2616rz",
@@ -1081,7 +1343,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-wide-sideboard-s8-2616-2616-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-wide-sideboard-s8-2616-(2)-2616-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-wide-sideboard-s8-2616-(3)-2616-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-wide-sideboard-s8-2616-(4)-2616-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-wide-sideboard-s8-2616-(5)-2616-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2617rz",
@@ -1093,14 +1359,19 @@
       "category_id": "cat_office",
       "status": "published",
       "price_pennies": 26704,
-      "compare_at_price_pennies": 33380,
+      "compare_at_price_pennies": 38149,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802617",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-2617-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-2617-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-(2)-2617-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-(3)-2617-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-(4)-2617-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-large-white-gloss-computer-desk-s15-2617-(5)-2617-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2618rz",
@@ -1119,7 +1390,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-narrow-sideboard-s5-2618-2618-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-narrow-sideboard-s5-2618-(2)-2618-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-narrow-sideboard-s5-2618-(3)-2618-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-narrow-sideboard-s5-2618-(4)-2618-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-narrow-sideboard-s5-2618-(5)-2618-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2619rz",
@@ -1138,7 +1413,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-computer-desk-s14-2619-2619-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-computer-desk-s14-2619-(2)-2619-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-computer-desk-s14-2619-(3)-2619-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2620rz",
@@ -1157,7 +1436,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-door-s12-2620-2620-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-door-s12-2620-(2)-2620-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-door-s12-2620-(3)-2620-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-door-s12-2620-(4)-2620-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2621rz",
@@ -1176,7 +1459,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-doors-s13-2621-2621-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-doors-s13-2621-(2)-2621-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-doors-s13-2621-(3)-2621-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-doors-s13-2621-(4)-2621-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-tall-narrow-bookcase-with-white-gloss-doors-s13-2621-(5)-2621-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2622rz",
@@ -1188,14 +1475,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 20992,
-      "compare_at_price_pennies": 26240,
+      "compare_at_price_pennies": 34987,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802622",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s3-2622-2622-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s3-2622-2622-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s3-2622-(2)-2622-1-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s3-2622-(3)-2622-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s3-2622-(4)-2622-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2623rz",
@@ -1214,7 +1507,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tv-cabinet-s9-2623-2623-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tv-cabinet-s9-2623-(2)-2623-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tv-cabinet-s9-2623-(3)-2623-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tv-cabinet-s9-2623-(4)-2623-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tv-cabinet-s9-2623-(5)-2623-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2642rz",
@@ -1233,7 +1530,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-tallboy-storage-unit-with-cupboard-and-drawers-s11-2642-2642-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-tallboy-storage-unit-with-cupboard-and-drawers-s11-2642-(2)-2642-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-tallboy-storage-unit-with-cupboard-and-drawers-s11-2642-(3)-2642-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-tallboy-storage-unit-with-cupboard-and-drawers-s11-2642-(4)-2642-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-tallboy-storage-unit-with-cupboard-and-drawers-s11-2642-(5)-2642-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2643rz",
@@ -1252,7 +1553,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-wardrobe-with-mirrored-door-s22-2643-2643-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-wardrobe-with-mirrored-door-s22-2643-(2)-2643-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-slim-wardrobe-with-mirrored-door-s22-2643-(3)-2643-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2647rz",
@@ -1271,7 +1576,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/turin-white-and-oak-desk-dressing-table-or-console-table-2647-2647-p.png\",\"https://files.ekmcdn.com/amosmann1/images/turin-white-and-oak-desk-dressing-table-or-console-table-2647-(2)-2647-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/turin-white-and-oak-desk-dressing-table-or-console-table-2647-(3)-2647-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/turin-white-and-oak-desk-dressing-table-or-console-table-2647-(4)-2647-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2661rz",
@@ -1283,14 +1592,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 22681,
-      "compare_at_price_pennies": 28351,
+      "compare_at_price_pennies": 37802,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802661",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/ramina-concrete-grey-and-white-narrow-chest-of-drawers-2661-2661-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/ramina-concrete-grey-and-white-narrow-chest-of-drawers-2661-2661-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2677rz",
@@ -1309,7 +1624,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/vant-oak-effect-2-door-corner-wardrobe-2677-2677-p.png\",\"https://files.ekmcdn.com/amosmann1/images/vant-oak-effect-2-door-corner-wardrobe-2677-(2)-2677-p.png\",\"https://files.ekmcdn.com/amosmann1/images/vant-oak-effect-2-door-corner-wardrobe-2677-(3)-2677-p.png\",\"https://files.ekmcdn.com/amosmann1/images/vant-oak-effect-2-door-corner-wardrobe-2677-(4)-2677-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2693rz",
@@ -1321,14 +1640,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 9904,
-      "compare_at_price_pennies": 12380,
+      "compare_at_price_pennies": 16507,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802693",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/marvin-light-oak-shoe-cabinet-18-pairs-2693-2693-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/marvin-light-oak-shoe-cabinet-18-pairs-2693-2693-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2696rz",
@@ -1347,7 +1672,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/nina-2-drawer-bedside-cabinet-artic-white-2696-2696-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/nina-2-drawer-bedside-cabinet-artic-white-2696-(2)-2696-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/nina-2-drawer-bedside-cabinet-artic-white-2696-(3)-2696-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2698rz",
@@ -1359,14 +1688,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 24049,
-      "compare_at_price_pennies": 30061,
+      "compare_at_price_pennies": 40082,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802698",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/pietra-117cm-sideboard-grey-and-white-gloss-2-door-4-drw-2698-2698-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/pietra-117cm-sideboard-grey-and-white-gloss-2-door-4-drw-2698-2698-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-117cm-sideboard-grey-and-white-gloss-2-door-4-drw-2698-(2)-2698-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/pietra-117cm-sideboard-grey-and-white-gloss-2-door-4-drw-2698-(3)-2698-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2700rz",
@@ -1378,14 +1713,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 20992,
-      "compare_at_price_pennies": 26240,
+      "compare_at_price_pennies": 29989,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802700",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-2700-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-2700-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-(2)-2700-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-(3)-2700-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-(4)-2700-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-large-tv-cabinet-grey-and-white-gloss-2700-(5)-2700-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2705rz",
@@ -1397,14 +1737,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 20521,
-      "compare_at_price_pennies": 25651,
+      "compare_at_price_pennies": 29316,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802705",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/pietra-tallboy-chest-of-drawers-grey-and-white-gloss-6-drw-2705-2705-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/pietra-tallboy-chest-of-drawers-grey-and-white-gloss-6-drw-2705-2705-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-tallboy-chest-of-drawers-grey-and-white-gloss-6-drw-2705-(2)-2705-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/pietra-tallboy-chest-of-drawers-grey-and-white-gloss-6-drw-2705-(3)-2705-p.png\",\"https://files.ekmcdn.com/amosmann1/images/pietra-tallboy-chest-of-drawers-grey-and-white-gloss-6-drw-2705-(4)-2705-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2706rz",
@@ -1423,7 +1768,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-3-drawer-sideboard-k45-2706-2706-p.png\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-3-drawer-sideboard-k45-2706-(2)-2706-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-3-drawer-sideboard-k45-2706-(3)-2706-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-3-drawer-sideboard-k45-2706-(4)-2706-p.png\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-3-drawer-sideboard-k45-2706-(5)-2706-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2707rz",
@@ -1442,7 +1791,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-2-door-display-cabinet-k12-2707-2707-p.png\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-2-door-display-cabinet-k12-2707-(2)-2707-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-2-door-display-cabinet-k12-2707-(3)-2707-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-2-door-display-cabinet-k12-2707-(4)-2707-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/camar-large-oak-effect-2-door-display-cabinet-k12-2707-(5)-2707-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2712rz",
@@ -1454,14 +1807,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 17084,
-      "compare_at_price_pennies": 21355,
+      "compare_at_price_pennies": 24406,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802712",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-2712-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-2712-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-(2)-2712-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-(3)-2712-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-(4)-2712-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-dressing-table-s31-2712-(5)-2712-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2713rz",
@@ -1473,14 +1831,21 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 10525,
-      "compare_at_price_pennies": 13156,
+      "compare_at_price_pennies": 21050,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802713",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-bedside-table-s32-2713-2713-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-bedside-table-s32-2713-2713-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-bedside-table-s32-2713-(2)-2713-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-gloss-2-drawer-bedside-table-s32-2713-(3)-2713-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2911rz",
@@ -1492,14 +1857,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 34096,
-      "compare_at_price_pennies": 42620,
+      "compare_at_price_pennies": 56827,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802911",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/ice-white-high-gloss-wide-display-unit-p9rxar22-2911-2911-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/ice-white-high-gloss-wide-display-unit-p9rxar22-2911-2911-p.png\",\"https://files.ekmcdn.com/amosmann1/images/ice-white-high-gloss-wide-display-unit-p9rxar22-2911-(2)-2911-p.png\",\"https://files.ekmcdn.com/amosmann1/images/ice-white-high-gloss-wide-display-unit-p9rxar22-2911-(3)-2911-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2916rz",
@@ -1511,14 +1882,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 53928,
-      "compare_at_price_pennies": 67410,
+      "compare_at_price_pennies": 77040,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802916",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/amora-white-and-oak-wall-entertainment-unit-016642f-2916-2916-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/amora-white-and-oak-wall-entertainment-unit-016642f-2916-2916-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/amora-white-and-oak-wall-entertainment-unit-016642f-2916-(2)-2916-p.png\",\"https://files.ekmcdn.com/amosmann1/images/amora-white-and-oak-wall-entertainment-unit-016642f-2916-(3)-2916-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/amora-white-and-oak-wall-entertainment-unit-016642f-2916-(4)-2916-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2918rz",
@@ -1537,7 +1913,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/zidan-white-and-grey-kitchen-trolley-009910o-2918-2918-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zidan-white-and-grey-kitchen-trolley-009910o-2918-(2)-2918-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/zidan-white-and-grey-kitchen-trolley-009910o-2918-(3)-2918-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2919",
@@ -1549,14 +1929,20 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 14776,
-      "compare_at_price_pennies": 18470,
+      "compare_at_price_pennies": 24627,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802919",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/fendi-white-gloss-shoe-cabinet-hallway-unit-2919-2919-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/fendi-white-gloss-shoe-cabinet-hallway-unit-2919-2919-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/fendi-white-gloss-shoe-cabinet-hallway-unit-2919-(2)-2919-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/fendi-white-gloss-shoe-cabinet-hallway-unit-2919-(3)-2919-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/fendi-white-gloss-shoe-cabinet-hallway-unit-2919-(4)-2919-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2922rz",
@@ -1575,7 +1961,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/alex-white-corner-desk-with-drawer-and-shelves-2922-2922-p.png\",\"https://files.ekmcdn.com/amosmann1/images/alex-white-corner-desk-with-drawer-and-shelves-2922-(2)-2922-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/alex-white-corner-desk-with-drawer-and-shelves-2922-(3)-2922-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/alex-white-corner-desk-with-drawer-and-shelves-2922-(4)-2922-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2923rz",
@@ -1587,14 +1977,19 @@
       "category_id": "cat_living",
       "status": "published",
       "price_pennies": 26717,
-      "compare_at_price_pennies": 33396,
+      "compare_at_price_pennies": 38167,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802923",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-2923-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-2923-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-(2)-2923-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-(3)-2923-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-(4)-2923-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-tall-2-door-sideboard-s7-2923-(5)-2923-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:58.000Z",
-      "updated_at": "2026-10-29T05:44:58.000Z"
+      "updated_at": "2026-10-29T05:44:58.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2925rz",
@@ -1613,7 +2008,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-2-door-2-drawer-wardrobe-s28-2925-2925-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-2-door-2-drawer-wardrobe-s28-2925-(2)-2925-p.png\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-2-door-2-drawer-wardrobe-s28-2925-(3)-2925-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-2-door-2-drawer-wardrobe-s28-2925-(4)-2925-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-2-door-2-drawer-wardrobe-s28-2925-(5)-2925-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2934rz",
@@ -1632,7 +2031,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/adila-white-and-oak-effect-bookcase-2934-2934-p.png\",\"https://files.ekmcdn.com/amosmann1/images/adila-white-and-oak-effect-bookcase-2934-(2)-2934-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/adila-white-and-oak-effect-bookcase-2934-(3)-2934-1-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/adila-white-and-oak-effect-bookcase-2934-(4)-2934-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/adila-white-and-oak-effect-bookcase-2934-(5)-2934-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-18T08:36:28.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2944rz",
@@ -1651,7 +2054,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-high-gloss-grey-and-white-corner-wardrobe-2944-2945-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-high-gloss-grey-and-white-corner-wardrobe-2944-(2)-2945-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-high-gloss-grey-and-white-corner-wardrobe-2944-(3)-2945-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-high-gloss-grey-and-white-corner-wardrobe-2944-(4)-2945-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_2946rz",
@@ -1663,14 +2070,21 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 15072,
-      "compare_at_price_pennies": 18840,
+      "compare_at_price_pennies": 30144,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912802946",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s4-2946-3042-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s4-2946-3042-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s4-2946-(2)-3042-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/santino-white-high-gloss-chest-of-drawers-s4-2946-(3)-3042-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:35:32.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3041rz",
@@ -1689,7 +2103,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/limone-white-3-door-wardrobe-11008264-3004-p.png\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-3-door-wardrobe-11008264-(2)-3004-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-3-door-wardrobe-11008264-(3)-3004-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-3-door-wardrobe-11008264-(4)-3004-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-3-door-wardrobe-11008264-(5)-3004-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3042rz",
@@ -1701,14 +2119,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 42672,
-      "compare_at_price_pennies": 53340,
+      "compare_at_price_pennies": 71120,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803042",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-3006-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-3006-p.png\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-(2)-3006-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-(3)-3006-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-(4)-3006-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-3-door-wardrobe-11008262-(5)-3006-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3043rz",
@@ -1727,7 +2151,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/limone-white-4-door-wardrobe-11008267-3005-p.png\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-4-door-wardrobe-11008267-(2)-3005-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-4-door-wardrobe-11008267-(3)-3005-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-4-door-wardrobe-11008267-(4)-3005-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-white-4-door-wardrobe-11008267-(5)-3005-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3044rz",
@@ -1739,14 +2167,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 48552,
-      "compare_at_price_pennies": 60690,
+      "compare_at_price_pennies": 69360,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803044",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-3007-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-3007-p.png\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-(2)-3007-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-(3)-3007-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-(4)-3007-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/limone-grey-oak-4-door-wardrobe-11008265-(5)-3007-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3045rz",
@@ -1758,14 +2191,21 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 55158,
-      "compare_at_price_pennies": 68948,
+      "compare_at_price_pennies": 110316,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803045",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/valentina-white-220cm-sliding-wardrobe-with-mirror-11008286-3009-p.jpg",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/valentina-white-220cm-sliding-wardrobe-with-mirror-11008286-3009-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-white-220cm-sliding-wardrobe-with-mirror-11008286-(2)-3009-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-white-220cm-sliding-wardrobe-with-mirror-11008286-(3)-3009-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-white-220cm-sliding-wardrobe-with-mirror-11008286-(4)-3009-p.jpg\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:18:44.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"half-price\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "half-price",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3046rz",
@@ -1784,7 +2224,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/valentina-grey-220cm-sliding-wardrobe-with-mirror-11008287-3010-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-grey-220cm-sliding-wardrobe-with-mirror-11008287-(2)-3010-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-grey-220cm-sliding-wardrobe-with-mirror-11008287-(3)-3010-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-grey-220cm-sliding-wardrobe-with-mirror-11008287-(4)-3010-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/valentina-grey-220cm-sliding-wardrobe-with-mirror-11008287-(5)-3010-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3047rz",
@@ -1796,14 +2240,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 40152,
-      "compare_at_price_pennies": 50190,
+      "compare_at_price_pennies": 66920,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803047",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-3012-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-3012-p.png\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-(2)-3012-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-(3)-3012-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-(4)-3012-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-3-door-wardrobe-11008714-(5)-3012-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3048rz",
@@ -1822,7 +2272,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/kano-white-4-door-wardrobe-11008721-3013-p.png\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-4-door-wardrobe-11008721-(2)-3013-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kano-white-4-door-wardrobe-11008721-(3)-3013-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3050rz",
@@ -1841,7 +2295,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/myra-white-mirrored-narrow-wardrobe-11008561-3016-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/myra-white-mirrored-narrow-wardrobe-11008561-(2)-3016-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/myra-white-mirrored-narrow-wardrobe-11008561-(3)-3016-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/myra-white-mirrored-narrow-wardrobe-11008561-(4)-3016-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/myra-white-mirrored-narrow-wardrobe-11008561-(5)-3016-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3057rz",
@@ -1853,14 +2311,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 24545,
-      "compare_at_price_pennies": 30681,
+      "compare_at_price_pennies": 40908,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803057",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-3024-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-3024-p.png\",\"https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-(2)-3024-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-(3)-3024-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-(4)-3024-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/lucerne-oak-narrow-wardrobe-11008355-(5)-3024-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3066rz",
@@ -1879,7 +2343,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/kenzo-oak-slim-wardrobe-11008183-3037-p.png\",\"https://files.ekmcdn.com/amosmann1/images/kenzo-oak-slim-wardrobe-11008183-(2)-3037-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kenzo-oak-slim-wardrobe-11008183-(3)-3037-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kenzo-oak-slim-wardrobe-11008183-(4)-3037-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/kenzo-oak-slim-wardrobe-11008183-(5)-3037-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3085rz",
@@ -1898,7 +2366,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-166cm-11008274-3050-p.png\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-166cm-11008274-(2)-3050-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-166cm-11008274-(3)-3050-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-166cm-11008274-(4)-3050-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-166cm-11008274-(5)-3050-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3086rz",
@@ -1910,14 +2382,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 64512,
-      "compare_at_price_pennies": 80640,
+      "compare_at_price_pennies": 92160,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803086",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-3051-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-3051-p.png\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-(2)-3051-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-(3)-3051-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-(4)-3051-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-215cm-11008278-(5)-3051-p.png\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3087rz",
@@ -1936,7 +2413,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-11008280-3053-p.png\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-11008280-(2)-3053-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-11008280-(3)-3053-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-11008280-(4)-3053-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/navara-oak-effect-sliding-door-wardrobe-11008280-(5)-3053-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3123rz",
@@ -1948,14 +2429,20 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 49728,
-      "compare_at_price_pennies": 62160,
+      "compare_at_price_pennies": 82880,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803123",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-3058-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-3058-p.png\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-(2)-3058-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-(3)-3058-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-(4)-3058-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-4-door-2-drawer-wardrobe-11008719-(5)-3058-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3124rz",
@@ -1974,7 +2461,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-corner-wardrobe-11008710-3059-p.png\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-corner-wardrobe-11008710-(2)-3059-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-corner-wardrobe-11008710-(3)-3059-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-corner-wardrobe-11008710-(4)-3059-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/miami-sonoma-oak-effect-corner-wardrobe-11008710-(5)-3059-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3125rz",
@@ -1986,14 +2477,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 27888,
-      "compare_at_price_pennies": 34860,
+      "compare_at_price_pennies": 39840,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803125",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-3060-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-3060-p.png\",\"https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-(2)-3060-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-(3)-3060-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-(4)-3060-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/sorrento-oak-effect-tall-slim-2-door-wardrobe-11008256-(5)-3060-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3167rz",
@@ -2005,14 +2501,19 @@
       "category_id": "cat_beds",
       "status": "published",
       "price_pennies": 59472,
-      "compare_at_price_pennies": 74340,
+      "compare_at_price_pennies": 84960,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060912803167",
       "thumbnail_url": "https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-3081-p.png",
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-3081-p.png\",\"https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-(2)-3081-1-p.png\",\"https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-(3)-3081-p.png\",\"https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-(4)-3081-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/athens-grey-and-white-gloss-2-door-wardrobe-with-led-lights-3167-(5)-3081-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3175rz",
@@ -2031,7 +2532,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/cadillac-oak-effect-and-white-gloss-2-door-wardrobe-with-led-lights-3175-3091-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/cadillac-oak-effect-and-white-gloss-2-door-wardrobe-with-led-lights-3175-(2)-3091-p.png\",\"https://files.ekmcdn.com/amosmann1/images/cadillac-oak-effect-and-white-gloss-2-door-wardrobe-with-led-lights-3175-(3)-3091-p.png\",\"https://files.ekmcdn.com/amosmann1/images/cadillac-oak-effect-and-white-gloss-2-door-wardrobe-with-led-lights-3175-(4)-3091-p.png\",\"https://files.ekmcdn.com/amosmann1/images/cadillac-oak-effect-and-white-gloss-2-door-wardrobe-with-led-lights-3175-(5)-3091-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_3413rz",
@@ -2050,7 +2555,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/granada-cashmere-and-artisan-oak-effect-chest-of-drawers-11013696-3270-p.png\",\"https://files.ekmcdn.com/amosmann1/images/granada-cashmere-and-artisan-oak-effect-chest-of-drawers-11013696-(2)-3270-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/granada-cashmere-and-artisan-oak-effect-chest-of-drawers-11013696-(3)-3270-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/granada-cashmere-and-artisan-oak-effect-chest-of-drawers-11013696-(4)-3270-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/granada-cashmere-and-artisan-oak-effect-chest-of-drawers-11013696-(5)-3270-p.png\"]",
       "variants_json": "[]",
       "created_at": "2026-10-17T06:51:12.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_p4rxif74",
@@ -2069,7 +2578,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/rado-4-door-2-drawer-white-high-gloss-mirrored-wardrobe-3154-3069-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/rado-4-door-2-drawer-white-high-gloss-mirrored-wardrobe-3154-(2)-3069-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_p4rxpl03",
@@ -2088,7 +2601,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/rado-3-door-white-high-gloss-mirrored-wardrobe-3153-3068-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/rado-3-door-white-high-gloss-mirrored-wardrobe-3153-(2)-3068-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_live_am_p4rxpl04",
@@ -2107,7 +2624,11 @@
       "images_json": "[\"https://files.ekmcdn.com/amosmann1/images/rado-4-door-white-high-gloss-mirrored-wardrobe-3155-3070-p.jpg\",\"https://files.ekmcdn.com/amosmann1/images/rado-4-door-white-high-gloss-mirrored-wardrobe-3155-(2)-3070-p.jpg\"]",
       "variants_json": null,
       "created_at": "2026-10-29T05:44:57.000Z",
-      "updated_at": "2026-10-29T05:44:57.000Z"
+      "updated_at": "2026-10-29T05:44:57.000Z",
+      "tags_json": "[\"sale\"]",
+      "tags": [
+        "sale"
+      ]
     },
     {
       "id": "prod_sofa_002",
@@ -2119,14 +2640,20 @@
       "category_id": "cat_sofas",
       "status": "published",
       "price_pennies": 219900,
-      "compare_at_price_pennies": 249900,
+      "compare_at_price_pennies": 366500,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456002",
       "thumbnail_url": "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_sofa_003",
@@ -2138,14 +2665,20 @@
       "category_id": "cat_sofas",
       "status": "published",
       "price_pennies": 89900,
-      "compare_at_price_pennies": 105000,
+      "compare_at_price_pennies": 149833,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456003",
       "thumbnail_url": "https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1540574163026-643ea20ade25?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_sofa_004",
@@ -2157,14 +2690,20 @@
       "category_id": "cat_sofas",
       "status": "published",
       "price_pennies": 164900,
-      "compare_at_price_pennies": 189900,
+      "compare_at_price_pennies": 274833,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456004",
       "thumbnail_url": "https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1550581190-9c1c48d21d6c?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_sofa_005",
@@ -2176,14 +2715,20 @@
       "category_id": "cat_sofas",
       "status": "published",
       "price_pennies": 149900,
-      "compare_at_price_pennies": 175000,
+      "compare_at_price_pennies": 249833,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060123456005",
       "thumbnail_url": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=85",
       "images_json": "[\"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=85\"]",
       "variants_json": "[]",
       "created_at": "2026-11-05T09:41:21.000Z",
-      "updated_at": "2026-11-05T09:49:22.000Z"
+      "updated_at": "2026-11-05T09:49:22.000Z",
+      "tags_json": "[\"last-chance\",\"clearance\",\"sale\"]",
+      "tags": [
+        "last-chance",
+        "clearance",
+        "sale"
+      ]
     },
     {
       "id": "prod_sofa_sandringham_01",
@@ -2195,14 +2740,19 @@
       "category_id": "cat_sofas",
       "status": "published",
       "price_pennies": 149500,
-      "compare_at_price_pennies": 189500,
+      "compare_at_price_pennies": 213571,
       "vat_rate_percent": "20.00",
       "gtin_barcode": "5060999990011",
       "thumbnail_url": "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80",
       "images_json": "[\"https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=1200&q=80\", \"https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=1200&q=80\", \"https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80\"]",
       "variants_json": "[{\"id\": \"var_sandringham_boucle_cream\", \"title\": \"Cream Bouclé / 3-Seater\", \"sku\": \"SAN-SOF-SAND-01\", \"price_pennies\": 149500, \"stock_quantity\": 6, \"in_stock\": true}]",
       "created_at": "2026-10-26T07:57:21.000Z",
-      "updated_at": "2026-10-27T13:26:16.000Z"
+      "updated_at": "2026-10-27T13:26:16.000Z",
+      "tags_json": "[\"bestsellers\",\"sale\"]",
+      "tags": [
+        "bestsellers",
+        "sale"
+      ]
     }
   ],
   "specs": [
