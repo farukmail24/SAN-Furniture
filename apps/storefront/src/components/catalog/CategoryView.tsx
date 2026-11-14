@@ -110,12 +110,12 @@ export function CategoryView({
   });
 
   // Category filter (supports URL query param e.g. /sale?category=living-room or category prop)
-  const initialCategoryParam =
-    typeof initialSearchParams?.category === "string"
-      ? initialSearchParams.category
-      : typeof initialSearchParams?.cat === "string"
-      ? initialSearchParams.cat
-      : category?.handle || null;
+  const initialCategoryParam = (() => {
+    const rawCat = initialSearchParams?.category || initialSearchParams?.cat;
+    if (typeof rawCat === "string") return rawCat;
+    if (Array.isArray(rawCat) && typeof rawCat[0] === "string") return rawCat[0];
+    return category?.handle || null;
+  })();
 
   const [selectedCategoryHandle, setSelectedCategoryHandle] = useState<string | null>(
     initialCategoryParam
@@ -126,6 +126,10 @@ export function CategoryView({
     const raw = initialSearchParams?.discount || initialSearchParams?.min_discount;
     if (typeof raw === "string") {
       const num = parseInt(raw, 10);
+      return isNaN(num) ? null : num;
+    }
+    if (Array.isArray(raw) && typeof raw[0] === "string") {
+      const num = parseInt(raw[0], 10);
       return isNaN(num) ? null : num;
     }
     return null;
@@ -139,6 +143,10 @@ export function CategoryView({
       const num = parseFloat(raw);
       return isNaN(num) ? null : Math.round(num * 100);
     }
+    if (Array.isArray(raw) && typeof raw[0] === "string") {
+      const num = parseFloat(raw[0]);
+      return isNaN(num) ? null : Math.round(num * 100);
+    }
     if (initialSearchParams?.deal === "under-150") return 15000;
     if (initialSearchParams?.deal === "under-250") return 25000;
     return null;
@@ -146,12 +154,13 @@ export function CategoryView({
   const [selectedMaxPrice, setSelectedMaxPrice] = useState<number | null>(initialMaxPriceParam);
 
   // Tag / Clearance filter from URL (e.g. /sale?tag=last-chance)
-  const initialTagParam =
-    typeof initialSearchParams?.tag === "string"
-      ? initialSearchParams.tag
-      : initialSearchParams?.filter === "clearance"
-      ? "clearance"
-      : null;
+  const initialTagParam = (() => {
+    const rawTag = initialSearchParams?.tag;
+    if (typeof rawTag === "string") return rawTag;
+    if (Array.isArray(rawTag) && typeof rawTag[0] === "string") return rawTag[0];
+    if (initialSearchParams?.filter === "clearance") return "clearance";
+    return null;
+  })();
   const [selectedTag, setSelectedTag] = useState<string | null>(initialTagParam);
 
   // Faceted filter states initialized from URL

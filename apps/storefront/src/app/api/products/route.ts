@@ -7,7 +7,12 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const categoryFilter = searchParams.get("category");
-    const refresh = searchParams.get("refresh") === "true";
+    const refresh =
+      searchParams.get("refresh") === "true" ||
+      searchParams.has("refresh") ||
+      searchParams.has("cacheBust") ||
+      searchParams.has("clear") ||
+      searchParams.has("t");
     const debug = searchParams.get("debug") === "true";
 
     if (debug) {
