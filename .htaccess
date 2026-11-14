@@ -33,23 +33,23 @@ Options -Indexes
 
     # Serve Next.js static assets directly from apps/storefront/.next/static
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/$1 -f
-    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/$1 [L]
+    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/$1 [QSA,L]
 
     # Serve static chunks if requested under chunks/ but located directly in .next/static/
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/$1 -f
-    RewriteRule ^_next/static/chunks/(.*)$ apps/storefront/.next/static/$1 [L]
+    RewriteRule ^_next/static/chunks/(.*)$ apps/storefront/.next/static/$1 [QSA,L]
 
     # Serve static chunks if requested directly in .next/static/ but located in chunks/
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/.next/static/chunks/$1 -f
-    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/chunks/$1 [L]
+    RewriteRule ^_next/static/(.*)$ apps/storefront/.next/static/chunks/$1 [QSA,L]
 
     # Serve public directory assets directly from apps/storefront/public
     RewriteCond %{DOCUMENT_ROOT}/apps/storefront/public/$1 -f
-    RewriteRule ^(.*)$ apps/storefront/public/$1 [L]
+    RewriteRule ^(.*)$ apps/storefront/public/$1 [QSA,L]
 
     # Serve static assets directly if they exist as real files
     RewriteCond %{REQUEST_FILENAME} -f
-    RewriteRule ^ - [L]
+    RewriteRule ^ - [QSA,L]
 
     # IMPORTANT: DO NOT add mod_proxy rules (e.g. RewriteRule ... http://127.0.0.1:3000 [P])!
     # cPanel Phusion Passenger handles dynamic requests natively via PassengerAppRoot.
