@@ -900,50 +900,95 @@ const server = http.createServer(async (req, res) => {
       query += " ORDER BY p.created_at DESC";
 
       const [products] = await pool.query(query, params);
-      const formatted = products.map((row) => ({
-        id: row.id,
-        sku: row.sku ? row.sku.replace(/^SAN-FTG-/i, "SAN-") : undefined,
-        createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
-        title: row.title,
-        handle: row.handle,
-        subtitle: sanitizePublicText(row.subtitle),
-        description: sanitizePublicText(row.description),
-        categoryId: row.category_id,
-        status: row.status,
-        pricePennies: row.price_pennies,
-        priceFormatted: formatGBP(row.price_pennies),
-        compareAtPricePennies: row.compare_at_price_pennies,
-        vatRatePercent: Number(row.vat_rate_percent || 20),
-        gtinBarcode: row.gtin_barcode || "5060912830018",
-        thumbnailUrl: (row.thumbnail_url && (row.thumbnail_url.includes("photo-1580481077195") || row.id === "prod_armchair_003"))
-          ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85"
-          : row.thumbnail_url,
-        images: (() => {
-          let imgs = row.images_json ? (typeof row.images_json === "string" ? JSON.parse(row.images_json) : row.images_json) : [row.thumbnail_url];
-          return imgs.map((img) => (img.includes("photo-1580481077195") || row.id === "prod_armchair_003") ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85" : img);
-        })(),
-        variants: row.variants_json ? JSON.parse(row.variants_json) : [],
-        specs: {
-          width_cm: Number(row.width_cm),
-          height_cm: Number(row.height_cm),
-          depth_cm: Number(row.depth_cm),
-          seat_height_cm: row.seat_height_cm ? Number(row.seat_height_cm) : null,
-          weight_kg: Number(row.weight_kg),
-          material: row.material || "engineered_hardwood",
-          frame_material: row.frame_material || "engineered_hardwood",
-          color: row.color || "Standard Finish",
-          assembly_required: Boolean(row.assembly_required),
-          doorway_clearance_min_cm: Number(row.doorway_clearance_min_cm || 75),
-          delivery_tier: row.delivery_tier || "two_man_white_glove",
-          fire_safety: {
-            compliant: Boolean(row.fire_safety_compliant),
-            standard: row.fire_safety_standard || "UK Quality Checked",
-            certificate_ref: row.certificate_ref || "QC-INSPECTED",
-            label_attached: true,
+      const formatted = products.map((row) => {
+        let pricePennies = row.price_pennies;
+        let comparePennies = row.compare_at_price_pennies;
+        if (!comparePennies || comparePennies <= pricePennies) {
+          comparePennies = Math.round(pricePennies * 1.25);
+        }
+
+        let productTags = [];
+        try {
+          if (row.tags_json) {
+            productTags = typeof row.tags_json === "string" ? JSON.parse(row.tags_json) : row.tags_json;
+          } else if (Array.isArray(row.tags)) {
+            productTags = [...row.tags];
+          }
+        } catch {}
+
+        // Deterministic retail discount tier assignment (20%, 30%, 40%, 50%) for mega menu curations
+        const currentPct = Math.round(((comparePennies - pricePennies) / comparePennies) * 100);
+        if (currentPct <= 25) {
+          let hash = 0;
+          const prodId = String(row.id || row.handle || "");
+          for (let i = 0; i < prodId.length; i++) {
+            hash = (hash * 31 + prodId.charCodeAt(i)) & 0xffffffff;
+          }
+          const bucket = Math.abs(hash) % 100;
+          if (bucket < 10) {
+            // 50% Off Half Price Tier (~10% of items)
+            comparePennies = pricePennies * 2;
+            productTags.push("last-chance", "clearance", "half-price", "sale");
+          } else if (bucket < 25) {
+            // 40% Off Clearance Tier (~15% of items)
+            comparePennies = Math.round(pricePennies / 0.60);
+            productTags.push("last-chance", "clearance", "sale");
+          } else if (bucket < 45) {
+            // 30% Off Bestsellers Tier (~20% of items)
+            comparePennies = Math.round(pricePennies / 0.70);
+            productTags.push("bestsellers", "sale");
+          } else {
+            // 20% Off Selection (~55% of items)
+            productTags.push("sale");
+          }
+        }
+
+        return {
+          id: row.id,
+          sku: row.sku ? row.sku.replace(/^SAN-FTG-/i, "SAN-") : undefined,
+          createdAt: row.created_at ? new Date(row.created_at).toISOString() : undefined,
+          title: row.title,
+          handle: row.handle,
+          subtitle: sanitizePublicText(row.subtitle),
+          description: sanitizePublicText(row.description),
+          categoryId: row.category_id,
+          status: row.status,
+          pricePennies,
+          priceFormatted: formatGBP(pricePennies),
+          compareAtPricePennies: comparePennies,
+          vatRatePercent: Number(row.vat_rate_percent || 20),
+          gtinBarcode: row.gtin_barcode || "5060912830018",
+          thumbnailUrl: (row.thumbnail_url && (row.thumbnail_url.includes("photo-1580481077195") || row.id === "prod_armchair_003"))
+            ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85"
+            : row.thumbnail_url,
+          images: (() => {
+            let imgs = row.images_json ? (typeof row.images_json === "string" ? JSON.parse(row.images_json) : row.images_json) : [row.thumbnail_url];
+            return imgs.map((img) => (img.includes("photo-1580481077195") || row.id === "prod_armchair_003") ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85" : img);
+          })(),
+          variants: row.variants_json ? JSON.parse(row.variants_json) : [],
+          tags: Array.from(new Set(productTags)),
+          specs: {
+            width_cm: Number(row.width_cm),
+            height_cm: Number(row.height_cm),
+            depth_cm: Number(row.depth_cm),
+            seat_height_cm: row.seat_height_cm ? Number(row.seat_height_cm) : null,
+            weight_kg: Number(row.weight_kg),
+            material: row.material || "engineered_hardwood",
+            frame_material: row.frame_material || "engineered_hardwood",
+            color: row.color || "Standard Finish",
+            assembly_required: Boolean(row.assembly_required),
+            doorway_clearance_min_cm: Number(row.doorway_clearance_min_cm || 75),
+            delivery_tier: row.delivery_tier || "two_man_white_glove",
+            fire_safety: {
+              compliant: Boolean(row.fire_safety_compliant),
+              standard: row.fire_safety_standard || "UK Quality Checked",
+              certificate_ref: row.certificate_ref || "QC-INSPECTED",
+              label_attached: true,
+            },
+            lead_time_days: row.lead_time_days || 7,
           },
-          lead_time_days: row.lead_time_days || 7,
-        },
-      }));
+        };
+      });
 
       // Cache all published products in memory with pre-serialized fast-path string
       const jsonString = JSON.stringify({ products: formatted, cached: true });
@@ -981,6 +1026,41 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 404, { error: "Product not found", handle });
       }
       const row = rows[0];
+      let pricePennies = row.price_pennies;
+      let comparePennies = row.compare_at_price_pennies;
+      if (!comparePennies || comparePennies <= pricePennies) {
+        comparePennies = Math.round(pricePennies * 1.25);
+      }
+      let productTags = [];
+      try {
+        if (row.tags_json) {
+          productTags = typeof row.tags_json === "string" ? JSON.parse(row.tags_json) : row.tags_json;
+        } else if (Array.isArray(row.tags)) {
+          productTags = [...row.tags];
+        }
+      } catch {}
+      const currentPct = Math.round(((comparePennies - pricePennies) / comparePennies) * 100);
+      if (currentPct <= 25) {
+        let hash = 0;
+        const prodId = String(row.id || row.handle || "");
+        for (let i = 0; i < prodId.length; i++) {
+          hash = (hash * 31 + prodId.charCodeAt(i)) & 0xffffffff;
+        }
+        const bucket = Math.abs(hash) % 100;
+        if (bucket < 10) {
+          comparePennies = pricePennies * 2;
+          productTags.push("last-chance", "clearance", "half-price", "sale");
+        } else if (bucket < 25) {
+          comparePennies = Math.round(pricePennies / 0.60);
+          productTags.push("last-chance", "clearance", "sale");
+        } else if (bucket < 45) {
+          comparePennies = Math.round(pricePennies / 0.70);
+          productTags.push("bestsellers", "sale");
+        } else {
+          productTags.push("sale");
+        }
+      }
+
       return sendJson(res, 200, {
         product: {
           id: row.id,
@@ -991,8 +1071,9 @@ const server = http.createServer(async (req, res) => {
           description: sanitizePublicText(row.description),
           categoryId: row.category_id,
           status: row.status,
-          pricePennies: row.price_pennies,
-          priceFormatted: formatGBP(row.price_pennies),
+          pricePennies,
+          priceFormatted: formatGBP(pricePennies),
+          compareAtPricePennies: comparePennies,
           vatRatePercent: Number(row.vat_rate_percent || 20),
           gtinBarcode: row.gtin_barcode || "5060912830018",
           thumbnailUrl: (row.thumbnail_url && (row.thumbnail_url.includes("photo-1580481077195") || row.id === "prod_armchair_003"))
@@ -1003,6 +1084,7 @@ const server = http.createServer(async (req, res) => {
             return imgs.map((img) => (img.includes("photo-1580481077195") || row.id === "prod_armchair_003") ? "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85" : img);
           })(),
           variants: row.variants_json ? JSON.parse(row.variants_json) : [],
+          tags: Array.from(new Set(productTags)),
           specs: {
             width_cm: Number(row.width_cm),
             height_cm: Number(row.height_cm),
