@@ -126,6 +126,11 @@ if ($requestMethod === 'GET') {
 
     if ($action === 'pull') {
         chdir($projectRoot);
+        // Self-heal stale git lock files
+        @unlink($projectRoot . '/.git/index.lock');
+        @unlink($projectRoot . '/.git/refs/remotes/origin/main.lock');
+        @unlink($projectRoot . '/.git/HEAD.lock');
+
         $pullOut = [];
         $exitCode = 0;
         exec("git -c pack.threads=1 fetch origin main 2>&1", $pullOut, $exitCode);
