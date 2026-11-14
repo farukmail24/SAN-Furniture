@@ -30,7 +30,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { type CatalogProduct, type ProductCategory } from "@/lib/catalog";
+import { type CatalogProduct, type ProductCategory, normalizeCategoryHandle } from "@/lib/catalog";
 import {
   type FurnitureSubType,
   resolveSubType,
@@ -109,10 +109,50 @@ export function CategoryView({
     return resolved ? resolved.id : null;
   });
 
-  // Category filter
+  // Category filter (supports URL query param e.g. /sale?category=living-room or category prop)
+  const initialCategoryParam =
+    typeof initialSearchParams?.category === "string"
+      ? initialSearchParams.category
+      : typeof initialSearchParams?.cat === "string"
+      ? initialSearchParams.cat
+      : category?.handle || null;
+
   const [selectedCategoryHandle, setSelectedCategoryHandle] = useState<string | null>(
-    category?.handle || null
+    initialCategoryParam
   );
+
+  // Discount percentage tier filter from URL (e.g. /sale?discount=20, 30, 40, 50)
+  const initialDiscountParam = (() => {
+    const raw = initialSearchParams?.discount || initialSearchParams?.min_discount;
+    if (typeof raw === "string") {
+      const num = parseInt(raw, 10);
+      return isNaN(num) ? null : num;
+    }
+    return null;
+  })();
+  const [selectedDiscount, setSelectedDiscount] = useState<number | null>(initialDiscountParam);
+
+  // Price cap filter from URL (e.g. /sale?max_price=150, /sale?deal=under-150)
+  const initialMaxPriceParam = (() => {
+    const raw = initialSearchParams?.max_price || initialSearchParams?.price_max;
+    if (typeof raw === "string") {
+      const num = parseFloat(raw);
+      return isNaN(num) ? null : Math.round(num * 100);
+    }
+    if (initialSearchParams?.deal === "under-150") return 15000;
+    if (initialSearchParams?.deal === "under-250") return 25000;
+    return null;
+  })();
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState<number | null>(initialMaxPriceParam);
+
+  // Tag / Clearance filter from URL (e.g. /sale?tag=last-chance)
+  const initialTagParam =
+    typeof initialSearchParams?.tag === "string"
+      ? initialSearchParams.tag
+      : initialSearchParams?.filter === "clearance"
+      ? "clearance"
+      : null;
+  const [selectedTag, setSelectedTag] = useState<string | null>(initialTagParam);
 
   // Faceted filter states initialized from URL
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(() => {
@@ -124,8 +164,10 @@ export function CategoryView({
 
   const [selectedColorTones, setSelectedColorTones] = useState<string[]>(() => {
     const filterParam = typeof initialSearchParams?.filter === "string" ? initialSearchParams.filter.toLowerCase() : "";
-    if (filterParam === "oak") return ["oak"];
-    if (filterParam === "gloss" || filterParam === "white") return ["white"];
+    const finishParam = typeof initialSearchParams?.finish === "string" ? initialSearchParams.finish.toLowerCase() : "";
+    if (filterParam === "oak" || finishParam.includes("oak")) return ["oak"];
+    if (filterParam === "gloss" || filterParam === "white" || finishParam.includes("white") || finishParam.includes("gloss")) return ["white"];
+    if (finishParam.includes("grey") || finishParam.includes("gray")) return ["grey"];
     return [];
   });
   const [selectedWidthRange, setSelectedWidthRange] = useState<"all" | "compact" | "medium" | "wide">("all");
@@ -146,23 +188,28 @@ export function CategoryView({
   const [pageSize, setPageSize] = useState<number | "all">(24);
   const [visibleCount, setVisibleCount] = useState<number>(24);
 
-  // Dynamically sync sub-type and filter states when URL query parameters change (e.g. from MegaMenu navigation /?type=mirrors)
+  // Dynamically sync sub-type and filter states when URL query parameters change (e.g. from MegaMenu navigation /?type=mirrors or /sale?discount=20)
   const syncFilterFromUrl = useCallback(
     (urlOrSearch?: string) => {
       if (typeof window === "undefined") return;
       let params: URLSearchParams;
+      let targetPath = window.location.pathname;
       if (urlOrSearch) {
         if (urlOrSearch.includes("?")) {
-          params = new URLSearchParams(urlOrSearch.split("?")[1]);
+          const parts = urlOrSearch.split("?");
+          targetPath = parts[0];
+          params = new URLSearchParams(parts[1]);
         } else if (urlOrSearch.startsWith("?")) {
           params = new URLSearchParams(urlOrSearch);
         } else {
+          targetPath = urlOrSearch;
           params = new URLSearchParams(window.location.search);
         }
       } else {
         params = new URLSearchParams(window.location.search);
       }
 
+      // Sub-type
       const typeParam = params.get("type") || params.get("style") || params.get("seats");
       if (typeParam) {
         const resolved = resolveSubType(category?.id, typeParam);
@@ -171,6 +218,7 @@ export function CategoryView({
         setSelectedSubTypeId(null);
       }
 
+      // Keyword Search
       const qParam = params.get("q") || params.get("search") || params.get("range");
       if (qParam !== null) {
         setSearchQuery(qParam);
@@ -178,6 +226,61 @@ export function CategoryView({
         setSearchQuery("");
       }
 
+      // Category (on /sale or /catalog)
+      const catParam = params.get("category") || params.get("cat");
+      if (catParam) {
+        setSelectedCategoryHandle(catParam);
+      } else if (!category) {
+        setSelectedCategoryHandle(null);
+      }
+
+      // Discount tier
+      const discParam = params.get("discount") || params.get("min_discount");
+      if (discParam) {
+        const num = parseInt(discParam, 10);
+        setSelectedDiscount(isNaN(num) ? null : num);
+      } else {
+        setSelectedDiscount(null);
+      }
+
+      // Max price
+      const maxPriceParam = params.get("max_price") || params.get("price_max");
+      const dealParam = params.get("deal");
+      if (maxPriceParam) {
+        const num = parseFloat(maxPriceParam);
+        setSelectedMaxPrice(isNaN(num) ? null : Math.round(num * 100));
+      } else if (dealParam === "under-150") {
+        setSelectedMaxPrice(15000);
+      } else if (dealParam === "under-250") {
+        setSelectedMaxPrice(25000);
+      } else {
+        setSelectedMaxPrice(null);
+      }
+
+      // Tag
+      const tagParam = params.get("tag");
+      if (tagParam) {
+        setSelectedTag(tagParam);
+      } else {
+        setSelectedTag(null);
+      }
+
+      // Material / Fabric
+      const matParam = params.get("material") || params.get("fabric");
+      if (matParam) {
+        setSelectedMaterials([matParam.toLowerCase()]);
+      }
+
+      // Finish / Color
+      const finishParam = params.get("finish");
+      if (finishParam) {
+        const f = finishParam.toLowerCase();
+        if (f.includes("oak")) setSelectedColorTones(["oak"]);
+        else if (f.includes("white") || f.includes("gloss")) setSelectedColorTones(["white"]);
+        else if (f.includes("grey") || f.includes("gray")) setSelectedColorTones(["grey"]);
+      }
+
+      // Filter param
       const filterParam = params.get("filter");
       if (filterParam === "clearance" || filterParam === "sale" || params.get("sale") === "true") {
         setOnlyOnSale(true);
@@ -187,15 +290,16 @@ export function CategoryView({
         setSearchQuery("gloss");
       } else if (filterParam === "oak") {
         setSelectedColorTones(["oak"]);
-      } else if (!filterParam) {
-        setOnlyOnSale(false);
-        setSelectedColorTones([]);
+      } else if (!filterParam && !params.get("sale")) {
+        if (!targetPath.startsWith("/sale")) {
+          setOnlyOnSale(false);
+        }
       }
 
       // Reset visible items count when sub-type/filter changes
       setVisibleCount(typeof pageSize === "number" ? pageSize : 24);
     },
-    [category?.id, pageSize]
+    [category?.id, category, pageSize]
   );
 
   // 1. Sync on Next.js searchParams hook update
@@ -377,6 +481,9 @@ export function CategoryView({
     setSearchQuery("");
     setSelectedSubTypeId(null);
     setSelectedCategoryHandle(category?.handle || null);
+    setSelectedDiscount(null);
+    setSelectedMaxPrice(null);
+    setSelectedTag(null);
     setSelectedMaterials([]);
     setSelectedColorTones([]);
     setSelectedWidthRange("all");
@@ -388,8 +495,7 @@ export function CategoryView({
     setVisibleCount(typeof pageSize === "number" ? pageSize : 24);
 
     if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("type");
+      const url = new URL(window.location.pathname, window.location.origin);
       window.history.replaceState(null, "", url.toString());
     }
     showToast("All filters reset.");
@@ -427,9 +533,12 @@ export function CategoryView({
           }
         }
 
-        // Category handle filter (if changed inside catalog)
+        // Category handle filter (if changed inside catalog or on /sale with category param)
         if (selectedCategoryHandle && !category) {
-          const cat = allCategories?.find((c) => c.handle === selectedCategoryHandle);
+          const normSelected = normalizeCategoryHandle(selectedCategoryHandle);
+          const cat = allCategories?.find(
+            (c) => c.handle === selectedCategoryHandle || normalizeCategoryHandle(c.handle) === normSelected
+          );
           if (cat && p.categoryId !== cat.id) return false;
         }
 
@@ -443,14 +552,21 @@ export function CategoryView({
           }
         }
 
-        // Material filter
-        if (selectedMaterials.length > 0 && (!p.specs?.material || !selectedMaterials.includes(p.specs.material))) {
-          return false;
+        // Material & Fabric filter (smart flexible substring match)
+        if (selectedMaterials.length > 0) {
+          const prodMat = (p.specs?.material || "").toLowerCase();
+          const prodTitle = p.title.toLowerCase();
+          const prodDesc = (p.description || "").toLowerCase();
+          const matchesAnyMaterial = selectedMaterials.some((mat) => {
+            const m = mat.toLowerCase();
+            return prodMat.includes(m) || prodTitle.includes(m) || prodDesc.includes(m);
+          });
+          if (!matchesAnyMaterial) return false;
         }
 
         // Color Tone filter
         if (selectedColorTones.length > 0) {
-          const prodColorText = `${p.specs?.color || ""} ${p.title}`.toLowerCase();
+          const prodColorText = `${p.specs?.color || ""} ${p.title} ${p.description || ""}`.toLowerCase();
           const matchesAnyColor = selectedColorTones.some((toneId) => {
             const preset = COLOR_PRESETS.find((c) => c.id === toneId);
             if (!preset) return false;
@@ -475,6 +591,45 @@ export function CategoryView({
         // On Sale Filter
         if (onlyOnSale) {
           if (!p.compareAtPricePennies || p.compareAtPricePennies <= p.pricePennies) return false;
+        }
+
+        // Discount Percentage Tier Filter (e.g. discount=20, 30, 40, 50)
+        if (selectedDiscount !== null) {
+          if (!p.compareAtPricePennies || p.compareAtPricePennies <= p.pricePennies) return false;
+          const pct = Math.round(((p.compareAtPricePennies - p.pricePennies) / p.compareAtPricePennies) * 100);
+          if (selectedDiscount === 20) {
+            // Up to 20% Off Selection (10% to 25% discount tier)
+            if (pct < 10 || pct > 25) return false;
+          } else if (selectedDiscount === 30) {
+            // Up to 30% Off Bestsellers (26% to 35% discount tier)
+            if (pct < 26 || pct > 35) return false;
+          } else if (selectedDiscount === 40) {
+            // Up to 40% Off Clearance (36% to 45% discount tier)
+            if (pct < 36 || pct > 45) return false;
+          } else if (selectedDiscount === 50) {
+            // Up to 50% Off Half Price (46%+ discount tier)
+            if (pct < 46) return false;
+          } else {
+            // Threshold discount: at least selectedDiscount % off
+            if (pct < selectedDiscount) return false;
+          }
+        }
+
+        // Max Price Filter (e.g. max_price=150 -> 15000 pennies)
+        if (selectedMaxPrice !== null) {
+          if (p.pricePennies > selectedMaxPrice) return false;
+        }
+
+        // Tag Filter (e.g. tag=last-chance or clearance)
+        if (selectedTag) {
+          const t = selectedTag.toLowerCase();
+          const hasTag = (p as any).tags?.some((pt: string) => pt.toLowerCase().includes(t));
+          const pct = p.compareAtPricePennies && p.compareAtPricePennies > p.pricePennies
+            ? Math.round(((p.compareAtPricePennies - p.pricePennies) / p.compareAtPricePennies) * 100)
+            : 0;
+          const isClearanceTier = pct >= 36;
+          const matchText = (p.title + " " + (p.description || "")).toLowerCase().includes(t);
+          if (!hasTag && !isClearanceTier && !matchText) return false;
         }
 
         // In Stock Filter
@@ -518,6 +673,9 @@ export function CategoryView({
     selectedWidthRange,
     selectedDeliveryTiers,
     onlyOnSale,
+    selectedDiscount,
+    selectedMaxPrice,
+    selectedTag,
     onlyInStock,
     priceRange,
     sortBy,
@@ -535,6 +693,9 @@ export function CategoryView({
     selectedWidthRange,
     selectedDeliveryTiers,
     onlyOnSale,
+    selectedDiscount,
+    selectedMaxPrice,
+    selectedTag,
     onlyInStock,
     priceRange,
     sortBy,
@@ -555,6 +716,9 @@ export function CategoryView({
     selectedColorTones.length +
     (selectedWidthRange !== "all" ? 1 : 0) +
     selectedDeliveryTiers.length +
+    (selectedDiscount !== null ? 1 : 0) +
+    (selectedMaxPrice !== null ? 1 : 0) +
+    (selectedTag ? 1 : 0) +
     (onlyOnSale ? 1 : 0) +
     (onlyInStock ? 1 : 0) +
     (priceRange !== "all" ? 1 : 0);
@@ -837,6 +1001,93 @@ export function CategoryView({
                       className="w-3.5 h-3.5 rounded text-emerald-700 focus:ring-emerald-500 border-sand-300"
                     />
                   </label>
+                </div>
+
+                {/* Quick Discount & Deal Tiers matching Mega Menu */}
+                <div className="pt-2 border-t border-sand-200/80 space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-navy-500 block mb-1">
+                    Shop By Discount
+                  </span>
+                  {[
+                    { label: "Up to 20% Off Selection", value: 20 },
+                    { label: "Up to 30% Off Bestsellers", value: 30 },
+                    { label: "Up to 40% Off Clearance", value: 40 },
+                    { label: "Up to 50% Off Half Price", value: 50 },
+                  ].map((tier) => (
+                    <button
+                      key={tier.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDiscount((curr) => {
+                          const next = curr === tier.value ? null : tier.value;
+                          if (typeof window !== "undefined") {
+                            const url = new URL(window.location.href);
+                            if (next !== null) url.searchParams.set("discount", String(next));
+                            else url.searchParams.delete("discount");
+                            window.history.replaceState(null, "", url.toString());
+                          }
+                          return next;
+                        });
+                      }}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                        selectedDiscount === tier.value
+                          ? "bg-navy-950 text-sand-50 font-bold"
+                          : "text-navy-800 hover:bg-sand-200/60"
+                      }`}
+                    >
+                      <span>{tier.label}</span>
+                      {selectedDiscount === tier.value && <Check className="w-3 h-3 text-brass-400" />}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMaxPrice((curr) => {
+                        const next = curr === 15000 ? null : 15000;
+                        if (typeof window !== "undefined") {
+                          const url = new URL(window.location.href);
+                          if (next !== null) url.searchParams.set("max_price", "150");
+                          else {
+                            url.searchParams.delete("max_price");
+                            url.searchParams.delete("deal");
+                          }
+                          window.history.replaceState(null, "", url.toString());
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                      selectedMaxPrice === 15000
+                        ? "bg-navy-950 text-sand-50 font-bold"
+                        : "text-navy-800 hover:bg-sand-200/60"
+                    }`}
+                  >
+                    <span>Deals Under £150</span>
+                    {selectedMaxPrice === 15000 && <Check className="w-3 h-3 text-brass-400" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTag((curr) => {
+                        const next = curr === "last-chance" ? null : "last-chance";
+                        if (typeof window !== "undefined") {
+                          const url = new URL(window.location.href);
+                          if (next !== null) url.searchParams.set("tag", "last-chance");
+                          else url.searchParams.delete("tag");
+                          window.history.replaceState(null, "", url.toString());
+                        }
+                        return next;
+                      });
+                    }}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                      selectedTag === "last-chance"
+                        ? "bg-navy-950 text-sand-50 font-bold"
+                        : "text-navy-800 hover:bg-sand-200/60"
+                    }`}
+                  >
+                    <span>Last Chance Clearance</span>
+                    {selectedTag === "last-chance" && <Check className="w-3 h-3 text-brass-400" />}
+                  </button>
                 </div>
               </div>
             )}
@@ -1301,6 +1552,18 @@ export function CategoryView({
                     matching &ldquo;<span className="font-semibold text-brass-700">{searchQuery}</span>&rdquo;
                   </span>
                 )}
+                {selectedDiscount !== null && (
+                  <span className="text-terracotta-700 font-semibold"> · Up to {selectedDiscount}% Off</span>
+                )}
+                {selectedMaxPrice !== null && (
+                  <span className="text-brass-700 font-semibold"> · Under £{Math.round(selectedMaxPrice / 100)}</span>
+                )}
+                {selectedTag && (
+                  <span className="text-amber-800 font-semibold"> · Final Stock Clearance</span>
+                )}
+                {selectedCategoryHandle && !category && (
+                  <span className="text-navy-900 font-semibold"> · {selectedCategoryHandle.replace("-", " ")}</span>
+                )}
                 {activeSubType && <span className="text-brass-700 font-semibold"> in {activeSubType.label}</span>}
               </span>
 
@@ -1406,8 +1669,80 @@ export function CategoryView({
               {selectedCategoryHandle && !category && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-sand-200 border border-sand-300 rounded-full text-xs text-navy-900 capitalize">
                   <span>Room: {selectedCategoryHandle.replace("-", " ")}</span>
-                  <button type="button" onClick={() => setSelectedCategoryHandle(null)} aria-label="Clear room">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategoryHandle(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("category");
+                        url.searchParams.delete("cat");
+                        window.history.replaceState(null, "", url.toString());
+                      }
+                    }}
+                    aria-label="Clear room"
+                  >
                     <X className="w-3 h-3 text-navy-600 hover:text-navy-950" />
+                  </button>
+                </span>
+              )}
+              {selectedDiscount !== null && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-terracotta-100 border border-terracotta-300 text-terracotta-900 rounded-full text-xs font-semibold shadow-xs">
+                  <span>Discount: Up to {selectedDiscount}% Off</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDiscount(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("discount");
+                        url.searchParams.delete("min_discount");
+                        window.history.replaceState(null, "", url.toString());
+                      }
+                    }}
+                    aria-label="Remove discount filter"
+                  >
+                    <X className="w-3 h-3 text-terracotta-900 hover:text-navy-950" />
+                  </button>
+                </span>
+              )}
+              {selectedMaxPrice !== null && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-brass-100 border border-brass-300 text-brass-900 rounded-full text-xs font-semibold shadow-xs">
+                  <span>Price: Under £{Math.round(selectedMaxPrice / 100)}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedMaxPrice(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("max_price");
+                        url.searchParams.delete("price_max");
+                        url.searchParams.delete("deal");
+                        window.history.replaceState(null, "", url.toString());
+                      }
+                    }}
+                    aria-label="Remove price cap filter"
+                  >
+                    <X className="w-3 h-3 text-brass-900 hover:text-navy-950" />
+                  </button>
+                </span>
+              )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 border border-amber-300 text-amber-900 rounded-full text-xs font-semibold shadow-xs">
+                  <span>Clearance: {selectedTag === "last-chance" ? "Final Stock" : selectedTag}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTag(null);
+                      if (typeof window !== "undefined") {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("tag");
+                        window.history.replaceState(null, "", url.toString());
+                      }
+                    }}
+                    aria-label="Remove clearance tag filter"
+                  >
+                    <X className="w-3 h-3 text-amber-900 hover:text-navy-950" />
                   </button>
                 </span>
               )}
