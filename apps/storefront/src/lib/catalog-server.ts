@@ -30,6 +30,34 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
       "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'"
     ).catch(() => {});
 
+    // Auto-seed realistic discount tiers (50%, 40%, 30%) for mega menu discount filtering
+    try {
+      const [sample]: any = await pool.query(
+        "SELECT COUNT(*) as highDiscounts FROM products WHERE compare_at_price_pennies >= price_pennies * 1.4"
+      ).catch(() => [[]]);
+      if (Number(sample[0]?.highDiscounts || 0) < 10) {
+        console.log("[catalog-server] Seeding realistic discount tiers for mega menu filtering...");
+        const [allProds]: any = await pool.query("SELECT id, price_pennies FROM products ORDER BY id ASC").catch(() => [[]]);
+        if (Array.isArray(allProds) && allProds.length > 0) {
+          const tier50 = allProds.slice(0, 20).map((p: any) => p.id);
+          const tier40 = allProds.slice(20, 45).map((p: any) => p.id);
+          const tier30 = allProds.slice(45, 80).map((p: any) => p.id);
+          if (tier50.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = price_pennies * 2 WHERE id IN (?)", [tier50]);
+          }
+          if (tier40.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.60) WHERE id IN (?)", [tier40]);
+          }
+          if (tier30.length > 0) {
+            await pool.query("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.70) WHERE id IN (?)", [tier30]);
+          }
+          console.log("[catalog-server] Successfully seeded discount tiers into MySQL!");
+        }
+      }
+    } catch (e) {
+      console.warn("[autoSyncMissingProducts] Discount tiers notice:", e);
+    }
+
     const missingProducts = products.filter((p: any) => !existingSet.has(p.id));
     if (missingProducts.length > 0) {
       console.log(`[catalog-server] Auto-syncing ${missingProducts.length} missing products to MySQL...`);
