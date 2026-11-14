@@ -124,6 +124,29 @@ if ($requestMethod === 'GET') {
     }
     $action = $_GET['action'] ?? 'status';
 
+    if ($action === 'pull') {
+        chdir($projectRoot);
+        $pullOut = [];
+        $exitCode = 0;
+        exec("git -c pack.threads=1 fetch origin main 2>&1", $pullOut, $exitCode);
+        exec("git reset --hard origin/main 2>&1", $pullOut, $exitCode);
+        @mkdir($projectRoot . '/tmp', 0755, true);
+        @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted at " . date('c') . "\n");
+        @exec("touch " . escapeshellarg($projectRoot . '/tmp/restart.txt'));
+        @exec("passenger-config restart-app " . escapeshellarg($projectRoot));
+        @exec("pkill -f 'node.*apps/storefront/server.js'");
+        @exec("pkill -f 'node.*server.mjs'");
+        echo json_encode([
+            'status' => 'success',
+            'action' => 'pull',
+            'exitCode' => $exitCode,
+            'output' => $pullOut,
+            'gitHead' => trim((string)@shell_exec('git rev-parse HEAD 2>&1')),
+            'time' => date('c')
+        ], JSON_PRETTY_PRINT);
+        exit;
+    }
+
     if ($action === 'restart') {
         @mkdir($projectRoot . '/tmp', 0755, true);
         @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted at " . date('c') . "\n");
@@ -480,6 +503,8 @@ if ($requestMethod === 'GET') {
         'action' => $action,
         'serverTime' => date('c'),
         'hasRealPassenger' => $hasRealPassenger,
+        'gitHead' => trim((string)@shell_exec('git rev-parse HEAD 2>&1')),
+        'gitLog' => trim((string)@shell_exec('git log -1 --oneline 2>&1')),
         'selectedNode' => $selectedNode,
         'sanNodeStorefront' => $sanNodeStorefront,
         'sanNodeDeep' => $sanNodeDeep,

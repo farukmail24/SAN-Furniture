@@ -124,6 +124,29 @@ if ($requestMethod === 'GET') {
     }
     $action = $_GET['action'] ?? 'status';
 
+    if ($action === 'pull') {
+        chdir($projectRoot);
+        $pullOut = [];
+        $exitCode = 0;
+        exec("git -c pack.threads=1 fetch origin main 2>&1", $pullOut, $exitCode);
+        exec("git reset --hard origin/main 2>&1", $pullOut, $exitCode);
+        @mkdir($projectRoot . '/tmp', 0755, true);
+        @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted at " . date('c') . "\n");
+        @exec("touch " . escapeshellarg($projectRoot . '/tmp/restart.txt'));
+        @exec("passenger-config restart-app " . escapeshellarg($projectRoot));
+        @exec("pkill -f 'node.*apps/storefront/server.js'");
+        @exec("pkill -f 'node.*server.mjs'");
+        echo json_encode([
+            'status' => 'success',
+            'action' => 'pull',
+            'exitCode' => $exitCode,
+            'output' => $pullOut,
+            'gitHead' => trim((string)@shell_exec('git rev-parse HEAD 2>&1')),
+            'time' => date('c')
+        ], JSON_PRETTY_PRINT);
+        exit;
+    }
+
     if ($action === 'restart') {
         @mkdir($projectRoot . '/tmp', 0755, true);
         @file_put_contents($projectRoot . '/tmp/restart.txt', "Restarted at " . date('c') . "\n");
@@ -209,38 +232,6 @@ if ($requestMethod === 'GET') {
                 $hostUsed = $h;
                 $cStmt = $pdo->query("SELECT COUNT(*) FROM admin_audit_logs");
                 $auditLogsCount = (int)$cStmt->fetchColumn();
-
-                // Assign realistic discount tiers to products for Mega Menu discount filtering
-                $allProdStmt = $pdo->query("SELECT id, price_pennies FROM products ORDER BY id ASC");
-                $allDbProds = $allProdStmt ? $allProdStmt->fetchAll(PDO::FETCH_ASSOC) : [];
-                if (count($allDbProds) > 0) {
-                    $idx = 0;
-                    $tier50Ids = [];
-                    $tier40Ids = [];
-                    $tier30Ids = [];
-                    foreach ($allDbProds as $row) {
-                        if ($idx < 20) {
-                            $tier50Ids[] = $row['id'];
-                        } else if ($idx < 45) {
-                            $tier40Ids[] = $row['id'];
-                        } else if ($idx < 80) {
-                            $tier30Ids[] = $row['id'];
-                        }
-                        $idx++;
-                    }
-                    if (!empty($tier50Ids)) {
-                        $in50 = "'" . implode("','", array_map('addslashes', $tier50Ids)) . "'";
-                        $pdo->exec("UPDATE products SET compare_at_price_pennies = price_pennies * 2 WHERE id IN ({$in50})");
-                    }
-                    if (!empty($tier40Ids)) {
-                        $in40 = "'" . implode("','", array_map('addslashes', $tier40Ids)) . "'";
-                        $pdo->exec("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.60) WHERE id IN ({$in40})");
-                    }
-                    if (!empty($tier30Ids)) {
-                        $in30 = "'" . implode("','", array_map('addslashes', $tier30Ids)) . "'";
-                        $pdo->exec("UPDATE products SET compare_at_price_pennies = ROUND(price_pennies / 0.70) WHERE id IN ({$in30})");
-                    }
-                }
                 $pdo->exec("UPDATE cms_sections SET content = REPLACE(content, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE content LIKE '%photo-1533090161767-e6ffed986b88%'");
                 $pdo->exec("UPDATE categories SET hero_image = REPLACE(hero_image, 'photo-1533090161767-e6ffed986b88', 'photo-1595428774223-ef52624120d2') WHERE hero_image LIKE '%photo-1533090161767-e6ffed986b88%'");
             $pdo->exec("UPDATE site_page_sections SET content_json = REPLACE(content_json, 'Customer Care & Guarantees', 'Shop By Discount') WHERE content_json LIKE '%Customer Care & Guarantees%'");
@@ -512,6 +503,8 @@ if ($requestMethod === 'GET') {
         'action' => $action,
         'serverTime' => date('c'),
         'hasRealPassenger' => $hasRealPassenger,
+        'gitHead' => trim((string)@shell_exec('git rev-parse HEAD 2>&1')),
+        'gitLog' => trim((string)@shell_exec('git log -1 --oneline 2>&1')),
         'selectedNode' => $selectedNode,
         'sanNodeStorefront' => $sanNodeStorefront,
         'sanNodeDeep' => $sanNodeDeep,
