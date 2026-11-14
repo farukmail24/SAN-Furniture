@@ -475,6 +475,8 @@ export default function AdminPagesCustomizer() {
               newItem[k] = "";
             }
             if ("title" in newItem) newItem.title = "New Item Title";
+            if ("label" in newItem) newItem.label = "New Link";
+            if ("href" in newItem) newItem.href = "/";
             if ("id" in newItem && !newItem.id) newItem.id = `section-${arr.length + 1}`;
           } else {
             newItem = { title: "New Item", description: "" };
