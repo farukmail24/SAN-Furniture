@@ -84,13 +84,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const toggleSidebar = () => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem("san_admin_sidebar_collapsed", String(next));
-      } catch {}
-      return next;
-    });
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setIsMobileMenuOpen((prev) => !prev);
+    } else {
+      setIsSidebarCollapsed((prev) => {
+        const next = !prev;
+        try {
+          localStorage.setItem("san_admin_sidebar_collapsed", String(next));
+        } catch {}
+        return next;
+      });
+    }
   };
 
   // Operations Notifications & Live Orders Badge State
@@ -468,64 +472,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         aria-hidden="true"
       />
 
-      {/* Enterprise Dark Navy Left Sidebar (Collapsible with smooth transition) */}
+      {/* Enterprise Dark Navy Left Sidebar (Fully collapsible off-canvas on toggle) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-[#00072D] text-sand-100 flex flex-col border-r border-navy-800 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? "lg:w-20" : "lg:w-64"
-        } w-64 ${
-          isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-50 bg-[#00072D] text-sand-100 flex flex-col border-r border-navy-800 transition-transform duration-300 ease-in-out w-64 ${
+          isMobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        } ${
+          isSidebarCollapsed ? "lg:-translate-x-full" : "lg:translate-x-0"
         } print:hidden`}
       >
-        {/* Brand Header (Flexible / Unfixed) */}
-        <div className={`p-4 border-b border-navy-800/80 bg-[#00072D] flex items-center ${
-          isSidebarCollapsed ? "justify-center" : "justify-between"
-        }`}>
-          {!isSidebarCollapsed ? (
-            <Link href="/admin" className="block min-w-0">
-              <img
-                src="/San-Furniture-Logo-Dark.png"
-                alt="SAN Furniture Operations"
-                width={140} height={36} className="h-9 w-auto object-contain"
-              />
-              <div className="flex items-center gap-1.5 mt-1.5 px-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[10px] font-semibold text-brass-400 uppercase tracking-widest">
-                  Operations Suite v2.4
-                </span>
-              </div>
-            </Link>
-          ) : (
-            <Link href="/admin" className="flex flex-col items-center justify-center py-1 group" title="SAN Operations Suite">
-              <span className="font-display font-black text-brass-400 text-lg tracking-wider group-hover:scale-105 transition-transform">SAN</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mt-0.5" />
-            </Link>
-          )}
+        {/* Brand Header */}
+        <div className="p-4 border-b border-navy-800/80 bg-[#00072D] flex items-center justify-between">
+          <Link href="/admin" className="block min-w-0" onClick={() => setIsMobileMenuOpen(false)}>
+            <img
+              src="/San-Furniture-Logo-Dark.png"
+              alt="SAN Furniture Operations"
+              width={140} height={36} className="h-9 w-auto object-contain"
+            />
+            <div className="flex items-center gap-1.5 mt-1.5 px-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[10px] font-semibold text-brass-400 uppercase tracking-widest">
+                Operations Suite v2.4
+              </span>
+            </div>
+          </Link>
 
-          {/* Sidebar Collapse Toggle Button (Inside header) */}
+          {/* Sidebar Close / Collapse Toggle Button */}
           <button
             type="button"
             onClick={toggleSidebar}
-            className={`hidden lg:flex items-center justify-center p-1.5 rounded-lg text-sand-400 hover:text-sand-100 hover:bg-navy-900 transition-colors cursor-pointer ${
-              isSidebarCollapsed ? "mt-2" : ""
-            }`}
-            title={isSidebarCollapsed ? "Expand Sidebar (w-64)" : "Collapse Sidebar (w-20)"}
-            aria-label="Toggle Sidebar Navigation"
+            className="flex items-center justify-center p-1.5 rounded-lg text-sand-400 hover:text-sand-100 hover:bg-navy-900 transition-colors cursor-pointer"
+            title="Close / Hide Sidebar"
+            aria-label="Close Sidebar Navigation"
           >
-            {isSidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4 text-brass-400" />
-            ) : (
-              <ChevronLeft className="w-4 h-4 text-sand-400" />
-            )}
+            <PanelLeftClose className="w-5 h-5 text-sand-400 hover:text-brass-400" />
           </button>
         </div>
 
-        {/* Scrollable Navigation Links (Middle Container with beautiful slim custom scrollbar) */}
+        {/* Scrollable Navigation Links */}
         <nav className="flex-1 overflow-y-auto admin-sidebar-scroll min-h-0 p-3 space-y-1">
-          {!isSidebarCollapsed && (
-            <div className="text-[10px] font-bold uppercase tracking-wider text-sand-400 px-3 py-1.5">
-              Management Suite
-            </div>
-          )}
+          <div className="text-[10px] font-bold uppercase tracking-wider text-sand-400 px-3 py-1.5">
+            Management Suite
+          </div>
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = link.active;
@@ -540,23 +527,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                 }}
-                className={`flex items-center ${
-                  isSidebarCollapsed ? "justify-center p-3" : "justify-between px-3 py-2.5"
-                } rounded-xl text-xs font-medium active:scale-[0.97] transition-all relative ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium active:scale-[0.97] transition-all relative ${
                   isActive
                     ? "bg-brass-500/20 text-brass-400 border border-brass-500/35 font-semibold shadow-xs"
                     : "text-sand-300 hover:bg-navy-900 hover:text-sand-50"
                 }`}
               >
-                <div className={`flex items-center ${isSidebarCollapsed ? "justify-center" : "gap-3"}`}>
+                <div className="flex items-center gap-3">
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-brass-400" : "text-sand-400"}`} />
-                  {!isSidebarCollapsed && (
-                    <span className="truncate flex items-center gap-1.5">
-                      {link.name}
-                    </span>
-                  )}
+                  <span className="truncate flex items-center gap-1.5">
+                    {link.name}
+                  </span>
                 </div>
-                {!isSidebarCollapsed && link.badge && (
+                {link.badge && (
                   <span
                     className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
                       (link.name === "Customer Orders" || link.name === "Customer Helpdesk") && !isActive
@@ -569,88 +552,76 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {link.badge}
                   </span>
                 )}
-                {isSidebarCollapsed && link.badge && (
-                  <span
-                    className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-[#00072D] ${
-                      link.name === "Customer Orders" || link.name === "Customer Helpdesk" ? "bg-amber-400 animate-pulse" : "bg-brass-500"
-                    }`}
-                    title={`${link.name}: ${link.badge}`}
-                  />
-                )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom Profile & Actions (Live UK Storefront button moved to topbar!) */}
-        <div className={`shrink-0 border-t border-navy-800/80 bg-[#060B1A] p-3 space-y-2.5 shadow-lg ${
-          isSidebarCollapsed ? "flex flex-col items-center" : ""
-        }`}>
+        {/* Bottom Profile & Actions */}
+        <div className="shrink-0 border-t border-navy-800/80 bg-[#060B1A] p-3 space-y-2.5 shadow-lg">
           {/* User Info */}
-          {!isSidebarCollapsed ? (
-            <div className="flex items-center gap-3 px-2 py-1">
-              <div className="w-8 h-8 rounded-full bg-navy-800 border border-brass-500/40 flex items-center justify-center text-brass-400 font-bold text-xs shadow-inner shrink-0">
-                {currentUser?.fullName ? currentUser.fullName.charAt(0) : "A"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-sand-100 truncate">
-                  {currentUser?.fullName || "Admin Operator"}
-                </p>
-                <div className="flex items-center gap-1">
-                  <UserCheck className="w-3 h-3 text-emerald-400 shrink-0" />
-                  <p className="text-[10px] text-sand-400 font-medium capitalize truncate">
-                    {currentUser?.role?.replace("_", " ") || "Super Admin"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="w-9 h-9 rounded-full bg-navy-800 border border-brass-500/40 flex items-center justify-center text-brass-400 font-bold text-xs shadow-inner cursor-pointer"
-              title={`${currentUser?.fullName || "Admin Operator"} (${currentUser?.role || "Super Admin"})`}
-            >
+          <div className="flex items-center gap-3 px-2 py-1">
+            <div className="w-8 h-8 rounded-full bg-navy-800 border border-brass-500/40 flex items-center justify-center text-brass-400 font-bold text-xs shadow-inner shrink-0">
               {currentUser?.fullName ? currentUser.fullName.charAt(0) : "A"}
             </div>
-          )}
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-sand-100 truncate">
+                {currentUser?.fullName || "Admin Operator"}
+              </p>
+              <div className="flex items-center gap-1">
+                <UserCheck className="w-3 h-3 text-emerald-400 shrink-0" />
+                <p className="text-[10px] text-sand-400 font-medium capitalize truncate">
+                  {currentUser?.role?.replace("_", " ") || "Super Admin"}
+                </p>
+              </div>
+            </div>
+          </div>
 
           {/* Logout Button */}
           <button
             type="button"
             onClick={handleLogout}
             title="Secure Logout"
-            className={`w-full flex items-center justify-center gap-2 rounded-lg bg-red-950/30 hover:bg-red-900/50 text-red-300 hover:text-red-100 border border-red-900/40 font-semibold transition-colors ${
-              isSidebarCollapsed ? "p-2.5" : "px-3 py-2 text-xs"
-            }`}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-950/30 hover:bg-red-900/50 text-red-300 hover:text-red-100 border border-red-900/40 font-semibold transition-colors px-3 py-2 text-xs cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5 shrink-0" />
-            {!isSidebarCollapsed && <span>Secure Logout</span>}
+            <span>Secure Logout</span>
           </button>
         </div>
       </aside>
 
-      {/* Main Operations Canvas (Responsive offset based on collapsed/expanded state) */}
+      {/* Main Operations Canvas (Full-width when collapsed, offset when expanded) */}
       <div
         className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
-        } min-h-screen print:pl-0 print:p-0 print:m-0 print:min-h-0 print:bg-white`}
+          isSidebarCollapsed ? "lg:pl-0" : "lg:pl-64"
+        } pl-0 min-h-screen print:pl-0 print:p-0 print:m-0 print:min-h-0 print:bg-white`}
         suppressHydrationWarning
       >
         {/* Top Operations Header with User Profile Dropdown */}
         <header className="sticky top-0 z-30 bg-sand-50/95 backdrop-blur-md border-b border-sand-200 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-3 sm:gap-4 w-full shadow-sm print:hidden">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Desktop Sidebar Toggle Button */}
+            {/* Sidebar Toggle Button (Accessible on both Desktop & Mobile) */}
             <button
               type="button"
               onClick={toggleSidebar}
-              className="hidden lg:flex items-center justify-center p-2 rounded-xl bg-sand-100 hover:bg-sand-200 border border-sand-300 text-navy-800 transition-colors shadow-xs active-press cursor-pointer"
-              title={isSidebarCollapsed ? "Expand Sidebar (w-64)" : "Collapse Sidebar (w-20)"}
-              aria-label="Toggle Sidebar"
+              className="flex items-center justify-center p-2 rounded-xl bg-sand-100 hover:bg-sand-200 border border-sand-300 text-navy-800 transition-colors shadow-xs active-press cursor-pointer"
+              title={isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}
+              aria-label="Toggle Sidebar Navigation"
             >
-              {isSidebarCollapsed ? (
-                <PanelLeftOpen className="w-4 h-4 text-navy-900" />
-              ) : (
-                <PanelLeftClose className="w-4 h-4 text-navy-900" />
-              )}
+              <span className="hidden lg:inline-flex">
+                {isSidebarCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4 text-navy-900" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4 text-navy-900" />
+                )}
+              </span>
+              <span className="lg:hidden inline-flex">
+                {isMobileMenuOpen ? (
+                  <PanelLeftClose className="w-4 h-4 text-navy-900" />
+                ) : (
+                  <PanelLeftOpen className="w-4 h-4 text-navy-900" />
+                )}
+              </span>
             </button>
 
             <span className="text-xs font-medium text-navy-600 hidden md:inline">Terminal:</span>
