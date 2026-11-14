@@ -16,6 +16,16 @@ export interface AddressOption {
 // Known authentic UK delivery addresses for instant high-fidelity lookup
 const KNOWN_UK_PREMISES: Record<string, Array<{ line1: string; line2?: string }>> = {
   CV79EU: [
+    { line1: "112 Coventry Road", line2: "Exhall" },
+    { line1: "SAN Furniture Limited, 112 Coventry Road", line2: "Exhall" },
+    { line1: "108 Coventry Road", line2: "Exhall" },
+    { line1: "110 Coventry Road", line2: "Exhall" },
+    { line1: "114 Coventry Road", line2: "Exhall" },
+    { line1: "116 Coventry Road", line2: "Exhall" },
+    { line1: "118 Coventry Road", line2: "Exhall" },
+    { line1: "120 Coventry Road", line2: "Exhall" },
+    { line1: "122 Coventry Road", line2: "Exhall" },
+    { line1: "124 Coventry Road", line2: "Exhall" },
     { line1: "2 High Street", line2: "Exhall" },
     { line1: "4 High Street", line2: "Exhall" },
     { line1: "6 High Street", line2: "Exhall" },

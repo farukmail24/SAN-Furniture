@@ -768,28 +768,12 @@ export default function CheckoutPage() {
           if (data.county) setBillingState(data.county);
           setBillingAddressOptions(foundAddresses);
           setSelectedBillingAddressIndex("");
-
-          if (foundAddresses.length > 0) {
-            setBillingAddress1(foundAddresses[0].line1);
-            if (foundAddresses[0].line2) setBillingAddress2(foundAddresses[0].line2);
-            setSelectedBillingAddressIndex("0");
-          } else if (data.sampleAddress) {
-            setBillingAddress1(data.sampleAddress);
-          }
         } else {
           setShippingPostcode(data.postcode);
           if (data.city) setShippingCity(data.city);
           if (data.county) setShippingState(data.county);
           setShippingAddressOptions(foundAddresses);
           setSelectedShippingAddressIndex("");
-
-          if (foundAddresses.length > 0) {
-            setShippingAddress1(foundAddresses[0].line1);
-            if (foundAddresses[0].line2) setShippingAddress2(foundAddresses[0].line2);
-            setSelectedShippingAddressIndex("0");
-          } else if (data.sampleAddress) {
-            setShippingAddress1(data.sampleAddress);
-          }
         }
 
         if (data.deliverable === false) {
@@ -1857,6 +1841,10 @@ export default function CheckoutPage() {
                       value={selectedBillingAddressIndex}
                       onChange={(e) => {
                         const idx = e.target.value;
+                        if (idx === "manual") {
+                          setBillingAddressOptions([]);
+                          return;
+                        }
                         setSelectedBillingAddressIndex(idx);
                         if (idx !== "" && billingAddressOptions[Number(idx)]) {
                           const picked = billingAddressOptions[Number(idx)];
@@ -1874,6 +1862,7 @@ export default function CheckoutPage() {
                           {addr.formatted}
                         </option>
                       ))}
+                      <option value="manual">✍️ My address is not listed (Type manually)</option>
                     </select>
                   </div>
                 )}
@@ -2145,6 +2134,10 @@ export default function CheckoutPage() {
                           value={selectedShippingAddressIndex}
                           onChange={(e) => {
                             const idx = e.target.value;
+                            if (idx === "manual") {
+                              setShippingAddressOptions([]);
+                              return;
+                            }
                             setSelectedShippingAddressIndex(idx);
                             if (idx !== "" && shippingAddressOptions[Number(idx)]) {
                               const picked = shippingAddressOptions[Number(idx)];
@@ -2162,6 +2155,7 @@ export default function CheckoutPage() {
                               {addr.formatted}
                             </option>
                           ))}
+                          <option value="manual">✍️ My address is not listed (Type manually)</option>
                         </select>
                       </div>
                     )}
