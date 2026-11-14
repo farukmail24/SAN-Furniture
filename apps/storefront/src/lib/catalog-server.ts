@@ -220,6 +220,51 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     }
   }
 
+  // Parse existing tags or initialize tags array
+  let productTags: string[] = [];
+  try {
+    if (p.tags_json) {
+      productTags = typeof p.tags_json === "string" ? JSON.parse(p.tags_json) : p.tags_json;
+    } else if (Array.isArray(p.tags)) {
+      productTags = [...p.tags];
+    }
+  } catch {
+    productTags = [];
+  }
+
+  // Ensure baseline compareAtPricePennies
+  if (!finalComparePennies || finalComparePennies <= finalPricePennies) {
+    finalComparePennies = Math.round(finalPricePennies * 1.25);
+  }
+
+  // Realistic and deterministic retail discount tier assignment (20%, 30%, 40%, 50%)
+  // If product is at the baseline ~20% discount, distribute deterministically by product id hash
+  const currentPct = Math.round(((finalComparePennies - finalPricePennies) / finalComparePennies) * 100);
+  if (currentPct <= 25) {
+    let hash = 0;
+    const prodId = String(p.id || p.handle || "");
+    for (let i = 0; i < prodId.length; i++) {
+      hash = (hash * 31 + prodId.charCodeAt(i)) & 0xffffffff;
+    }
+    const bucket = Math.abs(hash) % 100;
+    if (bucket < 10) {
+      // 50% Off Half Price Tier (~10% of items)
+      finalComparePennies = finalPricePennies * 2;
+      productTags.push("last-chance", "clearance", "half-price", "sale");
+    } else if (bucket < 25) {
+      // 40% Off Clearance Tier (~15% of items)
+      finalComparePennies = Math.round(finalPricePennies / 0.60);
+      productTags.push("last-chance", "clearance", "sale");
+    } else if (bucket < 45) {
+      // 30% Off Bestsellers Tier (~20% of items)
+      finalComparePennies = Math.round(finalPricePennies / 0.70);
+      productTags.push("bestsellers", "sale");
+    } else {
+      // 20% Off Selection (~55% of items)
+      productTags.push("sale");
+    }
+  }
+
   return {
     id: p.id,
     sku: p.sku ? formatProductSku(p.sku) : undefined,
@@ -236,6 +281,7 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     gtinBarcode: p.gtinBarcode || p.gtin_barcode || "",
     thumbnailUrl: thumb,
     images,
+    tags: Array.from(new Set(productTags)),
     variants,
     specs: {
       width_cm: Number(s.width_cm) || 0,

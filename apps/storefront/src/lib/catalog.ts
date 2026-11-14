@@ -42,6 +42,7 @@ export interface CatalogProduct {
   gtinBarcode: string;
   thumbnailUrl: string;
   images: string[];
+  tags?: string[];
   variants?: ProductVariant[];
   specs: {
     width_cm: number;
