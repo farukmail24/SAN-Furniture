@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest, hashPassword } from "@/lib/auth-token";
+import { ensure2FASchema } from "@/lib/ensure-2fa-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +19,21 @@ export async function PATCH(
       );
     }
 
+    await ensure2FASchema().catch(() => {});
+
     const { id } = await params;
     const pool = getDbPool();
     const body = await request.json().catch(() => ({}));
 
-    const { fullName, role, isActive, password } = body;
+    const { fullName, role, isActive, password, resetTwoFactor } = body;
+
+    // Privilege check: Only super_admin can reset 2FA
+    if (resetTwoFactor && admin.role !== "super_admin") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden: Only super_admin can reset 2FA security" },
+        { status: 403 }
+      );
+    }
 
     // Privilege check: Only super_admin can modify roles or disable staff accounts
     if (role !== undefined && admin.role !== "super_admin") {
@@ -75,6 +86,14 @@ export async function PATCH(
       updates.push("password_hash = ?");
       values.push(newHash);
     }
+    if (resetTwoFactor) {
+      updates.push("two_factor_enabled = 0");
+      updates.push("two_factor_secret = NULL");
+      updates.push("two_factor_temp_secret = NULL");
+      updates.push("email_otp_code = NULL");
+      updates.push("email_otp_expires_at = NULL");
+      updates.push("two_factor_recovery_codes = NULL");
+    }
 
     if (updates.length > 0) {
       values.push(id);
@@ -95,7 +114,7 @@ export async function PATCH(
           `admin_user:${id}`,
           JSON.stringify({
             targetUserId: id,
-            changes: { fullName, role, isActive, passwordReset: Boolean(password) },
+            changes: { fullName, role, isActive, passwordReset: Boolean(password), resetTwoFactor: Boolean(resetTwoFactor) },
           }),
           clientIp,
         ]

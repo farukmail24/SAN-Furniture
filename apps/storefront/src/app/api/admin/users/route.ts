@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest, hashPassword } from "@/lib/auth-token";
+import { ensure2FASchema } from "@/lib/ensure-2fa-schema";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,14 @@ export async function GET(request: Request) {
       );
     }
 
+    await ensure2FASchema().catch(() => {});
+
     const pool = getDbPool();
     const [rows]: any = await pool.query(
-      "SELECT id, email, full_name, role, is_active, last_login_at, created_at FROM admin_users ORDER BY created_at ASC"
+      `SELECT id, email, full_name, role, is_active,
+              two_factor_enabled, two_factor_method, two_factor_verified_at,
+              last_login_at, created_at
+       FROM admin_users ORDER BY created_at ASC`
     ).catch(() => [[]]);
 
     return NextResponse.json({

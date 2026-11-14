@@ -906,6 +906,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span>Security & IP Lockout</span>
                     </Link>
                     <Link
+                      href="/admin/settings?tab=security"
+                      onClick={() => setIsUserMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-navy-800 hover:text-navy-950 hover:bg-sand-100 transition-colors font-medium"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Two-Factor Authentication (2FA)</span>
+                    </Link>
+                    <Link
                       href="/"
                       target="_blank"
                       onClick={() => setIsUserMenuOpen(false)}

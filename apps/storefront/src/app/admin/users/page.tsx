@@ -16,7 +16,9 @@ import {
   Clock,
   ShieldAlert,
   Eye,
-  EyeOff
+  EyeOff,
+  Smartphone,
+  KeyRound,
 } from "lucide-react";
 import { DataTable, ColumnDef } from "@/components/admin/DataTable";
 import { apiUrl } from "@/lib/api-config";
@@ -29,6 +31,9 @@ interface AdminUserRecord {
   full_name: string;
   role: string;
   is_active: number;
+  two_factor_enabled?: number;
+  two_factor_method?: "app" | "email";
+  two_factor_verified_at?: string | null;
   last_login_at: string | null;
   created_at: string;
 }
@@ -176,6 +181,39 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleReset2FA = async (user: AdminUserRecord) => {
+    const ok = await showConfirm({
+      title: "Reset Staff 2FA Security",
+      message: `Are you sure you want to reset 2FA security for ${user.full_name}? Their active 2FA will be cleared so they can log in and re-configure their Authenticator or Email verification.`,
+      type: "warning",
+      confirmText: "Reset 2FA",
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch(apiUrl(`/api/admin/users/${user.id}`), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetTwoFactor: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset 2FA");
+      showAlert({
+        title: "Reset Completed",
+        message: "2FA has been successfully reset for this staff account.",
+        type: "success",
+      });
+      invalidateCache(apiUrl("/api/admin/users"));
+      fetchUsers();
+    } catch (err: any) {
+      showAlert({
+        title: "Error",
+        message: err.message || "Failed to reset 2FA",
+        type: "danger",
+      });
+    }
+  };
+
   const columns: ColumnDef<AdminUserRecord>[] = [
     {
       key: "name",
@@ -228,12 +266,30 @@ export default function AdminUsersPage() {
       header: "2FA Security",
       sortable: false,
       searchable: false,
-      cell: (row) => (
-        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
-          <Shield className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Enforced</span>
-        </span>
-      ),
+      cell: (row) => {
+        if (!row.two_factor_enabled) {
+          return (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
+              <span>Not Configured</span>
+            </span>
+          );
+        }
+        if (row.two_factor_method === "email") {
+          return (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+              <Mail className="w-3.5 h-3.5 text-blue-600" />
+              <span>Email OTP</span>
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+            <span>App Active</span>
+          </span>
+        );
+      },
     },
     {
       key: "last_login_at",
@@ -252,6 +308,16 @@ export default function AdminUsersPage() {
       searchable: false,
       cell: (row) => (
         <div className="flex items-center justify-end gap-1.5">
+          {Boolean(row.two_factor_enabled) && (
+            <button
+              type="button"
+              onClick={() => handleReset2FA(row)}
+              className="p-1.5 rounded hover:bg-amber-50 text-[#4F6D7A] hover:text-amber-700"
+              title="Reset Staff 2FA"
+            >
+              <KeyRound className="w-4 h-4" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

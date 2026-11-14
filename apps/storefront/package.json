@@ -12,6 +12,7 @@
   "dependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@san-furniture/types": "file:../../packages/types",
+    "@types/qrcode": "^1.5.6",
     "bullmq": "^5.25.5",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",
@@ -21,6 +22,7 @@
     "mysql2": "^3.24.6",
     "next": "^15.0.3",
     "nodemailer": "^10.2.1",
+    "qrcode": "^1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwind-merge": "^2.5.4",

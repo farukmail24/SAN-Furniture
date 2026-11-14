@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { signAuthToken, verifyPassword } from "@/lib/auth-token";
 import { getClientIp, checkIpSecurity, recordFailedAuth, recordSuccessfulAuth } from "@/lib/security-guard";
+import { ensure2FASchema } from "@/lib/ensure-2fa-schema";
+import { sign2FATicket, maskEmail, generateEmailOTP, send2FAEmailCode } from "@/lib/two-factor-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +29,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Auto-verify 2FA schema integrity
+    await ensure2FASchema().catch(() => {});
+
     const pool = getDbPool();
     const [rows]: any = await pool.query(
-      "SELECT id, email, password_hash, full_name, role, is_active FROM admin_users WHERE email = ?",
+      `SELECT id, email, password_hash, full_name, role, is_active,
+              two_factor_enabled, two_factor_method, two_factor_secret
+       FROM admin_users WHERE email = ?`,
       [email]
     );
 
@@ -53,13 +60,47 @@ export async function POST(request: Request) {
 
     await recordSuccessfulAuth(clientIp);
 
-    // Update last login
+    // =========================================================================
+    // 2FA INTERCEPTION: If Two-Factor is enabled, require Step 2 challenge
+    // =========================================================================
+    if (user.two_factor_enabled) {
+      const ticket = sign2FATicket(user.id, user.email);
+      const activeMethod: "app" | "email" = user.two_factor_method === "email" ? "email" : "app";
+
+      // If user uses email OTP, dispatch code immediately
+      if (activeMethod === "email") {
+        const otpCode = generateEmailOTP();
+        await pool.query(
+          "UPDATE admin_users SET email_otp_code = ?, email_otp_expires_at = DATE_ADD(NOW(), INTERVAL 10 MINUTE) WHERE id = ?",
+          [otpCode, user.id]
+        );
+        // Dispatch in background
+        send2FAEmailCode(user.email, user.full_name, otpCode, clientIp).catch((e) => {
+          console.error("[2FA Email Dispatch Failed]:", e);
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        require2FA: true,
+        twoFactorTicket: ticket,
+        method: activeMethod,
+        maskedEmail: maskEmail(user.email),
+        canSwitchMethod: Boolean(user.two_factor_secret && user.email),
+        message:
+          activeMethod === "email"
+            ? `A 6-digit verification code has been dispatched to ${maskEmail(user.email)}`
+            : "Please enter the 6-digit verification code from your Authenticator app",
+      });
+    }
+
+    // =========================================================================
+    // STANDARD LOGIN (If 2FA is not yet configured for this user)
+    // =========================================================================
     await pool.query("UPDATE admin_users SET last_login_at = NOW() WHERE id = ?", [user.id]).catch(() => {});
 
-    // Generate signed admin token
     const token = signAuthToken("adm", user.id);
 
-    // Audit log
     await pool.query(
       "INSERT INTO admin_audit_logs (id, actor, action, resource, details_json, ip_address) VALUES (?, ?, ?, ?, ?, ?)",
       [`log_${Date.now()}`, user.email, "ADMIN_LOGIN", "admin_users", JSON.stringify({ role: user.role }), clientIp]

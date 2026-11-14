@@ -470,6 +470,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../src/app/api/admin/2fa/confirm-setup/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/2fa/confirm-setup">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/2fa/confirm-setup/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/2fa/disable/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/2fa/disable">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/2fa/disable/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/2fa/setup/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/2fa/setup">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/2fa/setup/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/2fa/status/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/2fa/status">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/2fa/status/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../src/app/api/admin/audit/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/audit">> = Specific
@@ -483,6 +519,33 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/auth/login">> = Specific
   const handler = {} as typeof import("../../src/app/api/admin/auth/login/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/auth/resend-2fa/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/auth/resend-2fa">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/auth/resend-2fa/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/auth/switch-2fa/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/auth/switch-2fa">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/auth/switch-2fa/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../src/app/api/admin/auth/verify-2fa/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/auth/verify-2fa">> = Specific
+  const handler = {} as typeof import("../../src/app/api/admin/auth/verify-2fa/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
