@@ -261,8 +261,7 @@ export async function getLiveProductByHandle(handle: string): Promise<CatalogPro
     if (seedMatch) {
       const specMatch = seedData.specs?.find((s: any) => s.product_id === seedMatch.id);
       if (typeof window === "undefined") {
-        const { syncSingleProductToDb, formatRawDbProduct } = await import("./catalog-server");
-        syncSingleProductToDb(seedMatch, specMatch).catch(() => {});
+        const { formatRawDbProduct } = await import("./catalog-server");
         return formatRawDbProduct(seedMatch, specMatch);
       }
     }

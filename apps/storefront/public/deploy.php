@@ -796,11 +796,13 @@ if ($githubEvent === 'push') {
                 $pdo->exec("ALTER TABLE furniture_specs MODIFY COLUMN color VARCHAR(100) NULL DEFAULT 'Natural / Neutral'");
             } catch (Exception $specErr) {}
 
-            // Auto-heal known broken images in MySQL
+            // Purge legacy mock demo products (prod_sofa_002, prod_dining_003, etc.)
             try {
-                $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'");
-                $pdo->exec("UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'");
-            } catch (Exception $imgErr) {}
+                $mockList = "'prod_armchair_001','prod_armchair_002','prod_armchair_003','prod_armchair_004','prod_armchair_005','prod_dining_003','prod_dining_004','prod_sofa_002','prod_sofa_003','prod_sofa_004','prod_sofa_005','prod_sofa_sandringham_01'";
+                $pdo->exec("DELETE FROM supplier_feed_items WHERE product_id IN ($mockList)");
+                $pdo->exec("DELETE FROM furniture_specs WHERE product_id IN ($mockList)");
+                $pdo->exec("DELETE FROM products WHERE id IN ($mockList)");
+            } catch (Exception $mockErr) {}
 
             // Auto-heal FTG Sofas price to real FTG trade costs and safe UK retail prices (prevent dropship financial loss)
             try {

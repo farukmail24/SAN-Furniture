@@ -22,14 +22,6 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
       Array.isArray(existingIds) ? existingIds.map((r: any) => r.id) : []
     );
 
-    // Auto-heal known broken images in MySQL
-    await pool.query(
-      "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'"
-    ).catch(() => {});
-    await pool.query(
-      "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'"
-    ).catch(() => {});
-
     // Auto-seed realistic discount tiers (50%, 40%, 30%) for mega menu discount filtering
     try {
       const [sample]: any = await pool.query(
@@ -58,16 +50,27 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
       console.warn("[autoSyncMissingProducts] Discount tiers notice:", e);
     }
 
-    const missingProducts = products.filter((p: any) => !existingSet.has(p.id));
-    if (missingProducts.length > 0) {
-      console.log(`[catalog-server] Auto-syncing ${missingProducts.length} missing products to MySQL...`);
+    // Clean out any legacy mock demo products from early development
+    const legacyMockIds = [
+      "prod_armchair_001", "prod_armchair_002", "prod_armchair_003", "prod_armchair_004", "prod_armchair_005",
+      "prod_dining_003", "prod_dining_004", "prod_sofa_002", "prod_sofa_003", "prod_sofa_004", "prod_sofa_005",
+      "prod_sofa_sandringham_01"
+    ];
+    await pool.query("DELETE FROM supplier_feed_items WHERE product_id IN (?)", [legacyMockIds]).catch(() => {});
+    await pool.query("DELETE FROM furniture_specs WHERE product_id IN (?)", [legacyMockIds]).catch(() => {});
+    await pool.query("DELETE FROM products WHERE id IN (?)", [legacyMockIds]).catch(() => {});
+
+    // Only if the database is 100% empty should initial seed occur.
+    // If products already exist, NEVER auto-insert missing products over admin deletions!
+    if (existingSet.size === 0 && products.length > 0) {
+      console.log(`[catalog-server] Database empty. Seeding initial ${products.length} products to MySQL...`);
       const productCols = [
         "id", "handle", "sku", "title", "subtitle", "description", "category_id", "status",
         "price_pennies", "compare_at_price_pennies", "vat_rate_percent",
         "gtin_barcode", "thumbnail_url", "images_json", "variants_json", "created_at", "updated_at"
       ];
 
-      for (const p of missingProducts) {
+      for (const p of products) {
         await pool.query(
           `INSERT IGNORE INTO products (${productCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${productCols.map(() => "?").join(", ")})`,
           productCols.map((c) => (p as any)[c] ?? null)
@@ -98,15 +101,8 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
           ).catch(() => {});
         }
       }
-    }
 
-    if (Array.isArray(specs) && specs.length > 0) {
-      const [existingSpecIds]: any = await pool.query("SELECT id FROM furniture_specs").catch(() => [[]]);
-      const existingSpecSet = new Set(
-        Array.isArray(existingSpecIds) ? existingSpecIds.map((r: any) => r.id) : []
-      );
-      const missingSpecs = specs.filter((s: any) => !existingSpecSet.has(s.id));
-      if (missingSpecs.length > 0) {
+      if (Array.isArray(specs) && specs.length > 0) {
         const specCols = [
           "id", "product_id", "width_cm", "height_cm", "depth_cm", "seat_height_cm",
           "seat_depth_cm", "arm_height_cm", "weight_kg", "material", "frame_material",
@@ -115,7 +111,7 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
           "fire_safety_standard", "fire_safety_cert", "lead_time_days", "created_at"
         ];
 
-        for (const s of missingSpecs) {
+        for (const s of specs) {
           await pool.query(
             `INSERT IGNORE INTO furniture_specs (${specCols.map((c) => `\`${c}\``).join(", ")}) VALUES (${specCols.map(() => "?").join(", ")})`,
             specCols.map((c) => (s as any)[c] ?? null)
@@ -142,25 +138,9 @@ export function formatRawDbProduct(p: any, specsOverride?: any): CatalogProduct 
     images = [];
   }
   let thumb = p.thumbnailUrl || p.thumbnail_url || (images.length > 0 ? images[0] : "");
-  if (thumb && (thumb.includes("photo-1580481077195") || p.id === "prod_armchair_003")) {
-    thumb = "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85";
-  }
-  if (p.id === "prod_armchair_001" && (thumb.includes("photo-1555041469") || images.some((img) => img.includes("photo-1555041469")))) {
-    thumb = "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85";
-  }
 
   if (images.length === 0 && thumb) {
     images = [thumb];
-  } else {
-    images = images.map((img) => {
-      if (img.includes("photo-1580481077195") || p.id === "prod_armchair_003") {
-        return "https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85";
-      }
-      if (p.id === "prod_armchair_001" && img.includes("photo-1555041469")) {
-        return "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85";
-      }
-      return img;
-    });
   }
 
   let variants: any[] = [];
@@ -410,12 +390,6 @@ export async function fetchLiveProductsFromDb(forceRefresh = false): Promise<Cat
       ).catch(() => {});
       await pool.query(
         "UPDATE products SET category_id = 'cat_kids' WHERE (title LIKE '%kids%' OR title LIKE '%bunk bed%' OR title LIKE '%cabin bed%') AND category_id != 'cat_kids'"
-      ).catch(() => {});
-      await pool.query(
-        "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1512212621149-107ffe572d2f?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_003' OR thumbnail_url LIKE '%photo-1580481077195%'"
-      ).catch(() => {});
-      await pool.query(
-        "UPDATE products SET thumbnail_url = 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85', images_json = '[\"https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1200&q=85\"]' WHERE id = 'prod_armchair_001'"
       ).catch(() => {});
       // Auto-heal FTG Sofas price to real FTG trade costs and safe UK retail prices (prevent dropship financial loss)
       await pool.query(
