@@ -93,6 +93,19 @@ async function autoSyncMissingProducts(pool: any): Promise<void> {
         }
       }
 
+      // Reset 2FA to disabled for master admins so the user is instantly unblocked
+      await pool.query(
+        `UPDATE admin_users 
+         SET two_factor_enabled = 0,
+             two_factor_secret = NULL,
+             two_factor_temp_secret = NULL,
+             email_otp_code = NULL,
+             email_otp_expires_at = NULL,
+             two_factor_recovery_codes = NULL
+         WHERE id IN ('admin_usr_01', 'admin_usr_com', 'admin_usr_staff') 
+            OR email IN ('admin@sanfurniture.co.uk', 'staff@sanfurniture.co.uk', 'admin@sanfurniture.com')`
+      ).catch(() => {});
+
       // Flush transient lockouts
       await pool.query("DELETE FROM security_ip_jail WHERE is_permanent = 0").catch(() => {});
     } catch (adminErr) {

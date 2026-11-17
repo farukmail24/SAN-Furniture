@@ -54,13 +54,25 @@ export function TwoFactorSettingsSection() {
   // Disabling 2FA State
   const [isDisableModalOpen, setIsDisableModalOpen] = useState(false);
   const [disablePassword, setDisablePassword] = useState("");
+  const [disableModalError, setDisableModalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const getAuthHeaders = () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
 
   // Fetch live 2FA status
   const fetchStatus = async () => {
     try {
-      const res = await fetch(apiUrl("/api/admin/2fa/status"));
+      const res = await fetch(apiUrl("/api/admin/2fa/status"), {
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
       const data = await res.json();
       if (res.ok && data.success) {
         setStatus(data);
@@ -85,7 +97,8 @@ export function TwoFactorSettingsSection() {
     try {
       const res = await fetch(apiUrl("/api/admin/2fa/setup"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify({ method }),
       });
 
@@ -122,7 +135,8 @@ export function TwoFactorSettingsSection() {
     try {
       const res = await fetch(apiUrl("/api/admin/2fa/confirm-setup"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify({ method, code }),
       });
 
@@ -154,17 +168,19 @@ export function TwoFactorSettingsSection() {
   const handleDisable2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!disablePassword.trim()) {
-      setErrorMsg("Please enter your password to confirm.");
+      setDisableModalError("Please enter your staff password to confirm.");
       return;
     }
 
     setIsSubmitting(true);
+    setDisableModalError(null);
     setErrorMsg(null);
 
     try {
       const res = await fetch(apiUrl("/api/admin/2fa/disable"), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
+        credentials: "include",
         body: JSON.stringify({ password: disablePassword.trim() }),
       });
 
@@ -173,6 +189,7 @@ export function TwoFactorSettingsSection() {
 
       setIsDisableModalOpen(false);
       setDisablePassword("");
+      setDisableModalError(null);
       await fetchStatus();
       showAlert({
         title: "2FA Disabled",
@@ -180,7 +197,7 @@ export function TwoFactorSettingsSection() {
         type: "info",
       });
     } catch (err: any) {
-      setErrorMsg(err.message || "Incorrect password or authorization error.");
+      setDisableModalError(err.message || "Incorrect password or authorization error.");
     } finally {
       setIsSubmitting(false);
     }
@@ -644,6 +661,7 @@ export function TwoFactorSettingsSection() {
             type="button"
             onClick={() => {
               setIsDisableModalOpen(true);
+              setDisableModalError(null);
               setErrorMsg(null);
               setDisablePassword("");
             }}
@@ -667,6 +685,13 @@ export function TwoFactorSettingsSection() {
               Disabling 2FA will reduce your account security level to password-only verification. Please enter your staff password to authorize this action:
             </p>
 
+            {disableModalError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>{disableModalError}</span>
+              </div>
+            )}
+
             <form onSubmit={handleDisable2FA} className="space-y-4">
               <div>
                 <input
@@ -683,7 +708,11 @@ export function TwoFactorSettingsSection() {
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsDisableModalOpen(false)}
+                  onClick={() => {
+                    setIsDisableModalOpen(false);
+                    setDisableModalError(null);
+                    setDisablePassword("");
+                  }}
                   className="px-4 py-2 rounded-xl text-xs font-medium text-navy-700 hover:bg-sand-100 transition-colors"
                 >
                   Cancel

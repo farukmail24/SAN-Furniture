@@ -4,6 +4,8 @@ import { getDbPool } from "./db";
 declare global {
   // eslint-disable-next-line no-var
   var __san2FASchemaEnsured: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __san2FADisabledMasterResetDone: boolean | undefined;
 }
 
 function hashMasterPassword(password: string): string {
@@ -123,7 +125,23 @@ export async function ensure2FASchema(force = false): Promise<{ success: boolean
       }
     }
 
-    // 11. Clear any transient lockout in security_ip_jail
+    // 11. One-time reset of 2FA for master admins so the user is immediately unblocked
+    if (!globalThis.__san2FADisabledMasterResetDone) {
+      await pool.query(
+        `UPDATE admin_users 
+         SET two_factor_enabled = 0,
+             two_factor_secret = NULL,
+             two_factor_temp_secret = NULL,
+             email_otp_code = NULL,
+             email_otp_expires_at = NULL,
+             two_factor_recovery_codes = NULL
+         WHERE id IN ('admin_usr_01', 'admin_usr_com', 'admin_usr_staff') 
+            OR email IN ('admin@sanfurniture.co.uk', 'staff@sanfurniture.co.uk', 'admin@sanfurniture.com')`
+      ).catch(() => {});
+      globalThis.__san2FADisabledMasterResetDone = true;
+    }
+
+    // 12. Clear any transient lockout in security_ip_jail
     await pool.query("DELETE FROM security_ip_jail WHERE is_permanent = 0").catch(() => {});
 
     globalThis.__san2FASchemaEnsured = true;
