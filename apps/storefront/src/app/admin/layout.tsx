@@ -301,32 +301,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
+    // If we are already on the login page, do NOT perform session redirect
+    if (pathname === "/admin/login") {
+      return;
+    }
 
     // Check local admin session
-    const token = localStorage.getItem("san_admin_token");
-    const storedUser = localStorage.getItem("san_admin_user");
+    const token = typeof window !== "undefined" ? localStorage.getItem("san_admin_token") : null;
+    const storedUser = typeof window !== "undefined" ? localStorage.getItem("san_admin_user") : null;
 
     if (!token || !storedUser) {
-      router.replace("/admin/login");
+      window.location.replace("/admin/login");
       return;
     }
 
     try {
       setCurrentUser(JSON.parse(storedUser));
     } catch {
-      router.replace("/admin/login");
+      window.location.replace("/admin/login");
     }
   }, [pathname]);
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return <main className="min-h-screen bg-[#00072D] text-sand-50">{children}</main>;
   }
 
   const handleLogout = () => {
     localStorage.removeItem("san_admin_token");
     localStorage.removeItem("san_admin_user");
     document.cookie = "san_admin_token=; Max-Age=0; path=/;";
-    router.push("/admin/login");
+    window.location.href = "/admin/login";
   };
 
   const navLinks = [
