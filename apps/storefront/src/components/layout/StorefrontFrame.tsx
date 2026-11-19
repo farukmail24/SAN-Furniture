@@ -11,14 +11,18 @@ import { ConciergeSupportWidget } from "@/components/support/ConciergeSupportWid
 import { CookieConsentBanner } from "./CookieConsentBanner";
 import { CmsProvider, type SiteSection } from "@/lib/cms";
 import type { CatalogProduct } from "@/lib/catalog";
+import type { StorefrontTrackingSettings } from "@/lib/tracking-server";
+import { StorefrontAnalytics } from "@/components/analytics/StorefrontAnalytics";
 
 export default function StorefrontFrame({
   initialSections,
   initialProducts,
+  tracking,
   children,
 }: {
   initialSections?: Record<string, SiteSection> | null;
   initialProducts?: CatalogProduct[];
+  tracking?: StorefrontTrackingSettings;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -26,6 +30,7 @@ export default function StorefrontFrame({
   return (
     <CmsProvider initialSections={initialSections}>
       <CartProvider>
+        {tracking && <StorefrontAnalytics tracking={tracking} />}
         <Header initialProducts={initialProducts} />
         <main className="flex-1" suppressHydrationWarning>
           <PageTransition key={pathname}>{children}</PageTransition>

@@ -21,6 +21,7 @@ export function StorefrontAnalytics({
 }) {
   const pathname = usePathname();
   const isAdminRoute = pathname?.startsWith("/admin");
+  const [mounted, setMounted] = useState(false);
 
   const [consent, setConsent] = useState<CookieConsentState>({
     essential: true,
@@ -30,6 +31,7 @@ export function StorefrontAnalytics({
   });
 
   useEffect(() => {
+    setMounted(true);
     try {
       const stored = localStorage.getItem(CONSENT_STORAGE_KEY);
       if (stored) {
@@ -58,8 +60,8 @@ export function StorefrontAnalytics({
     return () => window.removeEventListener("san:consent-updated", onConsentUpdated);
   }, []);
 
-  // Never execute marketing or tracking scripts on internal admin routes
-  if (isAdminRoute) {
+  // Never execute on SSR or internal admin routes
+  if (!mounted || isAdminRoute) {
     return null;
   }
 

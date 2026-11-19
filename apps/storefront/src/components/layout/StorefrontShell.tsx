@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import type { SiteSection } from "@/lib/cms";
 import type { CatalogProduct } from "@/lib/catalog";
+import type { StorefrontTrackingSettings } from "@/lib/tracking-server";
 import { AlertModalProvider } from "@/components/ui/AlertModal";
 
 const StorefrontFrame = dynamic(() => import("./StorefrontFrame"));
@@ -12,10 +13,12 @@ const StorefrontFrame = dynamic(() => import("./StorefrontFrame"));
 export function StorefrontShell({
   initialSections,
   initialProducts,
+  tracking,
   children,
 }: {
   initialSections?: Record<string, SiteSection> | null;
   initialProducts?: CatalogProduct[];
+  tracking?: StorefrontTrackingSettings;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -28,7 +31,7 @@ export function StorefrontShell({
           {children}
         </div>
       ) : (
-        <StorefrontFrame initialSections={initialSections} initialProducts={initialProducts}>
+        <StorefrontFrame initialSections={initialSections} initialProducts={initialProducts} tracking={tracking}>
           {children}
         </StorefrontFrame>
       )}

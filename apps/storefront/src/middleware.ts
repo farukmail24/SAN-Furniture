@@ -117,6 +117,10 @@ export async function middleware(request: NextRequest) {
     "'self'",
     "https://challenges.cloudflare.com",
     "https://api.stripe.com",
+    "https://www.google-analytics.com",
+    "https://analytics.google.com",
+    "https://www.googletagmanager.com",
+    "https://connect.facebook.net",
   ]);
   if (process.env.NEXT_PUBLIC_API_URL) {
     try {
@@ -127,12 +131,12 @@ export async function middleware(request: NextRequest) {
   // Strict Content Security Policy (CSP)
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://js.stripe.com https://www.googletagmanager.com https://connect.facebook.net;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     img-src 'self' data: https: blob:;
     font-src 'self' data: https://fonts.gstatic.com;
     connect-src ${Array.from(connectSources).join(" ")};
-    frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com;
+    frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://www.googletagmanager.com;
     frame-ancestors 'none';
     form-action 'self';
     base-uri 'self';

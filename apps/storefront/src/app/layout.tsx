@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { StorefrontShell } from "@/components/layout/StorefrontShell";
-import { StorefrontAnalytics } from "@/components/analytics/StorefrontAnalytics";
 import { getLiveSections } from "@/lib/cms-server";
 import { getLiveProducts } from "@/lib/catalog";
 import { getStorefrontTrackingSettings } from "@/lib/tracking-server";
@@ -59,14 +58,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en-GB" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
-      <head>
-        {tracking.google_site_verification && (
-          <meta name="google-site-verification" content={tracking.google_site_verification} />
-        )}
-      </head>
       <body className="min-h-screen flex flex-col bg-sand-50 font-sans text-navy-950" suppressHydrationWarning>
-        <StorefrontAnalytics tracking={tracking} />
-        <StorefrontShell initialSections={initialSections} initialProducts={initialProducts}>{children}</StorefrontShell>
+        <StorefrontShell initialSections={initialSections} initialProducts={initialProducts} tracking={tracking}>{children}</StorefrontShell>
       </body>
     </html>
   );

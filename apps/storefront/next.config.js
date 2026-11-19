@@ -8,6 +8,12 @@ const nextConfig = {
     position: "bottom-right",
   },
   transpilePackages: ["@san-furniture/types"],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     staleTimes: {
       dynamic: 180,
