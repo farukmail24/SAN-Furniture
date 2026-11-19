@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLiveProducts } from "@/lib/catalog";
+import { getStorefrontTrackingSettings } from "@/lib/tracking-server";
 
 function escapeCsv(field: string | null | undefined): string {
   const safe = String(field ?? "");
@@ -10,8 +11,18 @@ function escapeCsv(field: string | null | undefined): string {
 }
 
 export async function GET() {
+  const tracking = await getStorefrontTrackingSettings();
+
+  if (!tracking.meta_catalog_feed_enabled) {
+    return new NextResponse("Meta / Instagram commerce catalog feed is currently disabled by administrator.", {
+      status: 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
   const baseUrl = "https://sanfurniture.com";
   const liveProducts = await getLiveProducts();
+  const brandName = tracking.meta_catalog_brand || "SAN Furniture";
   const headers = [
     "id",
     "title",
@@ -43,11 +54,11 @@ export async function GET() {
       priceGbp,
       escapeCsv(link),
       escapeCsv(p.thumbnailUrl),
-      "SAN Furniture",
+      escapeCsv(brandName),
       "Home & Garden > Furniture",
-      escapeCsv(p.specs.material),
-      escapeCsv(p.specs.color),
-      escapeCsv(p.specs.delivery_tier),
+      escapeCsv(p?.specs?.material),
+      escapeCsv(p?.specs?.color),
+      escapeCsv(p?.specs?.delivery_tier),
       "UK Quality Checked",
     ].join(",");
   });

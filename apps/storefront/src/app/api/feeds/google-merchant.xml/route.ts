@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLiveProducts } from "@/lib/catalog";
+import { getStorefrontTrackingSettings } from "@/lib/tracking-server";
 
 const CATEGORY_MAP: Record<string, string> = {
   cat_sofas: "Home & Garden > Furniture > Sofas",
@@ -24,15 +25,27 @@ function escapeXml(unsafe: any): string {
 }
 
 export async function GET() {
+  const tracking = await getStorefrontTrackingSettings();
+
+  if (!tracking.google_merchant_feed_enabled) {
+    return new NextResponse("Google Merchant Center feed is currently disabled by administrator.", {
+      status: 403,
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
+  }
+
   const baseUrl = "https://sanfurniture.com";
   const liveProducts = await getLiveProducts();
+  const freeShippingThresholdPennies = Math.round(Number(tracking.google_merchant_free_shipping_threshold || "500") * 100);
+  const defaultShippingCostGbp = `${Number(tracking.google_merchant_shipping_cost || "49.00").toFixed(2)} GBP`;
+
   const itemsXml = liveProducts.filter((p) => p.status !== "draft")
     .map((p) => {
       const link = `${baseUrl}/products/${p.handle}`;
       const priceGbp = `${(p.pricePennies / 100).toFixed(2)} GBP`;
       const availability = p.status === "published" ? "in_stock" : "out_of_stock";
       const googleCat = CATEGORY_MAP[p.categoryId] || "Home & Garden > Furniture";
-      const shippingCost = p.pricePennies >= 50000 ? "0.00 GBP" : "49.00 GBP";
+      const shippingCost = p.pricePennies >= freeShippingThresholdPennies ? "0.00 GBP" : defaultShippingCostGbp;
 
       return `    <item>
       <g:id>${escapeXml(p.id)}</g:id>
@@ -42,21 +55,21 @@ export async function GET() {
       <g:image_link>${escapeXml(p.thumbnailUrl)}</g:image_link>
       <g:availability>${availability}</g:availability>
       <g:price>${priceGbp}</g:price>
-      <g:brand>SAN Furniture</g:brand>
+      <g:brand>${escapeXml(tracking.google_merchant_brand)}</g:brand>
       <g:gtin>${escapeXml(p.gtinBarcode)}</g:gtin>
       <g:mpn>${escapeXml(p.id)}</g:mpn>
       <g:condition>new</g:condition>
       <g:google_product_category>${escapeXml(googleCat)}</g:google_product_category>
       <g:shipping>
         <g:country>GB</g:country>
-        <g:service>UK Room of Choice Delivery</g:service>
+        <g:service>${escapeXml(tracking.google_merchant_shipping_service)}</g:service>
         <g:price>${shippingCost}</g:price>
       </g:shipping>
       <g:material>${escapeXml(p?.specs?.material)}</g:material>
       <g:color>${escapeXml(p?.specs?.color)}</g:color>
       <g:custom_label_0>${escapeXml(p?.specs?.delivery_tier)}</g:custom_label_0>
       <g:custom_label_1>UK Quality Checked</g:custom_label_1>
-      <g:custom_label_2>${p.pricePennies >= 50000 ? "Free Delivery Eligible" : "Standard Freight"}</g:custom_label_2>
+      <g:custom_label_2>${p.pricePennies >= freeShippingThresholdPennies ? "Free Delivery Eligible" : "Standard Freight"}</g:custom_label_2>
     </item>`;
     })
     .join("\n");

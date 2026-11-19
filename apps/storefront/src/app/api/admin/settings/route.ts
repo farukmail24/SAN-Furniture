@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getDbPool } from "@/lib/db";
 import { getAdminFromRequest } from "@/lib/auth-token";
 import { invalidateNotificationSettingsCache } from "@/lib/notifications-dispatcher";
+import { invalidateTrackingSettingsCache } from "@/lib/tracking-server";
 
 export const dynamic = "force-dynamic";
 
@@ -106,6 +107,7 @@ export async function POST(request: Request) {
     await pool.query("DELETE FROM system_settings WHERE setting_key = 'settings'").catch(() => {});
 
     invalidateNotificationSettingsCache();
+    invalidateTrackingSettingsCache();
 
     return NextResponse.json({ success: true, message: "Settings saved successfully" });
   } catch (err: any) {
