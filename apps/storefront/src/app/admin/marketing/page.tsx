@@ -159,6 +159,18 @@ export default function AdminMarketingPage() {
       }
     }
 
+    // Auto-clean Meta Pixel ID if user pasted full script code
+    let cleanMetaPixel = formData.meta_pixel_id.trim();
+    if (cleanMetaPixel.includes("fbq") || cleanMetaPixel.includes("<script>")) {
+      const pixelMatch = cleanMetaPixel.match(/fbq\s*\(\s*['"]init['"]\s*,\s*['"](\d+)['"]\s*\)/i) || cleanMetaPixel.match(/\b\d{14,17}\b/);
+      if (pixelMatch) {
+        cleanMetaPixel = pixelMatch[1] || pixelMatch[0];
+      }
+    } else {
+      const directMatch = cleanMetaPixel.match(/\b\d{14,17}\b/);
+      if (directMatch) cleanMetaPixel = directMatch[0];
+    }
+
     const payload = {
       settings: {
         gtm_enabled: String(formData.gtm_enabled),
@@ -167,7 +179,7 @@ export default function AdminMarketingPage() {
         ga4_enabled: String(formData.ga4_enabled),
         ga4_measurement_id: formData.ga4_measurement_id.trim(),
         meta_pixel_enabled: String(formData.meta_pixel_enabled),
-        meta_pixel_id: formData.meta_pixel_id.trim(),
+        meta_pixel_id: cleanMetaPixel,
         meta_capi_token: formData.meta_capi_token.trim(),
         google_merchant_brand: formData.google_merchant_brand.trim() || "SAN Furniture",
         google_merchant_shipping_service: formData.google_merchant_shipping_service.trim() || "UK Room of Choice Delivery",
@@ -194,6 +206,7 @@ export default function AdminMarketingPage() {
         ...prev,
         google_site_verification: cleanVerification,
         gtm_container_id: cleanGtm,
+        meta_pixel_id: cleanMetaPixel,
       }));
 
       setToastMsg({
